@@ -21,3 +21,19 @@ body,
 body {
   overscroll-behavior: none;
 }
+
+.grey-slider [class*="track"],
+.grey-slider [data-slot="track"] {
+  background-color: #e5e5e5 !important;
+}
+
+.grey-slider [class*="fill"],
+.grey-slider [data-slot="fill"] {
+  background-color: #a3a3a3 !important;
+}
+
+.grey-slider [class*="thumb"],
+.grey-slider [data-slot="thumb"] {
+  background-color: #525252 !important;
+  border-color: #ffffff !important;
+}

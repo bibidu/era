@@ -1,24 +1,91 @@
-import html2canvas from 'html2canvas'
+import type { TextElement } from '../types'
+import { H_PADDING } from '../types'
 
-export async function exportPosterToImage(canvasEl: HTMLElement): Promise<Blob> {
-  await document.fonts.ready
-  await new Promise((r) => setTimeout(r, 150))
-
-  const canvas = await html2canvas(canvasEl, {
-    useCORS: true,
-    allowTaint: true,
-    scale: 2,
-    backgroundColor: null,
-    logging: false,
-    ignoreElements: (el) => el.classList.contains('export-hide'),
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('图片加载失败'))
+    img.src = src
   })
+}
+
+function drawTextElement(
+  ctx: CanvasRenderingContext2D,
+  text: TextElement,
+  scaleX: number,
+  scaleY: number,
+  canvasWidth: number,
+) {
+  const aligned = text.textAlign !== 'none'
+  const fontSize = text.fontSize * scaleX
+  const fontFamily = text.fontFamily
+  ctx.font = `${text.fontWeight} ${fontSize}px ${fontFamily}`
+  ctx.fillStyle = text.color
+  ctx.textBaseline = 'top'
+
+  const lines = (text.content || '').split('\n')
+  const lineHeight = fontSize * 1.2
+  const padding = H_PADDING * scaleX
+  const maxWidth = canvasWidth - padding * 2
+
+  lines.forEach((line, index) => {
+    let x = aligned ? padding : text.x * scaleX
+    const y = text.y * scaleY + index * lineHeight
+
+    if (aligned) {
+      const metrics = ctx.measureText(line)
+      if (text.textAlign === 'center') {
+        x = padding + (maxWidth - metrics.width) / 2
+      } else if (text.textAlign === 'right') {
+        x = canvasWidth - padding - metrics.width
+      }
+    }
+
+    ctx.fillText(line, x, y)
+  })
+}
+
+export async function exportPosterToImage(
+  posterUrl: string,
+  texts: TextElement[],
+  containerWidth: number,
+  containerHeight: number,
+): Promise<Blob> {
+  await document.fonts.ready
+
+  const img = await loadImage(posterUrl)
+  const scale = 2
+  const width = Math.round(containerWidth * scale)
+  const height = Math.round(containerHeight * scale)
+
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Canvas 不可用')
+
+  ctx.drawImage(img, 0, 0, width, height)
+
+  const scaleX = width / containerWidth
+  const scaleY = height / containerHeight
+
+  for (const text of texts) {
+    drawTextElement(ctx, text, scaleX, scaleY, width)
+  }
 
   const blob = await new Promise<Blob | null>((resolve) => {
     canvas.toBlob(resolve, 'image/png', 1)
   })
 
-  if (!blob) throw new Error('导出失败')
-  return blob
+  if (blob) return blob
+
+  const dataUrl = canvas.toDataURL('image/png')
+  const response = await fetch(dataUrl)
+  const fallback = await response.blob()
+  if (!fallback.size) throw new Error('导出失败')
+  return fallback
 }
 
 export async function savePosterBlob(blob: Blob, filename: string): Promise<void> {
@@ -41,17 +108,5 @@ export async function savePosterBlob(blob: Blob, filename: string): Promise<void
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
-
-  setTimeout(() => URL.revokeObjectURL(url), 3000)
-
-  // 移动端兜底：部分浏览器不支持 download
-  if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-    const win = window.open(url, '_blank')
-    if (!win) {
-      const img = new Image()
-      img.src = url
-      const w = window.open('')
-      w?.document.write(`<img src="${url}" style="width:100%" />`)
-    }
-  }
+  setTimeout(() => URL.revokeObjectURL(url), 5000)
 }

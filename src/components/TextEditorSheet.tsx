@@ -2,15 +2,14 @@ import { Button, Drawer, Input, Label, Slider, useOverlayState } from '@heroui/r
 import { useEffect } from 'react'
 import { useFontLoader } from '../hooks/useFontLoader'
 import type { FontOption, TextAlign, TextElement } from '../types'
-import { ALIGN_OPTIONS, COLOR_PRESETS } from '../types'
-import { FontPicker } from './FontPicker'
+import { ALIGN_OPTIONS, COLOR_PALETTE } from '../types'
+import { FontSelect } from './FontSelect'
 
 interface TextEditorSheetProps {
   text: TextElement | null
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   onUpdate: (id: string, updates: Partial<TextElement>) => void
-  onApplyAlignToAll: (align: TextAlign) => void
   onDelete: (id: string) => void
 }
 
@@ -19,7 +18,6 @@ export function TextEditorSheet({
   isOpen,
   onOpenChange,
   onUpdate,
-  onApplyAlignToAll,
   onDelete,
 }: TextEditorSheetProps) {
   const state = useOverlayState({ isOpen, onOpenChange })
@@ -42,11 +40,7 @@ export function TextEditorSheet({
   }
 
   const handleAlignChange = (align: TextAlign) => {
-    if (align === 'none') {
-      onUpdate(text.id, { textAlign: align })
-      return
-    }
-    onApplyAlignToAll(align)
+    onUpdate(text.id, { textAlign: align })
   }
 
   return (
@@ -72,7 +66,7 @@ export function TextEditorSheet({
 
               <div className="flex flex-col gap-2">
                 <Label>字体</Label>
-                <FontPicker
+                <FontSelect
                   selectedFontId={text.fontId}
                   isFontLoaded={isFontLoaded}
                   isFontLoading={(id) => loadingFonts.has(id)}
@@ -137,41 +131,43 @@ export function TextEditorSheet({
                   step={1}
                   value={text.fontSize}
                   onChange={(value) => onUpdate(text.id, { fontSize: value as number })}
+                  className="grey-slider"
                 >
-                  <Slider.Track>
-                    <Slider.Fill />
-                    <Slider.Thumb />
+                  <Slider.Track className="!bg-neutral-200">
+                    <Slider.Fill className="!bg-neutral-400" />
+                    <Slider.Thumb className="!border-neutral-500 !bg-neutral-600" />
                   </Slider.Track>
                 </Slider>
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label>色号</Label>
-                <div className="flex flex-wrap items-center gap-2">
-                  {COLOR_PRESETS.map((color) => (
+                <Label>颜色</Label>
+                <div className="grid grid-cols-5 gap-2">
+                  {COLOR_PALETTE.map((color) => (
                     <button
                       key={color}
                       type="button"
                       aria-label={`颜色 ${color}`}
-                      className={`h-8 w-8 rounded-full border-2 transition-transform ${
-                        text.color === color
-                          ? 'scale-110 border-black'
-                          : 'border-neutral-300'
-                      } ${color === '#ffffff' ? 'shadow-inner' : ''}`}
+                      className={`aspect-square w-full rounded-lg border-2 transition-transform ${
+                        text.color.toLowerCase() === color.toLowerCase()
+                          ? 'scale-105 border-black'
+                          : 'border-neutral-200'
+                      } ${color === '#ffffff' || color === '#f2f2f2' ? 'shadow-inner' : ''}`}
                       style={{ backgroundColor: color }}
                       onClick={() => onUpdate(text.id, { color })}
                     />
                   ))}
-                  <label className="relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-neutral-300">
-                    <input
-                      type="color"
-                      value={text.color}
-                      onChange={(e) => onUpdate(text.id, { color: e.target.value })}
-                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                    />
-                    <span className="text-xs text-neutral-500">+</span>
-                  </label>
                 </div>
+                <label className="mt-1 flex cursor-pointer items-center gap-2 text-sm text-neutral-600">
+                  <span className="pointer-events-none flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-300">+</span>
+                  <span className="pointer-events-none">自定义颜色</span>
+                  <input
+                    type="color"
+                    value={text.color}
+                    onChange={(e) => onUpdate(text.id, { color: e.target.value })}
+                    className="absolute h-0 w-0 opacity-0"
+                  />
+                </label>
               </div>
             </Drawer.Body>
             <Drawer.Footer className="flex gap-2 px-4 pb-4">

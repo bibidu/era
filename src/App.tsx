@@ -3,11 +3,9 @@ import { Button } from '@heroui/react'
 import { Plus, Save } from 'lucide-react'
 import { PosterCanvas } from './components/PosterCanvas'
 import { MaterialSheet } from './components/MaterialSheet'
-import { MaterialBar } from './components/MaterialBar'
 import { TextEditorSheet } from './components/TextEditorSheet'
-import type { TextAlign, TextElement } from './types'
+import type { TextElement } from './types'
 import { FONT_OPTIONS } from './types'
-import { applyTextAlign } from './utils/textLayout'
 import { exportPosterToImage, savePosterBlob } from './utils/exportPoster'
 
 function createTextElement(): TextElement {
@@ -70,15 +68,6 @@ function App() {
     setTexts((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)))
   }, [])
 
-  const handleApplyAlignToAll = useCallback((align: TextAlign) => {
-    setTexts((prev) =>
-      prev.map((t) => ({
-        ...t,
-        ...applyTextAlign(align),
-      })),
-    )
-  }, [])
-
   const handleUpdatePosition = useCallback((id: string, x: number, y: number) => {
     setTexts((prev) =>
       prev.map((t) => (t.id === id ? { ...t, x, y, textAlign: 'none' as const } : t)),
@@ -92,16 +81,21 @@ function App() {
   }, [])
 
   const handleSave = useCallback(async () => {
-    const canvas = document.getElementById('poster-canvas')
-    if (!canvas || !posterUrl) return
+    const canvasEl = document.getElementById('poster-canvas')
+    if (!canvasEl || !posterUrl) return
+
+    const rect = canvasEl.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) return
 
     setSaving(true)
     setSaveMessage(null)
     setEditorOpen(false)
+    setSelectedId(null)
     setIsExporting(true)
 
     try {
-      const blob = await exportPosterToImage(canvas)
+      await new Promise((r) => setTimeout(r, 80))
+      const blob = await exportPosterToImage(posterUrl, texts, rect.width, rect.height)
       await savePosterBlob(blob, `poster-${Date.now()}.png`)
       setSaveMessage('已保存到本地')
     } catch {
@@ -111,7 +105,7 @@ function App() {
       setSaving(false)
       setTimeout(() => setSaveMessage(null), 2500)
     }
-  }, [posterUrl])
+  }, [posterUrl, texts])
 
   const selectedText = texts.find((t) => t.id === selectedId) ?? null
 
@@ -127,15 +121,9 @@ function App() {
         selectedId={selectedId}
         isExporting={isExporting}
         onSelectText={handleSelectText}
+        onOpenConfig={handleOpenConfig}
         onUpdateTextPosition={handleUpdatePosition}
         onUploadPoster={handleUploadPoster}
-      />
-
-      <MaterialBar
-        texts={texts}
-        selectedId={selectedId}
-        onSelect={handleSelectText}
-        onOpenConfig={handleOpenConfig}
       />
 
       <footer className="sticky bottom-0 border-t border-neutral-200 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
@@ -175,7 +163,6 @@ function App() {
         isOpen={editorOpen}
         onOpenChange={setEditorOpen}
         onUpdate={handleUpdateText}
-        onApplyAlignToAll={handleApplyAlignToAll}
         onDelete={handleDeleteText}
       />
     </div>
