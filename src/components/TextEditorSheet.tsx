@@ -9,7 +9,7 @@ import { FontSelect } from './FontSelect'
 interface TextEditorSheetProps {
   text: TextElement | null
   isOpen: boolean
-  onOpenChange: (open: boolean) => void
+  onClose: (committed: boolean) => void
   onUpdate: (id: string, updates: Partial<TextElement>) => void
   onDelete: (id: string) => void
 }
@@ -17,11 +17,16 @@ interface TextEditorSheetProps {
 export function TextEditorSheet({
   text,
   isOpen,
-  onOpenChange,
+  onClose,
   onUpdate,
   onDelete,
 }: TextEditorSheetProps) {
-  const state = useOverlayState({ isOpen, onOpenChange })
+  const state = useOverlayState({
+    isOpen,
+    onOpenChange: (open) => {
+      if (!open) onClose(false)
+    },
+  })
   const { isFontLoaded, loadingFonts, loadFont } = useFontLoader()
 
   useEffect(() => {
@@ -50,33 +55,13 @@ export function TextEditorSheet({
     <Drawer state={state}>
       <Drawer.Backdrop isDismissable>
         <Drawer.Content placement="bottom">
-          <Drawer.Dialog className="max-h-[75dvh]">
+          <Drawer.Dialog className="flex max-h-[75dvh] flex-col">
             <Drawer.Handle />
             <Drawer.Header>
               <Drawer.Heading>编辑文本</Drawer.Heading>
             </Drawer.Header>
 
-            <div className="sheet-action-bar flex gap-2 px-4 py-3">
-              <Button
-                variant="secondary"
-                className="flex-1 border-neutral-300 bg-white text-black"
-                onPress={() => {
-                  onDelete(text.id)
-                  onOpenChange(false)
-                }}
-              >
-                删除
-              </Button>
-              <Button
-                variant="primary"
-                className="flex-1 bg-black text-white"
-                onPress={() => onOpenChange(false)}
-              >
-                完成
-              </Button>
-            </div>
-
-            <Drawer.Body className="flex flex-col gap-4 overflow-y-auto px-4 pb-4 pt-2">
+            <Drawer.Body className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-2 pt-2">
               <div className="flex flex-col gap-1.5">
                 <Label>文本内容</Label>
                 <Input
@@ -218,6 +203,23 @@ export function TextEditorSheet({
                 </label>
               </div>
             </Drawer.Body>
+
+            <Drawer.Footer className="sheet-action-bar mt-auto flex shrink-0 gap-2 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              <Button
+                variant="secondary"
+                className="flex-1 border-neutral-300 bg-white text-black"
+                onPress={() => onDelete(text.id)}
+              >
+                删除
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-1 bg-black text-white"
+                onPress={() => onClose(true)}
+              >
+                完成
+              </Button>
+            </Drawer.Footer>
           </Drawer.Dialog>
         </Drawer.Content>
       </Drawer.Backdrop>

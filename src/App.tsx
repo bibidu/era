@@ -35,6 +35,8 @@ function App() {
   const [isExporting, setIsExporting] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const posterUrlRef = useRef<string | null>(null)
+  const editorSnapshotRef = useRef<TextElement | null>(null)
+  const isNewTextRef = useRef(false)
 
   const handleUploadPoster = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) return
@@ -51,22 +53,73 @@ function App() {
     reader.readAsDataURL(file)
   }, [])
 
+  const openEditor = useCallback((id: string, isNew = false) => {
+    setTexts((prev) => {
+      const text = prev.find((t) => t.id === id)
+      if (text) editorSnapshotRef.current = { ...text }
+      return prev
+    })
+    isNewTextRef.current = isNew
+    setSelectedId(id)
+    setEditorOpen(true)
+  }, [])
+
+  const handleEditorClose = useCallback(
+    (committed: boolean) => {
+      setEditorOpen(false)
+
+      if (!selectedId) {
+        editorSnapshotRef.current = null
+        isNewTextRef.current = false
+        return
+      }
+
+      if (committed) {
+        editorSnapshotRef.current = null
+        isNewTextRef.current = false
+        return
+      }
+
+      if (isNewTextRef.current) {
+        setTexts((prev) => prev.filter((t) => t.id !== selectedId))
+        setSelectedId(null)
+      } else if (editorSnapshotRef.current) {
+        const snapshot = editorSnapshotRef.current
+        setTexts((prev) => prev.map((t) => (t.id === selectedId ? snapshot : t)))
+      }
+
+      editorSnapshotRef.current = null
+      isNewTextRef.current = false
+    },
+    [selectedId],
+  )
+
   const handleAddText = useCallback(() => {
     const newText = createTextElement()
     setTexts((prev) => [...prev, newText])
+    editorSnapshotRef.current = { ...newText }
+    isNewTextRef.current = true
     setSelectedId(newText.id)
     setEditorOpen(true)
   }, [])
 
-  const handleSelectText = useCallback((id: string) => {
-    setSelectedId(id || null)
-    if (!id) setEditorOpen(false)
-  }, [])
+  const handleSelectText = useCallback(
+    (id: string) => {
+      if (!id && editorOpen) {
+        handleEditorClose(false)
+        return
+      }
+      setSelectedId(id || null)
+    },
+    [editorOpen, handleEditorClose],
+  )
 
-  const handleOpenConfig = useCallback((id: string) => {
-    setSelectedId(id)
-    setEditorOpen(true)
-  }, [])
+  const handleOpenConfig = useCallback(
+    (id: string) => {
+      openEditor(id, false)
+    },
+    [openEditor],
+  )
 
   const handleUpdateText = useCallback((id: string, updates: Partial<TextElement>) => {
     setTexts((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)))
@@ -81,6 +134,8 @@ function App() {
   const handleDeleteText = useCallback((id: string) => {
     setTexts((prev) => prev.filter((t) => t.id !== id))
     setSelectedId(null)
+    editorSnapshotRef.current = null
+    isNewTextRef.current = false
     setEditorOpen(false)
   }, [])
 
@@ -94,6 +149,8 @@ function App() {
     setSaving(true)
     setSaveMessage(null)
     setEditorOpen(false)
+    editorSnapshotRef.current = null
+    isNewTextRef.current = false
     setSelectedId(null)
     setIsExporting(true)
 
@@ -165,7 +222,7 @@ function App() {
       <TextEditorSheet
         text={selectedText}
         isOpen={editorOpen}
-        onOpenChange={setEditorOpen}
+        onClose={handleEditorClose}
         onUpdate={handleUpdateText}
         onDelete={handleDeleteText}
       />

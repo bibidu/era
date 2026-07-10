@@ -39,9 +39,10 @@ body.is-dragging {
 }
 
 .sheet-action-bar {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
   background: #ffffff;
-  position: relative;
+  position: sticky;
+  bottom: 0;
   z-index: 1;
 }
 
