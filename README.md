@@ -20,3 +20,5 @@ npm run dev
 ## 在线预览
 
 https://bibidu.github.io/era/
+
+推送到 `main` 分支后会自动构建并部署到 `gh-pages`，无需手动操作。
