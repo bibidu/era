@@ -1,7 +1,6 @@
 import { Cloud, Loader2 } from 'lucide-react'
-import { ListBox, Select } from '@heroui/react'
-import type { FontOption } from '../types'
-import { FONT_OPTIONS } from '../types'
+import { Collection, ListBox, Select } from '@heroui/react'
+import { FONT_COUNT, FONT_OPTIONS, type FontOption } from '../data/fonts'
 
 interface FontSelectProps {
   selectedFontId: string
@@ -43,55 +42,60 @@ export function FontSelect({
         <Select.Indicator />
       </Select.Trigger>
       <Select.Popover>
-        <ListBox className="max-h-80 overflow-y-auto">
-          {FONT_OPTIONS.map((font) => {
-            const loaded = isFontLoaded(font)
-            const loading = isFontLoading(font.id)
-            const needsCloud = font.source === 'google' && !loaded
+        <ListBox className="max-h-80 overflow-y-auto overscroll-contain">
+          <Collection items={FONT_OPTIONS}>
+            {(font) => {
+              const loaded = isFontLoaded(font)
+              const loading = isFontLoading(font.id)
+              const needsCloud = font.source === 'google' && !loaded
 
-            return (
-              <ListBox.Item
-                key={font.id}
-                id={font.id}
-                textValue={font.label}
-                className="py-2"
-              >
-                <div className="flex w-full items-center gap-2">
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="text-xs text-neutral-500">{font.label}</span>
-                    <span
-                      className="truncate text-sm text-black"
-                      style={{ fontFamily: loaded ? font.fontFamily : 'system-ui, sans-serif' }}
-                    >
-                      {font.sample}
-                    </span>
+              return (
+                <ListBox.Item
+                  key={font.id}
+                  id={font.id}
+                  textValue={font.label}
+                  className="py-2"
+                >
+                  <div className="flex w-full items-center gap-2">
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <span className="text-xs text-neutral-500">{font.label}</span>
+                      <span
+                        className="truncate text-sm text-black"
+                        style={{ fontFamily: loaded ? font.fontFamily : 'system-ui, sans-serif' }}
+                      >
+                        {font.sample}
+                      </span>
+                    </div>
+                    {needsCloud && (
+                      <button
+                        type="button"
+                        aria-label={`加载${font.label}`}
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-500"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          e.preventDefault()
+                          onLoadFont(font)
+                        }}
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Cloud size={14} strokeWidth={1.5} />
+                        )}
+                      </button>
+                    )}
                   </div>
-                  {needsCloud && (
-                    <button
-                      type="button"
-                      aria-label={`加载${font.label}`}
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-neutral-300 text-neutral-500"
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        e.preventDefault()
-                        onLoadFont(font)
-                      }}
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <Cloud size={14} strokeWidth={1.5} />
-                      )}
-                    </button>
-                  )}
-                </div>
-              </ListBox.Item>
-            )
-          })}
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              )
+            }}
+          </Collection>
         </ListBox>
       </Select.Popover>
     </Select>
   )
 }
+
+export { FONT_COUNT }

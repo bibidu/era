@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import type { FontOption } from '../types'
+import type { FontOption } from '../data/fonts'
 
 const loadedFontIds = new Set<string>([
   'system', 'noto', 'song', 'kai', 'mono', 'courier',

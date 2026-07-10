@@ -5,7 +5,7 @@ import { PosterCanvas } from './components/PosterCanvas'
 import { MaterialSheet } from './components/MaterialSheet'
 import { TextEditorSheet } from './components/TextEditorSheet'
 import type { TextElement } from './types'
-import { FONT_OPTIONS } from './types'
+import { FONT_OPTIONS } from './data/fonts'
 import { exportPosterToImage, savePosterBlob } from './utils/exportPoster'
 
 function createTextElement(): TextElement {

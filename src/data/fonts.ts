@@ -1,7 +1,15 @@
-import type { FontOption } from '../types'
+export type FontSource = 'system' | 'google'
+
+export interface FontOption {
+  id: string
+  label: string
+  fontFamily: string
+  sample: string
+  source: FontSource
+  googleFamily?: string
+}
 
 export const FONT_OPTIONS: FontOption[] = [
-  // 系统默认
   { id: 'system', label: '默认', fontFamily: 'system-ui, -apple-system, sans-serif', sample: '默认字体 Aa', source: 'system' },
   { id: 'pingfang', label: '苹方', fontFamily: '"PingFang SC", "Helvetica Neue", sans-serif', sample: '苹方 Aa', source: 'system' },
   { id: 'yahei', label: '微软雅黑', fontFamily: '"Microsoft YaHei", sans-serif', sample: '微软雅黑 Aa', source: 'system' },
@@ -15,7 +23,6 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: 'times', label: 'Times', fontFamily: '"Times New Roman", Times, serif', sample: 'Times Aa', source: 'system' },
   { id: 'verdana', label: 'Verdana', fontFamily: 'Verdana, Geneva, sans-serif', sample: 'Verdana Aa', source: 'system' },
 
-  // 中文 - Google
   { id: 'noto', label: '思源黑体', fontFamily: '"Noto Sans SC", sans-serif', sample: '思源黑体 Aa', source: 'google', googleFamily: 'Noto+Sans+SC:wght@400;700' },
   { id: 'noto-serif', label: '思源宋体', fontFamily: '"Noto Serif SC", serif', sample: '思源宋体 Aa', source: 'google', googleFamily: 'Noto+Serif+SC:wght@400;700' },
   { id: 'wdxl', label: '润滑体', fontFamily: '"WDXL Lubrifont SC", sans-serif', sample: '润滑体 Aa', source: 'google', googleFamily: 'WDXL+Lubrifont+SC' },
@@ -29,7 +36,6 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: 'yuji-mai', label: '佑字麦', fontFamily: '"Yuji Mai", serif', sample: '佑字麦 Aa', source: 'google', googleFamily: 'Yuji+Mai' },
   { id: 'dotgothic', label: '点阵哥特', fontFamily: '"DotGothic16", sans-serif', sample: '点阵哥特 Aa', source: 'google', googleFamily: 'DotGothic16' },
 
-  // 西文无衬线
   { id: 'inter', label: 'Inter', fontFamily: 'Inter, sans-serif', sample: 'Inter Aa', source: 'google', googleFamily: 'Inter:wght@400;700' },
   { id: 'roboto', label: 'Roboto', fontFamily: 'Roboto, sans-serif', sample: 'Roboto Aa', source: 'google', googleFamily: 'Roboto:wght@400;700' },
   { id: 'open-sans', label: 'Open Sans', fontFamily: '"Open Sans", sans-serif', sample: 'Open Sans Aa', source: 'google', googleFamily: 'Open+Sans:wght@400;700' },
@@ -47,7 +53,6 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: 'oswald', label: 'Oswald', fontFamily: 'Oswald, sans-serif', sample: 'Oswald Aa', source: 'google', googleFamily: 'Oswald:wght@400;700' },
   { id: 'pt-sans', label: 'PT Sans', fontFamily: '"PT Sans", sans-serif', sample: 'PT Sans Aa', source: 'google', googleFamily: 'PT+Sans:wght@400;700' },
 
-  // 西文衬线
   { id: 'merriweather', label: 'Merriweather', fontFamily: 'Merriweather, serif', sample: 'Merriweather Aa', source: 'google', googleFamily: 'Merriweather:wght@400;700' },
   { id: 'playfair', label: 'Playfair', fontFamily: '"Playfair Display", serif', sample: 'Playfair Aa', source: 'google', googleFamily: 'Playfair+Display:wght@400;700' },
   { id: 'lora', label: 'Lora', fontFamily: 'Lora, serif', sample: 'Lora Aa', source: 'google', googleFamily: 'Lora:wght@400;700' },
@@ -56,7 +61,6 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: 'pt-serif', label: 'PT Serif', fontFamily: '"PT Serif", serif', sample: 'PT Serif Aa', source: 'google', googleFamily: 'PT+Serif:wght@400;700' },
   { id: 'noto-serif-latin', label: 'Noto Serif', fontFamily: '"Noto Serif", serif', sample: 'Noto Serif Aa', source: 'google', googleFamily: 'Noto+Serif:wght@400;700' },
 
-  // 展示 / 手写
   { id: 'bebas', label: 'Bebas Neue', fontFamily: '"Bebas Neue", sans-serif', sample: 'BEBAS AA', source: 'google', googleFamily: 'Bebas+Neue' },
   { id: 'pacifico', label: 'Pacifico', fontFamily: 'Pacifico, cursive', sample: 'Pacifico Aa', source: 'google', googleFamily: 'Pacifico' },
   { id: 'lobster', label: 'Lobster', fontFamily: 'Lobster, cursive', sample: 'Lobster Aa', source: 'google', googleFamily: 'Lobster' },
@@ -67,7 +71,6 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: 'satisfy', label: 'Satisfy', fontFamily: 'Satisfy, cursive', sample: 'Satisfy Aa', source: 'google', googleFamily: 'Satisfy' },
   { id: 'caveat', label: 'Caveat', fontFamily: 'Caveat, cursive', sample: 'Caveat Aa', source: 'google', googleFamily: 'Caveat:wght@400;700' },
 
-  // 等宽
   { id: 'mono', label: '系统等宽', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', sample: '系统等宽 01', source: 'system' },
   { id: 'courier', label: 'Courier', fontFamily: '"Courier New", Courier, monospace', sample: 'Courier 01', source: 'system' },
   { id: 'jetbrains', label: 'JetBrains Mono', fontFamily: '"JetBrains Mono", monospace', sample: 'JetBrains 01', source: 'google', googleFamily: 'JetBrains+Mono:wght@400;700' },
@@ -86,3 +89,5 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: 'anonymous-pro', label: 'Anonymous Pro', fontFamily: '"Anonymous Pro", monospace', sample: 'Anonymous 01', source: 'google', googleFamily: 'Anonymous+Pro:wght@400;700' },
   { id: 'share-tech-mono', label: 'Share Tech Mono', fontFamily: '"Share Tech Mono", monospace', sample: 'Share Tech 01', source: 'google', googleFamily: 'Share+Tech+Mono' },
 ]
+
+export const FONT_COUNT = FONT_OPTIONS.length

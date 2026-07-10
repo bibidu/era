@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useFontLoader } from '../hooks/useFontLoader'
 import type { FontOption, TextDecoration, TextElement } from '../types'
 import { ALIGN_OPTIONS, normalizeColorHex } from '../types'
+import { FONT_COUNT } from '../data/fonts'
 import { FontSelect } from './FontSelect'
 
 interface TextEditorSheetProps {
@@ -74,7 +75,7 @@ export function TextEditorSheet({
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label>字体</Label>
+                <Label>字体（{FONT_COUNT} 种）</Label>
                 <FontSelect
                   selectedFontId={text.fontId}
                   isFontLoaded={isFontLoaded}
