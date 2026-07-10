@@ -43,7 +43,7 @@ export function FontSelect({
         <Select.Indicator />
       </Select.Trigger>
       <Select.Popover>
-        <ListBox className="max-h-64 overflow-y-auto">
+        <ListBox className="max-h-80 overflow-y-auto">
           {FONT_OPTIONS.map((font) => {
             const loaded = isFontLoaded(font)
             const loading = isFontLoading(font.id)

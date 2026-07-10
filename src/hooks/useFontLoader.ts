@@ -3,6 +3,8 @@ import type { FontOption } from '../types'
 
 const loadedFontIds = new Set<string>([
   'system', 'noto', 'song', 'kai', 'mono', 'courier',
+  'pingfang', 'yahei', 'heiti', 'fangsong', 'arial', 'helvetica',
+  'georgia', 'times', 'verdana',
 ])
 
 export function useFontLoader() {
