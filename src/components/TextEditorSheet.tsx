@@ -2,7 +2,7 @@ import { Button, Drawer, Input, Label, Slider, useOverlayState } from '@heroui/r
 import { useEffect } from 'react'
 import { useFontLoader } from '../hooks/useFontLoader'
 import type { FontOption, TextAlign, TextElement } from '../types'
-import { ALIGN_OPTIONS, COLOR_PALETTE } from '../types'
+import { ALIGN_OPTIONS } from '../types'
 import { FontSelect } from './FontSelect'
 
 interface TextEditorSheetProps {
@@ -142,30 +142,17 @@ export function TextEditorSheet({
 
               <div className="flex flex-col gap-2">
                 <Label>颜色</Label>
-                <div className="grid grid-cols-5 gap-2">
-                  {COLOR_PALETTE.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      aria-label={`颜色 ${color}`}
-                      className={`aspect-square w-full rounded-lg border-2 transition-transform ${
-                        text.color.toLowerCase() === color.toLowerCase()
-                          ? 'scale-105 border-black'
-                          : 'border-neutral-200'
-                      } ${color === '#ffffff' || color === '#f2f2f2' ? 'shadow-inner' : ''}`}
-                      style={{ backgroundColor: color }}
-                      onClick={() => onUpdate(text.id, { color })}
-                    />
-                  ))}
-                </div>
-                <label className="mt-1 flex cursor-pointer items-center gap-2 text-sm text-neutral-600">
-                  <span className="pointer-events-none flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-300">+</span>
-                  <span className="pointer-events-none">自定义颜色</span>
+                <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-neutral-300 px-3 py-2.5">
+                  <span
+                    className="h-8 w-8 shrink-0 rounded-md border border-neutral-200"
+                    style={{ backgroundColor: text.color }}
+                  />
+                  <span className="text-sm text-neutral-700">自定义颜色</span>
                   <input
                     type="color"
                     value={text.color}
                     onChange={(e) => onUpdate(text.id, { color: e.target.value })}
-                    className="absolute h-0 w-0 opacity-0"
+                    className="ml-auto h-8 w-8 cursor-pointer border-0 bg-transparent p-0"
                   />
                 </label>
               </div>

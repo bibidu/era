@@ -72,14 +72,6 @@ export const FONT_OPTIONS: FontOption[] = [
   },
 ]
 
-export const COLOR_PALETTE = [
-  '#000000', '#ffffff', '#f2f2f2', '#bdbdbd', '#757575',
-  '#e53935', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5',
-  '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50',
-  '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800',
-  '#ff5722', '#795548', '#607d8b', '#f44336', '#1565c0',
-] as const
-
 export const ALIGN_OPTIONS: { id: TextAlign; label: string }[] = [
   { id: 'none', label: '无' },
   { id: 'left', label: '左' },

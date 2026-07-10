@@ -35,6 +35,8 @@ function App() {
   const posterUrlRef = useRef<string | null>(null)
 
   const handleUploadPoster = useCallback((file: File) => {
+    if (!file.type.startsWith('image/')) return
+
     const reader = new FileReader()
     reader.onload = () => {
       const result = reader.result as string
@@ -110,7 +112,7 @@ function App() {
   const selectedText = texts.find((t) => t.id === selectedId) ?? null
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col bg-white">
+    <div className="mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden bg-white">
       <header className="flex items-center justify-center border-b border-neutral-200 px-4 py-3">
         <h1 className="text-base font-medium tracking-wide text-black">海报编辑器</h1>
       </header>

@@ -4,6 +4,11 @@ import type { TextElement } from '../types'
 import { getTextContentStyle, getWrapperStyle } from '../utils/textLayout'
 
 const LONG_PRESS_MS = 450
+const IMAGE_ACCEPT = 'image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp,image/svg+xml,image/heic,image/heif'
+
+function isImageFile(file: File) {
+  return file.type.startsWith('image/')
+}
 
 interface PosterCanvasProps {
   posterUrl: string | null
@@ -40,6 +45,7 @@ export function PosterCanvas({
     didLongPress: boolean
     moved: boolean
   } | null>(null)
+  const listenersRef = useRef<(() => void) | null>(null)
 
   const handlePointerMove = useCallback(
     (clientX: number, clientY: number) => {
@@ -57,16 +63,57 @@ export function PosterCanvas({
     [onUpdateTextPosition],
   )
 
+  const cleanupDragListeners = useCallback(() => {
+    listenersRef.current?.()
+    listenersRef.current = null
+    document.body.classList.remove('is-dragging')
+  }, [])
+
   const endDrag = useCallback(() => {
     dragRef.current = null
     if (pressRef.current) {
       clearTimeout(pressRef.current.timer)
       pressRef.current = null
     }
-  }, [])
+    cleanupDragListeners()
+  }, [cleanupDragListeners])
+
+  const startDragListeners = useCallback(() => {
+    cleanupDragListeners()
+    document.body.classList.add('is-dragging')
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!dragRef.current) return
+      e.preventDefault()
+      pressRef.current && (pressRef.current.moved = true)
+      handlePointerMove(e.clientX, e.clientY)
+    }
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!dragRef.current) return
+      e.preventDefault()
+    }
+
+    const onPointerUp = () => {
+      endDrag()
+    }
+
+    document.addEventListener('pointermove', onPointerMove, { passive: false })
+    document.addEventListener('pointerup', onPointerUp)
+    document.addEventListener('pointercancel', onPointerUp)
+    document.addEventListener('touchmove', onTouchMove, { passive: false })
+
+    listenersRef.current = () => {
+      document.removeEventListener('pointermove', onPointerMove)
+      document.removeEventListener('pointerup', onPointerUp)
+      document.removeEventListener('pointercancel', onPointerUp)
+      document.removeEventListener('touchmove', onTouchMove)
+    }
+  }, [cleanupDragListeners, endDrag, handlePointerMove])
 
   const handleIconPointerDown = useCallback(
     (text: TextElement, e: React.PointerEvent<HTMLButtonElement>) => {
+      e.preventDefault()
       e.stopPropagation()
       onSelectText(text.id)
 
@@ -89,22 +136,24 @@ export function PosterCanvas({
           originX,
           originY,
         }
-        e.currentTarget.setPointerCapture(e.pointerId)
+        startDragListeners()
       }, LONG_PRESS_MS)
 
       pressRef.current = { id: text.id, timer, didLongPress: false, moved: false }
     },
-    [onSelectText],
+    [onSelectText, startDragListeners],
   )
 
   const handleIconPointerUp = useCallback(
     (textId: string, e: React.PointerEvent<HTMLButtonElement>) => {
+      e.preventDefault()
       e.stopPropagation()
       const press = pressRef.current
+      const wasDragging = !!dragRef.current
 
       if (press?.id === textId) {
         clearTimeout(press.timer)
-        if (!press.didLongPress && !press.moved && !dragRef.current) {
+        if (!press.didLongPress && !press.moved && !wasDragging) {
           onOpenConfig(textId)
         }
       }
@@ -116,44 +165,41 @@ export function PosterCanvas({
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (file) onUploadPoster(file)
+    if (file && isImageFile(file)) onUploadPoster(file)
     event.target.value = ''
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-4 py-3">
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden px-4 py-3">
       <div
         ref={canvasRef}
         id="poster-canvas"
-        className="relative w-full max-w-[420px] overflow-hidden rounded-2xl border border-neutral-300 bg-neutral-100 shadow-sm"
-        style={{ aspectRatio: '3 / 4' }}
-        onPointerMove={(e) => {
-          if (pressRef.current && dragRef.current) {
-            pressRef.current.moved = true
-          }
-          if (dragRef.current) handlePointerMove(e.clientX, e.clientY)
-        }}
-        onPointerUp={endDrag}
-        onPointerLeave={endDrag}
+        className="poster-canvas relative w-full max-w-[420px] overflow-hidden rounded-2xl border border-neutral-300 bg-neutral-100 shadow-sm"
+        style={{ aspectRatio: '3 / 4', touchAction: 'none' }}
         onClick={() => onSelectText('')}
       >
         {posterUrl ? (
           <img
             src={posterUrl}
             alt="海报底图"
-            className="absolute inset-0 h-full w-full object-cover"
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover"
             draggable={false}
           />
         ) : (
           <label className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 text-neutral-400">
-            <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+            <input
+              type="file"
+              accept={IMAGE_ACCEPT}
+              className="hidden"
+              onChange={handleFileChange}
+            />
             <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-neutral-400">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M12 16V4m0 0L8 8m4-4 4 4" />
                 <path d="M4 20h16" />
               </svg>
             </div>
-            <span className="text-sm">点击上传海报</span>
+            <span className="text-sm">点击上传图片</span>
           </label>
         )}
 
@@ -184,9 +230,12 @@ export function PosterCanvas({
                 <button
                   type="button"
                   aria-label="编辑素材，长按拖动"
-                  className="export-hide mx-auto mt-1 flex h-6 w-6 items-center justify-center rounded-full border border-neutral-400 bg-white text-neutral-700 shadow-sm active:bg-neutral-100"
+                  className="material-drag-handle export-hide mx-auto mt-1 flex h-6 w-6 items-center justify-center rounded-full border border-neutral-400 bg-white text-neutral-700 shadow-sm select-none"
+                  style={{ touchAction: 'none' }}
                   onPointerDown={(e) => handleIconPointerDown(text, e)}
                   onPointerUp={(e) => handleIconPointerUp(text.id, e)}
+                  onPointerCancel={(e) => handleIconPointerUp(text.id, e)}
+                  onContextMenu={(e) => e.preventDefault()}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Settings2 size={12} strokeWidth={1.5} />
@@ -198,9 +247,9 @@ export function PosterCanvas({
       </div>
 
       {posterUrl && (
-        <label className="export-hide mt-3 cursor-pointer text-sm text-neutral-500 underline underline-offset-2">
-          <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-          更换海报
+        <label className="export-hide mt-3 shrink-0 cursor-pointer text-sm text-neutral-500 underline underline-offset-2">
+          <input type="file" accept={IMAGE_ACCEPT} className="hidden" onChange={handleFileChange} />
+          更换图片
         </label>
       )}
     </div>
