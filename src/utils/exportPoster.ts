@@ -11,6 +11,29 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   })
 }
 
+function drawDecoration(
+  ctx: CanvasRenderingContext2D,
+  text: TextElement,
+  x: number,
+  y: number,
+  width: number,
+  fontSize: number,
+) {
+  if (text.textDecoration === 'none') return
+
+  const lineY =
+    text.textDecoration === 'underline'
+      ? y + fontSize * 1.05
+      : y + fontSize * 0.55
+
+  ctx.strokeStyle = text.color
+  ctx.lineWidth = Math.max(1, fontSize * 0.06)
+  ctx.beginPath()
+  ctx.moveTo(x, lineY)
+  ctx.lineTo(x + width, lineY)
+  ctx.stroke()
+}
+
 function drawTextElement(
   ctx: CanvasRenderingContext2D,
   text: TextElement,
@@ -21,7 +44,8 @@ function drawTextElement(
   const aligned = text.textAlign !== 'none'
   const fontSize = text.fontSize * scaleX
   const fontFamily = text.fontFamily
-  ctx.font = `${text.fontWeight} ${fontSize}px ${fontFamily}`
+  const fontStyle = text.fontStyle === 'italic' ? 'italic' : 'normal'
+  ctx.font = `${fontStyle} ${text.fontWeight} ${fontSize}px ${fontFamily}`
   ctx.fillStyle = text.color
   ctx.textBaseline = 'top'
 
@@ -33,9 +57,9 @@ function drawTextElement(
   lines.forEach((line, index) => {
     let x = aligned ? padding : text.x * scaleX
     const y = text.y * scaleY + index * lineHeight
+    const metrics = ctx.measureText(line)
 
     if (aligned) {
-      const metrics = ctx.measureText(line)
       if (text.textAlign === 'center') {
         x = padding + (maxWidth - metrics.width) / 2
       } else if (text.textAlign === 'right') {
@@ -44,6 +68,7 @@ function drawTextElement(
     }
 
     ctx.fillText(line, x, y)
+    drawDecoration(ctx, text, x, y, metrics.width, fontSize)
   })
 }
 

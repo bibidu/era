@@ -16,6 +16,8 @@ function createTextElement(): TextElement {
     y: 120,
     fontSize: 24,
     fontWeight: 400,
+    fontStyle: 'normal',
+    textDecoration: 'none',
     color: '#000000',
     fontFamily: FONT_OPTIONS[0].fontFamily,
     fontId: FONT_OPTIONS[0].id,

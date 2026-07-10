@@ -21,23 +21,23 @@ export function MaterialSheet({ isOpen, onOpenChange, onAddText }: MaterialSheet
     <Drawer state={state}>
       <Drawer.Backdrop isDismissable>
         <Drawer.Content placement="bottom">
-          <Drawer.Dialog>
+          <Drawer.Dialog className="material-sheet max-h-[33dvh]">
             <Drawer.Handle />
-            <Drawer.Header>
+            <Drawer.Header className="py-2">
               <Drawer.Heading>添加素材</Drawer.Heading>
             </Drawer.Header>
-            <Drawer.Body className="px-4 pb-6">
-              <div className="grid grid-cols-4 gap-4">
+            <Drawer.Body className="px-4 pb-4 pt-0">
+              <div className="grid grid-cols-4 gap-3">
                 <button
                   type="button"
-                  className="flex flex-col items-center gap-2 rounded-xl border border-neutral-300 bg-white p-4 transition-colors active:bg-neutral-100"
+                  className="flex flex-col items-center gap-1.5 rounded-xl border border-neutral-300 bg-white p-3 transition-colors active:bg-neutral-100"
                   onClick={() => {
                     onAddText()
                     onOpenChange(false)
                   }}
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black text-white">
-                    <Type size={24} strokeWidth={2} />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black text-white">
+                    <Type size={20} strokeWidth={2} />
                   </div>
                   <span className="text-xs text-neutral-600">文本</span>
                 </button>

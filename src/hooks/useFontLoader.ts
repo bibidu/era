@@ -1,7 +1,9 @@
 import { useCallback, useState } from 'react'
 import type { FontOption } from '../types'
 
-const loadedFontIds = new Set<string>(['system', 'noto', 'song', 'kai'])
+const loadedFontIds = new Set<string>([
+  'system', 'noto', 'song', 'kai', 'mono', 'courier',
+])
 
 export function useFontLoader() {
   const [loadedFonts, setLoadedFonts] = useState<Set<string>>(() => new Set(loadedFontIds))

@@ -1,8 +1,9 @@
 import { Button, Drawer, Input, Label, Slider, useOverlayState } from '@heroui/react'
+import { Italic, Strikethrough, Underline } from 'lucide-react'
 import { useEffect } from 'react'
 import { useFontLoader } from '../hooks/useFontLoader'
-import type { FontOption, TextAlign, TextElement } from '../types'
-import { ALIGN_OPTIONS } from '../types'
+import type { FontOption, TextDecoration, TextElement } from '../types'
+import { ALIGN_OPTIONS, normalizeColorHex } from '../types'
 import { FontSelect } from './FontSelect'
 
 interface TextEditorSheetProps {
@@ -39,8 +40,10 @@ export function TextEditorSheet({
     onUpdate(text.id, { fontId: font.id, fontFamily: font.fontFamily })
   }
 
-  const handleAlignChange = (align: TextAlign) => {
-    onUpdate(text.id, { textAlign: align })
+  const toggleDecoration = (decoration: TextDecoration) => {
+    onUpdate(text.id, {
+      textDecoration: text.textDecoration === decoration ? 'none' : decoration,
+    })
   }
 
   return (
@@ -52,7 +55,28 @@ export function TextEditorSheet({
             <Drawer.Header>
               <Drawer.Heading>编辑文本</Drawer.Heading>
             </Drawer.Header>
-            <Drawer.Body className="flex flex-col gap-4 overflow-y-auto px-4 pb-2">
+
+            <div className="sheet-action-bar flex gap-2 px-4 py-3">
+              <Button
+                variant="secondary"
+                className="flex-1 border-neutral-300 bg-white text-black"
+                onPress={() => {
+                  onDelete(text.id)
+                  onOpenChange(false)
+                }}
+              >
+                删除
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-1 bg-black text-white"
+                onPress={() => onOpenChange(false)}
+              >
+                完成
+              </Button>
+            </div>
+
+            <Drawer.Body className="flex flex-col gap-4 overflow-y-auto px-4 pb-4 pt-2">
               <div className="flex flex-col gap-1.5">
                 <Label>文本内容</Label>
                 <Input
@@ -76,6 +100,65 @@ export function TextEditorSheet({
               </div>
 
               <div className="flex flex-col gap-2">
+                <Label>样式</Label>
+                <div className="flex gap-2">
+                  <Button
+                    variant={text.fontWeight === 400 ? 'primary' : 'secondary'}
+                    className={`flex-1 ${text.fontWeight === 400 ? 'bg-black text-white' : 'border-neutral-300 bg-white text-black'}`}
+                    onPress={() => onUpdate(text.id, { fontWeight: 400 })}
+                  >
+                    常规
+                  </Button>
+                  <Button
+                    variant={text.fontWeight === 700 ? 'primary' : 'secondary'}
+                    className={`flex-1 ${text.fontWeight === 700 ? 'bg-black text-white' : 'border-neutral-300 bg-white text-black'}`}
+                    onPress={() => onUpdate(text.id, { fontWeight: 700 })}
+                  >
+                    粗体
+                  </Button>
+                  <Button
+                    isIconOnly
+                    variant={text.fontStyle === 'italic' ? 'primary' : 'secondary'}
+                    className={text.fontStyle === 'italic' ? 'bg-black text-white' : 'border-neutral-300 bg-white text-black'}
+                    aria-label="斜体"
+                    onPress={() =>
+                      onUpdate(text.id, {
+                        fontStyle: text.fontStyle === 'italic' ? 'normal' : 'italic',
+                      })
+                    }
+                  >
+                    <Italic size={18} />
+                  </Button>
+                  <Button
+                    isIconOnly
+                    variant={text.textDecoration === 'underline' ? 'primary' : 'secondary'}
+                    className={
+                      text.textDecoration === 'underline'
+                        ? 'bg-black text-white'
+                        : 'border-neutral-300 bg-white text-black'
+                    }
+                    aria-label="下划线"
+                    onPress={() => toggleDecoration('underline')}
+                  >
+                    <Underline size={18} />
+                  </Button>
+                  <Button
+                    isIconOnly
+                    variant={text.textDecoration === 'line-through' ? 'primary' : 'secondary'}
+                    className={
+                      text.textDecoration === 'line-through'
+                        ? 'bg-black text-white'
+                        : 'border-neutral-300 bg-white text-black'
+                    }
+                    aria-label="中划线"
+                    onPress={() => toggleDecoration('line-through')}
+                  >
+                    <Strikethrough size={18} />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
                 <Label>对齐</Label>
                 <div className="grid grid-cols-4 gap-2">
                   {ALIGN_OPTIONS.map((opt) => (
@@ -87,35 +170,11 @@ export function TextEditorSheet({
                           ? 'bg-black text-white'
                           : 'border-neutral-300 bg-white text-black'
                       }`}
-                      onPress={() => handleAlignChange(opt.id)}
+                      onPress={() => onUpdate(text.id, { textAlign: opt.id })}
                     >
                       {opt.label}
                     </Button>
                   ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label>粗细</Label>
-                <div className="flex gap-2">
-                  <Button
-                    variant={text.fontWeight === 400 ? 'primary' : 'secondary'}
-                    className={`flex-1 ${
-                      text.fontWeight === 400 ? 'bg-black text-white' : 'border-neutral-300 bg-white text-black'
-                    }`}
-                    onPress={() => onUpdate(text.id, { fontWeight: 400 })}
-                  >
-                    常规
-                  </Button>
-                  <Button
-                    variant={text.fontWeight === 700 ? 'primary' : 'secondary'}
-                    className={`flex-1 ${
-                      text.fontWeight === 700 ? 'bg-black text-white' : 'border-neutral-300 bg-white text-black'
-                    }`}
-                    onPress={() => onUpdate(text.id, { fontWeight: 700 })}
-                  >
-                    粗体
-                  </Button>
                 </div>
               </div>
 
@@ -133,9 +192,9 @@ export function TextEditorSheet({
                   onChange={(value) => onUpdate(text.id, { fontSize: value as number })}
                   className="grey-slider"
                 >
-                  <Slider.Track className="!bg-neutral-200">
-                    <Slider.Fill className="!bg-neutral-400" />
-                    <Slider.Thumb className="!border-neutral-500 !bg-neutral-600" />
+                  <Slider.Track>
+                    <Slider.Fill />
+                    <Slider.Thumb />
                   </Slider.Track>
                 </Slider>
               </div>
@@ -144,38 +203,21 @@ export function TextEditorSheet({
                 <Label>颜色</Label>
                 <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-neutral-300 px-3 py-2.5">
                   <span
-                    className="h-8 w-8 shrink-0 rounded-md border border-neutral-200"
+                    className="h-9 w-9 shrink-0 rounded-md border border-neutral-200"
                     style={{ backgroundColor: text.color }}
                   />
-                  <span className="text-sm text-neutral-700">自定义颜色</span>
+                  <span className="flex-1 font-mono text-sm text-neutral-700">
+                    {normalizeColorHex(text.color)}
+                  </span>
                   <input
                     type="color"
-                    value={text.color}
+                    value={text.color.length === 7 ? text.color : '#000000'}
                     onChange={(e) => onUpdate(text.id, { color: e.target.value })}
-                    className="ml-auto h-8 w-8 cursor-pointer border-0 bg-transparent p-0"
+                    className="sr-only"
                   />
                 </label>
               </div>
             </Drawer.Body>
-            <Drawer.Footer className="flex gap-2 px-4 pb-4">
-              <Button
-                variant="secondary"
-                className="flex-1 border-neutral-300 bg-white text-black"
-                onPress={() => {
-                  onDelete(text.id)
-                  onOpenChange(false)
-                }}
-              >
-                删除
-              </Button>
-              <Button
-                variant="primary"
-                className="flex-1 bg-black text-white"
-                onPress={() => onOpenChange(false)}
-              >
-                完成
-              </Button>
-            </Drawer.Footer>
           </Drawer.Dialog>
         </Drawer.Content>
       </Drawer.Backdrop>

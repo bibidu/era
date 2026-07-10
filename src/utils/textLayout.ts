@@ -19,6 +19,8 @@ export function getTextContentStyle(text: TextElement) {
   return {
     fontSize: text.fontSize,
     fontWeight: text.fontWeight,
+    fontStyle: text.fontStyle,
+    textDecoration: text.textDecoration,
     color: text.color,
     fontFamily: text.fontFamily,
     textAlign: (aligned ? text.textAlign : 'left') as 'left' | 'center' | 'right',
