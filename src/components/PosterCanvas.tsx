@@ -1,10 +1,12 @@
 import { useCallback, useRef } from 'react'
 import type { TextElement } from '../types'
+import { getTextStyle } from '../utils/textLayout'
 
 interface PosterCanvasProps {
   posterUrl: string | null
   texts: TextElement[]
   selectedId: string | null
+  isExporting: boolean
   onSelectText: (id: string) => void
   onUpdateTextPosition: (id: string, x: number, y: number) => void
   onUploadPoster: (file: File) => void
@@ -14,6 +16,7 @@ export function PosterCanvas({
   posterUrl,
   texts,
   selectedId,
+  isExporting,
   onSelectText,
   onUpdateTextPosition,
   onUploadPoster,
@@ -28,7 +31,11 @@ export function PosterCanvas({
   } | null>(null)
 
   const handlePointerDown = useCallback(
-    (id: string, clientX: number, clientY: number, originX: number, originY: number) => {
+    (id: string, clientX: number, clientY: number, originX: number, originY: number, aligned: boolean) => {
+      if (aligned) {
+        onSelectText(id)
+        return
+      }
       dragRef.current = { id, startX: clientX, startY: clientY, originX, originY }
       onSelectText(id)
     },
@@ -66,13 +73,14 @@ export function PosterCanvas({
       <div
         ref={canvasRef}
         id="poster-canvas"
-        className="relative w-full max-w-[420px] overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 shadow-sm"
+        className="relative w-full max-w-[420px] overflow-hidden rounded-2xl border border-neutral-300 bg-neutral-100 shadow-sm"
         style={{ aspectRatio: '3 / 4' }}
         onPointerMove={(e) => {
           if (dragRef.current) handlePointerMove(e.clientX, e.clientY)
         }}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
+        onClick={() => onSelectText('')}
       >
         {posterUrl ? (
           <img
@@ -89,7 +97,7 @@ export function PosterCanvas({
               className="hidden"
               onChange={handleFileChange}
             />
-            <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-neutral-300">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-neutral-400">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M12 16V4m0 0L8 8m4-4 4 4" />
                 <path d="M4 20h16" />
@@ -99,48 +107,44 @@ export function PosterCanvas({
           </label>
         )}
 
-        {texts.map((text) => (
-          <div
-            key={text.id}
-            className={`absolute cursor-move select-none whitespace-pre-wrap px-1 leading-tight ${
-              selectedId === text.id ? 'outline outline-2 outline-offset-1 outline-neutral-900' : ''
-            }`}
-            style={{
-              left: text.x,
-              top: text.y,
-              fontSize: text.fontSize,
-              fontWeight: text.fontWeight,
-              color: text.color,
-              fontFamily: text.fontFamily,
-              maxWidth: 'calc(100% - 16px)',
-            }}
-            onPointerDown={(e) => {
-              e.stopPropagation()
-              const target = e.currentTarget
-              const container = canvasRef.current
-              if (!container) return
-              const containerRect = container.getBoundingClientRect()
-              const targetRect = target.getBoundingClientRect()
-              handlePointerDown(
-                text.id,
-                e.clientX,
-                e.clientY,
-                targetRect.left - containerRect.left,
-                targetRect.top - containerRect.top,
-              )
-            }}
-            onClick={(e) => {
-              e.stopPropagation()
-              onSelectText(text.id)
-            }}
-          >
-            {text.content || '双击编辑'}
-          </div>
-        ))}
+        {texts.map((text) => {
+          const isSelected = selectedId === text.id
+          const aligned = text.textAlign !== 'none'
+
+          return (
+            <div
+              key={text.id}
+              className="cursor-move select-none whitespace-pre-wrap px-1 leading-tight"
+              style={getTextStyle(text, isSelected, isExporting)}
+              onPointerDown={(e) => {
+                e.stopPropagation()
+                const target = e.currentTarget
+                const container = canvasRef.current
+                if (!container) return
+                const containerRect = container.getBoundingClientRect()
+                const targetRect = target.getBoundingClientRect()
+                handlePointerDown(
+                  text.id,
+                  e.clientX,
+                  e.clientY,
+                  targetRect.left - containerRect.left,
+                  targetRect.top - containerRect.top,
+                  aligned,
+                )
+              }}
+              onClick={(e) => {
+                e.stopPropagation()
+                onSelectText(text.id)
+              }}
+            >
+              {text.content || '点击编辑'}
+            </div>
+          )
+        })}
       </div>
 
       {posterUrl && (
-        <label className="mt-3 cursor-pointer text-sm text-neutral-500 underline underline-offset-2">
+        <label className="export-hide mt-3 cursor-pointer text-sm text-neutral-500 underline underline-offset-2">
           <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
           更换海报
         </label>

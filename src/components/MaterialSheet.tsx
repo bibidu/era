@@ -30,13 +30,13 @@ export function MaterialSheet({ isOpen, onOpenChange, onAddText }: MaterialSheet
               <div className="grid grid-cols-4 gap-4">
                 <button
                   type="button"
-                  className="flex flex-col items-center gap-2 rounded-xl border border-neutral-200 bg-white p-4 transition-colors active:bg-neutral-100"
+                  className="flex flex-col items-center gap-2 rounded-xl border border-neutral-300 bg-white p-4 transition-colors active:bg-neutral-100"
                   onClick={() => {
                     onAddText()
                     onOpenChange(false)
                   }}
                 >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-900 text-white">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black text-white">
                     <Type size={24} strokeWidth={2} />
                   </div>
                   <span className="text-xs text-neutral-600">文本</span>

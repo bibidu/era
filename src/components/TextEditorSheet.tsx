@@ -1,22 +1,16 @@
-import {
-  Button,
-  Drawer,
-  Input,
-  Label,
-  ListBox,
-  Select,
-  Slider,
-  useOverlayState,
-} from '@heroui/react'
+import { Button, Drawer, Input, Label, Slider, useOverlayState } from '@heroui/react'
 import { useEffect } from 'react'
-import type { TextElement } from '../types'
-import { COLOR_PRESETS, FONT_OPTIONS } from '../types'
+import { useFontLoader } from '../hooks/useFontLoader'
+import type { FontOption, TextAlign, TextElement } from '../types'
+import { ALIGN_OPTIONS, COLOR_PRESETS } from '../types'
+import { FontPicker } from './FontPicker'
 
 interface TextEditorSheetProps {
   text: TextElement | null
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   onUpdate: (id: string, updates: Partial<TextElement>) => void
+  onApplyAlignToAll: (align: TextAlign) => void
   onDelete: (id: string) => void
 }
 
@@ -25,9 +19,11 @@ export function TextEditorSheet({
   isOpen,
   onOpenChange,
   onUpdate,
+  onApplyAlignToAll,
   onDelete,
 }: TextEditorSheetProps) {
   const state = useOverlayState({ isOpen, onOpenChange })
+  const { isFontLoaded, loadingFonts, loadFont } = useFontLoader()
 
   useEffect(() => {
     if (isOpen !== state.isOpen) {
@@ -37,11 +33,27 @@ export function TextEditorSheet({
 
   if (!text) return null
 
+  const handleFontSelect = async (font: FontOption) => {
+    if (font.source === 'google' && !isFontLoaded(font)) {
+      const ok = await loadFont(font)
+      if (!ok) return
+    }
+    onUpdate(text.id, { fontId: font.id, fontFamily: font.fontFamily })
+  }
+
+  const handleAlignChange = (align: TextAlign) => {
+    if (align === 'none') {
+      onUpdate(text.id, { textAlign: align })
+      return
+    }
+    onApplyAlignToAll(align)
+  }
+
   return (
     <Drawer state={state}>
       <Drawer.Backdrop isDismissable>
         <Drawer.Content placement="bottom">
-          <Drawer.Dialog className="max-h-[70dvh]">
+          <Drawer.Dialog className="max-h-[75dvh]">
             <Drawer.Handle />
             <Drawer.Header>
               <Drawer.Heading>编辑文本</Drawer.Heading>
@@ -54,34 +66,39 @@ export function TextEditorSheet({
                   onChange={(e) => onUpdate(text.id, { content: e.target.value })}
                   placeholder="输入文字内容"
                   fullWidth
+                  className="border-neutral-300"
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 <Label>字体</Label>
-                <Select
-                  aria-label="字体"
-                  selectedKey={FONT_OPTIONS.find((f) => f.value === text.fontFamily)?.id ?? 'system'}
-                  onSelectionChange={(key) => {
-                    const font = FONT_OPTIONS.find((f) => f.id === key)
-                    if (font) onUpdate(text.id, { fontFamily: font.value })
-                  }}
-                  fullWidth
-                >
-                  <Select.Trigger>
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      {FONT_OPTIONS.map((font) => (
-                        <ListBox.Item key={font.id} id={font.id} textValue={font.label}>
-                          {font.label}
-                        </ListBox.Item>
-                      ))}
-                    </ListBox>
-                  </Select.Popover>
-                </Select>
+                <FontPicker
+                  selectedFontId={text.fontId}
+                  isFontLoaded={isFontLoaded}
+                  isFontLoading={(id) => loadingFonts.has(id)}
+                  onSelect={handleFontSelect}
+                  onLoadFont={loadFont}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Label>对齐</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {ALIGN_OPTIONS.map((opt) => (
+                    <Button
+                      key={opt.id}
+                      variant={text.textAlign === opt.id ? 'primary' : 'secondary'}
+                      className={`min-w-0 ${
+                        text.textAlign === opt.id
+                          ? 'bg-black text-white'
+                          : 'border-neutral-300 bg-white text-black'
+                      }`}
+                      onPress={() => handleAlignChange(opt.id)}
+                    >
+                      {opt.label}
+                    </Button>
+                  ))}
+                </div>
               </div>
 
               <div className="flex flex-col gap-2">
@@ -89,14 +106,18 @@ export function TextEditorSheet({
                 <div className="flex gap-2">
                   <Button
                     variant={text.fontWeight === 400 ? 'primary' : 'secondary'}
-                    className="flex-1"
+                    className={`flex-1 ${
+                      text.fontWeight === 400 ? 'bg-black text-white' : 'border-neutral-300 bg-white text-black'
+                    }`}
                     onPress={() => onUpdate(text.id, { fontWeight: 400 })}
                   >
                     常规
                   </Button>
                   <Button
                     variant={text.fontWeight === 700 ? 'primary' : 'secondary'}
-                    className="flex-1"
+                    className={`flex-1 ${
+                      text.fontWeight === 700 ? 'bg-black text-white' : 'border-neutral-300 bg-white text-black'
+                    }`}
                     onPress={() => onUpdate(text.id, { fontWeight: 700 })}
                   >
                     粗体
@@ -134,14 +155,14 @@ export function TextEditorSheet({
                       aria-label={`颜色 ${color}`}
                       className={`h-8 w-8 rounded-full border-2 transition-transform ${
                         text.color === color
-                          ? 'scale-110 border-neutral-900'
-                          : 'border-neutral-200'
-                      }`}
+                          ? 'scale-110 border-black'
+                          : 'border-neutral-300'
+                      } ${color === '#ffffff' ? 'shadow-inner' : ''}`}
                       style={{ backgroundColor: color }}
                       onClick={() => onUpdate(text.id, { color })}
                     />
                   ))}
-                  <label className="relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-neutral-200">
+                  <label className="relative flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-neutral-300">
                     <input
                       type="color"
                       value={text.color}
@@ -156,7 +177,7 @@ export function TextEditorSheet({
             <Drawer.Footer className="flex gap-2 px-4 pb-4">
               <Button
                 variant="secondary"
-                className="flex-1"
+                className="flex-1 border-neutral-300 bg-white text-black"
                 onPress={() => {
                   onDelete(text.id)
                   onOpenChange(false)
@@ -166,7 +187,7 @@ export function TextEditorSheet({
               </Button>
               <Button
                 variant="primary"
-                className="flex-1"
+                className="flex-1 bg-black text-white"
                 onPress={() => onOpenChange(false)}
               >
                 完成
