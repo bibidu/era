@@ -47,11 +47,7 @@ body.is-dragging {
 }
 
 body.text-input-open .drawer__dialog {
-  pointer-events: none;
-}
-
-body.text-input-open .drawer__backdrop {
-  pointer-events: none;
+  visibility: hidden;
 }
 
 .grey-slider,

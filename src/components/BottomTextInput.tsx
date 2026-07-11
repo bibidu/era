@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
-import { flushSync } from 'react-dom'
+import { createPortal, flushSync } from 'react-dom'
 
 interface BottomTextInputProps {
   value: string
   placeholder?: string
   onChange: (value: string) => void
   onOpenChange?: (open: boolean) => void
+}
+
+function getOverlayContainer() {
+  return document.querySelector('.drawer__content') ?? document.body
 }
 
 export function BottomTextInput({
@@ -65,6 +69,7 @@ export function BottomTextInput({
   }
 
   const openInput = () => {
+    if (open) return
     setDraft(value)
     flushSync(() => setOpenState(true))
     focusInput()
@@ -75,37 +80,17 @@ export function BottomTextInput({
     setOpenState(false)
   }
 
-  return (
-    <>
-      <button
-        type="button"
-        onPointerDown={(e) => {
-          e.preventDefault()
-          openInput()
-        }}
-        className="min-h-[44px] w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-left text-sm text-black"
-      >
-        {value ? (
-          <span className="line-clamp-3 whitespace-pre-wrap">{value}</span>
-        ) : (
-          <span className="text-neutral-400">{placeholder}</span>
-        )}
-      </button>
-
-      {open && (
+  const overlay = open
+    ? createPortal(
         <>
           <div
-            className="fixed inset-0 z-[60] bg-black/20 pointer-events-auto"
-            onPointerDown={(e) => {
-              e.preventDefault()
-              commit()
-            }}
+            className="pointer-events-auto fixed inset-0 z-[60] bg-black/20"
+            onClick={commit}
             aria-hidden
           />
           <div
             ref={panelRef}
             className="pointer-events-auto fixed inset-x-0 bottom-0 z-[70] border-t border-neutral-200 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.12)]"
-            onPointerDown={(e) => e.stopPropagation()}
           >
             <textarea
               ref={inputRef}
@@ -113,7 +98,6 @@ export function BottomTextInput({
               onChange={(e) => setDraft(e.target.value)}
               placeholder={placeholder}
               rows={3}
-              autoFocus
               inputMode="text"
               enterKeyHint="done"
               autoComplete="off"
@@ -121,7 +105,6 @@ export function BottomTextInput({
               spellCheck
               className="w-full resize-none rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-base text-black outline-none"
               style={{ fontSize: '16px', WebkitUserSelect: 'text', userSelect: 'text', touchAction: 'manipulation' }}
-              onPointerDown={(e) => e.stopPropagation()}
             />
             <button
               type="button"
@@ -131,8 +114,31 @@ export function BottomTextInput({
               完成输入
             </button>
           </div>
-        </>
-      )}
+        </>,
+        getOverlayContainer(),
+      )
+    : null
+
+  return (
+    <>
+      <textarea
+        readOnly
+        value={value}
+        placeholder={placeholder}
+        rows={value ? Math.min(3, Math.max(1, value.split('\n').length)) : 1}
+        onClick={(e) => {
+          e.stopPropagation()
+          openInput()
+        }}
+        onFocus={(e) => {
+          e.target.blur()
+          openInput()
+        }}
+        aria-label="文本内容"
+        className="min-h-[44px] w-full cursor-text resize-none rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-left text-sm text-black outline-none placeholder:text-neutral-400"
+        style={{ fontSize: '16px', touchAction: 'manipulation' }}
+      />
+      {overlay}
     </>
   )
 }
