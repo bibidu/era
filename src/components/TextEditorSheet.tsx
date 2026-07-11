@@ -62,6 +62,7 @@ export function TextEditorSheet({
   const [fontError, setFontError] = useState<string | null>(null)
   const [fontSizeDraft, setFontSizeDraft] = useState(24)
   const [topDraft, setTopDraft] = useState(0)
+  const [keyboardInset, setKeyboardInset] = useState(0)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
   const focusTimerRef = useRef<number | null>(null)
@@ -125,9 +126,8 @@ export function TextEditorSheet({
     if (!content || !viewport) return
 
     const pinSheet = () => {
-      const keyboardOffset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
-      content.style.transform = 'translate3d(0, 0, 0)'
-      content.style.bottom = `${keyboardOffset}px`
+      const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+      setKeyboardInset(inset)
     }
 
     pinSheet()
@@ -136,8 +136,7 @@ export function TextEditorSheet({
     return () => {
       viewport.removeEventListener('resize', pinSheet)
       viewport.removeEventListener('scroll', pinSheet)
-      content.style.transform = ''
-      content.style.bottom = ''
+      setKeyboardInset(0)
     }
   }, [isOpen])
 
@@ -183,16 +182,27 @@ export function TextEditorSheet({
   }
 
   const handleTabSelect = (tab: EditorTab) => {
+    if (tab !== 'keyboard' && inputRef.current) {
+      inputRef.current.blur()
+    }
     setActiveTab(tab)
     if (tab === 'keyboard') focusKeyboardInput()
   }
+
+  const isKeyboardTab = activeTab === 'keyboard'
 
   return (
     <Drawer state={state}>
       <Drawer.Backdrop isDismissable={false}>
         <Drawer.Content placement="bottom" className="component-library-content">
-          <Drawer.Dialog className="component-library flex h-[min(520px,68dvh)] max-h-[min(520px,68dvh)] flex-col bg-[#1a1a1a] text-white">
-            <div ref={dialogRef} className="flex h-full min-h-0 flex-col">
+          <Drawer.Dialog
+            className={`component-library flex flex-col bg-[#1a1a1a] text-white ${
+              isKeyboardTab
+                ? 'component-library--keyboard'
+                : 'h-[min(520px,68dvh)] max-h-[min(520px,68dvh)]'
+            }`}
+          >
+            <div ref={dialogRef} className="flex min-h-0 flex-col">
               <div className="component-library-header flex shrink-0 items-center justify-between px-4 py-2">
                 <h2 className="text-sm font-medium text-white">组件库</h2>
                 <button
@@ -229,20 +239,27 @@ export function TextEditorSheet({
                 })}
               </div>
 
-              <Drawer.Body className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
-                <div className={activeTab === 'keyboard' ? 'flex min-h-[120px] flex-1 flex-col' : 'hidden'}>
+              {isKeyboardTab ? (
+                <div
+                  className="component-keyboard-bar shrink-0 px-4 py-3"
+                  style={{
+                    paddingBottom: keyboardInset > 0
+                      ? '0.75rem'
+                      : 'max(0.75rem, env(safe-area-inset-bottom))',
+                  }}
+                >
                   <textarea
                     ref={inputRef}
                     value={text.content}
                     onChange={(e) => onUpdate(text.id, { content: e.target.value })}
                     placeholder="输入文字"
-                    rows={4}
+                    rows={3}
                     inputMode="text"
                     enterKeyHint="done"
                     autoComplete="off"
                     autoCorrect="on"
                     spellCheck
-                    className="w-full flex-1 resize-none rounded-xl border border-neutral-600 bg-[#2a2a2a] px-3 py-3 text-base text-white outline-none placeholder:text-neutral-500"
+                    className="component-keyboard-input w-full resize-none rounded-xl border border-neutral-600 bg-[#2a2a2a] px-3 py-3 text-base text-white outline-none placeholder:text-neutral-500"
                     style={{
                       fontSize: '16px',
                       WebkitUserSelect: 'text',
@@ -251,7 +268,8 @@ export function TextEditorSheet({
                     }}
                   />
                 </div>
-
+              ) : (
+                <Drawer.Body className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
                 {activeTab === 'font' && (
                   <div className="flex flex-col gap-2">
                     <FontGrid
@@ -447,7 +465,8 @@ export function TextEditorSheet({
                     </section>
                   </div>
                 )}
-              </Drawer.Body>
+                </Drawer.Body>
+              )}
             </div>
           </Drawer.Dialog>
         </Drawer.Content>

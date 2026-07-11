@@ -106,6 +106,20 @@ body.text-input-open .drawer__dialog {
 }
 
 
+.component-library--keyboard {
+  height: auto;
+  max-height: none;
+}
+
+.component-keyboard-bar {
+  border-top: 1px solid #404040;
+}
+
+.component-keyboard-input {
+  min-height: 88px;
+  max-height: 120px;
+}
+
 .component-library-content {
   position: fixed !important;
   bottom: 0 !important;
