@@ -4,12 +4,8 @@ import {
   AlignLeft,
   AlignRight,
   Bold,
-  Check,
   Italic,
-  Keyboard,
-  Palette,
   Strikethrough,
-  Type,
   Underline,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -22,14 +18,7 @@ import { getPresetUpdates } from '../utils/textLayout'
 import { FontGrid } from './FontGrid'
 import { GreySlider } from './GreySlider'
 import { KeyboardEditorDock } from './KeyboardEditorDock'
-
-type EditorTab = 'keyboard' | 'font' | 'style'
-
-const PANEL_TABS: { id: EditorTab; label: string; icon: typeof Keyboard }[] = [
-  { id: 'keyboard', label: '键盘', icon: Keyboard },
-  { id: 'font', label: '字体', icon: Type },
-  { id: 'style', label: '样式', icon: Palette },
-]
+import { ComponentLibraryHeader, type EditorTab } from './ComponentLibraryHeader'
 
 interface TextEditorSheetProps {
   text: TextElement | null
@@ -147,6 +136,7 @@ export function TextEditorSheet({
       {isKeyboardTab && (
         <KeyboardEditorDock
           text={text}
+          activeTab={activeTab}
           onUpdate={onUpdate}
           onTabSelect={handleTabSelect}
           onCommit={handleCommit}
@@ -157,41 +147,11 @@ export function TextEditorSheet({
         <Drawer.Content placement="bottom" className="component-library-content">
           <Drawer.Dialog className="component-library flex h-[min(520px,68dvh)] max-h-[min(520px,68dvh)] flex-col bg-white text-neutral-900">
             <div className="flex min-h-0 flex-col">
-              <div className="component-library-header flex shrink-0 items-center justify-between px-4 py-2">
-                <h2 className="text-sm font-medium text-neutral-900">组件库</h2>
-                <button
-                  type="button"
-                  aria-label="完成"
-                  className="component-done-btn"
-                  onClick={handleCommit}
-                >
-                  <Check size={15} strokeWidth={2} />
-                </button>
-              </div>
-
-              <div className="flex shrink-0 border-b border-neutral-200 px-2">
-                {PANEL_TABS.map((tab) => {
-                  const Icon = tab.icon
-                  const selected = activeTab === tab.id
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      className={`component-tab flex flex-1 flex-row items-center justify-center gap-1.5 py-2 ${
-                        selected ? 'component-tab--active' : 'text-neutral-500'
-                      }`}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleTabSelect(tab.id)
-                      }}
-                    >
-                      <Icon size={16} strokeWidth={1.5} />
-                      <span className="text-xs">{tab.label}</span>
-                    </button>
-                  )
-                })}
-              </div>
+              <ComponentLibraryHeader
+                activeTab={activeTab}
+                onTabSelect={handleTabSelect}
+                onCommit={handleCommit}
+              />
 
               <Drawer.Body className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
                 {activeTab === 'font' && (
