@@ -431,7 +431,11 @@ export function TextEditorSheet({
                         maxValue={maxTop}
                         step={1}
                         value={topDraft}
-                        onChange={(value) => setTopDraft(sliderValue(value))}
+                        onChange={(value) => {
+                          const v = sliderValue(value)
+                          setTopDraft(v)
+                          commitTop(v)
+                        }}
                         onChangeEnd={(value) => commitTop(sliderValue(value))}
                         className="dark-slider"
                       >
