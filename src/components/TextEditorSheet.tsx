@@ -1,6 +1,6 @@
 import { Button, Drawer, Input, Label, Slider, useOverlayState } from '@heroui/react'
 import { Italic, Strikethrough, Underline } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useFontLoader } from '../hooks/useFontLoader'
 import type { FontOption, TextDecoration, TextElement } from '../types'
 import { ALIGN_OPTIONS, normalizeColorHex } from '../types'
@@ -32,6 +32,7 @@ export function TextEditorSheet({
     },
   })
   const { isFontLoaded, loadingFonts, loadFont } = useFontLoader()
+  const [textInputOpen, setTextInputOpen] = useState(false)
 
   useEffect(() => {
     if (isOpen !== state.isOpen) {
@@ -66,7 +67,7 @@ export function TextEditorSheet({
 
   return (
     <Drawer state={state}>
-      <Drawer.Backdrop isDismissable>
+      <Drawer.Backdrop isDismissable={!textInputOpen}>
         <Drawer.Content placement="bottom">
           <Drawer.Dialog className="flex max-h-[75dvh] flex-col">
             <Drawer.Handle />
@@ -81,6 +82,7 @@ export function TextEditorSheet({
                   value={text.content}
                   placeholder="点击输入文字内容"
                   onChange={(content) => onUpdate(text.id, { content })}
+                  onOpenChange={setTextInputOpen}
                 />
               </div>
 
