@@ -8,6 +8,13 @@ import type { TextElement } from './types'
 import { FONT_OPTIONS } from './data/fonts'
 import { exportPosterToImage, savePosterBlob } from './utils/exportPoster'
 
+function cleanupEditorUi() {
+  document.body.classList.remove('keyboard-dock-open')
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur()
+  }
+}
+
 function createTextElement(): TextElement {
   return {
     id: crypto.randomUUID(),
@@ -147,6 +154,7 @@ function App() {
     const rect = canvasEl.getBoundingClientRect()
     if (rect.width === 0 || rect.height === 0) return
 
+    cleanupEditorUi()
     setSaving(true)
     setSaveMessage(null)
     setEditorOpen(false)
@@ -165,6 +173,7 @@ function App() {
     } finally {
       setIsExporting(false)
       setSaving(false)
+      cleanupEditorUi()
       setTimeout(() => setSaveMessage(null), 2500)
     }
   }, [posterUrl, texts])

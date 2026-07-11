@@ -3,7 +3,11 @@ import { H_PADDING } from '../types'
 import { FONT_OPTIONS } from '../data/fonts'
 import { ensureFontReady } from './fontLoad'
 import { formatCanvasFont } from './pixelFont'
+import { withTimeout } from './async'
 import { resolvePresetColors } from './textLayout'
+
+const EXPORT_FONT_TIMEOUT_MS = 8000
+const FONTS_READY_TIMEOUT_MS = 3000
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -159,13 +163,19 @@ export async function exportPosterToImage(
   containerWidth: number,
   containerHeight: number,
 ): Promise<Blob> {
+  const fontIds = new Set(texts.map((t) => t.fontId))
   await Promise.all(
-    texts.map(async (text) => {
-      const font = FONT_OPTIONS.find((f) => f.id === text.fontId)
-      if (font) await ensureFontReady(font, text.content || font.sample)
+    [...fontIds].map(async (fontId) => {
+      const font = FONT_OPTIONS.find((f) => f.id === fontId)
+      if (!font || font.source === 'system') return
+      const sample = texts
+        .filter((t) => t.fontId === fontId)
+        .map((t) => t.content)
+        .join('')
+      await withTimeout(ensureFontReady(font, sample || font.sample), EXPORT_FONT_TIMEOUT_MS, true)
     }),
   )
-  await document.fonts.ready
+  await withTimeout(document.fonts.ready, FONTS_READY_TIMEOUT_MS, undefined)
 
   const img = await loadImage(posterUrl)
   const scale = 2
@@ -205,13 +215,21 @@ export async function savePosterBlob(blob: Blob, filename: string): Promise<void
 
   if (navigator.share && navigator.canShare?.({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], title: '海报' })
+      await withTimeout(
+        navigator.share({ files: [file], title: '海报' }),
+        12000,
+        undefined,
+      )
       return
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
     }
   }
 
+  downloadBlob(blob, filename)
+}
+
+function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url

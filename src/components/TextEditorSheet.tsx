@@ -97,7 +97,7 @@ export function TextEditorSheet({
     loadFont(font, text.content || '你好')
   }, [text?.content, text?.fontId, loadFont, text])
 
-  if (!text) return null
+  if (!isOpen || !text) return null
 
   const maxTop = Math.max(0, Math.round(canvasHeight - 24))
   const isKeyboardTab = activeTab === 'keyboard'
