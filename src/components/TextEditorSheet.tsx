@@ -34,6 +34,7 @@ export function TextEditorSheet({
   const { isFontLoaded, loadingFonts, loadFont } = useFontLoader()
   const [textInputOpen, setTextInputOpen] = useState(false)
   const [textDraft, setTextDraft] = useState('')
+  const [fontError, setFontError] = useState<string | null>(null)
 
   useEffect(() => {
     if (isOpen !== state.isOpen) {
@@ -60,8 +61,12 @@ export function TextEditorSheet({
   const handleFontSelect = async (font: FontOption) => {
     if ((font.source === 'google' || font.source === 'pixel') && !isFontLoaded(font)) {
       const ok = await loadFont(font)
-      if (!ok) return
+      if (!ok) {
+        setFontError(`字体「${font.label}」加载失败，请重试`)
+        return
+      }
     }
+    setFontError(null)
     onUpdate(text.id, { fontId: font.id, fontFamily: font.fontFamily })
   }
 
@@ -133,6 +138,7 @@ export function TextEditorSheet({
                   onSelect={handleFontSelect}
                   onLoadFont={loadFont}
                 />
+                {fontError && <p className="text-xs text-red-600">{fontError}</p>}
               </div>
 
               <div className="flex flex-col gap-2">

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import type { FontOption } from '../data/fonts'
-import { ensurePixelFontLoaded, markPixelFontLoaded } from '../utils/pixelFont'
+import { ensurePixelFontLoaded, isPixelFontLoaded } from '../utils/pixelFont'
 
 const loadedFontIds = new Set<string>([
   'system', 'noto', 'song', 'kai', 'mono', 'courier',
@@ -8,30 +8,27 @@ const loadedFontIds = new Set<string>([
   'georgia', 'times', 'verdana',
 ])
 
-async function loadPixelFont(font: FontOption): Promise<boolean> {
-  const ok = await ensurePixelFontLoaded(font)
-  if (ok) markPixelFontLoaded(font)
-  return ok
-}
-
 export function useFontLoader() {
   const [loadedFonts, setLoadedFonts] = useState<Set<string>>(() => new Set(loadedFontIds))
   const [loadingFonts, setLoadingFonts] = useState<Set<string>>(() => new Set())
 
   const isFontLoaded = useCallback(
-    (font: FontOption) => font.source === 'system' || loadedFonts.has(font.id),
+    (font: FontOption) => {
+      if (font.source === 'system') return true
+      return loadedFonts.has(font.id) || isPixelFontLoaded(font.id)
+    },
     [loadedFonts],
   )
 
   const loadFont = useCallback(async (font: FontOption): Promise<boolean> => {
-    if (font.source === 'system' || loadedFonts.has(font.id)) return true
+    if (font.source === 'system' || isFontLoaded(font)) return true
     if (loadingFonts.has(font.id)) return false
 
     setLoadingFonts((prev) => new Set(prev).add(font.id))
 
     try {
       if (font.source === 'pixel') {
-        const ok = await loadPixelFont(font)
+        const ok = await ensurePixelFontLoaded(font)
         if (!ok) return false
       } else if (font.source === 'google' && font.googleFamily) {
         const href = `https://fonts.googleapis.com/css2?family=${font.googleFamily}&display=swap`
@@ -67,7 +64,7 @@ export function useFontLoader() {
         return next
       })
     }
-  }, [loadedFonts, loadingFonts])
+  }, [isFontLoaded, loadingFonts])
 
   return { loadedFonts, loadingFonts, isFontLoaded, loadFont }
 }

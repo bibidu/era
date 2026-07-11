@@ -1,7 +1,7 @@
 import type { TextElement } from '../types'
 import { H_PADDING } from '../types'
 import { FONT_OPTIONS } from '../data/fonts'
-import { ensurePixelFontLoaded } from './pixelFont'
+import { ensurePixelFontLoaded, formatCanvasFont } from './pixelFont'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -45,9 +45,8 @@ function drawTextElement(
 ) {
   const aligned = text.textAlign !== 'none'
   const fontSize = text.fontSize * scaleX
-  const fontFamily = text.fontFamily
   const fontStyle = text.fontStyle === 'italic' ? 'italic' : 'normal'
-  ctx.font = `${fontStyle} ${text.fontWeight} ${fontSize}px ${fontFamily}`
+  ctx.font = formatCanvasFont(text.fontFamily, fontStyle, text.fontWeight, fontSize)
   ctx.fillStyle = text.color
   ctx.textBaseline = 'top'
 

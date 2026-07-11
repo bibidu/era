@@ -1,10 +1,5 @@
 export type FontSource = 'system' | 'google' | 'pixel'
 
-export interface FontFaceDef {
-  family: string
-  url: string
-}
-
 export interface FontOption {
   id: string
   label: string
@@ -12,29 +7,26 @@ export interface FontOption {
   sample: string
   source: FontSource
   googleFamily?: string
-  fontFaces?: FontFaceDef[]
+  pixelFamily?: string
+  pixelFiles?: { zh: string; latin: string }
 }
-
-const PIXEL_CDN = 'https://fusion-pixel-font.takwolf.com'
 
 function createPixelFont(
   id: string,
   label: string,
-  size: '8px' | '10px' | '12px',
-  mode: 'proportional' | 'monospaced',
+  displayFamily: string,
+  zhFile: string,
+  latinFile: string,
   sample: string,
 ): FontOption {
-  const base = `fusion-pixel-${size}-${mode}`
   return {
     id,
     label,
-    fontFamily: `${base}-zh_hans, ${base}-latin, monospace`,
+    fontFamily: `'${displayFamily}', monospace`,
     sample,
     source: 'pixel',
-    fontFaces: [
-      { family: `${base}-zh_hans`, url: `${PIXEL_CDN}/${base}-zh_hans.otf.woff2` },
-      { family: `${base}-latin`, url: `${PIXEL_CDN}/${base}-latin.otf.woff2` },
-    ],
+    pixelFamily: displayFamily,
+    pixelFiles: { zh: zhFile, latin: latinFile },
   }
 }
 
@@ -64,10 +56,38 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: 'zhi-mang', label: '志芒行书', fontFamily: '"Zhi Mang Xing", cursive', sample: '志芒行书 Aa', source: 'google', googleFamily: 'Zhi+Mang+Xing' },
   { id: 'yuji-mai', label: '佑字麦', fontFamily: '"Yuji Mai", serif', sample: '佑字麦 Aa', source: 'google', googleFamily: 'Yuji+Mai' },
   { id: 'dotgothic', label: '点阵哥特', fontFamily: '"DotGothic16", sans-serif', sample: '点阵哥特 Aa', source: 'google', googleFamily: 'DotGothic16' },
-  createPixelFont('fusion-pixel-8', '像素8点', '8px', 'proportional', '像素8 文字'),
-  createPixelFont('fusion-pixel-10', '像素10点', '10px', 'proportional', '像素10 文字'),
-  createPixelFont('fusion-pixel-12', '像素12点', '12px', 'proportional', '像素12 文字'),
-  createPixelFont('fusion-pixel-12-mono', '像素12等宽', '12px', 'monospaced', '像素等宽 01'),
+  createPixelFont(
+    'fusion-pixel-8',
+    '像素8点',
+    'EraPixel8',
+    'fusion-pixel-8px-proportional-zh_hans.otf.woff2',
+    'fusion-pixel-8px-proportional-latin.otf.woff2',
+    '像素8 文字',
+  ),
+  createPixelFont(
+    'fusion-pixel-10',
+    '像素10点',
+    'EraPixel10',
+    'fusion-pixel-10px-proportional-zh_hans.otf.woff2',
+    'fusion-pixel-10px-proportional-latin.otf.woff2',
+    '像素10 文字',
+  ),
+  createPixelFont(
+    'fusion-pixel-12',
+    '像素12点',
+    'EraPixel12',
+    'fusion-pixel-12px-proportional-zh_hans.otf.woff2',
+    'fusion-pixel-12px-proportional-latin.otf.woff2',
+    '像素12 文字',
+  ),
+  createPixelFont(
+    'fusion-pixel-12-mono',
+    '像素12等宽',
+    'EraPixel12Mono',
+    'fusion-pixel-12px-monospaced-zh_hans.otf.woff2',
+    'fusion-pixel-12px-monospaced-latin.otf.woff2',
+    '像素等宽 01',
+  ),
 
   { id: 'inter', label: 'Inter', fontFamily: 'Inter, sans-serif', sample: 'Inter Aa', source: 'google', googleFamily: 'Inter:wght@400;700' },
   { id: 'roboto', label: 'Roboto', fontFamily: 'Roboto, sans-serif', sample: 'Roboto Aa', source: 'google', googleFamily: 'Roboto:wght@400;700' },
