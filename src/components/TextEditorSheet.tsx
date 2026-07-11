@@ -6,10 +6,12 @@ import type { FontOption, TextDecoration, TextElement } from '../types'
 import { ALIGN_OPTIONS, normalizeColorHex } from '../types'
 import { FONT_COUNT } from '../data/fonts'
 import { FontSelect } from './FontSelect'
+import { BottomTextInput } from './BottomTextInput'
 
 interface TextEditorSheetProps {
   text: TextElement | null
   isOpen: boolean
+  canvasHeight: number
   onClose: (committed: boolean) => void
   onUpdate: (id: string, updates: Partial<TextElement>) => void
   onDelete: (id: string) => void
@@ -18,6 +20,7 @@ interface TextEditorSheetProps {
 export function TextEditorSheet({
   text,
   isOpen,
+  canvasHeight,
   onClose,
   onUpdate,
   onDelete,
@@ -38,8 +41,10 @@ export function TextEditorSheet({
 
   if (!text) return null
 
+  const maxTop = Math.max(0, Math.round(canvasHeight - 24))
+
   const handleFontSelect = async (font: FontOption) => {
-    if (font.source === 'google' && !isFontLoaded(font)) {
+    if ((font.source === 'google' || font.source === 'fontsource') && !isFontLoaded(font)) {
       const ok = await loadFont(font)
       if (!ok) return
     }
@@ -50,6 +55,13 @@ export function TextEditorSheet({
     onUpdate(text.id, {
       textDecoration: text.textDecoration === decoration ? 'none' : decoration,
     })
+  }
+
+  const handleTopChange = (raw: string) => {
+    const parsed = Number.parseInt(raw, 10)
+    if (Number.isNaN(parsed)) return
+    const y = Math.min(Math.max(0, parsed), maxTop)
+    onUpdate(text.id, { y, textAlign: 'none' })
   }
 
   return (
@@ -65,12 +77,23 @@ export function TextEditorSheet({
             <Drawer.Body className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-2 pt-2">
               <div className="flex flex-col gap-1.5">
                 <Label>文本内容</Label>
-                <Input
+                <BottomTextInput
                   value={text.content}
-                  onChange={(e) => onUpdate(text.id, { content: e.target.value })}
-                  placeholder="输入文字内容"
+                  placeholder="点击输入文字内容"
+                  onChange={(content) => onUpdate(text.id, { content })}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label>距顶部（px）</Label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={String(Math.round(text.y))}
+                  onChange={(e) => handleTopChange(e.target.value)}
                   fullWidth
                   className="border-neutral-300"
+                  aria-label="距顶部距离"
                 />
               </div>
 

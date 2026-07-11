@@ -34,6 +34,7 @@ function App() {
   const [saving, setSaving] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
+  const [canvasHeight, setCanvasHeight] = useState(560)
   const posterUrlRef = useRef<string | null>(null)
   const editorSnapshotRef = useRef<TextElement | null>(null)
   const isNewTextRef = useRef(false)
@@ -127,8 +128,14 @@ function App() {
 
   const handleUpdatePosition = useCallback((id: string, x: number, y: number) => {
     setTexts((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, x, y, textAlign: 'none' as const } : t)),
+      prev.map((t) =>
+        t.id === id ? { ...t, x, y: Math.round(y), textAlign: 'none' as const } : t,
+      ),
     )
+  }, [])
+
+  const handleCanvasResize = useCallback((_width: number, height: number) => {
+    setCanvasHeight(height)
   }, [])
 
   const handleDeleteText = useCallback((id: string) => {
@@ -185,6 +192,7 @@ function App() {
         onOpenConfig={handleOpenConfig}
         onUpdateTextPosition={handleUpdatePosition}
         onUploadPoster={handleUploadPoster}
+        onCanvasResize={handleCanvasResize}
       />
 
       <footer className="sticky bottom-0 border-t border-neutral-200 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
@@ -222,6 +230,7 @@ function App() {
       <TextEditorSheet
         text={selectedText}
         isOpen={editorOpen}
+        canvasHeight={canvasHeight}
         onClose={handleEditorClose}
         onUpdate={handleUpdateText}
         onDelete={handleDeleteText}

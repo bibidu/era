@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Settings2 } from 'lucide-react'
 import type { TextElement } from '../types'
 import { getTextContentStyle, getWrapperStyle } from '../utils/textLayout'
@@ -19,6 +19,7 @@ interface PosterCanvasProps {
   onOpenConfig: (id: string) => void
   onUpdateTextPosition: (id: string, x: number, y: number) => void
   onUploadPoster: (file: File) => void
+  onCanvasResize?: (width: number, height: number) => void
 }
 
 export function PosterCanvas({
@@ -30,6 +31,7 @@ export function PosterCanvas({
   onOpenConfig,
   onUpdateTextPosition,
   onUploadPoster,
+  onCanvasResize,
 }: PosterCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{
@@ -48,6 +50,18 @@ export function PosterCanvas({
   const pointerPosRef = useRef({ x: 0, y: 0 })
   const listenersRef = useRef<(() => void) | null>(null)
 
+  useEffect(() => {
+    const el = canvasRef.current
+    if (!el || !onCanvasResize) return
+
+    const report = () => onCanvasResize(el.clientWidth, el.clientHeight)
+    report()
+
+    const ro = new ResizeObserver(report)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [onCanvasResize, posterUrl])
+
   const handlePointerMove = useCallback(
     (clientX: number, clientY: number) => {
       const drag = dragRef.current
@@ -59,7 +73,7 @@ export function PosterCanvas({
       const dy = clientY - drag.startY
       const x = Math.min(Math.max(drag.originX + dx, 0), rect.width - 24)
       const y = Math.min(Math.max(drag.originY + dy, 0), rect.height - 24)
-      onUpdateTextPosition(drag.id, x, y)
+      onUpdateTextPosition(drag.id, x, Math.round(y))
     },
     [onUpdateTextPosition],
   )

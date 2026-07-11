@@ -18,12 +18,20 @@ export function useFontLoader() {
 
   const loadFont = useCallback(async (font: FontOption): Promise<boolean> => {
     if (font.source === 'system' || loadedFonts.has(font.id)) return true
-    if (!font.googleFamily || loadingFonts.has(font.id)) return false
+    if (loadingFonts.has(font.id)) return false
+
+    const href =
+      font.source === 'google' && font.googleFamily
+        ? `https://fonts.googleapis.com/css2?family=${font.googleFamily}&display=swap`
+        : font.source === 'fontsource' && font.stylesheetUrl
+          ? font.stylesheetUrl
+          : null
+
+    if (!href) return false
 
     setLoadingFonts((prev) => new Set(prev).add(font.id))
 
     try {
-      const href = `https://fonts.googleapis.com/css2?family=${font.googleFamily}&display=swap`
       const existing = document.querySelector(`link[data-font-id="${font.id}"]`)
       if (!existing) {
         const link = document.createElement('link')

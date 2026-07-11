@@ -47,7 +47,7 @@ export function FontSelect({
             {(font) => {
               const loaded = isFontLoaded(font)
               const loading = isFontLoading(font.id)
-              const needsCloud = font.source === 'google' && !loaded
+              const needsCloud = (font.source === 'google' || font.source === 'fontsource') && !loaded
 
               return (
                 <ListBox.Item
