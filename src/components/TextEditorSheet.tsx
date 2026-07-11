@@ -158,10 +158,10 @@ export function TextEditorSheet({
 
       {!isKeyboardTab && (
         <Drawer.Content placement="bottom" className="component-library-content">
-          <Drawer.Dialog className="component-library flex h-[min(520px,68dvh)] max-h-[min(520px,68dvh)] flex-col bg-[#1a1a1a] text-white">
+          <Drawer.Dialog className="component-library flex h-[min(520px,68dvh)] max-h-[min(520px,68dvh)] flex-col bg-white text-neutral-900">
             <div className="flex min-h-0 flex-col">
               <div className="component-library-header flex shrink-0 items-center justify-between px-4 py-2">
-                <h2 className="text-sm font-medium text-white">组件库</h2>
+                <h2 className="text-sm font-medium text-neutral-900">组件库</h2>
                 <button
                   type="button"
                   aria-label="完成"
@@ -172,7 +172,7 @@ export function TextEditorSheet({
                 </button>
               </div>
 
-              <div className="flex shrink-0 border-b border-neutral-700 px-2">
+              <div className="flex shrink-0 border-b border-neutral-200 px-2">
                 {PANEL_TABS.map((tab) => {
                   const Icon = tab.icon
                   const selected = activeTab === tab.id
@@ -181,7 +181,7 @@ export function TextEditorSheet({
                       key={tab.id}
                       type="button"
                       className={`component-tab flex flex-1 flex-row items-center justify-center gap-1.5 py-2 ${
-                        selected ? 'component-tab--active' : 'text-neutral-400'
+                        selected ? 'component-tab--active' : 'text-neutral-500'
                       }`}
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
@@ -206,14 +206,14 @@ export function TextEditorSheet({
                       onSelect={handleFontSelect}
                       onLoadFont={loadFont}
                     />
-                    {fontError && <p className="text-xs text-red-400">{fontError}</p>}
+                    {fontError && <p className="text-xs text-red-500">{fontError}</p>}
                   </div>
                 )}
 
                 {activeTab === 'style' && (
                   <div className="flex flex-col gap-5">
                     <section>
-                      <p className="mb-2.5 text-sm text-neutral-300">颜色</p>
+                      <p className="mb-2.5 text-sm text-neutral-600">颜色</p>
                       <div className="component-scroll-row flex gap-3 overflow-x-auto py-1">
                         {PRESET_COLORS.map((color) => {
                           const selected = text.color.toUpperCase() === color.toUpperCase()
@@ -236,7 +236,7 @@ export function TextEditorSheet({
                     </section>
 
                     <section>
-                      <p className="mb-2.5 text-sm text-neutral-300">基础样式</p>
+                      <p className="mb-2.5 text-sm text-neutral-600">基础样式</p>
                       <div className="component-scroll-row component-style-row flex gap-2 overflow-x-auto py-1">
                         {STYLE_PRESETS.map((preset) => {
                           const selected = text.textStylePreset === preset.id
@@ -252,7 +252,7 @@ export function TextEditorSheet({
                                 backgroundColor: preset.previewBg ?? 'transparent',
                                 border: preset.previewBorder,
                                 WebkitTextStroke:
-                                  preset.id === 'outline' ? '1.5px #fff' : undefined,
+                                  preset.id === 'outline' ? '1.5px #000' : undefined,
                               }}
                               onClick={() => onUpdate(text.id, getPresetUpdates(preset.id))}
                             >
@@ -264,7 +264,7 @@ export function TextEditorSheet({
                     </section>
 
                     <section>
-                      <p className="mb-2.5 text-sm text-neutral-300">文字修饰</p>
+                      <p className="mb-2.5 text-sm text-neutral-600">文字修饰</p>
                       <div className="flex gap-2">
                         <button
                           type="button"
@@ -313,7 +313,7 @@ export function TextEditorSheet({
                     </section>
 
                     <section>
-                      <p className="mb-2.5 text-sm text-neutral-300">排列</p>
+                      <p className="mb-2.5 text-sm text-neutral-600">排列</p>
                       <div className="flex gap-2">
                         {[
                           { id: 'left' as const, icon: AlignLeft },
@@ -341,8 +341,8 @@ export function TextEditorSheet({
 
                     <section>
                       <div className="mb-2 flex items-center justify-between">
-                        <Label className="text-sm text-neutral-300">字号</Label>
-                        <span className="text-sm text-neutral-400">{fontSizeDraft}px</span>
+                        <Label className="text-sm text-neutral-600">字号</Label>
+                        <span className="text-sm text-neutral-500">{fontSizeDraft}px</span>
                       </div>
                       <Slider
                         aria-label="字号"
@@ -356,7 +356,7 @@ export function TextEditorSheet({
                           onUpdate(text.id, { fontSize: Math.min(72, Math.max(12, Math.round(v))) })
                         }}
                         onChangeEnd={(value) => commitFontSize(sliderValue(value))}
-                        className="dark-slider"
+                        className="grey-slider"
                       >
                         <Slider.Track>
                           <Slider.Fill />
@@ -367,8 +367,8 @@ export function TextEditorSheet({
 
                     <section>
                       <div className="mb-2 flex items-center justify-between">
-                        <Label className="text-sm text-neutral-300">距顶部</Label>
-                        <span className="text-sm text-neutral-400">{topDraft}px</span>
+                        <Label className="text-sm text-neutral-600">距顶部</Label>
+                        <span className="text-sm text-neutral-500">{topDraft}px</span>
                       </div>
                       <Slider
                         aria-label="距顶部"
@@ -382,7 +382,7 @@ export function TextEditorSheet({
                           commitTop(v)
                         }}
                         onChangeEnd={(value) => commitTop(sliderValue(value))}
-                        className="dark-slider"
+                        className="grey-slider"
                       >
                         <Slider.Track>
                           <Slider.Fill />

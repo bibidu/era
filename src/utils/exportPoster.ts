@@ -60,39 +60,122 @@ function drawRoundRect(
   ctx.rect(x, y, w, h)
 }
 
+const PRESET_PAD_X = 8
+const PRESET_PAD_Y = 2
+
+interface LineLayout {
+  line: string
+  x: number
+  y: number
+  left: number
+  right: number
+}
+
+function measureLineExtents(ctx: CanvasRenderingContext2D, line: string) {
+  const metrics = ctx.measureText(line)
+  const left = metrics.actualBoundingBoxLeft ?? 0
+  const right = metrics.actualBoundingBoxRight ?? metrics.width
+  return { left, right, width: left + right }
+}
+
+function buildLineLayouts(
+  ctx: CanvasRenderingContext2D,
+  text: TextElement,
+  lines: string[],
+  fontSize: number,
+  scaleX: number,
+  scaleY: number,
+  canvasWidth: number,
+): LineLayout[] {
+  const aligned = text.textAlign !== 'none'
+  const padding = H_PADDING * scaleX
+  const maxWidth = canvasWidth - padding * 2
+  const lineHeight = fontSize * 1.2
+  const blockY = text.y * scaleY
+
+  const extents = lines.map((line) => measureLineExtents(ctx, line))
+  const maxContentWidth = Math.max(...extents.map((e) => e.width), 0)
+
+  let blockX = aligned ? padding : text.x * scaleX
+  if (aligned) {
+    if (text.textAlign === 'center') {
+      blockX = padding + (maxWidth - maxContentWidth) / 2
+    } else if (text.textAlign === 'right') {
+      blockX = canvasWidth - padding - maxContentWidth
+    }
+  }
+
+  return lines.map((line, index) => {
+    const { left, right, width } = extents[index]
+    let x = blockX
+    if (aligned && text.textAlign === 'center') {
+      x = blockX + (maxContentWidth - width) / 2
+    } else if (aligned && text.textAlign === 'right') {
+      x = blockX + maxContentWidth - width
+    } else if (!aligned) {
+      x = text.x * scaleX
+    }
+
+    return {
+      line,
+      x,
+      y: blockY + index * lineHeight,
+      left,
+      right,
+    }
+  })
+}
+
 function drawPresetBackground(
   ctx: CanvasRenderingContext2D,
   preset: TextElement['textStylePreset'],
-  x: number,
-  y: number,
-  width: number,
-  height: number,
+  layouts: LineLayout[],
+  fontSize: number,
+  scaleX: number,
+  scaleY: number,
   backgroundColor: string,
   borderColor: string,
 ) {
-  const padX = 8
-  const padY = 2
-  const rx = x - padX
-  const ry = y - padY
-  const rw = width + padX * 2
-  const rh = height + padY * 2
+  if (!layouts.length || preset === 'plain' || preset === 'outline') return
+
+  const padX = PRESET_PAD_X * scaleX
+  const padY = PRESET_PAD_Y * scaleY
+  const textHeight = fontSize * 1.1
+
+  let minX = Infinity
+  let maxX = -Infinity
+  let minY = layouts[0].y
+  let maxY = layouts[0].y + textHeight
+
+  for (const layout of layouts) {
+    minX = Math.min(minX, layout.x - layout.left)
+    maxX = Math.max(maxX, layout.x + layout.right)
+    minY = Math.min(minY, layout.y)
+    maxY = Math.max(maxY, layout.y + textHeight)
+  }
+
+  const rx = minX - padX
+  const ry = minY - padY
+  const rw = maxX - minX + padX * 2
+  const rh = maxY - minY + padY * 2
+  const radius = preset === 'border' ? 6 * scaleX : 2 * scaleX
 
   if (preset === 'border') {
     ctx.strokeStyle = borderColor
-    ctx.lineWidth = 2
-    drawRoundRect(ctx, rx, ry, rw, rh, 6)
+    ctx.lineWidth = 2 * scaleX
+    drawRoundRect(ctx, rx, ry, rw, rh, radius)
     ctx.stroke()
     return
   }
 
   if (preset === 'box' || preset === 'box-stroke' || preset === 'fill') {
     ctx.fillStyle = backgroundColor
-    drawRoundRect(ctx, rx, ry, rw, rh, 2)
+    drawRoundRect(ctx, rx, ry, rw, rh, radius)
     ctx.fill()
 
     if (preset === 'box-stroke') {
       ctx.strokeStyle = borderColor
-      ctx.lineWidth = 1
+      ctx.lineWidth = 1 * scaleX
       ctx.stroke()
     }
   }
@@ -105,7 +188,6 @@ function drawTextElement(
   scaleY: number,
   canvasWidth: number,
 ) {
-  const aligned = text.textAlign !== 'none'
   const fontSize = text.fontSize * scaleX
   const fontStyle = text.fontStyle === 'italic' ? 'italic' : 'normal'
   ctx.font = formatCanvasFont(text.fontFamily, fontStyle, text.fontWeight, fontSize)
@@ -114,46 +196,34 @@ function drawTextElement(
   const { color, backgroundColor, borderColor } = resolvePresetColors(text)
   const lines = (text.content || '').split('\n')
   if (!text.content.trim()) return
-  const lineHeight = fontSize * 1.2
-  const padding = H_PADDING * scaleX
-  const maxWidth = canvasWidth - padding * 2
 
-  lines.forEach((line, index) => {
-    let x = aligned ? padding : text.x * scaleX
-    const y = text.y * scaleY + index * lineHeight
-    const metrics = ctx.measureText(line)
+  const layouts = buildLineLayouts(ctx, text, lines, fontSize, scaleX, scaleY, canvasWidth)
 
-    if (aligned) {
-      if (text.textAlign === 'center') {
-        x = padding + (maxWidth - metrics.width) / 2
-      } else if (text.textAlign === 'right') {
-        x = canvasWidth - padding - metrics.width
-      }
-    }
+  drawPresetBackground(
+    ctx,
+    text.textStylePreset,
+    layouts,
+    fontSize,
+    scaleX,
+    scaleY,
+    backgroundColor,
+    borderColor,
+  )
 
-    const textHeight = fontSize * 1.1
-    drawPresetBackground(
-      ctx,
-      text.textStylePreset,
-      x,
-      y,
-      metrics.width,
-      textHeight,
-      backgroundColor,
-      borderColor,
-    )
+  layouts.forEach((layout) => {
+    const lineWidth = layout.left + layout.right
 
     if (text.textStylePreset === 'outline') {
       ctx.strokeStyle = color
       ctx.lineWidth = Math.max(2, fontSize * 0.08)
       ctx.lineJoin = 'round'
-      ctx.strokeText(line, x, y)
+      ctx.strokeText(layout.line, layout.x, layout.y)
     } else {
       ctx.fillStyle = color
-      ctx.fillText(line, x, y)
+      ctx.fillText(layout.line, layout.x, layout.y)
     }
 
-    drawDecoration(ctx, text, x, y, metrics.width, fontSize, color)
+    drawDecoration(ctx, text, layout.x, layout.y, lineWidth, fontSize, color)
   })
 }
 

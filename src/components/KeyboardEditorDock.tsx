@@ -84,13 +84,13 @@ export function KeyboardEditorDock({
   return createPortal(
     <div ref={dockRef} className="keyboard-dock">
       <div className="component-library-header flex shrink-0 items-center justify-between px-4 py-2">
-        <h2 className="text-sm font-medium text-white">组件库</h2>
+        <h2 className="text-sm font-medium text-neutral-900">组件库</h2>
         <button type="button" aria-label="完成" className="component-done-btn" onClick={onCommit}>
           <Check size={15} strokeWidth={2} />
         </button>
       </div>
 
-      <div className="flex shrink-0 border-b border-neutral-700 px-2">
+      <div className="flex shrink-0 border-b border-neutral-200 px-2">
         {TABS.map((tab) => {
           const Icon = tab.icon
           const selected = tab.id === 'keyboard'
@@ -99,7 +99,7 @@ export function KeyboardEditorDock({
               key={tab.id}
               type="button"
               className={`component-tab flex flex-1 flex-row items-center justify-center gap-1.5 py-2 ${
-                selected ? 'component-tab--active' : 'text-neutral-400'
+                selected ? 'component-tab--active' : 'text-neutral-500'
               }`}
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
@@ -126,7 +126,7 @@ export function KeyboardEditorDock({
           autoComplete="off"
           autoCorrect="on"
           spellCheck
-          className="keyboard-dock-textarea w-full resize-none rounded-xl border border-neutral-600 bg-[#2a2a2a] px-3 py-3 text-base text-white outline-none placeholder:text-neutral-500"
+          className="keyboard-dock-textarea w-full resize-none rounded-xl border border-neutral-300 bg-neutral-50 px-3 py-3 text-base text-neutral-900 outline-none placeholder:text-neutral-400"
           style={{
             fontSize: '16px',
             WebkitUserSelect: 'text',

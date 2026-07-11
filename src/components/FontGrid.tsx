@@ -41,7 +41,7 @@ export function FontGrid({
                 role="button"
                 tabIndex={-1}
                 aria-label={`加载${font.label}`}
-                className="absolute bottom-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-neutral-700/80 text-neutral-300"
+                className="absolute bottom-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-neutral-200 text-neutral-600"
                 onClick={(e) => {
                   e.stopPropagation()
                   onLoadFont(font)
