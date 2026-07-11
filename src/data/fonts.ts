@@ -10,7 +10,12 @@ export interface FontOption {
   cdnUrl?: string
   pixelFamily?: string
   pixelFiles?: { zh: string; latin: string }
+  /** 选中该字体时应用的默认字重 */
+  defaultWeight?: 400 | 700
 }
+
+/** 原系统字体名，现改为 Web 字体以保证各端显示一致 */
+export const CLASSIC_WEB_FONT_IDS = ['heiti', 'song', 'fangsong', 'kai'] as const
 
 function createPixelFont(
   id: string,
@@ -35,10 +40,42 @@ const RAW_FONT_OPTIONS: FontOption[] = [
   { id: 'system', label: '默认', fontFamily: 'system-ui, -apple-system, sans-serif', sample: '默认字体', source: 'system' },
   { id: 'pingfang', label: '苹方', fontFamily: '"PingFang SC", sans-serif', sample: '苹方', source: 'system' },
   { id: 'yahei', label: '微软雅黑', fontFamily: '"Microsoft YaHei", sans-serif', sample: '微软雅黑', source: 'system' },
-  { id: 'heiti', label: '黑体', fontFamily: 'SimHei, "Heiti SC", sans-serif', sample: '黑体', source: 'system' },
-  { id: 'song', label: '宋体', fontFamily: 'SimSun, "Songti SC", serif', sample: '宋体', source: 'system' },
-  { id: 'kai', label: '楷体', fontFamily: 'KaiTi, "Kaiti SC", serif', sample: '楷体', source: 'system' },
-  { id: 'fangsong', label: '仿宋', fontFamily: 'FangSong, "STFangsong", serif', sample: '仿宋', source: 'system' },
+  {
+    id: 'heiti',
+    label: '黑体',
+    fontFamily: '"Noto Sans SC", sans-serif',
+    sample: '黑体',
+    source: 'google',
+    googleFamily: 'Noto+Sans+SC:wght@700',
+    defaultWeight: 700,
+  },
+  {
+    id: 'song',
+    label: '宋体',
+    fontFamily: '"Noto Serif SC", serif',
+    sample: '宋体',
+    source: 'google',
+    googleFamily: 'Noto+Serif+SC:wght@400;700',
+    defaultWeight: 400,
+  },
+  {
+    id: 'kai',
+    label: '楷体',
+    fontFamily: '"LXGW WenKai GB", serif',
+    sample: '楷体',
+    source: 'cdn',
+    cdnUrl: 'https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@1.521.0/lxgwwenkaigb-regular/result.css',
+    defaultWeight: 400,
+  },
+  {
+    id: 'fangsong',
+    label: '仿宋',
+    fontFamily: '"ZCOOL XiaoWei", serif',
+    sample: '仿宋',
+    source: 'google',
+    googleFamily: 'ZCOOL+XiaoWei',
+    defaultWeight: 400,
+  },
 
   { id: 'noto-heavy', label: '思源特粗', fontFamily: '"Noto Sans SC", sans-serif', sample: '思源特粗', source: 'google', googleFamily: 'Noto+Sans+SC:wght@900' },
   { id: 'noto-serif-heavy', label: '思源宋粗', fontFamily: '"Noto Serif SC", serif', sample: '思源宋粗', source: 'google', googleFamily: 'Noto+Serif+SC:wght@900' },

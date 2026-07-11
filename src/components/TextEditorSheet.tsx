@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { PRESET_COLORS, STYLE_PRESETS } from '../data/editorPresets'
-import { getFontById } from '../data/fonts'
+import { getFontById, CLASSIC_WEB_FONT_IDS } from '../data/fonts'
 import type { FontOption, TextDecoration, TextElement } from '../types'
 import { ALIGN_OPTIONS } from '../types'
 import { useFontLoader } from '../hooks/useFontLoader'
@@ -78,10 +78,20 @@ export function TextEditorSheet({
   }, [text?.id, text?.fontSize, text?.y])
 
   useEffect(() => {
-    if (!text || (text.fontId !== 'dachun' && text.fontId !== 'dachun-medium')) return
+    if (!text) return
+    const cdnIds = ['dachun', 'dachun-medium', 'kai']
+    if (!cdnIds.includes(text.fontId)) return
     const font = getFontById(text.fontId)
     loadFont(font, text.content || '你好')
   }, [text?.content, text?.fontId, loadFont, text])
+
+  useEffect(() => {
+    if (!isOpen || activeTab !== 'font' || !text) return
+    for (const id of CLASSIC_WEB_FONT_IDS) {
+      const font = getFontById(id)
+      void loadFont(font, text.content || font.sample)
+    }
+  }, [isOpen, activeTab, text?.content, text?.id, loadFont])
 
   if (!isOpen || !text) return null
 
@@ -97,7 +107,11 @@ export function TextEditorSheet({
       }
     }
     setFontError(null)
-    onUpdate(text.id, { fontId: font.id, fontFamily: font.fontFamily })
+    onUpdate(text.id, {
+      fontId: font.id,
+      fontFamily: font.fontFamily,
+      fontWeight: font.defaultWeight ?? 400,
+    })
   }
 
   const commitFontSize = (value: number) => {

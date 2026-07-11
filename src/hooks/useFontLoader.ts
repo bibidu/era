@@ -4,8 +4,7 @@ import { ensureFontReady, isRemoteFontLoaded } from '../utils/fontLoad'
 import { isPixelFontLoaded } from '../utils/pixelFont'
 
 const loadedFontIds = new Set<string>([
-  'system', 'noto', 'song', 'kai',
-  'pingfang', 'yahei', 'heiti', 'fangsong',
+  'system', 'pingfang', 'yahei',
 ])
 
 export function useFontLoader() {
