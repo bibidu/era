@@ -47,7 +47,8 @@ body.is-dragging {
 }
 
 body.text-input-open .drawer__dialog {
-  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .grey-slider,

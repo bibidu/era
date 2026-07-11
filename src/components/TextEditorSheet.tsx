@@ -6,7 +6,7 @@ import type { FontOption, TextDecoration, TextElement } from '../types'
 import { ALIGN_OPTIONS, normalizeColorHex } from '../types'
 import { FONT_COUNT } from '../data/fonts'
 import { FontSelect } from './FontSelect'
-import { BottomTextInput } from './BottomTextInput'
+import { TextInputOverlay, TextInputTrigger } from './BottomTextInput'
 
 interface TextEditorSheetProps {
   text: TextElement | null
@@ -33,12 +33,25 @@ export function TextEditorSheet({
   })
   const { isFontLoaded, loadingFonts, loadFont } = useFontLoader()
   const [textInputOpen, setTextInputOpen] = useState(false)
+  const [textDraft, setTextDraft] = useState('')
 
   useEffect(() => {
     if (isOpen !== state.isOpen) {
       state.setOpen(isOpen)
     }
   }, [isOpen, state])
+
+  useEffect(() => {
+    if (!isOpen) {
+      setTextInputOpen(false)
+      document.body.classList.remove('text-input-open')
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    document.body.classList.toggle('text-input-open', textInputOpen)
+    return () => document.body.classList.remove('text-input-open')
+  }, [textInputOpen])
 
   if (!text) return null
 
@@ -65,11 +78,24 @@ export function TextEditorSheet({
     onUpdate(text.id, { y, textAlign: 'none' })
   }
 
+  const handleOpenTextInput = () => {
+    setTextDraft(text.content)
+    setTextInputOpen(true)
+  }
+
+  const handleCommitTextInput = () => {
+    setTextInputOpen(false)
+    onUpdate(text.id, { content: textDraft })
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+    }
+  }
+
   return (
     <Drawer state={state}>
       <Drawer.Backdrop isDismissable={!textInputOpen}>
         <Drawer.Content placement="bottom">
-          <Drawer.Dialog className="flex max-h-[75dvh] flex-col">
+          <Drawer.Dialog className={`flex max-h-[75dvh] flex-col ${textInputOpen ? 'pointer-events-none' : ''}`}>
             <Drawer.Handle />
             <Drawer.Header>
               <Drawer.Heading>编辑文本</Drawer.Heading>
@@ -78,11 +104,10 @@ export function TextEditorSheet({
             <Drawer.Body className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-2 pt-2">
               <div className="flex flex-col gap-1.5">
                 <Label>文本内容</Label>
-                <BottomTextInput
+                <TextInputTrigger
                   value={text.content}
                   placeholder="点击输入文字内容"
-                  onChange={(content) => onUpdate(text.id, { content })}
-                  onOpenChange={setTextInputOpen}
+                  onOpen={handleOpenTextInput}
                 />
               </div>
 
@@ -247,6 +272,16 @@ export function TextEditorSheet({
               </Button>
             </Drawer.Footer>
           </Drawer.Dialog>
+
+          {textInputOpen && (
+            <TextInputOverlay
+              open={textInputOpen}
+              draft={textDraft}
+              placeholder="点击输入文字内容"
+              onDraftChange={setTextDraft}
+              onCommit={handleCommitTextInput}
+            />
+          )}
         </Drawer.Content>
       </Drawer.Backdrop>
     </Drawer>
