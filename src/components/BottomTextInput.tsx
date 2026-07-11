@@ -22,6 +22,7 @@ export function BottomTextInput({
   const [draft, setDraft] = useState(value)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
+  const closingRef = useRef(false)
 
   useEffect(() => {
     if (!open) setDraft(value)
@@ -69,15 +70,24 @@ export function BottomTextInput({
   }
 
   const openInput = () => {
-    if (open) return
+    if (open || closingRef.current) return
     setDraft(value)
     flushSync(() => setOpenState(true))
     focusInput()
   }
 
   const commit = () => {
+    if (!open) return
+    closingRef.current = true
+    inputRef.current?.blur()
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+    }
     onChange(draft)
-    setOpenState(false)
+    flushSync(() => setOpenState(false))
+    window.setTimeout(() => {
+      closingRef.current = false
+    }, 300)
   }
 
   const overlay = open
@@ -109,7 +119,12 @@ export function BottomTextInput({
             <button
               type="button"
               className="mt-2 w-full rounded-lg bg-black py-2.5 text-sm text-white"
-              onClick={commit}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                commit()
+              }}
             >
               完成输入
             </button>
@@ -131,6 +146,7 @@ export function BottomTextInput({
           openInput()
         }}
         onFocus={(e) => {
+          if (closingRef.current) return
           e.target.blur()
           openInput()
         }}
