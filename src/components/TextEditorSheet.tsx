@@ -1,4 +1,4 @@
-import { Drawer, Label, Slider, useOverlayState } from '@heroui/react'
+import { Drawer, Label, useOverlayState } from '@heroui/react'
 import {
   AlignCenter,
   AlignLeft,
@@ -20,6 +20,7 @@ import { ALIGN_OPTIONS } from '../types'
 import { useFontLoader } from '../hooks/useFontLoader'
 import { getPresetUpdates } from '../utils/textLayout'
 import { FontGrid } from './FontGrid'
+import { GreySlider } from './GreySlider'
 import { KeyboardEditorDock } from './KeyboardEditorDock'
 
 type EditorTab = 'keyboard' | 'font' | 'style'
@@ -29,10 +30,6 @@ const PANEL_TABS: { id: EditorTab; label: string; icon: typeof Keyboard }[] = [
   { id: 'font', label: '字体', icon: Type },
   { id: 'style', label: '样式', icon: Palette },
 ]
-
-function sliderValue(value: number | number[]) {
-  return Array.isArray(value) ? value[0] : value
-}
 
 interface TextEditorSheetProps {
   text: TextElement | null
@@ -89,7 +86,7 @@ export function TextEditorSheet({
     if (!text) return
     setFontSizeDraft(text.fontSize)
     setTopDraft(Math.round(text.y))
-  }, [text?.fontSize, text?.y, text?.id, text])
+  }, [text?.id, text?.fontSize, text?.y])
 
   useEffect(() => {
     if (!text || text.fontId !== 'dachun') return
@@ -344,25 +341,15 @@ export function TextEditorSheet({
                         <Label className="text-sm text-neutral-600">字号</Label>
                         <span className="text-sm text-neutral-500">{fontSizeDraft}px</span>
                       </div>
-                      <Slider
+                      <GreySlider
                         aria-label="字号"
                         minValue={12}
                         maxValue={72}
                         step={1}
                         value={fontSizeDraft}
-                        onChange={(value) => {
-                          const v = sliderValue(value)
-                          setFontSizeDraft(v)
-                          onUpdate(text.id, { fontSize: Math.min(72, Math.max(12, Math.round(v))) })
-                        }}
-                        onChangeEnd={(value) => commitFontSize(sliderValue(value))}
-                        className="grey-slider"
-                      >
-                        <Slider.Track>
-                          <Slider.Fill />
-                          <Slider.Thumb />
-                        </Slider.Track>
-                      </Slider>
+                        onChange={setFontSizeDraft}
+                        onChangeEnd={commitFontSize}
+                      />
                     </section>
 
                     <section>
@@ -370,25 +357,15 @@ export function TextEditorSheet({
                         <Label className="text-sm text-neutral-600">距顶部</Label>
                         <span className="text-sm text-neutral-500">{topDraft}px</span>
                       </div>
-                      <Slider
+                      <GreySlider
                         aria-label="距顶部"
                         minValue={0}
                         maxValue={maxTop}
                         step={1}
                         value={topDraft}
-                        onChange={(value) => {
-                          const v = sliderValue(value)
-                          setTopDraft(v)
-                          commitTop(v)
-                        }}
-                        onChangeEnd={(value) => commitTop(sliderValue(value))}
-                        className="grey-slider"
-                      >
-                        <Slider.Track>
-                          <Slider.Fill />
-                          <Slider.Thumb />
-                        </Slider.Track>
-                      </Slider>
+                        onChange={setTopDraft}
+                        onChangeEnd={commitTop}
+                      />
                     </section>
                   </div>
                 )}
