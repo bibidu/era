@@ -12,7 +12,7 @@ import {
   Type,
   Underline,
 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PRESET_COLORS, STYLE_PRESETS } from '../data/editorPresets'
 import { getFontById } from '../data/fonts'
 import type { FontOption, TextDecoration, TextElement } from '../types'
@@ -20,10 +20,11 @@ import { ALIGN_OPTIONS } from '../types'
 import { useFontLoader } from '../hooks/useFontLoader'
 import { getPresetUpdates } from '../utils/textLayout'
 import { FontGrid } from './FontGrid'
+import { KeyboardEditorDock } from './KeyboardEditorDock'
 
 type EditorTab = 'keyboard' | 'font' | 'style'
 
-const TABS: { id: EditorTab; label: string; icon: typeof Keyboard }[] = [
+const PANEL_TABS: { id: EditorTab; label: string; icon: typeof Keyboard }[] = [
   { id: 'keyboard', label: '键盘', icon: Keyboard },
   { id: 'font', label: '字体', icon: Type },
   { id: 'style', label: '样式', icon: Palette },
@@ -62,10 +63,6 @@ export function TextEditorSheet({
   const [fontError, setFontError] = useState<string | null>(null)
   const [fontSizeDraft, setFontSizeDraft] = useState(24)
   const [topDraft, setTopDraft] = useState(0)
-  const [keyboardInset, setKeyboardInset] = useState(0)
-  const inputRef = useRef<HTMLTextAreaElement>(null)
-  const dialogRef = useRef<HTMLDivElement>(null)
-  const focusTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (isOpen !== state.isOpen) {
@@ -94,55 +91,16 @@ export function TextEditorSheet({
     setTopDraft(Math.round(text.y))
   }, [text?.fontSize, text?.y, text?.id, text])
 
-  const focusKeyboardInput = useCallback(() => {
-    if (focusTimerRef.current) window.clearTimeout(focusTimerRef.current)
-    focusTimerRef.current = window.setTimeout(() => {
-      const el = inputRef.current
-      if (!el || activeTab !== 'keyboard' || !isOpenRef.current) return
-      el.focus({ preventScroll: true })
-      const end = el.value.length
-      el.setSelectionRange(end, end)
-    }, 180)
-  }, [activeTab])
-
-  useEffect(() => {
-    if (!isOpen || activeTab !== 'keyboard') return
-    focusKeyboardInput()
-    return () => {
-      if (focusTimerRef.current) window.clearTimeout(focusTimerRef.current)
-    }
-  }, [isOpen, activeTab, focusKeyboardInput, text?.id])
-
   useEffect(() => {
     if (!text || text.fontId !== 'dachun') return
     const font = getFontById('dachun')
     loadFont(font, text.content || '你好')
   }, [text?.content, text?.fontId, loadFont, text])
 
-  useEffect(() => {
-    if (!isOpen) return
-    const content = dialogRef.current?.closest('.component-library-content') as HTMLElement | null
-    const viewport = window.visualViewport
-    if (!content || !viewport) return
-
-    const pinSheet = () => {
-      const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
-      setKeyboardInset(inset)
-    }
-
-    pinSheet()
-    viewport.addEventListener('resize', pinSheet)
-    viewport.addEventListener('scroll', pinSheet)
-    return () => {
-      viewport.removeEventListener('resize', pinSheet)
-      viewport.removeEventListener('scroll', pinSheet)
-      setKeyboardInset(0)
-    }
-  }, [isOpen])
-
   if (!text) return null
 
   const maxTop = Math.max(0, Math.round(canvasHeight - 24))
+  const isKeyboardTab = activeTab === 'keyboard'
 
   const handleFontSelect = async (font: FontOption) => {
     if (font.source !== 'system') {
@@ -182,27 +140,26 @@ export function TextEditorSheet({
   }
 
   const handleTabSelect = (tab: EditorTab) => {
-    if (tab !== 'keyboard' && inputRef.current) {
-      inputRef.current.blur()
-    }
     setActiveTab(tab)
-    if (tab === 'keyboard') focusKeyboardInput()
   }
-
-  const isKeyboardTab = activeTab === 'keyboard'
 
   return (
     <Drawer state={state}>
-      <Drawer.Backdrop isDismissable={false}>
+      <Drawer.Backdrop isDismissable={false} />
+
+      {isKeyboardTab && (
+        <KeyboardEditorDock
+          text={text}
+          onUpdate={onUpdate}
+          onTabSelect={handleTabSelect}
+          onCommit={handleCommit}
+        />
+      )}
+
+      {!isKeyboardTab && (
         <Drawer.Content placement="bottom" className="component-library-content">
-          <Drawer.Dialog
-            className={`component-library flex flex-col bg-[#1a1a1a] text-white ${
-              isKeyboardTab
-                ? 'component-library--keyboard'
-                : 'h-[min(520px,68dvh)] max-h-[min(520px,68dvh)]'
-            }`}
-          >
-            <div ref={dialogRef} className="flex min-h-0 flex-col">
+          <Drawer.Dialog className="component-library flex h-[min(520px,68dvh)] max-h-[min(520px,68dvh)] flex-col bg-[#1a1a1a] text-white">
+            <div className="flex min-h-0 flex-col">
               <div className="component-library-header flex shrink-0 items-center justify-between px-4 py-2">
                 <h2 className="text-sm font-medium text-white">组件库</h2>
                 <button
@@ -216,7 +173,7 @@ export function TextEditorSheet({
               </div>
 
               <div className="flex shrink-0 border-b border-neutral-700 px-2">
-                {TABS.map((tab) => {
+                {PANEL_TABS.map((tab) => {
                   const Icon = tab.icon
                   const selected = activeTab === tab.id
                   return (
@@ -239,37 +196,7 @@ export function TextEditorSheet({
                 })}
               </div>
 
-              {isKeyboardTab ? (
-                <div
-                  className="component-keyboard-bar shrink-0 px-4 py-3"
-                  style={{
-                    paddingBottom: keyboardInset > 0
-                      ? '0.75rem'
-                      : 'max(0.75rem, env(safe-area-inset-bottom))',
-                  }}
-                >
-                  <textarea
-                    ref={inputRef}
-                    value={text.content}
-                    onChange={(e) => onUpdate(text.id, { content: e.target.value })}
-                    placeholder="输入文字"
-                    rows={3}
-                    inputMode="text"
-                    enterKeyHint="done"
-                    autoComplete="off"
-                    autoCorrect="on"
-                    spellCheck
-                    className="component-keyboard-input w-full resize-none rounded-xl border border-neutral-600 bg-[#2a2a2a] px-3 py-3 text-base text-white outline-none placeholder:text-neutral-500"
-                    style={{
-                      fontSize: '16px',
-                      WebkitUserSelect: 'text',
-                      userSelect: 'text',
-                      fontFamily: text.fontFamily,
-                    }}
-                  />
-                </div>
-              ) : (
-                <Drawer.Body className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
+              <Drawer.Body className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
                 {activeTab === 'font' && (
                   <div className="flex flex-col gap-2">
                     <FontGrid
@@ -465,12 +392,11 @@ export function TextEditorSheet({
                     </section>
                   </div>
                 )}
-                </Drawer.Body>
-              )}
+              </Drawer.Body>
             </div>
           </Drawer.Dialog>
         </Drawer.Content>
-      </Drawer.Backdrop>
+      )}
     </Drawer>
   )
 }

@@ -111,13 +111,30 @@ body.text-input-open .drawer__dialog {
   max-height: none;
 }
 
-.component-keyboard-bar {
+.keyboard-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  background: #1a1a1a;
+  color: #ffffff;
+  border-radius: 16px 16px 0 0;
+  will-change: transform;
+  touch-action: manipulation;
+}
+
+.keyboard-dock-input {
   border-top: 1px solid #404040;
 }
 
-.component-keyboard-input {
-  min-height: 88px;
-  max-height: 120px;
+.keyboard-dock-textarea {
+  min-height: 72px;
+  max-height: 96px;
+}
+
+body.keyboard-dock-open {
+  overflow: hidden;
 }
 
 .component-library-content {
