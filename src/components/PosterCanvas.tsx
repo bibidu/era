@@ -240,12 +240,19 @@ export function PosterCanvas({
           </label>
         )}
 
-        {texts.map((text) => {
+        {[...texts]
+          .sort((a, b) => {
+            if (a.id === selectedId) return 1
+            if (b.id === selectedId) return -1
+            return 0
+          })
+          .map((text) => {
           const isSelected = selectedId === text.id
 
           return (
             <div
               key={text.id}
+              className={isSelected ? 'z-20' : 'z-0'}
               style={getWrapperStyle(text)}
               onClick={(e) => {
                 e.stopPropagation()
@@ -267,7 +274,7 @@ export function PosterCanvas({
                 <button
                   type="button"
                   aria-label="编辑素材，长按拖动"
-                  className="material-drag-handle export-hide mx-auto mt-1 flex h-6 w-6 items-center justify-center rounded-full border border-neutral-400 bg-white text-neutral-700 shadow-sm select-none"
+                  className="material-drag-handle export-hide relative z-30 mx-auto mt-1 flex h-6 w-6 items-center justify-center rounded-full border border-neutral-400 bg-white text-neutral-700 shadow-sm select-none"
                   style={{ touchAction: 'none' }}
                   onPointerDown={(e) => handleIconPointerDown(text, e)}
                   onPointerUp={(e) => handleIconPointerUp(text.id, e)}
