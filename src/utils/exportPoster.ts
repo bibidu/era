@@ -22,24 +22,27 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 function drawDecoration(
   ctx: CanvasRenderingContext2D,
   text: TextElement,
-  x: number,
-  y: number,
-  width: number,
+  layout: LineLayout,
   fontSize: number,
   color: string,
 ) {
   if (text.textDecoration === 'none') return
 
+  const lineWidth = Math.max(1, fontSize * 0.06)
+  const gap = Math.max(1.5, fontSize * 0.05)
+  const startX = layout.x - layout.left
+  const endX = layout.x + layout.right
+
   const lineY =
     text.textDecoration === 'underline'
-      ? y + fontSize * 1.05
-      : y + fontSize * 0.55
+      ? layout.y + layout.descent + gap + lineWidth / 2
+      : layout.y + (layout.descent - layout.ascent) / 2
 
   ctx.strokeStyle = color
-  ctx.lineWidth = Math.max(1, fontSize * 0.06)
+  ctx.lineWidth = lineWidth
   ctx.beginPath()
-  ctx.moveTo(x, lineY)
-  ctx.lineTo(x + width, lineY)
+  ctx.moveTo(startX, lineY)
+  ctx.lineTo(endX, lineY)
   ctx.stroke()
 }
 
@@ -69,13 +72,17 @@ interface LineLayout {
   y: number
   left: number
   right: number
+  ascent: number
+  descent: number
 }
 
-function measureLineExtents(ctx: CanvasRenderingContext2D, line: string) {
+function measureLineExtents(ctx: CanvasRenderingContext2D, line: string, fontSize: number) {
   const metrics = ctx.measureText(line)
   const left = metrics.actualBoundingBoxLeft ?? 0
   const right = metrics.actualBoundingBoxRight ?? metrics.width
-  return { left, right, width: left + right }
+  const ascent = metrics.actualBoundingBoxAscent ?? fontSize * 0.85
+  const descent = metrics.actualBoundingBoxDescent ?? fontSize * 0.15
+  return { left, right, width: left + right, ascent, descent }
 }
 
 function buildLineLayouts(
@@ -93,7 +100,7 @@ function buildLineLayouts(
   const lineHeight = fontSize * 1.2
   const blockY = text.y * scaleY
 
-  const extents = lines.map((line) => measureLineExtents(ctx, line))
+  const extents = lines.map((line) => measureLineExtents(ctx, line, fontSize))
   const maxContentWidth = Math.max(...extents.map((e) => e.width), 0)
 
   let blockX = aligned ? padding : text.x * scaleX
@@ -106,7 +113,7 @@ function buildLineLayouts(
   }
 
   return lines.map((line, index) => {
-    const { left, right, width } = extents[index]
+    const { left, right, width, ascent, descent } = extents[index]
     let x = blockX
     if (aligned && text.textAlign === 'center') {
       x = blockX + (maxContentWidth - width) / 2
@@ -122,6 +129,8 @@ function buildLineLayouts(
       y: blockY + index * lineHeight,
       left,
       right,
+      ascent,
+      descent,
     }
   })
 }
@@ -211,8 +220,6 @@ function drawTextElement(
   )
 
   layouts.forEach((layout) => {
-    const lineWidth = layout.left + layout.right
-
     if (text.textStylePreset === 'outline') {
       ctx.strokeStyle = color
       ctx.lineWidth = Math.max(2, fontSize * 0.08)
@@ -223,7 +230,7 @@ function drawTextElement(
       ctx.fillText(layout.line, layout.x, layout.y)
     }
 
-    drawDecoration(ctx, text, layout.x, layout.y, lineWidth, fontSize, color)
+    drawDecoration(ctx, text, layout, fontSize, color)
   })
 }
 
