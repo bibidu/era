@@ -108,6 +108,7 @@ function drawTextElement(
 
   const { color, backgroundColor, borderColor } = resolvePresetColors(text)
   const lines = (text.content || '').split('\n')
+  if (!text.content.trim()) return
   const lineHeight = fontSize * 1.2
   const padding = H_PADDING * scaleX
   const maxWidth = canvasWidth - padding * 2

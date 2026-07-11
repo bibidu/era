@@ -1,18 +1,17 @@
 import { Drawer, Input, Label, Slider, useOverlayState } from '@heroui/react'
-import { AlignCenter, AlignLeft, AlignRight, Check, Keyboard, Palette, Sparkles, Type } from 'lucide-react'
+import { AlignCenter, AlignLeft, AlignRight, Check, Keyboard, Palette, Type } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { PRESET_COLORS, STYLE_PRESETS, TEXT_TEMPLATES } from '../data/editorPresets'
+import { PRESET_COLORS, STYLE_PRESETS } from '../data/editorPresets'
 import type { FontOption, TextElement } from '../types'
 import { ALIGN_OPTIONS } from '../types'
 import { useFontLoader } from '../hooks/useFontLoader'
 import { getPresetUpdates } from '../utils/textLayout'
 import { FontGrid } from './FontGrid'
 
-type EditorTab = 'keyboard' | 'template' | 'font' | 'style'
+type EditorTab = 'keyboard' | 'font' | 'style'
 
 const TABS: { id: EditorTab; label: string; icon: typeof Keyboard }[] = [
   { id: 'keyboard', label: '键盘', icon: Keyboard },
-  { id: 'template', label: '模板', icon: Sparkles },
   { id: 'font', label: '字体', icon: Type },
   { id: 'style', label: '样式', icon: Palette },
 ]
@@ -23,7 +22,6 @@ interface TextEditorSheetProps {
   canvasHeight: number
   onClose: (committed: boolean) => void
   onUpdate: (id: string, updates: Partial<TextElement>) => void
-  onDelete: (id: string) => void
 }
 
 export function TextEditorSheet({
@@ -32,7 +30,6 @@ export function TextEditorSheet({
   canvasHeight,
   onClose,
   onUpdate,
-  onDelete,
 }: TextEditorSheetProps) {
   const state = useOverlayState({
     isOpen,
@@ -44,6 +41,7 @@ export function TextEditorSheet({
   const [activeTab, setActiveTab] = useState<EditorTab>('keyboard')
   const [fontError, setFontError] = useState<string | null>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (isOpen !== state.isOpen) {
@@ -63,9 +61,31 @@ export function TextEditorSheet({
       el.focus({ preventScroll: true })
       const end = el.value.length
       el.setSelectionRange(end, end)
-    }, 80)
+    }, 120)
     return () => window.clearTimeout(timer)
   }, [isOpen, activeTab])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const content = dialogRef.current?.closest('.component-library-content') as HTMLElement | null
+    const viewport = window.visualViewport
+    if (!content || !viewport) return
+
+    const pinToBottom = () => {
+      content.style.transform = 'translate3d(0, 0, 0)'
+      content.style.bottom = '0px'
+    }
+
+    pinToBottom()
+    viewport.addEventListener('resize', pinToBottom)
+    viewport.addEventListener('scroll', pinToBottom)
+    return () => {
+      viewport.removeEventListener('resize', pinToBottom)
+      viewport.removeEventListener('scroll', pinToBottom)
+      content.style.transform = ''
+      content.style.bottom = ''
+    }
+  }, [isOpen])
 
   if (!text) return null
 
@@ -87,7 +107,7 @@ export function TextEditorSheet({
     const parsed = Number.parseInt(raw, 10)
     if (Number.isNaN(parsed)) return
     const y = Math.min(Math.max(0, parsed), maxTop)
-    onUpdate(text.id, { y, textAlign: 'none' })
+    onUpdate(text.id, { y })
   }
 
   const handleCommit = () => {
@@ -100,27 +120,19 @@ export function TextEditorSheet({
   return (
     <Drawer state={state}>
       <Drawer.Backdrop isDismissable>
-        <Drawer.Content placement="bottom">
-          <Drawer.Dialog className="component-library flex max-h-[72dvh] flex-col bg-[#1a1a1a] text-white">
+        <Drawer.Content placement="bottom" className="component-library-content">
+          <Drawer.Dialog className="component-library flex h-[min(420px,52dvh)] max-h-[min(420px,52dvh)] flex-col bg-[#1a1a1a] text-white">
+            <div ref={dialogRef} className="flex h-full min-h-0 flex-col">
             <div className="flex shrink-0 items-center justify-between px-4 pb-2 pt-3">
               <h2 className="text-base font-semibold text-white">组件库</h2>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="text-xs text-neutral-400 underline underline-offset-2"
-                  onClick={() => onDelete(text.id)}
-                >
-                  删除
-                </button>
-                <button
-                  type="button"
-                  aria-label="完成"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-black"
-                  onClick={handleCommit}
-                >
-                  <Check size={18} strokeWidth={2.5} />
-                </button>
-              </div>
+              <button
+                type="button"
+                aria-label="完成"
+                className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-black"
+                onClick={handleCommit}
+              >
+                <Check size={18} strokeWidth={2.5} />
+              </button>
             </div>
 
             <div className="flex shrink-0 border-b border-neutral-700 px-2">
@@ -143,13 +155,13 @@ export function TextEditorSheet({
               })}
             </div>
 
-            <Drawer.Body className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
+            <Drawer.Body className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
               {activeTab === 'keyboard' && (
                 <textarea
                   ref={inputRef}
                   value={text.content}
                   onChange={(e) => onUpdate(text.id, { content: e.target.value })}
-                  placeholder="输入文字内容"
+                  placeholder="输入文字"
                   rows={4}
                   inputMode="text"
                   enterKeyHint="done"
@@ -159,21 +171,6 @@ export function TextEditorSheet({
                   className="w-full resize-none rounded-xl border border-neutral-600 bg-[#2a2a2a] px-3 py-3 text-base text-white outline-none placeholder:text-neutral-500"
                   style={{ fontSize: '16px', WebkitUserSelect: 'text', userSelect: 'text' }}
                 />
-              )}
-
-              {activeTab === 'template' && (
-                <div className="grid grid-cols-3 gap-2">
-                  {TEXT_TEMPLATES.map((tpl) => (
-                    <button
-                      key={tpl.id}
-                      type="button"
-                      className="component-chip rounded-lg px-3 py-3 text-sm text-white"
-                      onClick={() => onUpdate(text.id, { content: tpl.content })}
-                    >
-                      {tpl.label}
-                    </button>
-                  ))}
-                </div>
               )}
 
               {activeTab === 'font' && (
@@ -193,7 +190,7 @@ export function TextEditorSheet({
                 <div className="flex flex-col gap-5">
                   <section>
                     <p className="mb-2.5 text-sm text-neutral-300">颜色</p>
-                    <div className="flex flex-wrap gap-2.5">
+                    <div className="component-scroll-row flex gap-2.5 overflow-x-auto pb-1">
                       {PRESET_COLORS.map((color) => {
                         const selected = text.color.toUpperCase() === color.toUpperCase()
                         return (
@@ -201,7 +198,7 @@ export function TextEditorSheet({
                             key={color}
                             type="button"
                             aria-label={`颜色 ${color}`}
-                            className={`h-9 w-9 rounded-full border-2 ${
+                            className={`h-9 w-9 shrink-0 rounded-full border-2 ${
                               selected ? 'border-white' : 'border-transparent'
                             }`}
                             style={{ backgroundColor: color }}
@@ -214,14 +211,14 @@ export function TextEditorSheet({
 
                   <section>
                     <p className="mb-2.5 text-sm text-neutral-300">基础样式</p>
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                    <div className="component-scroll-row flex gap-2 overflow-x-auto pb-1">
                       {STYLE_PRESETS.map((preset) => {
                         const selected = text.textStylePreset === preset.id
                         return (
                           <button
                             key={preset.id}
                             type="button"
-                            className={`flex h-12 items-center justify-center rounded-lg text-sm ${
+                            className={`flex h-12 w-14 shrink-0 items-center justify-center rounded-lg text-sm ${
                               selected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1a1a1a]' : 'component-chip'
                             }`}
                             style={{
@@ -303,6 +300,7 @@ export function TextEditorSheet({
                 </div>
               )}
             </Drawer.Body>
+            </div>
           </Drawer.Dialog>
         </Drawer.Content>
       </Drawer.Backdrop>

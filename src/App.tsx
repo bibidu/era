@@ -11,7 +11,7 @@ import { exportPosterToImage, savePosterBlob } from './utils/exportPoster'
 function createTextElement(): TextElement {
   return {
     id: crypto.randomUUID(),
-    content: '点击编辑文字',
+    content: '',
     x: 60,
     y: 120,
     fontSize: 24,
@@ -128,14 +128,6 @@ function App() {
     setTexts((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)))
   }, [])
 
-  const handleUpdatePosition = useCallback((id: string, x: number, y: number) => {
-    setTexts((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, x, y: Math.round(y), textAlign: 'none' as const } : t,
-      ),
-    )
-  }, [])
-
   const handleCanvasResize = useCallback((_width: number, height: number) => {
     setCanvasHeight(height)
   }, [])
@@ -192,7 +184,7 @@ function App() {
         isExporting={isExporting}
         onSelectText={handleSelectText}
         onOpenConfig={handleOpenConfig}
-        onUpdateTextPosition={handleUpdatePosition}
+        onDeleteText={handleDeleteText}
         onUploadPoster={handleUploadPoster}
         onCanvasResize={handleCanvasResize}
       />
@@ -235,7 +227,6 @@ function App() {
         canvasHeight={canvasHeight}
         onClose={handleEditorClose}
         onUpdate={handleUpdateText}
-        onDelete={handleDeleteText}
       />
     </div>
   )

@@ -11,6 +11,7 @@ export function getWrapperStyle(text: TextElement) {
     top: text.y,
     width: aligned ? `calc(100% - ${H_PADDING * 2}px)` : 'max-content',
     maxWidth: aligned ? undefined : 'calc(100% - 16px)',
+    textAlign: aligned ? (text.textAlign as 'left' | 'center' | 'right') : undefined,
   }
 }
 
@@ -49,6 +50,7 @@ export function getTextContentStyle(text: TextElement): CSSProperties {
     lineHeight: 1.2,
     wordBreak: 'break-word',
     display: 'inline-block',
+    maxWidth: '100%',
   }
 
   switch (text.textStylePreset ?? 'plain') {
@@ -96,6 +98,12 @@ export function getTextContentStyle(text: TextElement): CSSProperties {
     default:
       return { ...base, color, backgroundColor: 'transparent' }
   }
+}
+
+export function getSelectionOutlineColor(text: TextElement): string {
+  const { color } = resolvePresetColors(text)
+  if (text.textStylePreset === 'outline') return text.color
+  return color === 'transparent' ? text.color : color
 }
 
 export function getPresetBackground(text: TextElement): string | null {

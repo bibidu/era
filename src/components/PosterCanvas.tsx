@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useRef } from 'react'
-import { Settings2 } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import type { TextElement } from '../types'
-import { getTextContentStyle, getWrapperStyle } from '../utils/textLayout'
+import { getSelectionOutlineColor, getTextContentStyle, getWrapperStyle } from '../utils/textLayout'
 
-const LONG_PRESS_MS = 380
 const IMAGE_ACCEPT = 'image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp,image/svg+xml,image/heic,image/heif'
 
 function isImageFile(file: File) {
@@ -17,7 +16,7 @@ interface PosterCanvasProps {
   isExporting: boolean
   onSelectText: (id: string) => void
   onOpenConfig: (id: string) => void
-  onUpdateTextPosition: (id: string, x: number, y: number) => void
+  onDeleteText: (id: string) => void
   onUploadPoster: (file: File) => void
   onCanvasResize?: (width: number, height: number) => void
 }
@@ -29,26 +28,11 @@ export function PosterCanvas({
   isExporting,
   onSelectText,
   onOpenConfig,
-  onUpdateTextPosition,
+  onDeleteText,
   onUploadPoster,
   onCanvasResize,
 }: PosterCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null)
-  const dragRef = useRef<{
-    id: string
-    startX: number
-    startY: number
-    originX: number
-    originY: number
-  } | null>(null)
-  const pressRef = useRef<{
-    id: string
-    timer: ReturnType<typeof setTimeout>
-    didLongPress: boolean
-    moved: boolean
-  } | null>(null)
-  const pointerPosRef = useRef({ x: 0, y: 0 })
-  const listenersRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     const el = canvasRef.current
@@ -61,149 +45,6 @@ export function PosterCanvas({
     ro.observe(el)
     return () => ro.disconnect()
   }, [onCanvasResize, posterUrl])
-
-  const handlePointerMove = useCallback(
-    (clientX: number, clientY: number) => {
-      const drag = dragRef.current
-      const container = canvasRef.current
-      if (!drag || !container) return
-
-      const rect = container.getBoundingClientRect()
-      const dx = clientX - drag.startX
-      const dy = clientY - drag.startY
-      const x = Math.min(Math.max(drag.originX + dx, 0), rect.width - 24)
-      const y = Math.min(Math.max(drag.originY + dy, 0), rect.height - 24)
-      onUpdateTextPosition(drag.id, x, Math.round(y))
-    },
-    [onUpdateTextPosition],
-  )
-
-  const cleanupDragListeners = useCallback(() => {
-    listenersRef.current?.()
-    listenersRef.current = null
-    document.body.classList.remove('is-dragging')
-  }, [])
-
-  const endDrag = useCallback(() => {
-    dragRef.current = null
-    if (pressRef.current) {
-      clearTimeout(pressRef.current.timer)
-      pressRef.current = null
-    }
-    cleanupDragListeners()
-  }, [cleanupDragListeners])
-
-  const startDragListeners = useCallback(() => {
-    cleanupDragListeners()
-    document.body.classList.add('is-dragging')
-
-    const onPointerMove = (e: PointerEvent) => {
-      if (!dragRef.current) return
-      e.preventDefault()
-      if (pressRef.current) pressRef.current.moved = true
-      handlePointerMove(e.clientX, e.clientY)
-    }
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (!dragRef.current) return
-      e.preventDefault()
-      const touch = e.touches[0]
-      if (touch) handlePointerMove(touch.clientX, touch.clientY)
-    }
-
-    const onPointerUp = () => {
-      endDrag()
-    }
-
-    document.addEventListener('pointermove', onPointerMove, { passive: false })
-    document.addEventListener('pointerup', onPointerUp)
-    document.addEventListener('pointercancel', onPointerUp)
-    document.addEventListener('touchmove', onTouchMove, { passive: false })
-
-    listenersRef.current = () => {
-      document.removeEventListener('pointermove', onPointerMove)
-      document.removeEventListener('pointerup', onPointerUp)
-      document.removeEventListener('pointercancel', onPointerUp)
-      document.removeEventListener('touchmove', onTouchMove)
-    }
-  }, [cleanupDragListeners, endDrag, handlePointerMove])
-
-  const beginDrag = useCallback(
-    (text: TextElement, wrapper: HTMLElement) => {
-      const container = canvasRef.current
-      if (!container) return
-
-      const containerRect = container.getBoundingClientRect()
-      const wrapperRect = wrapper.getBoundingClientRect()
-
-      dragRef.current = {
-        id: text.id,
-        startX: pointerPosRef.current.x,
-        startY: pointerPosRef.current.y,
-        originX: wrapperRect.left - containerRect.left,
-        originY: wrapperRect.top - containerRect.top,
-      }
-
-      if (pressRef.current) pressRef.current.didLongPress = true
-      startDragListeners()
-      handlePointerMove(pointerPosRef.current.x, pointerPosRef.current.y)
-    },
-    [startDragListeners, handlePointerMove],
-  )
-
-  const handleIconPointerDown = useCallback(
-    (text: TextElement, e: React.PointerEvent<HTMLButtonElement>) => {
-      e.preventDefault()
-      e.stopPropagation()
-      onSelectText(text.id)
-
-      pointerPosRef.current = { x: e.clientX, y: e.clientY }
-      const wrapper = e.currentTarget.parentElement
-      if (!wrapper) return
-
-      const timer = setTimeout(() => {
-        if (pressRef.current?.id !== text.id) return
-        beginDrag(text, wrapper)
-      }, LONG_PRESS_MS)
-
-      pressRef.current = { id: text.id, timer, didLongPress: false, moved: false }
-
-      const trackPointer = (ev: PointerEvent) => {
-        pointerPosRef.current = { x: ev.clientX, y: ev.clientY }
-        if (pressRef.current && !dragRef.current) {
-          const dx = ev.clientX - e.clientX
-          const dy = ev.clientY - e.clientY
-          if (Math.hypot(dx, dy) > 8) pressRef.current.moved = true
-        }
-      }
-
-      document.addEventListener('pointermove', trackPointer)
-      const cleanupTrack = () => document.removeEventListener('pointermove', trackPointer)
-      ;(pressRef.current as { cleanup?: () => void }).cleanup = cleanupTrack
-    },
-    [onSelectText, beginDrag],
-  )
-
-  const handleIconPointerUp = useCallback(
-    (textId: string, e: React.PointerEvent<HTMLButtonElement>) => {
-      e.preventDefault()
-      e.stopPropagation()
-      const press = pressRef.current as (typeof pressRef.current & { cleanup?: () => void }) | null
-      const wasDragging = !!dragRef.current
-
-      press?.cleanup?.()
-
-      if (press?.id === textId) {
-        clearTimeout(press.timer)
-        if (!press.didLongPress && !press.moved && !wasDragging) {
-          onOpenConfig(textId)
-        }
-      }
-
-      endDrag()
-    },
-    [onOpenConfig, endDrag],
-  )
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -247,47 +88,65 @@ export function PosterCanvas({
             return 0
           })
           .map((text) => {
-          const isSelected = selectedId === text.id
+            const isSelected = selectedId === text.id
+            const outlineColor = getSelectionOutlineColor(text)
 
-          return (
-            <div
-              key={text.id}
-              className={isSelected ? 'z-20' : 'z-0'}
-              style={getWrapperStyle(text)}
-              onClick={(e) => {
-                e.stopPropagation()
-                onSelectText(text.id)
-              }}
-            >
+            return (
               <div
-                className={`select-none px-0.5 ${
-                  isSelected && !isExporting
-                    ? 'border border-dashed border-black'
-                    : 'border border-transparent'
-                }`}
-                style={getTextContentStyle(text)}
+                key={text.id}
+                className={isSelected ? 'z-20' : 'z-0'}
+                style={getWrapperStyle(text)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSelectText(text.id)
+                }}
               >
-                {text.content || '点击编辑'}
-              </div>
+                <div className="relative inline-block max-w-full">
+                  <div
+                    className={`select-none px-0.5 ${
+                      isSelected && !isExporting ? 'border border-dashed' : 'border border-transparent'
+                    }`}
+                    style={{
+                      ...getTextContentStyle(text),
+                      borderColor: isSelected && !isExporting ? outlineColor : 'transparent',
+                    }}
+                  >
+                    {text.content ||
+                      (!isExporting && (
+                        <span style={{ opacity: 0.35, color: outlineColor }}>输入文字</span>
+                      ))}
+                  </div>
 
-              {isSelected && !isExporting && (
-                <button
-                  type="button"
-                  aria-label="编辑素材，长按拖动"
-                  className="material-drag-handle export-hide relative z-30 mx-auto mt-1 flex h-6 w-6 items-center justify-center rounded-full border border-neutral-400 bg-white text-neutral-700 shadow-sm select-none"
-                  style={{ touchAction: 'none' }}
-                  onPointerDown={(e) => handleIconPointerDown(text, e)}
-                  onPointerUp={(e) => handleIconPointerUp(text.id, e)}
-                  onPointerCancel={(e) => handleIconPointerUp(text.id, e)}
-                  onContextMenu={(e) => e.preventDefault()}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Settings2 size={12} strokeWidth={1.5} />
-                </button>
-              )}
-            </div>
-          )
-        })}
+                  {isSelected && !isExporting && (
+                    <>
+                      <button
+                        type="button"
+                        aria-label="编辑素材"
+                        className="export-hide absolute -right-2 -top-2 z-30 flex h-6 w-6 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 shadow-sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onOpenConfig(text.id)
+                        }}
+                      >
+                        <Pencil size={12} strokeWidth={1.5} />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="删除素材"
+                        className="export-hide absolute -bottom-2 -right-2 z-30 flex h-6 w-6 items-center justify-center rounded-full border border-neutral-300 bg-white text-red-500 shadow-sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onDeleteText(text.id)
+                        }}
+                      >
+                        <Trash2 size={12} strokeWidth={1.5} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )
+          })}
       </div>
 
       {posterUrl && (

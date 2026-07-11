@@ -82,6 +82,25 @@ body.text-input-open .drawer__dialog {
   border-radius: 16px 16px 0 0;
 }
 
+.component-library-content {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: auto !important;
+  transform: none !important;
+  max-height: none !important;
+}
+
+.component-scroll-row {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.component-scroll-row::-webkit-scrollbar {
+  display: none;
+}
+
 .component-tab {
   position: relative;
   transition: color 0.15s;

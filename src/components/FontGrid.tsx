@@ -1,5 +1,5 @@
 import { Cloud, Loader2 } from 'lucide-react'
-import { FONT_GRID_ITEMS, getFontById, type FontOption } from '../data/fonts'
+import { FONT_OPTIONS, type FontOption } from '../data/fonts'
 
 interface FontGridProps {
   selectedFontId: string
@@ -18,8 +18,7 @@ export function FontGrid({
 }: FontGridProps) {
   return (
     <div className="grid grid-cols-4 gap-2">
-      {FONT_GRID_ITEMS.map((item) => {
-        const font = getFontById(item.id)
+      {FONT_OPTIONS.map((font) => {
         const loaded = isFontLoaded(font)
         const loading = isFontLoading(font.id)
         const needsCloud = (font.source === 'google' || font.source === 'pixel') && !loaded
@@ -27,7 +26,7 @@ export function FontGrid({
 
         return (
           <button
-            key={`${item.id}-${item.label}`}
+            key={font.id}
             type="button"
             className={`component-font-chip relative flex h-[52px] items-center justify-center rounded-lg px-1 ${
               selected ? 'component-font-chip--selected' : ''
@@ -35,12 +34,12 @@ export function FontGrid({
             style={{ fontFamily: loaded ? font.fontFamily : 'system-ui, sans-serif' }}
             onClick={() => onSelect(font)}
           >
-            <span className="truncate text-sm leading-tight">{item.label}</span>
+            <span className="truncate px-1 text-sm leading-tight">{font.label}</span>
             {needsCloud && (
               <span
                 role="button"
                 tabIndex={-1}
-                aria-label={`加载${item.label}`}
+                aria-label={`加载${font.label}`}
                 className="absolute bottom-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-neutral-700/80 text-neutral-300"
                 onClick={(e) => {
                   e.stopPropagation()

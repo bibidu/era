@@ -120,38 +120,6 @@ export const FONT_OPTIONS: FontOption[] = [
 
 export const FONT_COUNT = FONT_OPTIONS.length
 
-/** 组件库字体 Tab 展示列表（4 列网格，label 为展示名） */
-export const FONT_GRID_ITEMS: { id: string; label: string }[] = [
-  { id: 'system', label: '经典' },
-  { id: 'bebas', label: '抖音体' },
-  { id: 'inter', label: '现代' },
-  { id: 'playfair', label: '港風' },
-  { id: 'zcool', label: '情书' },
-  { id: 'zcool-kuaile', label: '卡通' },
-  { id: 'roboto', label: '青年' },
-  { id: 'noto-serif', label: '粗宋' },
-  { id: 'ma-shan', label: '悠然' },
-  { id: 'zcool-qingke', label: '文艺' },
-  { id: 'liu-jian', label: '手写' },
-  { id: 'zhi-mang', label: '行书' },
-  { id: 'dotgothic', label: '霓虹' },
-  { id: 'pacifico', label: '淘气' },
-  { id: 'noto-serif', label: '颜宋' },
-  { id: 'caveat', label: '漫趣' },
-  { id: 'satisfy', label: '萌趣' },
-  { id: 'dachun', label: '大椿' },
-  { id: 'long-cang', label: '米粒' },
-  { id: 'permanent-marker', label: '手迹' },
-  { id: 'dancing', label: '心晴' },
-  { id: 'noto-serif', label: '明朝体' },
-  { id: 'zcool-kuaile', label: '快乐' },
-  { id: 'noto', label: '思源' },
-  { id: 'wdxl', label: '润滑体' },
-  { id: 'fusion-pixel-8', label: '像素8' },
-  { id: 'fusion-pixel-10', label: '像素10' },
-  { id: 'fusion-pixel-12', label: '像素12' },
-]
-
 export function getFontById(id: string): FontOption {
   return FONT_OPTIONS.find((f) => f.id === id) ?? FONT_OPTIONS[0]
 }
