@@ -89,8 +89,8 @@ export function TextEditorSheet({
   }, [text?.id, text?.fontSize, text?.y])
 
   useEffect(() => {
-    if (!text || text.fontId !== 'dachun') return
-    const font = getFontById('dachun')
+    if (!text || (text.fontId !== 'dachun' && text.fontId !== 'dachun-medium')) return
+    const font = getFontById(text.fontId)
     loadFont(font, text.content || '你好')
   }, [text?.content, text?.fontId, loadFont, text])
 
@@ -336,7 +336,7 @@ export function TextEditorSheet({
                       </div>
                     </section>
 
-                    <section>
+                    <section className="touch-none">
                       <div className="mb-2 flex items-center justify-between">
                         <Label className="text-sm text-neutral-600">字号</Label>
                         <span className="text-sm text-neutral-500">{fontSizeDraft}px</span>
@@ -352,7 +352,7 @@ export function TextEditorSheet({
                       />
                     </section>
 
-                    <section>
+                    <section className="touch-none">
                       <div className="mb-2 flex items-center justify-between">
                         <Label className="text-sm text-neutral-600">距顶部</Label>
                         <span className="text-sm text-neutral-500">{topDraft}px</span>

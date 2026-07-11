@@ -5,8 +5,7 @@ import { isPixelFontLoaded } from '../utils/pixelFont'
 
 const loadedFontIds = new Set<string>([
   'system', 'noto', 'song', 'kai',
-  'pingfang', 'yahei', 'heiti', 'fangsong', 'arial', 'helvetica',
-  'georgia', 'times', 'verdana',
+  'pingfang', 'yahei', 'heiti', 'fangsong',
 ])
 
 export function useFontLoader() {

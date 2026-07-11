@@ -52,53 +52,65 @@ body.text-input-open .drawer__dialog {
 }
 
 .grey-slider-wrap {
-  touch-action: pan-y;
-  padding-block: 6px;
+  touch-action: none;
+  padding-block: 10px;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.grey-slider {
-  --accent: #a3a3a3;
-  --focus: #737373;
-  --color-accent: #a3a3a3;
+.grey-range {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
-.grey-slider .slider__track {
-  height: 1.25rem !important;
-  background-color: transparent !important;
-  border-color: transparent !important;
+.grey-range:focus {
+  outline: none;
 }
 
-.grey-slider .slider__track::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+.grey-range::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
   background-color: #d4d4d4;
-  pointer-events: none;
 }
 
-.grey-slider .slider__fill {
-  display: none !important;
+.grey-range::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background-color: #d4d4d4;
+  border: none;
 }
 
-.grey-slider .slider__thumb {
-  width: 1.5rem !important;
-  height: 1.5rem !important;
-  background: transparent !important;
-  box-shadow: none !important;
+.grey-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background-color: #525252;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.grey-slider .slider__thumb::after {
-  width: 14px !important;
-  height: 14px !important;
-  border-radius: 9999px !important;
-  background-color: #525252 !important;
-  border: 2px solid #ffffff !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+.grey-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background-color: #525252;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.grey-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #737373;
+}
+
+.grey-range:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #737373;
 }
 
 .component-library {

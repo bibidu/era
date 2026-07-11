@@ -1,8 +1,4 @@
-import { Slider } from '@heroui/react'
-
-function toNumber(value: number | number[]) {
-  return Array.isArray(value) ? value[0] : value
-}
+import { useRef } from 'react'
 
 interface GreySliderProps {
   'aria-label': string
@@ -15,28 +11,44 @@ interface GreySliderProps {
 }
 
 export function GreySlider({
+  minValue,
+  maxValue,
+  step = 1,
   value,
   onChange,
   onChangeEnd,
-  ...props
+  'aria-label': ariaLabel,
 }: GreySliderProps) {
+  const draggingRef = useRef(false)
+
+  const commit = (next: number) => {
+    if (!draggingRef.current) return
+    draggingRef.current = false
+    onChangeEnd?.(next)
+  }
+
   return (
     <div
       className="grey-slider-wrap"
-      onPointerDown={(e) => e.stopPropagation()}
+      onPointerDown={(e) => {
+        e.stopPropagation()
+        draggingRef.current = true
+      }}
     >
-      <Slider
-        {...props}
+      <input
+        type="range"
+        className="grey-range"
+        min={minValue}
+        max={maxValue}
+        step={step}
         value={value}
-        onChange={(next) => onChange(toNumber(next))}
-        onChangeEnd={onChangeEnd ? (next) => onChangeEnd(toNumber(next)) : undefined}
-        className="grey-slider"
-      >
-        <Slider.Track>
-          <Slider.Fill />
-          <Slider.Thumb />
-        </Slider.Track>
-      </Slider>
+        aria-label={ariaLabel}
+        onInput={(e) => onChange(Number(e.currentTarget.value))}
+        onChange={(e) => onChange(Number(e.currentTarget.value))}
+        onPointerUp={(e) => commit(Number(e.currentTarget.value))}
+        onPointerCancel={(e) => commit(Number(e.currentTarget.value))}
+        onBlur={(e) => commit(Number(e.currentTarget.value))}
+      />
     </div>
   )
 }
