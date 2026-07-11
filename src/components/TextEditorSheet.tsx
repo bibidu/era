@@ -58,7 +58,7 @@ export function TextEditorSheet({
   const maxTop = Math.max(0, Math.round(canvasHeight - 24))
 
   const handleFontSelect = async (font: FontOption) => {
-    if ((font.source === 'google' || font.source === 'fontsource') && !isFontLoaded(font)) {
+    if ((font.source === 'google' || font.source === 'pixel') && !isFontLoaded(font)) {
       const ok = await loadFont(font)
       if (!ok) return
     }

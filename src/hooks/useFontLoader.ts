@@ -1,11 +1,18 @@
 import { useCallback, useState } from 'react'
 import type { FontOption } from '../data/fonts'
+import { ensurePixelFontLoaded, markPixelFontLoaded } from '../utils/pixelFont'
 
 const loadedFontIds = new Set<string>([
   'system', 'noto', 'song', 'kai', 'mono', 'courier',
   'pingfang', 'yahei', 'heiti', 'fangsong', 'arial', 'helvetica',
   'georgia', 'times', 'verdana',
 ])
+
+async function loadPixelFont(font: FontOption): Promise<boolean> {
+  const ok = await ensurePixelFontLoaded(font)
+  if (ok) markPixelFontLoaded(font)
+  return ok
+}
 
 export function useFontLoader() {
   const [loadedFonts, setLoadedFonts] = useState<Set<string>>(() => new Set(loadedFontIds))
@@ -20,34 +27,33 @@ export function useFontLoader() {
     if (font.source === 'system' || loadedFonts.has(font.id)) return true
     if (loadingFonts.has(font.id)) return false
 
-    const href =
-      font.source === 'google' && font.googleFamily
-        ? `https://fonts.googleapis.com/css2?family=${font.googleFamily}&display=swap`
-        : font.source === 'fontsource' && font.stylesheetUrl
-          ? font.stylesheetUrl
-          : null
-
-    if (!href) return false
-
     setLoadingFonts((prev) => new Set(prev).add(font.id))
 
     try {
-      const existing = document.querySelector(`link[data-font-id="${font.id}"]`)
-      if (!existing) {
-        const link = document.createElement('link')
-        link.rel = 'stylesheet'
-        link.href = href
-        link.dataset.fontId = font.id
-        document.head.appendChild(link)
-        await new Promise<void>((resolve, reject) => {
-          link.onload = () => resolve()
-          link.onerror = () => reject(new Error('font load failed'))
-        })
-      }
+      if (font.source === 'pixel') {
+        const ok = await loadPixelFont(font)
+        if (!ok) return false
+      } else if (font.source === 'google' && font.googleFamily) {
+        const href = `https://fonts.googleapis.com/css2?family=${font.googleFamily}&display=swap`
+        const existing = document.querySelector(`link[data-font-id="${font.id}"]`)
+        if (!existing) {
+          const link = document.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = href
+          link.dataset.fontId = font.id
+          document.head.appendChild(link)
+          await new Promise<void>((resolve, reject) => {
+            link.onload = () => resolve()
+            link.onerror = () => reject(new Error('font load failed'))
+          })
+        }
 
-      const family = font.fontFamily.replace(/"/g, '').split(',')[0].trim()
-      await document.fonts.load(`16px ${family}`)
-      await document.fonts.ready
+        const family = font.fontFamily.replace(/"/g, '').split(',')[0].trim()
+        await document.fonts.load(`16px ${family}`)
+        await document.fonts.ready
+      } else {
+        return false
+      }
 
       loadedFontIds.add(font.id)
       setLoadedFonts((prev) => new Set(prev).add(font.id))

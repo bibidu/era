@@ -1,5 +1,7 @@
 import type { TextElement } from '../types'
 import { H_PADDING } from '../types'
+import { FONT_OPTIONS } from '../data/fonts'
+import { ensurePixelFontLoaded } from './pixelFont'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -78,6 +80,13 @@ export async function exportPosterToImage(
   containerWidth: number,
   containerHeight: number,
 ): Promise<Blob> {
+  const fontIds = new Set(texts.map((t) => t.fontId))
+  await Promise.all(
+    [...fontIds].map(async (fontId) => {
+      const font = FONT_OPTIONS.find((f) => f.id === fontId)
+      if (font?.source === 'pixel') await ensurePixelFontLoaded(font)
+    }),
+  )
   await document.fonts.ready
 
   const img = await loadImage(posterUrl)

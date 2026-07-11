@@ -1,4 +1,9 @@
-export type FontSource = 'system' | 'google' | 'fontsource'
+export type FontSource = 'system' | 'google' | 'pixel'
+
+export interface FontFaceDef {
+  family: string
+  url: string
+}
 
 export interface FontOption {
   id: string
@@ -7,7 +12,30 @@ export interface FontOption {
   sample: string
   source: FontSource
   googleFamily?: string
-  stylesheetUrl?: string
+  fontFaces?: FontFaceDef[]
+}
+
+const PIXEL_CDN = 'https://fusion-pixel-font.takwolf.com'
+
+function createPixelFont(
+  id: string,
+  label: string,
+  size: '8px' | '10px' | '12px',
+  mode: 'proportional' | 'monospaced',
+  sample: string,
+): FontOption {
+  const base = `fusion-pixel-${size}-${mode}`
+  return {
+    id,
+    label,
+    fontFamily: `${base}-zh_hans, ${base}-latin, monospace`,
+    sample,
+    source: 'pixel',
+    fontFaces: [
+      { family: `${base}-zh_hans`, url: `${PIXEL_CDN}/${base}-zh_hans.otf.woff2` },
+      { family: `${base}-latin`, url: `${PIXEL_CDN}/${base}-latin.otf.woff2` },
+    ],
+  }
 }
 
 export const FONT_OPTIONS: FontOption[] = [
@@ -36,10 +64,10 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: 'zhi-mang', label: '志芒行书', fontFamily: '"Zhi Mang Xing", cursive', sample: '志芒行书 Aa', source: 'google', googleFamily: 'Zhi+Mang+Xing' },
   { id: 'yuji-mai', label: '佑字麦', fontFamily: '"Yuji Mai", serif', sample: '佑字麦 Aa', source: 'google', googleFamily: 'Yuji+Mai' },
   { id: 'dotgothic', label: '点阵哥特', fontFamily: '"DotGothic16", sans-serif', sample: '点阵哥特 Aa', source: 'google', googleFamily: 'DotGothic16' },
-  { id: 'fusion-pixel-8', label: '像素8点', fontFamily: '"Fusion Pixel 8px Proportional SC", monospace', sample: '像素8 文字', source: 'fontsource', stylesheetUrl: 'https://cdn.jsdelivr.net/npm/@fontsource/fusion-pixel-8px-proportional-sc@5.2.5/index.css' },
-  { id: 'fusion-pixel-10', label: '像素10点', fontFamily: '"Fusion Pixel 10px Proportional SC", monospace', sample: '像素10 文字', source: 'fontsource', stylesheetUrl: 'https://cdn.jsdelivr.net/npm/@fontsource/fusion-pixel-10px-proportional-sc@5.2.5/index.css' },
-  { id: 'fusion-pixel-12', label: '像素12点', fontFamily: '"Fusion Pixel 12px Proportional SC", monospace', sample: '像素12 文字', source: 'fontsource', stylesheetUrl: 'https://cdn.jsdelivr.net/npm/@fontsource/fusion-pixel-12px-proportional-sc@5.2.5/index.css' },
-  { id: 'fusion-pixel-12-mono', label: '像素12等宽', fontFamily: '"Fusion Pixel 12px Monospaced SC", monospace', sample: '像素等宽 01', source: 'fontsource', stylesheetUrl: 'https://cdn.jsdelivr.net/npm/@fontsource/fusion-pixel-12px-monospaced-sc@5.2.5/index.css' },
+  createPixelFont('fusion-pixel-8', '像素8点', '8px', 'proportional', '像素8 文字'),
+  createPixelFont('fusion-pixel-10', '像素10点', '10px', 'proportional', '像素10 文字'),
+  createPixelFont('fusion-pixel-12', '像素12点', '12px', 'proportional', '像素12 文字'),
+  createPixelFont('fusion-pixel-12-mono', '像素12等宽', '12px', 'monospaced', '像素等宽 01'),
 
   { id: 'inter', label: 'Inter', fontFamily: 'Inter, sans-serif', sample: 'Inter Aa', source: 'google', googleFamily: 'Inter:wght@400;700' },
   { id: 'roboto', label: 'Roboto', fontFamily: 'Roboto, sans-serif', sample: 'Roboto Aa', source: 'google', googleFamily: 'Roboto:wght@400;700' },
