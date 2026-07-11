@@ -1,9 +1,21 @@
-import { Drawer, Input, Label, Slider, useOverlayState } from '@heroui/react'
-import { AlignCenter, AlignLeft, AlignRight, Check, Keyboard, Palette, Type } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Drawer, Label, Slider, useOverlayState } from '@heroui/react'
+import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  Bold,
+  Check,
+  Italic,
+  Keyboard,
+  Palette,
+  Strikethrough,
+  Type,
+  Underline,
+} from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { PRESET_COLORS, STYLE_PRESETS } from '../data/editorPresets'
 import { getFontById } from '../data/fonts'
-import type { FontOption, TextElement } from '../types'
+import type { FontOption, TextDecoration, TextElement } from '../types'
 import { ALIGN_OPTIONS } from '../types'
 import { useFontLoader } from '../hooks/useFontLoader'
 import { getPresetUpdates } from '../utils/textLayout'
@@ -16,6 +28,10 @@ const TABS: { id: EditorTab; label: string; icon: typeof Keyboard }[] = [
   { id: 'font', label: '字体', icon: Type },
   { id: 'style', label: '样式', icon: Palette },
 ]
+
+function sliderValue(value: number | number[]) {
+  return Array.isArray(value) ? value[0] : value
+}
 
 interface TextEditorSheetProps {
   text: TextElement | null
@@ -32,17 +48,23 @@ export function TextEditorSheet({
   onClose,
   onUpdate,
 }: TextEditorSheetProps) {
+  const isOpenRef = useRef(isOpen)
+  isOpenRef.current = isOpen
+
   const state = useOverlayState({
     isOpen,
     onOpenChange: (open) => {
-      if (!open) onClose(false)
+      if (!open && isOpenRef.current) onClose(false)
     },
   })
   const { isFontLoaded, loadingFonts, loadFont } = useFontLoader()
   const [activeTab, setActiveTab] = useState<EditorTab>('keyboard')
   const [fontError, setFontError] = useState<string | null>(null)
+  const [fontSizeDraft, setFontSizeDraft] = useState(24)
+  const [topDraft, setTopDraft] = useState(0)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
+  const focusTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (isOpen !== state.isOpen) {
@@ -51,20 +73,44 @@ export function TextEditorSheet({
   }, [isOpen, state])
 
   useEffect(() => {
+    if (!isOpen) return
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && isOpenRef.current) {
+        state.setOpen(true)
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [isOpen, state])
+
+  useEffect(() => {
     if (isOpen) setActiveTab('keyboard')
   }, [isOpen, text?.id])
 
   useEffect(() => {
-    if (!isOpen || activeTab !== 'keyboard') return
-    const el = inputRef.current
-    if (!el) return
-    const timer = window.setTimeout(() => {
+    if (!text) return
+    setFontSizeDraft(text.fontSize)
+    setTopDraft(Math.round(text.y))
+  }, [text?.fontSize, text?.y, text?.id, text])
+
+  const focusKeyboardInput = useCallback(() => {
+    if (focusTimerRef.current) window.clearTimeout(focusTimerRef.current)
+    focusTimerRef.current = window.setTimeout(() => {
+      const el = inputRef.current
+      if (!el || activeTab !== 'keyboard' || !isOpenRef.current) return
       el.focus({ preventScroll: true })
       const end = el.value.length
       el.setSelectionRange(end, end)
-    }, 120)
-    return () => window.clearTimeout(timer)
-  }, [isOpen, activeTab])
+    }, 180)
+  }, [activeTab])
+
+  useEffect(() => {
+    if (!isOpen || activeTab !== 'keyboard') return
+    focusKeyboardInput()
+    return () => {
+      if (focusTimerRef.current) window.clearTimeout(focusTimerRef.current)
+    }
+  }, [isOpen, activeTab, focusKeyboardInput, text?.id])
 
   useEffect(() => {
     if (!text || text.fontId !== 'dachun') return
@@ -111,11 +157,22 @@ export function TextEditorSheet({
     onUpdate(text.id, { fontId: font.id, fontFamily: font.fontFamily })
   }
 
-  const handleTopChange = (raw: string) => {
-    const parsed = Number.parseInt(raw, 10)
-    if (Number.isNaN(parsed)) return
-    const y = Math.min(Math.max(0, parsed), maxTop)
+  const commitFontSize = (value: number) => {
+    const size = Math.min(72, Math.max(12, Math.round(value)))
+    setFontSizeDraft(size)
+    onUpdate(text.id, { fontSize: size })
+  }
+
+  const commitTop = (value: number) => {
+    const y = Math.min(Math.max(0, Math.round(value)), maxTop)
+    setTopDraft(y)
     onUpdate(text.id, { y })
+  }
+
+  const toggleDecoration = (decoration: TextDecoration) => {
+    onUpdate(text.id, {
+      textDecoration: text.textDecoration === decoration ? 'none' : decoration,
+    })
   }
 
   const handleCommit = () => {
@@ -125,194 +182,268 @@ export function TextEditorSheet({
     onClose(true)
   }
 
+  const handleTabSelect = (tab: EditorTab) => {
+    setActiveTab(tab)
+    if (tab === 'keyboard') focusKeyboardInput()
+  }
+
   return (
     <Drawer state={state}>
-      <Drawer.Backdrop isDismissable>
+      <Drawer.Backdrop isDismissable={false}>
         <Drawer.Content placement="bottom" className="component-library-content">
           <Drawer.Dialog className="component-library flex h-[min(520px,68dvh)] max-h-[min(520px,68dvh)] flex-col bg-[#1a1a1a] text-white">
             <div ref={dialogRef} className="flex h-full min-h-0 flex-col">
-            <div className="component-library-header flex shrink-0 items-center justify-between px-4 py-2">
-              <h2 className="text-sm font-medium text-white">组件库</h2>
-              <button
-                type="button"
-                aria-label="完成"
-                className="component-done-btn"
-                onClick={handleCommit}
-              >
-                <Check size={15} strokeWidth={2} />
-              </button>
-            </div>
+              <div className="component-library-header flex shrink-0 items-center justify-between px-4 py-2">
+                <h2 className="text-sm font-medium text-white">组件库</h2>
+                <button
+                  type="button"
+                  aria-label="完成"
+                  className="component-done-btn"
+                  onClick={handleCommit}
+                >
+                  <Check size={15} strokeWidth={2} />
+                </button>
+              </div>
 
-            <div className="flex shrink-0 border-b border-neutral-700 px-2">
-              {TABS.map((tab) => {
-                const Icon = tab.icon
-                const selected = activeTab === tab.id
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    className={`component-tab flex flex-1 flex-col items-center gap-0.5 py-2 ${
-                      selected ? 'component-tab--active' : 'text-neutral-400'
-                    }`}
-                    onClick={() => setActiveTab(tab.id)}
-                  >
-                    <Icon size={18} strokeWidth={1.5} />
-                    <span className="text-xs">{tab.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-
-            <Drawer.Body className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
-              {activeTab === 'keyboard' && (
-                <textarea
-                  ref={inputRef}
-                  value={text.content}
-                  onChange={(e) => onUpdate(text.id, { content: e.target.value })}
-                  placeholder="输入文字"
-                  rows={4}
-                  inputMode="text"
-                  enterKeyHint="done"
-                  autoComplete="off"
-                  autoCorrect="on"
-                  spellCheck
-                  className="w-full resize-none rounded-xl border border-neutral-600 bg-[#2a2a2a] px-3 py-3 text-base text-white outline-none placeholder:text-neutral-500"
-                  style={{
-                    fontSize: '16px',
-                    WebkitUserSelect: 'text',
-                    userSelect: 'text',
-                    fontFamily: text.fontFamily,
-                  }}
-                />
-              )}
-
-              {activeTab === 'font' && (
-                <div className="flex flex-col gap-2">
-                  <FontGrid
-                    selectedFontId={text.fontId}
-                    isFontLoaded={isFontLoaded}
-                    isFontLoading={(id) => loadingFonts.has(id)}
-                    onSelect={handleFontSelect}
-                    onLoadFont={loadFont}
-                  />
-                  {fontError && <p className="text-xs text-red-400">{fontError}</p>}
-                </div>
-              )}
-
-              {activeTab === 'style' && (
-                <div className="flex flex-col gap-5">
-                  <section>
-                    <p className="mb-2.5 text-sm text-neutral-300">颜色</p>
-                    <div className="component-scroll-row flex gap-2.5 overflow-x-auto pb-1">
-                      {PRESET_COLORS.map((color) => {
-                        const selected = text.color.toUpperCase() === color.toUpperCase()
-                        return (
-                          <button
-                            key={color}
-                            type="button"
-                            aria-label={`颜色 ${color}`}
-                            className={`h-9 w-9 shrink-0 rounded-full border-2 ${
-                              selected ? 'border-white' : 'border-transparent'
-                            }`}
-                            style={{ backgroundColor: color }}
-                            onClick={() => onUpdate(text.id, { color })}
-                          />
-                        )
-                      })}
-                    </div>
-                  </section>
-
-                  <section>
-                    <p className="mb-2.5 text-sm text-neutral-300">基础样式</p>
-                    <div className="component-scroll-row flex gap-2 overflow-x-auto pb-1">
-                      {STYLE_PRESETS.map((preset) => {
-                        const selected = text.textStylePreset === preset.id
-                        return (
-                          <button
-                            key={preset.id}
-                            type="button"
-                            className={`flex h-12 w-14 shrink-0 items-center justify-center rounded-lg text-sm ${
-                              selected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1a1a1a]' : 'component-chip'
-                            }`}
-                            style={{
-                              color: preset.previewColor,
-                              backgroundColor: preset.previewBg ?? 'transparent',
-                              border: preset.previewBorder,
-                              WebkitTextStroke:
-                                preset.id === 'outline' ? '1.5px #fff' : undefined,
-                            }}
-                            onClick={() => onUpdate(text.id, getPresetUpdates(preset.id))}
-                          >
-                            文字
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </section>
-
-                  <section>
-                    <p className="mb-2.5 text-sm text-neutral-300">排列</p>
-                    <div className="flex gap-2">
-                      {[
-                        { id: 'left' as const, icon: AlignLeft },
-                        { id: 'center' as const, icon: AlignCenter },
-                        { id: 'right' as const, icon: AlignRight },
-                      ].map((opt) => {
-                        const Icon = opt.icon
-                        const selected = text.textAlign === opt.id
-                        return (
-                          <button
-                            key={opt.id}
-                            type="button"
-                            aria-label={ALIGN_OPTIONS.find((a) => a.id === opt.id)?.label}
-                            className={`flex h-11 flex-1 items-center justify-center rounded-lg ${
-                              selected ? 'ring-2 ring-white' : 'component-chip'
-                            }`}
-                            onClick={() => onUpdate(text.id, { textAlign: opt.id })}
-                          >
-                            <Icon size={20} strokeWidth={1.5} />
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </section>
-
-                  <section>
-                    <div className="mb-2 flex items-center justify-between">
-                      <Label className="text-sm text-neutral-300">字号</Label>
-                      <span className="text-sm text-neutral-400">{text.fontSize}px</span>
-                    </div>
-                    <Slider
-                      aria-label="字号"
-                      minValue={12}
-                      maxValue={72}
-                      step={1}
-                      value={text.fontSize}
-                      onChange={(value) => onUpdate(text.id, { fontSize: value as number })}
-                      className="dark-slider"
+              <div className="flex shrink-0 border-b border-neutral-700 px-2">
+                {TABS.map((tab) => {
+                  const Icon = tab.icon
+                  const selected = activeTab === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      className={`component-tab flex flex-1 flex-row items-center justify-center gap-1.5 py-2 ${
+                        selected ? 'component-tab--active' : 'text-neutral-400'
+                      }`}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleTabSelect(tab.id)
+                      }}
                     >
-                      <Slider.Track>
-                        <Slider.Fill />
-                        <Slider.Thumb />
-                      </Slider.Track>
-                    </Slider>
-                  </section>
+                      <Icon size={16} strokeWidth={1.5} />
+                      <span className="text-xs">{tab.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
 
-                  <section>
-                    <Label className="mb-2 block text-sm text-neutral-300">距顶部（px）</Label>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      value={String(Math.round(text.y))}
-                      onChange={(e) => handleTopChange(e.target.value)}
-                      fullWidth
-                      className="component-input"
-                      aria-label="距顶部距离"
-                    />
-                  </section>
+              <Drawer.Body className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4">
+                <div className={activeTab === 'keyboard' ? 'flex min-h-[120px] flex-1 flex-col' : 'hidden'}>
+                  <textarea
+                    ref={inputRef}
+                    value={text.content}
+                    onChange={(e) => onUpdate(text.id, { content: e.target.value })}
+                    placeholder="输入文字"
+                    rows={4}
+                    inputMode="text"
+                    enterKeyHint="done"
+                    autoComplete="off"
+                    autoCorrect="on"
+                    spellCheck
+                    className="w-full flex-1 resize-none rounded-xl border border-neutral-600 bg-[#2a2a2a] px-3 py-3 text-base text-white outline-none placeholder:text-neutral-500"
+                    style={{
+                      fontSize: '16px',
+                      WebkitUserSelect: 'text',
+                      userSelect: 'text',
+                      fontFamily: text.fontFamily,
+                    }}
+                  />
                 </div>
-              )}
-            </Drawer.Body>
+
+                {activeTab === 'font' && (
+                  <div className="flex flex-col gap-2">
+                    <FontGrid
+                      selectedFontId={text.fontId}
+                      isFontLoaded={isFontLoaded}
+                      isFontLoading={(id) => loadingFonts.has(id)}
+                      onSelect={handleFontSelect}
+                      onLoadFont={loadFont}
+                    />
+                    {fontError && <p className="text-xs text-red-400">{fontError}</p>}
+                  </div>
+                )}
+
+                {activeTab === 'style' && (
+                  <div className="flex flex-col gap-5">
+                    <section>
+                      <p className="mb-2.5 text-sm text-neutral-300">颜色</p>
+                      <div className="component-scroll-row flex gap-3 overflow-x-auto py-1">
+                        {PRESET_COLORS.map((color) => {
+                          const selected = text.color.toUpperCase() === color.toUpperCase()
+                          return (
+                            <button
+                              key={color}
+                              type="button"
+                              aria-label={`颜色 ${color}`}
+                              className={`color-swatch-btn shrink-0 ${selected ? 'color-swatch-btn--selected' : ''}`}
+                              onClick={() => onUpdate(text.id, { color })}
+                            >
+                              <span
+                                className="color-swatch-inner"
+                                style={{ backgroundColor: color }}
+                              />
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </section>
+
+                    <section>
+                      <p className="mb-2.5 text-sm text-neutral-300">基础样式</p>
+                      <div className="component-scroll-row component-style-row flex gap-2 overflow-x-auto py-1">
+                        {STYLE_PRESETS.map((preset) => {
+                          const selected = text.textStylePreset === preset.id
+                          return (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              className={`style-preset-btn flex h-12 w-14 shrink-0 items-center justify-center rounded-lg text-sm ${
+                                selected ? 'style-preset-btn--selected' : 'component-chip'
+                              }`}
+                              style={{
+                                color: preset.previewColor,
+                                backgroundColor: preset.previewBg ?? 'transparent',
+                                border: preset.previewBorder,
+                                WebkitTextStroke:
+                                  preset.id === 'outline' ? '1.5px #fff' : undefined,
+                              }}
+                              onClick={() => onUpdate(text.id, getPresetUpdates(preset.id))}
+                            >
+                              文字
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </section>
+
+                    <section>
+                      <p className="mb-2.5 text-sm text-neutral-300">文字修饰</p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          className={`flex h-10 flex-1 items-center justify-center gap-1 rounded-lg text-sm ${
+                            text.fontWeight === 700 ? 'style-preset-btn--selected' : 'component-chip'
+                          }`}
+                          onClick={() =>
+                            onUpdate(text.id, { fontWeight: text.fontWeight === 700 ? 400 : 700 })
+                          }
+                        >
+                          <Bold size={16} />
+                          粗体
+                        </button>
+                        <button
+                          type="button"
+                          className={`flex h-10 flex-1 items-center justify-center rounded-lg ${
+                            text.fontStyle === 'italic' ? 'style-preset-btn--selected' : 'component-chip'
+                          }`}
+                          onClick={() =>
+                            onUpdate(text.id, {
+                              fontStyle: text.fontStyle === 'italic' ? 'normal' : 'italic',
+                            })
+                          }
+                        >
+                          <Italic size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className={`flex h-10 flex-1 items-center justify-center rounded-lg ${
+                            text.textDecoration === 'underline' ? 'style-preset-btn--selected' : 'component-chip'
+                          }`}
+                          onClick={() => toggleDecoration('underline')}
+                        >
+                          <Underline size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className={`flex h-10 flex-1 items-center justify-center rounded-lg ${
+                            text.textDecoration === 'line-through' ? 'style-preset-btn--selected' : 'component-chip'
+                          }`}
+                          onClick={() => toggleDecoration('line-through')}
+                        >
+                          <Strikethrough size={16} />
+                        </button>
+                      </div>
+                    </section>
+
+                    <section>
+                      <p className="mb-2.5 text-sm text-neutral-300">排列</p>
+                      <div className="flex gap-2">
+                        {[
+                          { id: 'left' as const, icon: AlignLeft },
+                          { id: 'center' as const, icon: AlignCenter },
+                          { id: 'right' as const, icon: AlignRight },
+                        ].map((opt) => {
+                          const Icon = opt.icon
+                          const selected = text.textAlign === opt.id
+                          return (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              aria-label={ALIGN_OPTIONS.find((a) => a.id === opt.id)?.label}
+                              className={`flex h-11 flex-1 items-center justify-center rounded-lg ${
+                                selected ? 'style-preset-btn--selected' : 'component-chip'
+                              }`}
+                              onClick={() => onUpdate(text.id, { textAlign: opt.id })}
+                            >
+                              <Icon size={20} strokeWidth={1.5} />
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </section>
+
+                    <section>
+                      <div className="mb-2 flex items-center justify-between">
+                        <Label className="text-sm text-neutral-300">字号</Label>
+                        <span className="text-sm text-neutral-400">{fontSizeDraft}px</span>
+                      </div>
+                      <Slider
+                        aria-label="字号"
+                        minValue={12}
+                        maxValue={72}
+                        step={1}
+                        value={fontSizeDraft}
+                        onChange={(value) => {
+                          const v = sliderValue(value)
+                          setFontSizeDraft(v)
+                          onUpdate(text.id, { fontSize: Math.min(72, Math.max(12, Math.round(v))) })
+                        }}
+                        onChangeEnd={(value) => commitFontSize(sliderValue(value))}
+                        className="dark-slider"
+                      >
+                        <Slider.Track>
+                          <Slider.Fill />
+                          <Slider.Thumb />
+                        </Slider.Track>
+                      </Slider>
+                    </section>
+
+                    <section>
+                      <div className="mb-2 flex items-center justify-between">
+                        <Label className="text-sm text-neutral-300">距顶部</Label>
+                        <span className="text-sm text-neutral-400">{topDraft}px</span>
+                      </div>
+                      <Slider
+                        aria-label="距顶部"
+                        minValue={0}
+                        maxValue={maxTop}
+                        step={1}
+                        value={topDraft}
+                        onChange={(value) => setTopDraft(sliderValue(value))}
+                        onChangeEnd={(value) => commitTop(sliderValue(value))}
+                        className="dark-slider"
+                      >
+                        <Slider.Track>
+                          <Slider.Fill />
+                          <Slider.Thumb />
+                        </Slider.Track>
+                      </Slider>
+                    </section>
+                  </div>
+                )}
+              </Drawer.Body>
             </div>
           </Drawer.Dialog>
         </Drawer.Content>

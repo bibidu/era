@@ -18,7 +18,7 @@ function createTextElement(): TextElement {
     fontWeight: 400,
     fontStyle: 'normal',
     textDecoration: 'none',
-    color: '#000000',
+    color: '#EF4444',
     fontFamily: FONT_OPTIONS[0].fontFamily,
     fontId: FONT_OPTIONS[0].id,
     textAlign: 'none',

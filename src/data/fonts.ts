@@ -124,9 +124,26 @@ const RAW_FONT_OPTIONS: FontOption[] = [
   { id: 'caveat', label: 'Caveat', fontFamily: 'Caveat, cursive', sample: 'Caveat Aa', source: 'google', googleFamily: 'Caveat:wght@400;700' },
 ]
 
-const MONO_FONT_IDS = new Set(['dotgothic', 'yuji-mai'])
+const MONO_FONT_IDS = new Set([
+  'dotgothic',
+  'yuji-mai',
+  'fusion-pixel-8',
+  'fusion-pixel-10',
+  'fusion-pixel-12',
+])
 
-export const FONT_OPTIONS = RAW_FONT_OPTIONS.filter((font) => !MONO_FONT_IDS.has(font.id))
+function isMonospaceFont(font: FontOption) {
+  const id = font.id.toLowerCase()
+  const family = font.fontFamily.toLowerCase()
+  return (
+    MONO_FONT_IDS.has(font.id) ||
+    id.includes('mono') ||
+    family.includes('monospace') ||
+    /\bmono\b/.test(family)
+  )
+}
+
+export const FONT_OPTIONS = RAW_FONT_OPTIONS.filter((font) => !isMonospaceFont(font))
 
 export const FONT_COUNT = FONT_OPTIONS.length
 
