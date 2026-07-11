@@ -3,7 +3,7 @@ import type { FontOption } from '../data/fonts'
 import { ensurePixelFontLoaded, isPixelFontLoaded } from '../utils/pixelFont'
 
 const loadedFontIds = new Set<string>([
-  'system', 'noto', 'song', 'kai', 'mono', 'courier',
+  'system', 'noto', 'song', 'kai',
   'pingfang', 'yahei', 'heiti', 'fangsong', 'arial', 'helvetica',
   'georgia', 'times', 'verdana',
 ])

@@ -22,6 +22,8 @@ function createTextElement(): TextElement {
     fontFamily: FONT_OPTIONS[0].fontFamily,
     fontId: FONT_OPTIONS[0].id,
     textAlign: 'none',
+    textStylePreset: 'plain',
+    backgroundColor: null,
   }
 }
 

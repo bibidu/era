@@ -22,7 +22,7 @@ function createPixelFont(
   return {
     id,
     label,
-    fontFamily: `'${displayFamily}', monospace`,
+    fontFamily: `'${displayFamily}', sans-serif`,
     sample,
     source: 'pixel',
     pixelFamily: displayFamily,
@@ -55,6 +55,7 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: 'liu-jian', label: '刘建毛草', fontFamily: '"Liu Jian Mao Cao", cursive', sample: '刘建毛草 Aa', source: 'google', googleFamily: 'Liu+Jian+Mao+Cao' },
   { id: 'zhi-mang', label: '志芒行书', fontFamily: '"Zhi Mang Xing", cursive', sample: '志芒行书 Aa', source: 'google', googleFamily: 'Zhi+Mang+Xing' },
   { id: 'yuji-mai', label: '佑字麦', fontFamily: '"Yuji Mai", serif', sample: '佑字麦 Aa', source: 'google', googleFamily: 'Yuji+Mai' },
+  { id: 'dachun', label: '大椿', fontFamily: '"Yuji Mai", "Ma Shan Zheng", serif', sample: '大椿', source: 'google', googleFamily: 'Yuji+Mai' },
   { id: 'dotgothic', label: '点阵哥特', fontFamily: '"DotGothic16", sans-serif', sample: '点阵哥特 Aa', source: 'google', googleFamily: 'DotGothic16' },
   createPixelFont(
     'fusion-pixel-8',
@@ -79,14 +80,6 @@ export const FONT_OPTIONS: FontOption[] = [
     'fusion-pixel-12px-proportional-zh_hans.otf.woff2',
     'fusion-pixel-12px-proportional-latin.otf.woff2',
     '像素12 文字',
-  ),
-  createPixelFont(
-    'fusion-pixel-12-mono',
-    '像素12等宽',
-    'EraPixel12Mono',
-    'fusion-pixel-12px-monospaced-zh_hans.otf.woff2',
-    'fusion-pixel-12px-monospaced-latin.otf.woff2',
-    '像素等宽 01',
   ),
 
   { id: 'inter', label: 'Inter', fontFamily: 'Inter, sans-serif', sample: 'Inter Aa', source: 'google', googleFamily: 'Inter:wght@400;700' },
@@ -123,24 +116,42 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: 'permanent-marker', label: 'Permanent Marker', fontFamily: '"Permanent Marker", cursive', sample: 'Marker Aa', source: 'google', googleFamily: 'Permanent+Marker' },
   { id: 'satisfy', label: 'Satisfy', fontFamily: 'Satisfy, cursive', sample: 'Satisfy Aa', source: 'google', googleFamily: 'Satisfy' },
   { id: 'caveat', label: 'Caveat', fontFamily: 'Caveat, cursive', sample: 'Caveat Aa', source: 'google', googleFamily: 'Caveat:wght@400;700' },
-
-  { id: 'mono', label: '系统等宽', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace', sample: '系统等宽 01', source: 'system' },
-  { id: 'courier', label: 'Courier', fontFamily: '"Courier New", Courier, monospace', sample: 'Courier 01', source: 'system' },
-  { id: 'jetbrains', label: 'JetBrains Mono', fontFamily: '"JetBrains Mono", monospace', sample: 'JetBrains 01', source: 'google', googleFamily: 'JetBrains+Mono:wght@400;700' },
-  { id: 'roboto-mono', label: 'Roboto Mono', fontFamily: '"Roboto Mono", monospace', sample: 'Roboto Mono 01', source: 'google', googleFamily: 'Roboto+Mono:wght@400;700' },
-  { id: 'source-code', label: 'Source Code Pro', fontFamily: '"Source Code Pro", monospace', sample: 'Source Code 01', source: 'google', googleFamily: 'Source+Code+Pro:wght@400;700' },
-  { id: 'noto-mono', label: 'Noto Sans Mono', fontFamily: '"Noto Sans Mono", monospace', sample: 'Noto Mono 01', source: 'google', googleFamily: 'Noto+Sans+Mono:wght@400;700' },
-  { id: 'fira-code', label: 'Fira Code', fontFamily: '"Fira Code", monospace', sample: 'Fira Code 01', source: 'google', googleFamily: 'Fira+Code:wght@400;700' },
-  { id: 'ibm-plex', label: 'IBM Plex Mono', fontFamily: '"IBM Plex Mono", monospace', sample: 'IBM Plex 01', source: 'google', googleFamily: 'IBM+Plex+Mono:wght@400;700' },
-  { id: 'space-mono', label: 'Space Mono', fontFamily: '"Space Mono", monospace', sample: 'Space Mono 01', source: 'google', googleFamily: 'Space+Mono:wght@400;700' },
-  { id: 'ubuntu-mono', label: 'Ubuntu Mono', fontFamily: '"Ubuntu Mono", monospace', sample: 'Ubuntu Mono 01', source: 'google', googleFamily: 'Ubuntu+Mono:wght@400;700' },
-  { id: 'inconsolata', label: 'Inconsolata', fontFamily: 'Inconsolata, monospace', sample: 'Inconsolata 01', source: 'google', googleFamily: 'Inconsolata:wght@400;700' },
-  { id: 'courier-prime', label: 'Courier Prime', fontFamily: '"Courier Prime", monospace', sample: 'Courier Prime 01', source: 'google', googleFamily: 'Courier+Prime:wght@400;700' },
-  { id: 'dm-mono', label: 'DM Mono', fontFamily: '"DM Mono", monospace', sample: 'DM Mono 01', source: 'google', googleFamily: 'DM+Mono:wght@400;500' },
-  { id: 'red-hat-mono', label: 'Red Hat Mono', fontFamily: '"Red Hat Mono", monospace', sample: 'Red Hat 01', source: 'google', googleFamily: 'Red+Hat+Mono:wght@400;700' },
-  { id: 'victor-mono', label: 'Victor Mono', fontFamily: '"Victor Mono", monospace', sample: 'Victor Mono 01', source: 'google', googleFamily: 'Victor+Mono:wght@400;700' },
-  { id: 'anonymous-pro', label: 'Anonymous Pro', fontFamily: '"Anonymous Pro", monospace', sample: 'Anonymous 01', source: 'google', googleFamily: 'Anonymous+Pro:wght@400;700' },
-  { id: 'share-tech-mono', label: 'Share Tech Mono', fontFamily: '"Share Tech Mono", monospace', sample: 'Share Tech 01', source: 'google', googleFamily: 'Share+Tech+Mono' },
 ]
 
 export const FONT_COUNT = FONT_OPTIONS.length
+
+/** 组件库字体 Tab 展示列表（4 列网格，label 为展示名） */
+export const FONT_GRID_ITEMS: { id: string; label: string }[] = [
+  { id: 'system', label: '经典' },
+  { id: 'bebas', label: '抖音体' },
+  { id: 'inter', label: '现代' },
+  { id: 'playfair', label: '港風' },
+  { id: 'zcool', label: '情书' },
+  { id: 'zcool-kuaile', label: '卡通' },
+  { id: 'roboto', label: '青年' },
+  { id: 'noto-serif', label: '粗宋' },
+  { id: 'ma-shan', label: '悠然' },
+  { id: 'zcool-qingke', label: '文艺' },
+  { id: 'liu-jian', label: '手写' },
+  { id: 'zhi-mang', label: '行书' },
+  { id: 'dotgothic', label: '霓虹' },
+  { id: 'pacifico', label: '淘气' },
+  { id: 'noto-serif', label: '颜宋' },
+  { id: 'caveat', label: '漫趣' },
+  { id: 'satisfy', label: '萌趣' },
+  { id: 'dachun', label: '大椿' },
+  { id: 'long-cang', label: '米粒' },
+  { id: 'permanent-marker', label: '手迹' },
+  { id: 'dancing', label: '心晴' },
+  { id: 'noto-serif', label: '明朝体' },
+  { id: 'zcool-kuaile', label: '快乐' },
+  { id: 'noto', label: '思源' },
+  { id: 'wdxl', label: '润滑体' },
+  { id: 'fusion-pixel-8', label: '像素8' },
+  { id: 'fusion-pixel-10', label: '像素10' },
+  { id: 'fusion-pixel-12', label: '像素12' },
+]
+
+export function getFontById(id: string): FontOption {
+  return FONT_OPTIONS.find((f) => f.id === id) ?? FONT_OPTIONS[0]
+}

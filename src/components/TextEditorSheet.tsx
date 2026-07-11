@@ -1,12 +1,21 @@
-import { Button, Drawer, Input, Label, Slider, useOverlayState } from '@heroui/react'
-import { Italic, Strikethrough, Underline } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Drawer, Input, Label, Slider, useOverlayState } from '@heroui/react'
+import { AlignCenter, AlignLeft, AlignRight, Check, Keyboard, Palette, Sparkles, Type } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { PRESET_COLORS, STYLE_PRESETS, TEXT_TEMPLATES } from '../data/editorPresets'
+import type { FontOption, TextElement } from '../types'
+import { ALIGN_OPTIONS } from '../types'
 import { useFontLoader } from '../hooks/useFontLoader'
-import type { FontOption, TextDecoration, TextElement } from '../types'
-import { ALIGN_OPTIONS, normalizeColorHex } from '../types'
-import { FONT_COUNT } from '../data/fonts'
-import { FontSelect } from './FontSelect'
-import { TextInputOverlay, TextInputTrigger } from './BottomTextInput'
+import { getPresetUpdates } from '../utils/textLayout'
+import { FontGrid } from './FontGrid'
+
+type EditorTab = 'keyboard' | 'template' | 'font' | 'style'
+
+const TABS: { id: EditorTab; label: string; icon: typeof Keyboard }[] = [
+  { id: 'keyboard', label: '键盘', icon: Keyboard },
+  { id: 'template', label: '模板', icon: Sparkles },
+  { id: 'font', label: '字体', icon: Type },
+  { id: 'style', label: '样式', icon: Palette },
+]
 
 interface TextEditorSheetProps {
   text: TextElement | null
@@ -32,9 +41,9 @@ export function TextEditorSheet({
     },
   })
   const { isFontLoaded, loadingFonts, loadFont } = useFontLoader()
-  const [textInputOpen, setTextInputOpen] = useState(false)
-  const [textDraft, setTextDraft] = useState('')
+  const [activeTab, setActiveTab] = useState<EditorTab>('keyboard')
   const [fontError, setFontError] = useState<string | null>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     if (isOpen !== state.isOpen) {
@@ -43,16 +52,20 @@ export function TextEditorSheet({
   }, [isOpen, state])
 
   useEffect(() => {
-    if (!isOpen) {
-      setTextInputOpen(false)
-      document.body.classList.remove('text-input-open')
-    }
-  }, [isOpen])
+    if (isOpen) setActiveTab('keyboard')
+  }, [isOpen, text?.id])
 
   useEffect(() => {
-    document.body.classList.toggle('text-input-open', textInputOpen)
-    return () => document.body.classList.remove('text-input-open')
-  }, [textInputOpen])
+    if (!isOpen || activeTab !== 'keyboard') return
+    const el = inputRef.current
+    if (!el) return
+    const timer = window.setTimeout(() => {
+      el.focus({ preventScroll: true })
+      const end = el.value.length
+      el.setSelectionRange(end, end)
+    }, 80)
+    return () => window.clearTimeout(timer)
+  }, [isOpen, activeTab])
 
   if (!text) return null
 
@@ -70,12 +83,6 @@ export function TextEditorSheet({
     onUpdate(text.id, { fontId: font.id, fontFamily: font.fontFamily })
   }
 
-  const toggleDecoration = (decoration: TextDecoration) => {
-    onUpdate(text.id, {
-      textDecoration: text.textDecoration === decoration ? 'none' : decoration,
-    })
-  }
-
   const handleTopChange = (raw: string) => {
     const parsed = Number.parseInt(raw, 10)
     if (Number.isNaN(parsed)) return
@@ -83,211 +90,220 @@ export function TextEditorSheet({
     onUpdate(text.id, { y, textAlign: 'none' })
   }
 
-  const handleOpenTextInput = () => {
-    setTextDraft(text.content)
-    setTextInputOpen(true)
-  }
-
-  const handleCommitTextInput = () => {
-    setTextInputOpen(false)
-    onUpdate(text.id, { content: textDraft })
+  const handleCommit = () => {
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur()
     }
+    onClose(true)
   }
 
   return (
     <Drawer state={state}>
-      <Drawer.Backdrop isDismissable={!textInputOpen}>
+      <Drawer.Backdrop isDismissable>
         <Drawer.Content placement="bottom">
-          <Drawer.Dialog className={`flex max-h-[75dvh] flex-col ${textInputOpen ? 'pointer-events-none' : ''}`}>
-            <Drawer.Handle />
-            <Drawer.Header>
-              <Drawer.Heading>编辑文本</Drawer.Heading>
-            </Drawer.Header>
+          <Drawer.Dialog className="component-library flex max-h-[72dvh] flex-col bg-[#1a1a1a] text-white">
+            <div className="flex shrink-0 items-center justify-between px-4 pb-2 pt-3">
+              <h2 className="text-base font-semibold text-white">组件库</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="text-xs text-neutral-400 underline underline-offset-2"
+                  onClick={() => onDelete(text.id)}
+                >
+                  删除
+                </button>
+                <button
+                  type="button"
+                  aria-label="完成"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-black"
+                  onClick={handleCommit}
+                >
+                  <Check size={18} strokeWidth={2.5} />
+                </button>
+              </div>
+            </div>
 
-            <Drawer.Body className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-2 pt-2">
-              <div className="flex flex-col gap-1.5">
-                <Label>文本内容</Label>
-                <TextInputTrigger
+            <div className="flex shrink-0 border-b border-neutral-700 px-2">
+              {TABS.map((tab) => {
+                const Icon = tab.icon
+                const selected = activeTab === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    className={`component-tab flex flex-1 flex-col items-center gap-1 py-2.5 ${
+                      selected ? 'component-tab--active' : 'text-neutral-400'
+                    }`}
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    <Icon size={18} strokeWidth={1.5} />
+                    <span className="text-xs">{tab.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            <Drawer.Body className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
+              {activeTab === 'keyboard' && (
+                <textarea
+                  ref={inputRef}
                   value={text.content}
-                  placeholder="点击输入文字内容"
-                  onOpen={handleOpenTextInput}
+                  onChange={(e) => onUpdate(text.id, { content: e.target.value })}
+                  placeholder="输入文字内容"
+                  rows={4}
+                  inputMode="text"
+                  enterKeyHint="done"
+                  autoComplete="off"
+                  autoCorrect="on"
+                  spellCheck
+                  className="w-full resize-none rounded-xl border border-neutral-600 bg-[#2a2a2a] px-3 py-3 text-base text-white outline-none placeholder:text-neutral-500"
+                  style={{ fontSize: '16px', WebkitUserSelect: 'text', userSelect: 'text' }}
                 />
-              </div>
+              )}
 
-              <div className="flex flex-col gap-1.5">
-                <Label>距顶部（px）</Label>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  value={String(Math.round(text.y))}
-                  onChange={(e) => handleTopChange(e.target.value)}
-                  fullWidth
-                  className="border-neutral-300"
-                  aria-label="距顶部距离"
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label>字体（{FONT_COUNT} 种）</Label>
-                <FontSelect
-                  selectedFontId={text.fontId}
-                  isFontLoaded={isFontLoaded}
-                  isFontLoading={(id) => loadingFonts.has(id)}
-                  onSelect={handleFontSelect}
-                  onLoadFont={loadFont}
-                />
-                {fontError && <p className="text-xs text-red-600">{fontError}</p>}
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label>样式</Label>
-                <div className="flex gap-2">
-                  <Button
-                    variant={text.fontWeight === 400 ? 'primary' : 'secondary'}
-                    className={`flex-1 ${text.fontWeight === 400 ? 'bg-black text-white' : 'border-neutral-300 bg-white text-black'}`}
-                    onPress={() => onUpdate(text.id, { fontWeight: 400 })}
-                  >
-                    常规
-                  </Button>
-                  <Button
-                    variant={text.fontWeight === 700 ? 'primary' : 'secondary'}
-                    className={`flex-1 ${text.fontWeight === 700 ? 'bg-black text-white' : 'border-neutral-300 bg-white text-black'}`}
-                    onPress={() => onUpdate(text.id, { fontWeight: 700 })}
-                  >
-                    粗体
-                  </Button>
-                  <Button
-                    isIconOnly
-                    variant={text.fontStyle === 'italic' ? 'primary' : 'secondary'}
-                    className={text.fontStyle === 'italic' ? 'bg-black text-white' : 'border-neutral-300 bg-white text-black'}
-                    aria-label="斜体"
-                    onPress={() =>
-                      onUpdate(text.id, {
-                        fontStyle: text.fontStyle === 'italic' ? 'normal' : 'italic',
-                      })
-                    }
-                  >
-                    <Italic size={18} />
-                  </Button>
-                  <Button
-                    isIconOnly
-                    variant={text.textDecoration === 'underline' ? 'primary' : 'secondary'}
-                    className={
-                      text.textDecoration === 'underline'
-                        ? 'bg-black text-white'
-                        : 'border-neutral-300 bg-white text-black'
-                    }
-                    aria-label="下划线"
-                    onPress={() => toggleDecoration('underline')}
-                  >
-                    <Underline size={18} />
-                  </Button>
-                  <Button
-                    isIconOnly
-                    variant={text.textDecoration === 'line-through' ? 'primary' : 'secondary'}
-                    className={
-                      text.textDecoration === 'line-through'
-                        ? 'bg-black text-white'
-                        : 'border-neutral-300 bg-white text-black'
-                    }
-                    aria-label="中划线"
-                    onPress={() => toggleDecoration('line-through')}
-                  >
-                    <Strikethrough size={18} />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <Label>对齐</Label>
-                <div className="grid grid-cols-4 gap-2">
-                  {ALIGN_OPTIONS.map((opt) => (
-                    <Button
-                      key={opt.id}
-                      variant={text.textAlign === opt.id ? 'primary' : 'secondary'}
-                      className={`min-w-0 ${
-                        text.textAlign === opt.id
-                          ? 'bg-black text-white'
-                          : 'border-neutral-300 bg-white text-black'
-                      }`}
-                      onPress={() => onUpdate(text.id, { textAlign: opt.id })}
+              {activeTab === 'template' && (
+                <div className="grid grid-cols-3 gap-2">
+                  {TEXT_TEMPLATES.map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      className="component-chip rounded-lg px-3 py-3 text-sm text-white"
+                      onClick={() => onUpdate(text.id, { content: tpl.content })}
                     >
-                      {opt.label}
-                    </Button>
+                      {tpl.label}
+                    </button>
                   ))}
                 </div>
-              </div>
+              )}
 
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <Label>字号</Label>
-                  <span className="text-sm text-neutral-500">{text.fontSize}px</span>
+              {activeTab === 'font' && (
+                <div className="flex flex-col gap-2">
+                  <FontGrid
+                    selectedFontId={text.fontId}
+                    isFontLoaded={isFontLoaded}
+                    isFontLoading={(id) => loadingFonts.has(id)}
+                    onSelect={handleFontSelect}
+                    onLoadFont={loadFont}
+                  />
+                  {fontError && <p className="text-xs text-red-400">{fontError}</p>}
                 </div>
-                <Slider
-                  aria-label="字号"
-                  minValue={12}
-                  maxValue={72}
-                  step={1}
-                  value={text.fontSize}
-                  onChange={(value) => onUpdate(text.id, { fontSize: value as number })}
-                  className="grey-slider"
-                >
-                  <Slider.Track>
-                    <Slider.Fill />
-                    <Slider.Thumb />
-                  </Slider.Track>
-                </Slider>
-              </div>
+              )}
 
-              <div className="flex flex-col gap-2">
-                <Label>颜色</Label>
-                <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-neutral-300 px-3 py-2.5">
-                  <span
-                    className="h-9 w-9 shrink-0 rounded-md border border-neutral-200"
-                    style={{ backgroundColor: text.color }}
-                  />
-                  <span className="flex-1 font-mono text-sm text-neutral-700">
-                    {normalizeColorHex(text.color)}
-                  </span>
-                  <input
-                    type="color"
-                    value={text.color.length === 7 ? text.color : '#000000'}
-                    onChange={(e) => onUpdate(text.id, { color: e.target.value })}
-                    className="sr-only"
-                  />
-                </label>
-              </div>
+              {activeTab === 'style' && (
+                <div className="flex flex-col gap-5">
+                  <section>
+                    <p className="mb-2.5 text-sm text-neutral-300">颜色</p>
+                    <div className="flex flex-wrap gap-2.5">
+                      {PRESET_COLORS.map((color) => {
+                        const selected = text.color.toUpperCase() === color.toUpperCase()
+                        return (
+                          <button
+                            key={color}
+                            type="button"
+                            aria-label={`颜色 ${color}`}
+                            className={`h-9 w-9 rounded-full border-2 ${
+                              selected ? 'border-white' : 'border-transparent'
+                            }`}
+                            style={{ backgroundColor: color }}
+                            onClick={() => onUpdate(text.id, { color })}
+                          />
+                        )
+                      })}
+                    </div>
+                  </section>
+
+                  <section>
+                    <p className="mb-2.5 text-sm text-neutral-300">基础样式</p>
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                      {STYLE_PRESETS.map((preset) => {
+                        const selected = text.textStylePreset === preset.id
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            className={`flex h-12 items-center justify-center rounded-lg text-sm ${
+                              selected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1a1a1a]' : 'component-chip'
+                            }`}
+                            style={{
+                              color: preset.previewColor,
+                              backgroundColor: preset.previewBg ?? 'transparent',
+                              border: preset.previewBorder,
+                              WebkitTextStroke:
+                                preset.id === 'outline' ? '1.5px #fff' : undefined,
+                            }}
+                            onClick={() => onUpdate(text.id, getPresetUpdates(preset.id))}
+                          >
+                            文字
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </section>
+
+                  <section>
+                    <p className="mb-2.5 text-sm text-neutral-300">排列</p>
+                    <div className="flex gap-2">
+                      {[
+                        { id: 'left' as const, icon: AlignLeft },
+                        { id: 'center' as const, icon: AlignCenter },
+                        { id: 'right' as const, icon: AlignRight },
+                      ].map((opt) => {
+                        const Icon = opt.icon
+                        const selected = text.textAlign === opt.id
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            aria-label={ALIGN_OPTIONS.find((a) => a.id === opt.id)?.label}
+                            className={`flex h-11 flex-1 items-center justify-center rounded-lg ${
+                              selected ? 'ring-2 ring-white' : 'component-chip'
+                            }`}
+                            onClick={() => onUpdate(text.id, { textAlign: opt.id })}
+                          >
+                            <Icon size={20} strokeWidth={1.5} />
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </section>
+
+                  <section>
+                    <div className="mb-2 flex items-center justify-between">
+                      <Label className="text-sm text-neutral-300">字号</Label>
+                      <span className="text-sm text-neutral-400">{text.fontSize}px</span>
+                    </div>
+                    <Slider
+                      aria-label="字号"
+                      minValue={12}
+                      maxValue={72}
+                      step={1}
+                      value={text.fontSize}
+                      onChange={(value) => onUpdate(text.id, { fontSize: value as number })}
+                      className="dark-slider"
+                    >
+                      <Slider.Track>
+                        <Slider.Fill />
+                        <Slider.Thumb />
+                      </Slider.Track>
+                    </Slider>
+                  </section>
+
+                  <section>
+                    <Label className="mb-2 block text-sm text-neutral-300">距顶部（px）</Label>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      value={String(Math.round(text.y))}
+                      onChange={(e) => handleTopChange(e.target.value)}
+                      fullWidth
+                      className="component-input"
+                      aria-label="距顶部距离"
+                    />
+                  </section>
+                </div>
+              )}
             </Drawer.Body>
-
-            <Drawer.Footer className="sheet-action-bar mt-auto flex shrink-0 gap-2 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-              <Button
-                variant="secondary"
-                className="flex-1 border-neutral-300 bg-white text-black"
-                onPress={() => onDelete(text.id)}
-              >
-                删除
-              </Button>
-              <Button
-                variant="primary"
-                className="flex-1 bg-black text-white"
-                onPress={() => onClose(true)}
-              >
-                完成
-              </Button>
-            </Drawer.Footer>
           </Drawer.Dialog>
-
-          {textInputOpen && (
-            <TextInputOverlay
-              open={textInputOpen}
-              draft={textDraft}
-              placeholder="点击输入文字内容"
-              onDraftChange={setTextDraft}
-              onCommit={handleCommitTextInput}
-            />
-          )}
         </Drawer.Content>
       </Drawer.Backdrop>
     </Drawer>

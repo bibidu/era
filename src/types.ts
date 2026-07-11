@@ -1,5 +1,6 @@
 export type TextAlign = 'none' | 'left' | 'center' | 'right'
 export type TextDecoration = 'none' | 'underline' | 'line-through'
+export type TextStylePreset = 'plain' | 'border' | 'outline' | 'box' | 'box-stroke' | 'fill'
 
 export interface TextElement {
   id: string
@@ -14,6 +15,8 @@ export interface TextElement {
   fontFamily: string
   fontId: string
   textAlign: TextAlign
+  textStylePreset: TextStylePreset
+  backgroundColor: string | null
 }
 
 export type FontSource = 'system' | 'google'
@@ -22,7 +25,6 @@ export type { FontOption } from './data/fonts'
 export { FONT_OPTIONS, FONT_COUNT } from './data/fonts'
 
 export const ALIGN_OPTIONS: { id: TextAlign; label: string }[] = [
-  { id: 'none', label: '无' },
   { id: 'left', label: '左' },
   { id: 'center', label: '中' },
   { id: 'right', label: '右' },

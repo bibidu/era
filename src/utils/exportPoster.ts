@@ -2,6 +2,7 @@ import type { TextElement } from '../types'
 import { H_PADDING } from '../types'
 import { FONT_OPTIONS } from '../data/fonts'
 import { ensurePixelFontLoaded, formatCanvasFont } from './pixelFont'
+import { resolvePresetColors } from './textLayout'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -20,6 +21,7 @@ function drawDecoration(
   y: number,
   width: number,
   fontSize: number,
+  color: string,
 ) {
   if (text.textDecoration === 'none') return
 
@@ -28,12 +30,67 @@ function drawDecoration(
       ? y + fontSize * 1.05
       : y + fontSize * 0.55
 
-  ctx.strokeStyle = text.color
+  ctx.strokeStyle = color
   ctx.lineWidth = Math.max(1, fontSize * 0.06)
   ctx.beginPath()
   ctx.moveTo(x, lineY)
   ctx.lineTo(x + width, lineY)
   ctx.stroke()
+}
+
+function drawRoundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
+  if (typeof ctx.roundRect === 'function') {
+    ctx.beginPath()
+    ctx.roundRect(x, y, w, h, r)
+    return
+  }
+  ctx.beginPath()
+  ctx.rect(x, y, w, h)
+}
+
+function drawPresetBackground(
+  ctx: CanvasRenderingContext2D,
+  preset: TextElement['textStylePreset'],
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  backgroundColor: string,
+  borderColor: string,
+) {
+  const padX = 8
+  const padY = 2
+  const rx = x - padX
+  const ry = y - padY
+  const rw = width + padX * 2
+  const rh = height + padY * 2
+
+  if (preset === 'border') {
+    ctx.strokeStyle = borderColor
+    ctx.lineWidth = 2
+    drawRoundRect(ctx, rx, ry, rw, rh, 6)
+    ctx.stroke()
+    return
+  }
+
+  if (preset === 'box' || preset === 'box-stroke' || preset === 'fill') {
+    ctx.fillStyle = backgroundColor
+    drawRoundRect(ctx, rx, ry, rw, rh, 2)
+    ctx.fill()
+
+    if (preset === 'box-stroke') {
+      ctx.strokeStyle = borderColor
+      ctx.lineWidth = 1
+      ctx.stroke()
+    }
+  }
 }
 
 function drawTextElement(
@@ -47,9 +104,9 @@ function drawTextElement(
   const fontSize = text.fontSize * scaleX
   const fontStyle = text.fontStyle === 'italic' ? 'italic' : 'normal'
   ctx.font = formatCanvasFont(text.fontFamily, fontStyle, text.fontWeight, fontSize)
-  ctx.fillStyle = text.color
   ctx.textBaseline = 'top'
 
+  const { color, backgroundColor, borderColor } = resolvePresetColors(text)
   const lines = (text.content || '').split('\n')
   const lineHeight = fontSize * 1.2
   const padding = H_PADDING * scaleX
@@ -68,8 +125,29 @@ function drawTextElement(
       }
     }
 
-    ctx.fillText(line, x, y)
-    drawDecoration(ctx, text, x, y, metrics.width, fontSize)
+    const textHeight = fontSize * 1.1
+    drawPresetBackground(
+      ctx,
+      text.textStylePreset,
+      x,
+      y,
+      metrics.width,
+      textHeight,
+      backgroundColor,
+      borderColor,
+    )
+
+    if (text.textStylePreset === 'outline') {
+      ctx.strokeStyle = color
+      ctx.lineWidth = Math.max(2, fontSize * 0.08)
+      ctx.lineJoin = 'round'
+      ctx.strokeText(line, x, y)
+    } else {
+      ctx.fillStyle = color
+      ctx.fillText(line, x, y)
+    }
+
+    drawDecoration(ctx, text, x, y, metrics.width, fontSize, color)
   })
 }
 
