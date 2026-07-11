@@ -100,12 +100,6 @@ export function getTextContentStyle(text: TextElement): CSSProperties {
   }
 }
 
-export function getSelectionOutlineColor(text: TextElement): string {
-  const { color } = resolvePresetColors(text)
-  if (text.textStylePreset === 'outline') return text.color
-  return color === 'transparent' ? text.color : color
-}
-
 export function getPresetBackground(text: TextElement): string | null {
   if (text.textStylePreset === 'box' || text.textStylePreset === 'box-stroke') {
     return text.backgroundColor ?? '#FFFFFF'

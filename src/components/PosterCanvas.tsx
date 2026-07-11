@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import type { TextElement } from '../types'
-import { getSelectionOutlineColor, getTextContentStyle, getWrapperStyle } from '../utils/textLayout'
+import { getTextContentStyle, getWrapperStyle } from '../utils/textLayout'
 
 const IMAGE_ACCEPT = 'image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp,image/svg+xml,image/heic,image/heif'
 
@@ -89,7 +89,6 @@ export function PosterCanvas({
           })
           .map((text) => {
             const isSelected = selectedId === text.id
-            const outlineColor = getSelectionOutlineColor(text)
 
             return (
               <div
@@ -103,19 +102,21 @@ export function PosterCanvas({
               >
                 <div className="relative inline-block max-w-full">
                   <div
-                    className={`select-none px-0.5 ${
-                      isSelected && !isExporting ? 'border border-dashed' : 'border border-transparent'
-                    }`}
-                    style={{
-                      ...getTextContentStyle(text),
-                      borderColor: isSelected && !isExporting ? outlineColor : 'transparent',
-                    }}
+                    className="select-none border border-transparent px-0.5"
+                    style={getTextContentStyle(text)}
                   >
                     {text.content ||
                       (!isExporting && (
-                        <span style={{ opacity: 0.35, color: outlineColor }}>输入文字</span>
+                        <span style={{ opacity: 0.35, color: text.color }}>输入文字</span>
                       ))}
                   </div>
+
+                  {isSelected && !isExporting && (
+                    <div
+                      className="pointer-events-none absolute -inset-px rounded-sm border border-dashed"
+                      style={{ borderColor: text.color }}
+                    />
+                  )}
 
                   {isSelected && !isExporting && (
                     <>
