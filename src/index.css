@@ -82,6 +82,30 @@ body.text-input-open .drawer__dialog {
   border-radius: 16px 16px 0 0;
 }
 
+.component-library-header {
+  min-height: 36px;
+}
+
+.component-done-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.06);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.component-done-btn:active {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+
 .component-library-content {
   position: fixed !important;
   bottom: 0 !important;

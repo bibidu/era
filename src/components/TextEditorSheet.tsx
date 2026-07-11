@@ -2,6 +2,7 @@ import { Drawer, Input, Label, Slider, useOverlayState } from '@heroui/react'
 import { AlignCenter, AlignLeft, AlignRight, Check, Keyboard, Palette, Type } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { PRESET_COLORS, STYLE_PRESETS } from '../data/editorPresets'
+import { getFontById } from '../data/fonts'
 import type { FontOption, TextElement } from '../types'
 import { ALIGN_OPTIONS } from '../types'
 import { useFontLoader } from '../hooks/useFontLoader'
@@ -66,22 +67,29 @@ export function TextEditorSheet({
   }, [isOpen, activeTab])
 
   useEffect(() => {
+    if (!text || text.fontId !== 'dachun') return
+    const font = getFontById('dachun')
+    loadFont(font, text.content || '你好')
+  }, [text?.content, text?.fontId, loadFont, text])
+
+  useEffect(() => {
     if (!isOpen) return
     const content = dialogRef.current?.closest('.component-library-content') as HTMLElement | null
     const viewport = window.visualViewport
     if (!content || !viewport) return
 
-    const pinToBottom = () => {
+    const pinSheet = () => {
+      const keyboardOffset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
       content.style.transform = 'translate3d(0, 0, 0)'
-      content.style.bottom = '0px'
+      content.style.bottom = `${keyboardOffset}px`
     }
 
-    pinToBottom()
-    viewport.addEventListener('resize', pinToBottom)
-    viewport.addEventListener('scroll', pinToBottom)
+    pinSheet()
+    viewport.addEventListener('resize', pinSheet)
+    viewport.addEventListener('scroll', pinSheet)
     return () => {
-      viewport.removeEventListener('resize', pinToBottom)
-      viewport.removeEventListener('scroll', pinToBottom)
+      viewport.removeEventListener('resize', pinSheet)
+      viewport.removeEventListener('scroll', pinSheet)
       content.style.transform = ''
       content.style.bottom = ''
     }
@@ -92,8 +100,8 @@ export function TextEditorSheet({
   const maxTop = Math.max(0, Math.round(canvasHeight - 24))
 
   const handleFontSelect = async (font: FontOption) => {
-    if ((font.source === 'google' || font.source === 'pixel') && !isFontLoaded(font)) {
-      const ok = await loadFont(font)
+    if (font.source !== 'system') {
+      const ok = await loadFont(font, text.content || font.sample)
       if (!ok) {
         setFontError(`字体「${font.label}」加载失败，请重试`)
         return
@@ -121,17 +129,17 @@ export function TextEditorSheet({
     <Drawer state={state}>
       <Drawer.Backdrop isDismissable>
         <Drawer.Content placement="bottom" className="component-library-content">
-          <Drawer.Dialog className="component-library flex h-[min(420px,52dvh)] max-h-[min(420px,52dvh)] flex-col bg-[#1a1a1a] text-white">
+          <Drawer.Dialog className="component-library flex h-[min(520px,68dvh)] max-h-[min(520px,68dvh)] flex-col bg-[#1a1a1a] text-white">
             <div ref={dialogRef} className="flex h-full min-h-0 flex-col">
-            <div className="flex shrink-0 items-center justify-between px-4 pb-2 pt-3">
-              <h2 className="text-base font-semibold text-white">组件库</h2>
+            <div className="component-library-header flex shrink-0 items-center justify-between px-4 py-2">
+              <h2 className="text-sm font-medium text-white">组件库</h2>
               <button
                 type="button"
                 aria-label="完成"
-                className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-black"
+                className="component-done-btn"
                 onClick={handleCommit}
               >
-                <Check size={18} strokeWidth={2.5} />
+                <Check size={15} strokeWidth={2} />
               </button>
             </div>
 
@@ -143,7 +151,7 @@ export function TextEditorSheet({
                   <button
                     key={tab.id}
                     type="button"
-                    className={`component-tab flex flex-1 flex-col items-center gap-1 py-2.5 ${
+                    className={`component-tab flex flex-1 flex-col items-center gap-0.5 py-2 ${
                       selected ? 'component-tab--active' : 'text-neutral-400'
                     }`}
                     onClick={() => setActiveTab(tab.id)}
@@ -169,7 +177,12 @@ export function TextEditorSheet({
                   autoCorrect="on"
                   spellCheck
                   className="w-full resize-none rounded-xl border border-neutral-600 bg-[#2a2a2a] px-3 py-3 text-base text-white outline-none placeholder:text-neutral-500"
-                  style={{ fontSize: '16px', WebkitUserSelect: 'text', userSelect: 'text' }}
+                  style={{
+                    fontSize: '16px',
+                    WebkitUserSelect: 'text',
+                    userSelect: 'text',
+                    fontFamily: text.fontFamily,
+                  }}
                 />
               )}
 

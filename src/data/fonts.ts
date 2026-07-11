@@ -1,4 +1,4 @@
-export type FontSource = 'system' | 'google' | 'pixel'
+export type FontSource = 'system' | 'google' | 'pixel' | 'cdn'
 
 export interface FontOption {
   id: string
@@ -7,6 +7,7 @@ export interface FontOption {
   sample: string
   source: FontSource
   googleFamily?: string
+  cdnUrl?: string
   pixelFamily?: string
   pixelFiles?: { zh: string; latin: string }
 }
@@ -30,7 +31,7 @@ function createPixelFont(
   }
 }
 
-export const FONT_OPTIONS: FontOption[] = [
+const RAW_FONT_OPTIONS: FontOption[] = [
   { id: 'system', label: '默认', fontFamily: 'system-ui, -apple-system, sans-serif', sample: '默认字体 Aa', source: 'system' },
   { id: 'pingfang', label: '苹方', fontFamily: '"PingFang SC", "Helvetica Neue", sans-serif', sample: '苹方 Aa', source: 'system' },
   { id: 'yahei', label: '微软雅黑', fontFamily: '"Microsoft YaHei", sans-serif', sample: '微软雅黑 Aa', source: 'system' },
@@ -54,9 +55,14 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: 'long-cang', label: '龙苍体', fontFamily: '"Long Cang", cursive', sample: '龙苍体 Aa', source: 'google', googleFamily: 'Long+Cang' },
   { id: 'liu-jian', label: '刘建毛草', fontFamily: '"Liu Jian Mao Cao", cursive', sample: '刘建毛草 Aa', source: 'google', googleFamily: 'Liu+Jian+Mao+Cao' },
   { id: 'zhi-mang', label: '志芒行书', fontFamily: '"Zhi Mang Xing", cursive', sample: '志芒行书 Aa', source: 'google', googleFamily: 'Zhi+Mang+Xing' },
-  { id: 'yuji-mai', label: '佑字麦', fontFamily: '"Yuji Mai", serif', sample: '佑字麦 Aa', source: 'google', googleFamily: 'Yuji+Mai' },
-  { id: 'dachun', label: '大椿', fontFamily: '"Yuji Mai", "Ma Shan Zheng", serif', sample: '大椿', source: 'google', googleFamily: 'Yuji+Mai' },
-  { id: 'dotgothic', label: '点阵哥特', fontFamily: '"DotGothic16", sans-serif', sample: '点阵哥特 Aa', source: 'google', googleFamily: 'DotGothic16' },
+  {
+    id: 'dachun',
+    label: '大椿',
+    fontFamily: '"LXGW WenKai GB", serif',
+    sample: '大椿',
+    source: 'cdn',
+    cdnUrl: 'https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@1.521.0/lxgwwenkaigb-regular/result.css',
+  },
   createPixelFont(
     'fusion-pixel-8',
     '像素8点',
@@ -117,6 +123,10 @@ export const FONT_OPTIONS: FontOption[] = [
   { id: 'satisfy', label: 'Satisfy', fontFamily: 'Satisfy, cursive', sample: 'Satisfy Aa', source: 'google', googleFamily: 'Satisfy' },
   { id: 'caveat', label: 'Caveat', fontFamily: 'Caveat, cursive', sample: 'Caveat Aa', source: 'google', googleFamily: 'Caveat:wght@400;700' },
 ]
+
+const MONO_FONT_IDS = new Set(['dotgothic', 'yuji-mai'])
+
+export const FONT_OPTIONS = RAW_FONT_OPTIONS.filter((font) => !MONO_FONT_IDS.has(font.id))
 
 export const FONT_COUNT = FONT_OPTIONS.length
 
