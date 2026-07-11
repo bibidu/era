@@ -110,7 +110,6 @@ export function TextEditorSheet({
     onUpdate(text.id, {
       fontId: font.id,
       fontFamily: font.fontFamily,
-      fontWeight: font.defaultWeight ?? 400,
     })
   }
 

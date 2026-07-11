@@ -10,8 +10,6 @@ export interface FontOption {
   cdnUrl?: string
   pixelFamily?: string
   pixelFiles?: { zh: string; latin: string }
-  /** 选中该字体时应用的默认字重 */
-  defaultWeight?: 400 | 700
 }
 
 /** 原系统字体名，现改为 Web 字体以保证各端显示一致 */
@@ -47,7 +45,6 @@ const RAW_FONT_OPTIONS: FontOption[] = [
     sample: '黑体',
     source: 'google',
     googleFamily: 'Noto+Sans+SC:wght@700',
-    defaultWeight: 700,
   },
   {
     id: 'song',
@@ -56,7 +53,6 @@ const RAW_FONT_OPTIONS: FontOption[] = [
     sample: '宋体',
     source: 'google',
     googleFamily: 'Noto+Serif+SC:wght@400;700',
-    defaultWeight: 400,
   },
   {
     id: 'kai',
@@ -65,7 +61,6 @@ const RAW_FONT_OPTIONS: FontOption[] = [
     sample: '楷体',
     source: 'cdn',
     cdnUrl: 'https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@1.521.0/lxgwwenkaigb-regular/result.css',
-    defaultWeight: 400,
   },
   {
     id: 'fangsong',
@@ -74,7 +69,6 @@ const RAW_FONT_OPTIONS: FontOption[] = [
     sample: '仿宋',
     source: 'google',
     googleFamily: 'ZCOOL+XiaoWei',
-    defaultWeight: 400,
   },
 
   { id: 'noto-heavy', label: '思源特粗', fontFamily: '"Noto Sans SC", sans-serif', sample: '思源特粗', source: 'google', googleFamily: 'Noto+Sans+SC:wght@900' },
