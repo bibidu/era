@@ -1,7 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import type { TextElement } from '../types'
-import { DEFAULT_POSTER_ASPECT_RATIO } from '../utils/imageMeta'
+import {
+  DEFAULT_POSTER_SIZE,
+  fitSizeInBox,
+  type ImageSize,
+} from '../utils/imageMeta'
 import { getTextContentStyle, getWrapperStyle } from '../utils/textLayout'
 
 const IMAGE_ACCEPT = 'image/png,image/jpeg,image/jpg,image/webp,image/gif,image/bmp,image/svg+xml,image/heic,image/heif'
@@ -12,7 +16,7 @@ function isImageFile(file: File) {
 
 interface PosterCanvasProps {
   posterUrl: string | null
-  posterAspectRatio: number
+  posterSize: ImageSize | null
   texts: TextElement[]
   selectedId: string | null
   isExporting: boolean
@@ -25,7 +29,7 @@ interface PosterCanvasProps {
 
 export function PosterCanvas({
   posterUrl,
-  posterAspectRatio,
+  posterSize,
   texts,
   selectedId,
   isExporting,
@@ -35,9 +39,27 @@ export function PosterCanvas({
   onUploadPoster,
   onCanvasResize,
 }: PosterCanvasProps) {
+  const areaRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
-  const aspectRatio = posterUrl ? posterAspectRatio : DEFAULT_POSTER_ASPECT_RATIO
-  const isLandscape = aspectRatio >= 1
+  const [canvasSize, setCanvasSize] = useState<ImageSize>({ width: 0, height: 0 })
+
+  const contentSize = posterUrl && posterSize ? posterSize : DEFAULT_POSTER_SIZE
+
+  useEffect(() => {
+    const area = areaRef.current
+    if (!area) return
+
+    const update = () => {
+      const box = { width: area.clientWidth, height: area.clientHeight }
+      const next = fitSizeInBox(contentSize, box)
+      setCanvasSize(next)
+    }
+
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(area)
+    return () => ro.disconnect()
+  }, [contentSize.width, contentSize.height])
 
   useEffect(() => {
     const el = canvasRef.current
@@ -49,7 +71,7 @@ export function PosterCanvas({
     const ro = new ResizeObserver(report)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [onCanvasResize, posterUrl, posterAspectRatio])
+  }, [onCanvasResize, canvasSize.width, canvasSize.height])
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -59,15 +81,14 @@ export function PosterCanvas({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden px-4 py-3">
-      <div className="flex h-full w-full min-h-0 items-center justify-center">
+      <div ref={areaRef} className="flex h-full w-full min-h-0 items-center justify-center">
         <div
           ref={canvasRef}
           id="poster-canvas"
-          className="poster-canvas relative max-h-full max-w-full overflow-hidden rounded-2xl border border-neutral-300 bg-neutral-100 shadow-sm"
+          className="poster-canvas relative shrink-0 overflow-hidden rounded-2xl border border-neutral-300 bg-neutral-100 shadow-sm"
           style={{
-            aspectRatio,
-            width: isLandscape ? '100%' : 'auto',
-            height: isLandscape ? 'auto' : '100%',
+            width: canvasSize.width > 0 ? `${canvasSize.width}px` : undefined,
+            height: canvasSize.height > 0 ? `${canvasSize.height}px` : undefined,
             touchAction: 'none',
           }}
           onClick={() => onSelectText('')}

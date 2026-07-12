@@ -7,7 +7,7 @@ import { TextEditorSheet } from './components/TextEditorSheet'
 import type { TextElement } from './types'
 import { FONT_OPTIONS } from './data/fonts'
 import { exportPosterToImage, savePosterBlob } from './utils/exportPoster'
-import { DEFAULT_POSTER_ASPECT_RATIO, loadImageMeta } from './utils/imageMeta'
+import { loadImageMetaFromFile, type ImageSize } from './utils/imageMeta'
 
 function cleanupEditorUi() {
   document.body.classList.remove('keyboard-dock-open')
@@ -37,7 +37,7 @@ function createTextElement(): TextElement {
 
 function App() {
   const [posterUrl, setPosterUrl] = useState<string | null>(null)
-  const [posterAspectRatio, setPosterAspectRatio] = useState(DEFAULT_POSTER_ASPECT_RATIO)
+  const [posterSize, setPosterSize] = useState<ImageSize | null>(null)
   const [texts, setTexts] = useState<TextElement[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [materialOpen, setMaterialOpen] = useState(false)
@@ -53,24 +53,26 @@ function App() {
   const handleUploadPoster = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) return
 
-    const reader = new FileReader()
-    reader.onload = async () => {
-      const result = reader.result as string
-      if (posterUrlRef.current?.startsWith('blob:')) {
-        URL.revokeObjectURL(posterUrlRef.current)
-      }
-      posterUrlRef.current = result
+    void (async () => {
+      let size: ImageSize = { width: 3, height: 4 }
       try {
-        const { width, height } = await loadImageMeta(result)
-        if (width > 0 && height > 0) {
-          setPosterAspectRatio(width / height)
-        }
+        size = await loadImageMetaFromFile(file)
       } catch {
-        setPosterAspectRatio(DEFAULT_POSTER_ASPECT_RATIO)
+        size = { width: 3, height: 4 }
       }
-      setPosterUrl(result)
-    }
-    reader.readAsDataURL(file)
+
+      const reader = new FileReader()
+      reader.onload = () => {
+        const result = reader.result as string
+        if (posterUrlRef.current?.startsWith('blob:')) {
+          URL.revokeObjectURL(posterUrlRef.current)
+        }
+        posterUrlRef.current = result
+        setPosterSize(size)
+        setPosterUrl(result)
+      }
+      reader.readAsDataURL(file)
+    })()
   }, [])
 
   const openEditor = useCallback((id: string, isNew = false) => {
@@ -159,11 +161,11 @@ function App() {
 
   const handleSave = useCallback(async () => {
     const canvasEl = document.getElementById('poster-canvas')
-    if (!canvasEl || !posterUrl) return
+    if (!canvasEl || !posterUrl || !posterSize) return
 
-    const width = canvasEl.clientWidth
-    const height = canvasEl.clientHeight
-    if (width === 0 || height === 0) return
+    const displayWidth = canvasEl.clientWidth
+    const displayHeight = canvasEl.clientHeight
+    if (displayWidth === 0 || displayHeight === 0) return
 
     cleanupEditorUi()
     setSaving(true)
@@ -176,7 +178,14 @@ function App() {
 
     try {
       await new Promise((r) => setTimeout(r, 80))
-      const blob = await exportPosterToImage(posterUrl, texts, width, height)
+      const blob = await exportPosterToImage(
+        posterUrl,
+        texts,
+        displayWidth,
+        displayHeight,
+        posterSize.width,
+        posterSize.height,
+      )
       await savePosterBlob(blob, `poster-${Date.now()}.png`)
       setSaveMessage('已保存到本地')
     } catch {
@@ -187,7 +196,7 @@ function App() {
       cleanupEditorUi()
       setTimeout(() => setSaveMessage(null), 2500)
     }
-  }, [posterUrl, texts])
+  }, [posterUrl, posterSize, texts])
 
   const selectedText = texts.find((t) => t.id === selectedId) ?? null
 
@@ -199,7 +208,7 @@ function App() {
 
       <PosterCanvas
         posterUrl={posterUrl}
-        posterAspectRatio={posterAspectRatio}
+        posterSize={posterSize}
         texts={texts}
         selectedId={selectedId}
         isExporting={isExporting}

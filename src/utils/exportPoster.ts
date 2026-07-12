@@ -4,29 +4,20 @@ import { FONT_OPTIONS } from '../data/fonts'
 import { ensureFontReady } from './fontLoad'
 import { formatCanvasFont } from './pixelFont'
 import { withTimeout } from './async'
+import { loadOrientedImageBitmap } from './imageMeta'
 import { resolvePresetColors } from './textLayout'
 
 const EXPORT_FONT_TIMEOUT_MS = 8000
 const FONTS_READY_TIMEOUT_MS = 3000
 
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => resolve(img)
-    img.onerror = () => reject(new Error('图片加载失败'))
-    img.src = src
-  })
-}
-
-/** 画布比例已与底图一致，直接铺满绘制 */
+/** 按原图尺寸绘制，避免拉伸变形 */
 function drawPosterBackground(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
+  bitmap: ImageBitmap,
   destWidth: number,
   destHeight: number,
 ) {
-  ctx.drawImage(img, 0, 0, destWidth, destHeight)
+  ctx.drawImage(bitmap, 0, 0, destWidth, destHeight)
 }
 
 function drawDecoration(
@@ -247,8 +238,10 @@ function drawTextElement(
 export async function exportPosterToImage(
   posterUrl: string,
   texts: TextElement[],
-  containerWidth: number,
-  containerHeight: number,
+  displayWidth: number,
+  displayHeight: number,
+  imageWidth: number,
+  imageHeight: number,
 ): Promise<Blob> {
   const fontIds = new Set(texts.map((t) => t.fontId))
   await Promise.all(
@@ -264,10 +257,9 @@ export async function exportPosterToImage(
   )
   await withTimeout(document.fonts.ready, FONTS_READY_TIMEOUT_MS, undefined)
 
-  const img = await loadImage(posterUrl)
-  const scale = 2
-  const width = Math.round(containerWidth * scale)
-  const height = Math.round(containerHeight * scale)
+  const bitmap = await loadOrientedImageBitmap(posterUrl)
+  const width = imageWidth
+  const height = imageHeight
 
   const canvas = document.createElement('canvas')
   canvas.width = width
@@ -275,26 +267,30 @@ export async function exportPosterToImage(
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas 不可用')
 
-  drawPosterBackground(ctx, img, width, height)
+  try {
+    drawPosterBackground(ctx, bitmap, width, height)
 
-  const scaleX = width / containerWidth
-  const scaleY = height / containerHeight
+    const scaleX = width / displayWidth
+    const scaleY = height / displayHeight
 
-  for (const text of texts) {
-    drawTextElement(ctx, text, scaleX, scaleY, width)
+    for (const text of texts) {
+      drawTextElement(ctx, text, scaleX, scaleY, width)
+    }
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, 'image/png', 1)
+    })
+
+    if (blob) return blob
+
+    const dataUrl = canvas.toDataURL('image/png')
+    const response = await fetch(dataUrl)
+    const fallback = await response.blob()
+    if (!fallback.size) throw new Error('导出失败')
+    return fallback
+  } finally {
+    bitmap.close()
   }
-
-  const blob = await new Promise<Blob | null>((resolve) => {
-    canvas.toBlob(resolve, 'image/png', 1)
-  })
-
-  if (blob) return blob
-
-  const dataUrl = canvas.toDataURL('image/png')
-  const response = await fetch(dataUrl)
-  const fallback = await response.blob()
-  if (!fallback.size) throw new Error('导出失败')
-  return fallback
 }
 
 export async function savePosterBlob(blob: Blob, filename: string): Promise<void> {
