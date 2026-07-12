@@ -38,6 +38,10 @@ body.is-dragging {
   user-select: none;
 }
 
+.poster-canvas img {
+  image-orientation: from-image;
+}
+
 .sheet-action-bar {
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
   background: #ffffff;

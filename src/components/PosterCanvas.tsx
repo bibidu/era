@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type SyntheticEvent } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import type { TextElement } from '../types'
 import {
@@ -25,6 +25,7 @@ interface PosterCanvasProps {
   onDeleteText: (id: string) => void
   onUploadPoster: (file: File) => void
   onCanvasResize?: (width: number, height: number) => void
+  onPosterSizeResolved?: (size: ImageSize) => void
 }
 
 export function PosterCanvas({
@@ -38,12 +39,19 @@ export function PosterCanvas({
   onDeleteText,
   onUploadPoster,
   onCanvasResize,
+  onPosterSizeResolved,
 }: PosterCanvasProps) {
   const areaRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
   const [canvasSize, setCanvasSize] = useState<ImageSize>({ width: 0, height: 0 })
+  const [resolvedSize, setResolvedSize] = useState<ImageSize | null>(null)
 
-  const contentSize = posterUrl && posterSize ? posterSize : DEFAULT_POSTER_SIZE
+  const contentSize = resolvedSize ?? posterSize ?? DEFAULT_POSTER_SIZE
+  const isDisplayReady = Boolean(resolvedSize && canvasSize.width > 0 && canvasSize.height > 0)
+
+  useEffect(() => {
+    setResolvedSize(null)
+  }, [posterUrl])
 
   useEffect(() => {
     const area = areaRef.current
@@ -51,15 +59,23 @@ export function PosterCanvas({
 
     const update = () => {
       const box = { width: area.clientWidth, height: area.clientHeight }
-      const next = fitSizeInBox(contentSize, box)
-      setCanvasSize(next)
+      if (!box.width || !box.height) return
+      setCanvasSize(fitSizeInBox(contentSize, box))
     }
 
     update()
     const ro = new ResizeObserver(update)
     ro.observe(area)
-    return () => ro.disconnect()
-  }, [contentSize.width, contentSize.height])
+
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(update)
+    })
+
+    return () => {
+      cancelAnimationFrame(raf)
+      ro.disconnect()
+    }
+  }, [contentSize.width, contentSize.height, posterUrl])
 
   useEffect(() => {
     const el = canvasRef.current
@@ -72,6 +88,14 @@ export function PosterCanvas({
     ro.observe(el)
     return () => ro.disconnect()
   }, [onCanvasResize, canvasSize.width, canvasSize.height])
+
+  const handleImageLoad = (event: SyntheticEvent<HTMLImageElement>) => {
+    const img = event.currentTarget
+    if (!img.naturalWidth || !img.naturalHeight) return
+    const size = { width: img.naturalWidth, height: img.naturalHeight }
+    setResolvedSize(size)
+    onPosterSizeResolved?.(size)
+  }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -94,12 +118,22 @@ export function PosterCanvas({
           onClick={() => onSelectText('')}
         >
           {posterUrl ? (
-            <img
-              src={posterUrl}
-              alt="海报底图"
-              className="pointer-events-none absolute inset-0 h-full w-full"
-              draggable={false}
-            />
+            <>
+              <img
+                src={posterUrl}
+                alt="海报底图"
+                className={`pointer-events-none absolute inset-0 h-full w-full transition-opacity duration-150 ${
+                  isDisplayReady ? 'opacity-100' : 'opacity-0'
+                }`}
+                draggable={false}
+                onLoad={handleImageLoad}
+              />
+              {!isDisplayReady && (
+                <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 text-xs text-neutral-400">
+                  加载中...
+                </div>
+              )}
+            </>
           ) : (
             <label className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 text-neutral-400">
               <input type="file" accept={IMAGE_ACCEPT} className="hidden" onChange={handleFileChange} />

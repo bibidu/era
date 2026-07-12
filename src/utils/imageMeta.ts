@@ -38,6 +38,7 @@ export function loadImageMeta(src: string): Promise<ImageSize> {
       })
     }
     img.onerror = () => reject(new Error('图片加载失败'))
+    img.style.imageOrientation = 'from-image'
     img.src = src
   })
 }

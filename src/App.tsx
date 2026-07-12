@@ -75,6 +75,10 @@ function App() {
     })()
   }, [])
 
+  const handlePosterSizeResolved = useCallback((size: ImageSize) => {
+    setPosterSize(size)
+  }, [])
+
   const openEditor = useCallback((id: string, isNew = false) => {
     setTexts((prev) => {
       const text = prev.find((t) => t.id === id)
@@ -217,6 +221,7 @@ function App() {
         onDeleteText={handleDeleteText}
         onUploadPoster={handleUploadPoster}
         onCanvasResize={handleCanvasResize}
+        onPosterSizeResolved={handlePosterSizeResolved}
       />
 
       <footer className="sticky bottom-0 border-t border-neutral-200 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
