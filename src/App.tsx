@@ -151,8 +151,9 @@ function App() {
     const canvasEl = document.getElementById('poster-canvas')
     if (!canvasEl || !posterUrl) return
 
-    const rect = canvasEl.getBoundingClientRect()
-    if (rect.width === 0 || rect.height === 0) return
+    const width = canvasEl.clientWidth
+    const height = canvasEl.clientHeight
+    if (width === 0 || height === 0) return
 
     cleanupEditorUi()
     setSaving(true)
@@ -165,7 +166,7 @@ function App() {
 
     try {
       await new Promise((r) => setTimeout(r, 80))
-      const blob = await exportPosterToImage(posterUrl, texts, rect.width, rect.height)
+      const blob = await exportPosterToImage(posterUrl, texts, width, height)
       await savePosterBlob(blob, `poster-${Date.now()}.png`)
       setSaveMessage('已保存到本地')
     } catch {
