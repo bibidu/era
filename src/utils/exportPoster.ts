@@ -19,34 +19,14 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   })
 }
 
-/** 与 CSS object-cover 一致：保持比例铺满并居中裁剪 */
-function drawImageCover(
+/** 画布比例已与底图一致，直接铺满绘制 */
+function drawPosterBackground(
   ctx: CanvasRenderingContext2D,
   img: HTMLImageElement,
   destWidth: number,
   destHeight: number,
 ) {
-  const srcWidth = img.naturalWidth
-  const srcHeight = img.naturalHeight
-  if (!srcWidth || !srcHeight) return
-
-  const srcRatio = srcWidth / srcHeight
-  const destRatio = destWidth / destHeight
-
-  let sx = 0
-  let sy = 0
-  let sw = srcWidth
-  let sh = srcHeight
-
-  if (srcRatio > destRatio) {
-    sw = srcHeight * destRatio
-    sx = (srcWidth - sw) / 2
-  } else if (srcRatio < destRatio) {
-    sh = srcWidth / destRatio
-    sy = (srcHeight - sh) / 2
-  }
-
-  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, destWidth, destHeight)
+  ctx.drawImage(img, 0, 0, destWidth, destHeight)
 }
 
 function drawDecoration(
@@ -295,7 +275,7 @@ export async function exportPosterToImage(
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas 不可用')
 
-  drawImageCover(ctx, img, width, height)
+  drawPosterBackground(ctx, img, width, height)
 
   const scaleX = width / containerWidth
   const scaleY = height / containerHeight

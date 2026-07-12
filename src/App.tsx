@@ -7,6 +7,7 @@ import { TextEditorSheet } from './components/TextEditorSheet'
 import type { TextElement } from './types'
 import { FONT_OPTIONS } from './data/fonts'
 import { exportPosterToImage, savePosterBlob } from './utils/exportPoster'
+import { DEFAULT_POSTER_ASPECT_RATIO, loadImageMeta } from './utils/imageMeta'
 
 function cleanupEditorUi() {
   document.body.classList.remove('keyboard-dock-open')
@@ -36,6 +37,7 @@ function createTextElement(): TextElement {
 
 function App() {
   const [posterUrl, setPosterUrl] = useState<string | null>(null)
+  const [posterAspectRatio, setPosterAspectRatio] = useState(DEFAULT_POSTER_ASPECT_RATIO)
   const [texts, setTexts] = useState<TextElement[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [materialOpen, setMaterialOpen] = useState(false)
@@ -52,12 +54,20 @@ function App() {
     if (!file.type.startsWith('image/')) return
 
     const reader = new FileReader()
-    reader.onload = () => {
+    reader.onload = async () => {
       const result = reader.result as string
       if (posterUrlRef.current?.startsWith('blob:')) {
         URL.revokeObjectURL(posterUrlRef.current)
       }
       posterUrlRef.current = result
+      try {
+        const { width, height } = await loadImageMeta(result)
+        if (width > 0 && height > 0) {
+          setPosterAspectRatio(width / height)
+        }
+      } catch {
+        setPosterAspectRatio(DEFAULT_POSTER_ASPECT_RATIO)
+      }
       setPosterUrl(result)
     }
     reader.readAsDataURL(file)
@@ -189,6 +199,7 @@ function App() {
 
       <PosterCanvas
         posterUrl={posterUrl}
+        posterAspectRatio={posterAspectRatio}
         texts={texts}
         selectedId={selectedId}
         isExporting={isExporting}
