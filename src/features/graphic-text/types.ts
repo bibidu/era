@@ -47,7 +47,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   fontId: 'song',
   fontFamily: '"Noto Serif SC", serif',
   titleFontSize: 34,
-  bodyFontSize: 20,
+  bodyFontSize: 13,
   titleLineHeight: 1.2,
   bodyLineHeight: 1.48,
   headingMarginTop: 0.28,

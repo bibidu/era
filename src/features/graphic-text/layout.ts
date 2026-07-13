@@ -6,6 +6,7 @@ import type {
   MarkdownBlockType,
 } from './types'
 import { stripHighlightMarkers } from './inlineHighlight'
+import { HEADING_FONT_SCALE } from './graphicPreviewLayout'
 import { wrapPlainTextLines } from './textWrap'
 
 export const GRAPHIC_DISPLAY_BASE_WIDTH = 360
@@ -145,7 +146,7 @@ function blockFontSize(block: MarkdownBlock, config: GraphicTextConfig, exportSc
   const type = resolveStyleType(block)
   if (type === 'title') return config.titleFontSize * exportScale
   if (type === 'heading') {
-    return Math.round(config.titleFontSize * 0.72 * exportScale)
+    return Math.round(config.titleFontSize * HEADING_FONT_SCALE * exportScale)
   }
   return config.bodyFontSize * exportScale
 }

@@ -38,7 +38,7 @@ function createTextElement(): TextElement {
 }
 
 function App() {
-  const [mode, setMode] = useState<AppMode>('poster')
+  const [mode, setMode] = useState<AppMode>('graphic')
   const [posterUrl, setPosterUrl] = useState<string | null>(null)
   const [posterSize, setPosterSize] = useState<ImageSize | null>(null)
   const [texts, setTexts] = useState<TextElement[]>([])

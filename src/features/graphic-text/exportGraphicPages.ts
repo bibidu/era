@@ -3,7 +3,7 @@ import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
 import { buildCharHighlightSegments, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
-import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
+import { HEADING_FONT_SCALE, TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
 import { resolveTopBarText } from './topBar'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -61,7 +61,7 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
   }
   if (styleType === 'heading') {
     return {
-      size: Math.round(config.titleFontSize * 0.72 * exportScale),
+      size: Math.round(config.titleFontSize * HEADING_FONT_SCALE * exportScale),
       weight: 700,
       lineHeight: config.titleLineHeight,
       spacing: config.headingMarginBottom,
