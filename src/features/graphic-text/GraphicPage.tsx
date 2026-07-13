@@ -1,5 +1,6 @@
 import { useMemo, type CSSProperties } from 'react'
 import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
+import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
 import { buildCharHighlightSegments, themeAlpha } from './inlineHighlight'
 import { resolveTopBarText } from './topBar'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
@@ -10,38 +11,61 @@ interface GraphicPageProps {
   markdown: string
   className?: string
   showSafeArea?: boolean
+  displayWidth?: number
 }
 
 function resolveStyleType(block: MarkdownBlock) {
   return block.styleType ?? block.type
 }
 
+function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string | undefined {
+  if (!block.isBlockEnd) return undefined
+
+  const styleType = resolveStyleType(block)
+  const bodyUnit = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
+  const titleUnit = `${(config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
+  const gap = '1.1cqw'
+
+  if (styleType === 'title') return `calc(${titleUnit} * 0.46 + ${gap})`
+  if (styleType === 'heading') {
+    return `calc(${titleUnit} * 0.72 * ${config.headingMarginBottom + 0.18} + ${gap})`
+  }
+  return `calc(${bodyUnit} * 0.26 + ${gap})`
+}
+
 function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSProperties {
   const styleType = resolveStyleType(block)
   const titleSize = `${(config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const bodySize = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
+  const headingSize = `calc(${titleSize} * 0.72)`
+  const marginBottom = blockEndMargin(block, config)
 
   if (styleType === 'title') {
-    const marginUnit = `${((config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100).toFixed(2)}cqw`
     return {
       fontSize: titleSize,
       lineHeight: config.titleLineHeight,
       fontWeight: 700,
-      marginTop: block.type === 'title' ? `calc(${marginUnit} * ${config.titleMarginTop})` : undefined,
-      marginBottom: block.isBlockEnd
-        ? `calc(${marginUnit} * ${config.titleMarginBottom})`
-        : undefined,
+      marginBottom,
     }
   }
   if (styleType === 'heading') {
     return {
-      fontSize: `calc(${titleSize} * .72)`,
+      fontSize: headingSize,
       lineHeight: config.titleLineHeight,
       fontWeight: 700,
-      marginTop: block.type === 'heading' ? '1.2cqw' : undefined,
+      marginTop:
+        block.type === 'heading'
+          ? `calc(${headingSize} * ${config.headingMarginTop})`
+          : undefined,
+      marginBottom,
     }
   }
-  return { fontSize: bodySize, lineHeight: config.bodyLineHeight, fontWeight: 400 }
+  return {
+    fontSize: bodySize,
+    lineHeight: config.bodyLineHeight,
+    fontWeight: 400,
+    marginBottom,
+  }
 }
 
 function HighlightedText({
@@ -121,6 +145,7 @@ export function GraphicPage({
   markdown,
   className = '',
   showSafeArea = false,
+  displayWidth,
 }: GraphicPageProps) {
   const layout = getGraphicLayout(config)
   const { percent, aspectRatio } = layout
@@ -148,10 +173,11 @@ export function GraphicPage({
 
   return (
     <article
-      className={`graphic-page relative isolate w-full overflow-hidden bg-[#fbf7ed] text-neutral-950 ${className}`}
+      className={`graphic-page relative isolate overflow-hidden bg-[#fbf7ed] text-neutral-950 ${className}`}
       style={
         {
           ...backgroundStyle,
+          width: displayWidth ? `${displayWidth}px` : '100%',
           aspectRatio: `${aspectRatio.width} / ${aspectRatio.height}`,
           '--graphic-theme': config.themeColor,
           fontFamily: config.fontFamily,
@@ -166,10 +192,15 @@ export function GraphicPage({
           right: `${percent.safeX}%`,
           top: `${percent.topBarTop}%`,
           height: `${percent.topBarHeight}%`,
-          paddingBottom: '0.8cqw',
+          paddingBottom: '6px',
         }}
       >
-        <span className="truncate text-[2.1cqw] font-normal text-neutral-600">{topBarText}</span>
+        <span
+          className="truncate font-normal text-neutral-600"
+          style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px` }}
+        >
+          {topBarText}
+        </span>
       </div>
 
       <div
@@ -188,11 +219,7 @@ export function GraphicPage({
             </div>
           ) : (
             page.blocks.map((block) => (
-              <div
-                key={block.id}
-                className={block.isBlockEnd ? 'mb-[1.1cqw]' : ''}
-                style={blockStyle(block, config)}
-              >
+              <div key={block.id} style={blockStyle(block, config)}>
                 {block.type === 'list' ? (
                   <div className="flex gap-[1.5cqw]">
                     <span

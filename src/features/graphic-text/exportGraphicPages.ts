@@ -3,7 +3,7 @@ import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
 import { buildCharHighlightSegments, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
-import { splitWrapUnits } from './textWrap'
+import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
 import { resolveTopBarText } from './topBar'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -44,54 +44,6 @@ interface LineSegment {
   highlighted: boolean
 }
 
-interface WrapUnit {
-  text: string
-  highlighted: boolean
-}
-
-function flattenToUnits(segments: LineSegment[]): WrapUnit[] {
-  const units: WrapUnit[] = []
-  for (const segment of segments) {
-    for (const part of splitWrapUnits(segment.text)) {
-      units.push({ text: part, highlighted: segment.highlighted })
-    }
-  }
-  return units
-}
-
-function wrapSegments(
-  ctx: CanvasRenderingContext2D,
-  segments: LineSegment[],
-  maxWidth: number,
-): LineSegment[][] {
-  const units = flattenToUnits(segments)
-  const lines: LineSegment[][] = [[]]
-  let lineWidth = 0
-
-  const pushUnit = (unit: WrapUnit) => {
-    const unitWidth = ctx.measureText(unit.text).width
-    if (lineWidth > 0 && lineWidth + unitWidth > maxWidth) {
-      lines.push([])
-      lineWidth = 0
-    }
-    const currentLine = lines[lines.length - 1]
-    const last = currentLine[currentLine.length - 1]
-    if (last && last.highlighted === unit.highlighted) {
-      last.text += unit.text
-    } else {
-      currentLine.push({ text: unit.text, highlighted: unit.highlighted })
-    }
-    lineWidth += unitWidth
-  }
-
-  for (const unit of units) {
-    pushUnit(unit)
-  }
-
-  if (!lines[0].length) lines[0].push({ text: '', highlighted: false })
-  return lines
-}
-
 function resolveStyleType(block: MarkdownBlock) {
   return block.styleType ?? block.type
 }
@@ -103,8 +55,8 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
       size: config.titleFontSize * exportScale,
       weight: 700,
       lineHeight: config.titleLineHeight,
-      spacing: config.titleMarginBottom,
-      marginBefore: config.titleMarginTop,
+      spacing: 0.28,
+      marginBefore: 0,
     }
   }
   if (styleType === 'heading') {
@@ -112,15 +64,15 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
       size: Math.round(config.titleFontSize * 0.72 * exportScale),
       weight: 700,
       lineHeight: config.titleLineHeight,
-      spacing: 0.65,
-      marginBefore: 0.2,
+      spacing: config.headingMarginBottom,
+      marginBefore: config.headingMarginTop,
     }
   }
   return {
     size: config.bodyFontSize * exportScale,
     weight: 400,
     lineHeight: config.bodyLineHeight,
-    spacing: 0.55,
+    spacing: 0.08,
     marginBefore: 0,
   }
 }
@@ -185,7 +137,6 @@ async function drawPage(
     pageHeight: height,
     safeX,
     safeTop,
-    contentBottom,
     topBarY,
     topBarHeight,
     exportScale,
@@ -235,17 +186,17 @@ async function drawPage(
   ctx.stroke()
 
   ctx.fillStyle = '#525252'
-  ctx.font = `400 ${Math.round(24 * exportScale)}px ${config.fontFamily}`
+  ctx.font = `400 ${Math.round(TOP_BAR_FONT_SIZE_PX * exportScale)}px ${config.fontFamily}`
   ctx.textBaseline = 'bottom'
   ctx.fillText(topBarText, edgeX, underlineY - 8, edgeWidth)
 
   let y = safeTop
-  const maxWidth = width - safeX * 2
-  const maxContentY = contentBottom
+  const listInset = (size: number) => size * 1.35
+  const blockGap = width * 0.011
 
   for (const block of page.blocks) {
     const spec = blockSpec(block, config, exportScale)
-    if (block.type === 'title' || block.type === 'heading') {
+    if (block.type === 'heading') {
       y += spec.size * spec.marginBefore
     }
 
@@ -254,37 +205,35 @@ async function drawPage(
     const plainText = stripHighlightMarkers(block.text)
     const blockId = block.sourceBlockId ?? block.id
     const charOffset = block.charOffset ?? 0
-    const listInset = block.type === 'list' ? spec.size * 1.35 : 0
+    const inset = block.type === 'list' ? listInset(spec.size) : 0
     const enableHighlight = block.type !== 'title'
     const segments = enableHighlight
       ? buildCharHighlightSegments(block.text, blockId, highlightedKeys, charOffset)
       : [{ text: plainText, highlighted: false }]
-    const lines = wrapSegments(ctx, segments, maxWidth - listInset)
     const lineHeight = spec.size * spec.lineHeight
 
-    for (const [lineIndex, line] of lines.entries()) {
-      if (y + lineHeight > maxContentY) break
-      if (block.type === 'list' && lineIndex === 0) {
-        const bulletRadius = spec.size * 0.16
-        const centerY = y + lineHeight / 2
-        ctx.fillStyle = '#262626'
-        ctx.beginPath()
-        ctx.arc(safeX + bulletRadius * 2, centerY, bulletRadius, 0, Math.PI * 2)
-        ctx.fill()
-      }
-      drawHighlightedLine(
-        ctx,
-        line,
-        safeX + listInset,
-        y,
-        spec.size,
-        config.themeColor,
-        enableHighlight,
-      )
-      y += lineHeight
+    if (block.type === 'list') {
+      const bulletRadius = spec.size * 0.16
+      const centerY = y + lineHeight / 2
+      ctx.fillStyle = '#262626'
+      ctx.beginPath()
+      ctx.arc(safeX + bulletRadius * 2, centerY, bulletRadius, 0, Math.PI * 2)
+      ctx.fill()
     }
+
+    drawHighlightedLine(
+      ctx,
+      segments,
+      safeX + inset,
+      y,
+      spec.size,
+      config.themeColor,
+      enableHighlight,
+    )
+    y += lineHeight
+
     if (block.isBlockEnd) {
-      y += spec.size * spec.spacing
+      y += spec.size * (spec.spacing + 0.18) + blockGap
     }
   }
 
