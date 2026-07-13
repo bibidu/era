@@ -58,7 +58,11 @@ export function GraphicConfigPreview({
             aria-label="上一页"
             className="graphic-config-preview-nav"
             disabled={activePage <= 0}
-            onClick={goPrev}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation()
+              goPrev()
+            }}
           >
             <ChevronLeft size={22} />
           </button>
@@ -91,7 +95,11 @@ export function GraphicConfigPreview({
             aria-label="下一页"
             className="graphic-config-preview-nav"
             disabled={activePage >= pages.length - 1}
-            onClick={goNext}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation()
+              goNext()
+            }}
           >
             <ChevronRight size={22} />
           </button>
