@@ -2,6 +2,7 @@ import { GRAPHIC_EXPORT_SCALE, GRAPHIC_PAGE_SIZE } from './layout'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
+import { parseInlineHighlights, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -48,22 +49,45 @@ function drawCoverImage(
   ctx.drawImage(image, sx, sy, sw, sh, 0, 0, width, height)
 }
 
-function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
-  const lines: string[] = []
-  let line = ''
+interface LineSegment {
+  text: string
+  highlighted: boolean
+}
 
-  for (const character of [...text]) {
-    const next = line + character
-    if (line && ctx.measureText(next).width > maxWidth) {
-      lines.push(line)
-      line = character
+function wrapSegments(
+  ctx: CanvasRenderingContext2D,
+  segments: LineSegment[],
+  maxWidth: number,
+): LineSegment[][] {
+  const lines: LineSegment[][] = [[]]
+  let lineWidth = 0
+
+  const pushChar = (char: string, highlighted: boolean) => {
+    const currentLine = lines[lines.length - 1]
+    const last = currentLine[currentLine.length - 1]
+    if (last && last.highlighted === highlighted) {
+      last.text += char
     } else {
-      line = next
+      currentLine.push({ text: char, highlighted })
+    }
+    lineWidth += ctx.measureText(char).width
+  }
+
+  const newLine = () => {
+    lines.push([])
+    lineWidth = 0
+  }
+
+  for (const segment of segments) {
+    for (const char of [...segment.text]) {
+      const nextWidth = lineWidth + ctx.measureText(char).width
+      if (lineWidth > 0 && nextWidth > maxWidth) newLine()
+      pushChar(char, segment.highlighted)
     }
   }
 
-  if (line) lines.push(line)
-  return lines.length ? lines : ['']
+  if (!lines[0].length) lines[0].push({ text: '', highlighted: false })
+  return lines
 }
 
 function blockSpec(block: MarkdownBlock, config: GraphicTextConfig) {
@@ -118,11 +142,57 @@ function drawEdge(
   }
 }
 
+function drawHighlightedLine(
+  ctx: CanvasRenderingContext2D,
+  segments: LineSegment[],
+  x: number,
+  y: number,
+  lineHeight: number,
+  themeColor: string,
+  enableHighlight: boolean,
+) {
+  let cursorX = x
+  const paddingX = 4
+  const paddingY = 3
+
+  if (enableHighlight) {
+    let bgX = x
+    for (const segment of segments) {
+      if (!segment.text) continue
+      const width = ctx.measureText(segment.text).width
+      if (segment.highlighted) {
+        ctx.fillStyle = themeAlpha(themeColor, 0.28)
+        ctx.fillRect(bgX - paddingX, y - paddingY, width + paddingX * 2, lineHeight)
+      }
+      bgX += width
+    }
+  }
+
+  cursorX = x
+  for (const segment of segments) {
+    if (!segment.text) continue
+    ctx.fillStyle = '#171717'
+    ctx.fillText(segment.text, cursorX, y)
+    if (enableHighlight && segment.highlighted) {
+      const width = ctx.measureText(segment.text).width
+      ctx.strokeStyle = themeColor
+      ctx.lineWidth = Math.max(2, lineHeight * 0.08)
+      ctx.beginPath()
+      ctx.moveTo(cursorX, y + lineHeight * 0.18)
+      ctx.lineTo(cursorX + width, y + lineHeight * 0.18)
+      ctx.stroke()
+    }
+    cursorX += ctx.measureText(segment.text).width
+  }
+}
+
 async function drawPage(
   page: GraphicTextPage,
   config: GraphicTextConfig,
 ): Promise<Blob> {
-  const { width, height, safeX, safeTop, safeBottom } = GRAPHIC_PAGE_SIZE
+  const { width, height, safeX, safeTop, footerTop, footerHeight, footerMarginBottom } =
+    GRAPHIC_PAGE_SIZE
+  const contentBottom = GRAPHIC_PAGE_SIZE.contentBottom
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
@@ -156,31 +226,44 @@ async function drawPage(
 
   const edgeX = safeX
   const edgeWidth = width - safeX * 2
-  drawEdge(ctx, config.topStyle, edgeX, 60, edgeWidth, 86, config.themeColor)
+  const topBarY = 60
+  const topBarHeight = 86
+  drawEdge(ctx, config.topStyle, edgeX, topBarY, edgeWidth, topBarHeight, config.themeColor)
   ctx.fillStyle = '#171717'
   ctx.font = `600 28px ${config.fontFamily}`
   ctx.textBaseline = 'middle'
-  ctx.fillText(config.topText || '图文笔记', edgeX + 28, 103, edgeWidth - 130)
+  ctx.fillText(config.topText || '图文笔记', edgeX + 28, topBarY + topBarHeight / 2, edgeWidth - 130)
 
   ctx.fillStyle = '#171717'
-  roundedRect(ctx, width - safeX - 78, 78, 52, 50, 25)
+  roundedRect(ctx, width - safeX - 78, topBarY + 18, 52, 50, 25)
   ctx.fill()
   ctx.fillStyle = '#FFFFFF'
   ctx.font = `600 20px ${config.fontFamily}`
   ctx.textAlign = 'center'
-  ctx.fillText(String(page.index + 1).padStart(2, '0'), width - safeX - 52, 103)
+  ctx.fillText(String(page.index + 1).padStart(2, '0'), width - safeX - 52, topBarY + 43)
   ctx.textAlign = 'left'
 
   let y = safeTop
   const maxWidth = width - safeX * 2
+  const maxContentY = contentBottom
+
   for (const block of page.blocks) {
     const spec = blockSpec(block, config)
     const quoteInset = block.type === 'quote' ? 42 : 0
     const listInset = block.type === 'list' ? spec.size * 1.35 : 0
     ctx.font = `${spec.weight} ${spec.size}px ${config.fontFamily}`
     ctx.textBaseline = 'top'
-    const lines = wrapText(ctx, block.text, maxWidth - quoteInset - listInset)
+    const plainText = stripHighlightMarkers(block.text)
+    const segments =
+      block.type === 'title'
+        ? [{ text: plainText, highlighted: false }]
+        : parseInlineHighlights(block.text).map((segment) => ({
+            text: segment.text,
+            highlighted: segment.highlighted,
+          }))
+    const lines = wrapSegments(ctx, segments, maxWidth - quoteInset - listInset)
     const lineHeight = spec.size * spec.lineHeight
+    const enableHighlight = block.type !== 'title'
 
     if (block.type === 'quote') {
       const quoteHeight = lines.length * lineHeight + 24
@@ -190,33 +273,53 @@ async function drawPage(
       ctx.fillRect(safeX, y - 8, 8, quoteHeight)
     }
 
-    lines.forEach((line, lineIndex) => {
+    for (const [lineIndex, line] of lines.entries()) {
+      if (y + lineHeight > maxContentY) break
       if (block.type === 'list' && lineIndex === 0) {
         ctx.fillStyle = config.themeColor
         ctx.fillRect(safeX, y + lineHeight * 0.42, 13, 13)
       }
-      ctx.fillStyle = '#171717'
-      ctx.fillText(line, safeX + quoteInset + listInset, y)
+      drawHighlightedLine(
+        ctx,
+        line,
+        safeX + quoteInset + listInset,
+        y,
+        lineHeight,
+        config.themeColor,
+        enableHighlight,
+      )
       y += lineHeight
-    })
+    }
     y += spec.size * spec.spacing
   }
 
-  drawEdge(ctx, config.bottomStyle, edgeX, height - safeBottom + 56, edgeWidth, 68, config.themeColor)
+  drawEdge(
+    ctx,
+    config.bottomStyle,
+    edgeX,
+    footerTop,
+    edgeWidth,
+    footerHeight,
+    config.themeColor,
+  )
   ctx.fillStyle = '#171717'
   ctx.font = `400 22px ${config.fontFamily}`
   ctx.textBaseline = 'middle'
-  ctx.fillText(config.bottomText || '滑动查看下一页', edgeX + 28, height - safeBottom + 90)
+  ctx.fillText(
+    config.bottomText || '滑动查看下一页',
+    edgeX + 28,
+    footerTop + footerHeight / 2,
+  )
   ctx.textAlign = 'right'
-  ctx.fillText(String(page.index + 1), width - safeX - 28, height - safeBottom + 90)
+  ctx.fillText(String(page.index + 1), width - safeX - 28, footerTop + footerHeight / 2)
   ctx.textAlign = 'left'
 
   ctx.fillStyle = config.themeColor
   ctx.fillRect(34, 34, 16, 16)
   ctx.fillStyle = '#171717'
-  ctx.fillRect(width - 64, height - 50, 10, 10)
+  ctx.fillRect(width - 64, height - footerMarginBottom - 10, 10, 10)
   ctx.fillStyle = config.themeColor
-  ctx.fillRect(width - 46, height - 50, 10, 10)
+  ctx.fillRect(width - 46, height - footerMarginBottom - 10, 10, 10)
 
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png', 1))
   if (!blob) throw new Error('页面生成失败')
