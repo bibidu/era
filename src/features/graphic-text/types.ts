@@ -15,6 +15,8 @@ export interface GraphicTextConfig {
   fontFamily: string
   titleFontSize: number
   bodyFontSize: number
+  titleLineHeight: number
+  bodyLineHeight: number
   themeColor: string
   aspectRatio: GraphicAspectRatio
   template: GraphicTemplate
@@ -23,6 +25,7 @@ export interface GraphicTextConfig {
   topText: string
   bottomText: string
   backgroundUrl: string | null
+  highlightedCharKeys: string[]
 }
 
 export type MarkdownBlockType = 'title' | 'heading' | 'paragraph' | 'list' | 'quote'
@@ -30,8 +33,11 @@ export type MarkdownBlockType = 'title' | 'heading' | 'paragraph' | 'list' | 'qu
 export interface MarkdownBlock {
   id: string
   type: MarkdownBlockType
+  styleType?: MarkdownBlockType
   text: string
   isBlockEnd?: boolean
+  sourceBlockId?: string
+  charOffset?: number
 }
 
 export interface GraphicTextPage {
@@ -44,6 +50,8 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   fontFamily: '"Noto Serif SC", serif',
   titleFontSize: 34,
   bodyFontSize: 20,
+  titleLineHeight: 1.2,
+  bodyLineHeight: 1.48,
   themeColor: '#FACC15',
   aspectRatio: '9:16',
   template: 'solid',
@@ -52,6 +60,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   topText: '图文笔记',
   bottomText: '滑动查看下一页',
   backgroundUrl: null,
+  highlightedCharKeys: [],
 }
 
 export const DEFAULT_MARKDOWN = `# 多 Agent 如何并行工作
@@ -72,8 +81,8 @@ Git Worktree 可以让多个 Agent 在同一个仓库中并行开发，同时保
 
 ## 3. 并行执行
 
-Agent A 开发界面，Agent B 实现业务逻辑，Agent C 编写测试。[[它们可以同时运行，互不阻塞。]]
+Agent A 开发界面，Agent B 实现业务逻辑，Agent C 编写测试。它们可以同时运行，互不阻塞。
 
 ## 4. 统一通过 PR 合并
 
-任务完成后分别提交 Pull Request，**通过代码审查和自动化测试后再合并到主分支**。`
+任务完成后分别提交 Pull Request，通过代码审查和自动化测试后再合并到主分支。`

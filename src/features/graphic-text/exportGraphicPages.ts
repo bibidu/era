@@ -2,7 +2,7 @@ import { getGraphicLayout } from './layout'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
-import { parseInlineHighlights, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
+import { buildCharHighlightSegments, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -90,27 +90,32 @@ function wrapSegments(
   return lines
 }
 
+function resolveStyleType(block: MarkdownBlock) {
+  return block.styleType ?? block.type
+}
+
 function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale: number) {
-  if (block.type === 'title') {
+  const styleType = resolveStyleType(block)
+  if (styleType === 'title') {
     return {
       size: config.titleFontSize * exportScale,
       weight: 700,
-      lineHeight: 1.22,
+      lineHeight: config.titleLineHeight,
       spacing: 0.8,
     }
   }
-  if (block.type === 'heading') {
+  if (styleType === 'heading') {
     return {
       size: Math.round(config.titleFontSize * 0.72 * exportScale),
       weight: 700,
-      lineHeight: 1.35,
+      lineHeight: config.titleLineHeight,
       spacing: 0.65,
     }
   }
   return {
     size: config.bodyFontSize * exportScale,
     weight: 400,
-    lineHeight: 1.55,
+    lineHeight: config.bodyLineHeight,
     spacing: 0.55,
   }
 }
@@ -208,7 +213,10 @@ async function drawPage(
     topBarY,
     topBarHeight,
     exportScale,
+    hasTopBar,
+    hasBottomBar,
   } = layout
+  const highlightedKeys = new Set(config.highlightedCharKeys)
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
@@ -242,20 +250,23 @@ async function drawPage(
 
   const edgeX = safeX
   const edgeWidth = width - safeX * 2
-  drawEdge(ctx, config.topStyle, edgeX, topBarY, edgeWidth, topBarHeight, config.themeColor)
-  ctx.fillStyle = '#171717'
-  ctx.font = `600 28px ${config.fontFamily}`
-  ctx.textBaseline = 'middle'
-  ctx.fillText(config.topText || '图文笔记', edgeX + 28, topBarY + topBarHeight / 2, edgeWidth - 130)
 
-  ctx.fillStyle = '#171717'
-  roundedRect(ctx, width - safeX - 78, topBarY + 18, 52, 50, 25)
-  ctx.fill()
-  ctx.fillStyle = '#FFFFFF'
-  ctx.font = `600 20px ${config.fontFamily}`
-  ctx.textAlign = 'center'
-  ctx.fillText(String(page.index + 1).padStart(2, '0'), width - safeX - 52, topBarY + 43)
-  ctx.textAlign = 'left'
+  if (hasTopBar) {
+    drawEdge(ctx, config.topStyle, edgeX, topBarY, edgeWidth, topBarHeight, config.themeColor)
+    ctx.fillStyle = '#171717'
+    ctx.font = `600 28px ${config.fontFamily}`
+    ctx.textBaseline = 'middle'
+    ctx.fillText(config.topText, edgeX + 28, topBarY + topBarHeight / 2, edgeWidth - 130)
+
+    ctx.fillStyle = '#171717'
+    roundedRect(ctx, width - safeX - 78, topBarY + 18, 52, 50, 25)
+    ctx.fill()
+    ctx.fillStyle = '#FFFFFF'
+    ctx.font = `600 20px ${config.fontFamily}`
+    ctx.textAlign = 'center'
+    ctx.fillText(String(page.index + 1).padStart(2, '0'), width - safeX - 52, topBarY + 43)
+    ctx.textAlign = 'left'
+  }
 
   let y = safeTop
   const maxWidth = width - safeX * 2
@@ -268,16 +279,14 @@ async function drawPage(
     ctx.font = `${spec.weight} ${spec.size}px ${config.fontFamily}`
     ctx.textBaseline = 'top'
     const plainText = stripHighlightMarkers(block.text)
-    const segments =
-      block.type === 'title'
-        ? [{ text: plainText, highlighted: false }]
-        : parseInlineHighlights(block.text).map((segment) => ({
-            text: segment.text,
-            highlighted: segment.highlighted,
-          }))
+    const blockId = block.sourceBlockId ?? block.id
+    const charOffset = block.charOffset ?? 0
+    const enableHighlight = block.type !== 'title' && block.type !== 'quote'
+    const segments = enableHighlight
+      ? buildCharHighlightSegments(block.text, blockId, highlightedKeys, charOffset)
+      : [{ text: plainText, highlighted: false }]
     const lines = wrapSegments(ctx, segments, maxWidth - quoteInset - listInset)
     const lineHeight = spec.size * spec.lineHeight
-    const enableHighlight = block.type !== 'title'
 
     if (block.type === 'quote') {
       const quoteHeight = lines.length * lineHeight + 24
@@ -309,26 +318,24 @@ async function drawPage(
     }
   }
 
-  drawEdge(
-    ctx,
-    config.bottomStyle,
-    edgeX,
-    footerTop,
-    edgeWidth,
-    footerHeight,
-    config.themeColor,
-  )
-  ctx.fillStyle = '#171717'
-  ctx.font = `400 22px ${config.fontFamily}`
-  ctx.textBaseline = 'middle'
-  ctx.fillText(
-    config.bottomText || '滑动查看下一页',
-    edgeX + 28,
-    footerTop + footerHeight / 2,
-  )
-  ctx.textAlign = 'right'
-  ctx.fillText(String(page.index + 1), width - safeX - 28, footerTop + footerHeight / 2)
-  ctx.textAlign = 'left'
+  if (hasBottomBar) {
+    drawEdge(
+      ctx,
+      config.bottomStyle,
+      edgeX,
+      footerTop,
+      edgeWidth,
+      footerHeight,
+      config.themeColor,
+    )
+    ctx.fillStyle = '#171717'
+    ctx.font = `400 22px ${config.fontFamily}`
+    ctx.textBaseline = 'middle'
+    ctx.fillText(config.bottomText, edgeX + 28, footerTop + footerHeight / 2)
+    ctx.textAlign = 'right'
+    ctx.fillText(String(page.index + 1), width - safeX - 28, footerTop + footerHeight / 2)
+    ctx.textAlign = 'left'
+  }
 
   ctx.fillStyle = config.themeColor
   ctx.fillRect(34, 34, 16, 16)
