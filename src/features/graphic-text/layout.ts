@@ -117,7 +117,8 @@ function splitOversizedBlock(block: MarkdownBlock, config: GraphicTextConfig, ma
 }
 
 export function paginateMarkdown(markdown: string, config: GraphicTextConfig): GraphicTextPage[] {
-  const availableHeight = PAGE_HEIGHT - SAFE_TOP - SAFE_BOTTOM
+  // 给字体实际字框与估算行高之间留少量容差，让页面尽量填满但仍不进入底部模板区。
+  const availableHeight = PAGE_HEIGHT - SAFE_TOP - SAFE_BOTTOM + 40
   const sourceBlocks = parseMarkdown(markdown)
   const blocks = sourceBlocks.flatMap((block) => {
     if (estimateBlockHeight(block, config) <= availableHeight) return block

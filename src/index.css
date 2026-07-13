@@ -53,10 +53,10 @@ body.is-dragging {
 }
 
 .graphic-pager .graphic-page {
-  width: auto;
-  height: 100%;
+  width: min(calc(100vw - 2rem), calc((100dvh - 14rem) * 0.75));
+  height: auto;
   max-width: 100%;
-  max-height: 100%;
+  aspect-ratio: 3 / 4;
 }
 
 .sheet-action-bar {
