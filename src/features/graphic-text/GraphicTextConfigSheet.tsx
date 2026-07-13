@@ -13,7 +13,7 @@ import {
   TITLE_LINE_HEIGHT_OPTIONS,
   TITLE_MARGIN_OPTIONS,
 } from './configSelectOptions'
-import { computeConfigPreviewPageSize } from './graphicPreviewLayout'
+import { computeConfigPreviewLayout } from './graphicPreviewLayout'
 import { getGraphicLayout, paginateMarkdown } from './layout'
 import type { GraphicTemplate, GraphicTextConfig } from './types'
 import { GRAPHIC_ASPECT_RATIO_OPTIONS } from './types'
@@ -49,9 +49,57 @@ function optionButtonClass(selected: boolean, heightClass = 'h-10') {
   }`
 }
 
+function parseAspectNumbers(id: string) {
+  const [width, height] = id.split(':').map(Number)
+  return { width, height }
+}
+
+function aspectPreviewSize(id: string, maxDim = 30) {
+  const { width, height } = parseAspectNumbers(id)
+  const scale = maxDim / Math.max(width, height)
+  return { width: width * scale, height: height * scale }
+}
+
 function nearestOption(value: number, options: readonly number[]) {
   return options.reduce((closest, option) =>
     Math.abs(option - value) < Math.abs(closest - value) ? option : closest,
+  )
+}
+
+function AspectRatioOption({
+  id,
+  label,
+  selected,
+  onSelect,
+}: {
+  id: string
+  label: string
+  selected: boolean
+  onSelect: () => void
+}) {
+  const preview = aspectPreviewSize(id)
+  return (
+    <button
+      type="button"
+      aria-label={`图片比例 ${label}`}
+      className={`flex shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-2 ${
+        selected ? 'text-neutral-900' : 'text-neutral-600'
+      }`}
+      onClick={onSelect}
+    >
+      <div
+        className={`flex items-center justify-center rounded-md border bg-white ${
+          selected ? 'border-2 border-black' : 'border border-neutral-300'
+        }`}
+        style={{ width: preview.width + 12, height: preview.height + 12 }}
+      >
+        <div
+          className={`rounded-sm ${selected ? 'bg-neutral-900' : 'bg-neutral-300'}`}
+          style={{ width: preview.width, height: preview.height }}
+        />
+      </div>
+      <span className="text-[11px] leading-none">{label}</span>
+    </button>
   )
 }
 
@@ -113,15 +161,13 @@ export function GraphicTextConfigSheet({
   const lastHeightRef = useRef(0)
 
   const previewPages = useMemo(() => paginateMarkdown(markdown, config), [markdown, config])
-  const previewLayout = useMemo(() => getGraphicLayout(config), [config])
-  const previewPageSize = useMemo(() => {
+  const previewLayout = useMemo(() => {
     if (!previewAreaHeight) return null
-    return computeConfigPreviewPageSize(
-      previewLayout.aspectRatio,
-      window.innerWidth,
+    return computeConfigPreviewLayout(
+      getGraphicLayout(config).aspectRatio,
       previewAreaHeight,
     )
-  }, [previewLayout.aspectRatio, previewAreaHeight])
+  }, [config, previewAreaHeight])
 
   useEffect(() => {
     if (isOpen !== state.isOpen) state.setOpen(isOpen)
@@ -220,21 +266,21 @@ export function GraphicTextConfigSheet({
   }
 
   const previewNode =
-    previewReady && previewAreaHeight > 0 && previewPageSize ? (
+    previewReady && previewAreaHeight > 0 && previewLayout ? (
       <GraphicConfigPreview
         pages={previewPages}
         config={config}
         markdown={markdown}
         previewAreaHeight={previewAreaHeight}
-        pageWidth={previewPageSize.width}
+        sourceWidth={previewLayout.sourceWidth}
+        sourceHeight={previewLayout.sourceHeight}
+        scale={previewLayout.scale}
         showSafeArea={showSafeArea}
       />
     ) : null
 
   return (
     <>
-      {isOpen && previewNode && createPortal(previewNode, document.body)}
-
       <Drawer state={state}>
         <Drawer.Backdrop isDismissable={false} className="graphic-config-backdrop">
           <Drawer.Content placement="bottom" className="component-library-content">
@@ -292,57 +338,61 @@ export function GraphicTextConfigSheet({
                           </select>
                         </section>
 
-                        <section className="grid grid-cols-2 gap-x-3 gap-y-2">
-                          <ConfigSelect
-                            label="标题字号"
-                            value={config.titleFontSize}
-                            options={TITLE_FONT_SIZE_OPTIONS}
-                            onChange={(value) => onUpdate({ titleFontSize: value })}
-                            format={(value) => `${value}px`}
-                          />
-                          <ConfigSelect
-                            label="正文字号"
-                            value={config.bodyFontSize}
-                            options={BODY_FONT_SIZE_OPTIONS}
-                            onChange={(value) => onUpdate({ bodyFontSize: value })}
-                            format={(value) => `${value}px`}
-                          />
-                          <ConfigSelect
-                            label="标题行高"
-                            value={config.titleLineHeight}
-                            options={TITLE_LINE_HEIGHT_OPTIONS}
-                            onChange={(value) => onUpdate({ titleLineHeight: value })}
-                          />
-                          <ConfigSelect
-                            label="正文行高"
-                            value={config.bodyLineHeight}
-                            options={BODY_LINE_HEIGHT_OPTIONS}
-                            onChange={(value) => onUpdate({ bodyLineHeight: value })}
-                          />
-                          <ConfigSelect
-                            label="一级上间距"
-                            value={config.titleMarginTop}
-                            options={TITLE_MARGIN_OPTIONS}
-                            onChange={(value) => onUpdate({ titleMarginTop: value })}
-                          />
-                          <ConfigSelect
-                            label="一级下间距"
-                            value={config.titleMarginBottom}
-                            options={TITLE_MARGIN_OPTIONS}
-                            onChange={(value) => onUpdate({ titleMarginBottom: value })}
-                          />
-                          <ConfigSelect
-                            label="二级上间距"
-                            value={config.headingMarginTop}
-                            options={HEADING_MARGIN_OPTIONS}
-                            onChange={(value) => onUpdate({ headingMarginTop: value })}
-                          />
-                          <ConfigSelect
-                            label="二级下间距"
-                            value={config.headingMarginBottom}
-                            options={HEADING_MARGIN_OPTIONS}
-                            onChange={(value) => onUpdate({ headingMarginBottom: value })}
-                          />
+                        <section className="flex flex-col gap-2">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <ConfigSelect
+                              label="标题字号"
+                              value={config.titleFontSize}
+                              options={TITLE_FONT_SIZE_OPTIONS}
+                              onChange={(value) => onUpdate({ titleFontSize: value })}
+                              format={(value) => `${value}px`}
+                            />
+                            <ConfigSelect
+                              label="正文字号"
+                              value={config.bodyFontSize}
+                              options={BODY_FONT_SIZE_OPTIONS}
+                              onChange={(value) => onUpdate({ bodyFontSize: value })}
+                              format={(value) => `${value}px`}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+                            <ConfigSelect
+                              label="标题行高"
+                              value={config.titleLineHeight}
+                              options={TITLE_LINE_HEIGHT_OPTIONS}
+                              onChange={(value) => onUpdate({ titleLineHeight: value })}
+                            />
+                            <ConfigSelect
+                              label="正文行高"
+                              value={config.bodyLineHeight}
+                              options={BODY_LINE_HEIGHT_OPTIONS}
+                              onChange={(value) => onUpdate({ bodyLineHeight: value })}
+                            />
+                            <ConfigSelect
+                              label="一级上间距"
+                              value={config.titleMarginTop}
+                              options={TITLE_MARGIN_OPTIONS}
+                              onChange={(value) => onUpdate({ titleMarginTop: value })}
+                            />
+                            <ConfigSelect
+                              label="一级下间距"
+                              value={config.titleMarginBottom}
+                              options={TITLE_MARGIN_OPTIONS}
+                              onChange={(value) => onUpdate({ titleMarginBottom: value })}
+                            />
+                            <ConfigSelect
+                              label="二级上间距"
+                              value={config.headingMarginTop}
+                              options={HEADING_MARGIN_OPTIONS}
+                              onChange={(value) => onUpdate({ headingMarginTop: value })}
+                            />
+                            <ConfigSelect
+                              label="二级下间距"
+                              value={config.headingMarginBottom}
+                              options={HEADING_MARGIN_OPTIONS}
+                              onChange={(value) => onUpdate({ headingMarginBottom: value })}
+                            />
+                          </div>
                         </section>
 
                         <section>
@@ -393,16 +443,15 @@ export function GraphicTextConfigSheet({
 
                         <section>
                           <p className="mb-2 text-sm font-medium">图片比例</p>
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="component-scroll-row -mx-1 flex items-end gap-1 overflow-x-auto px-1 py-1">
                             {GRAPHIC_ASPECT_RATIO_OPTIONS.map((option) => (
-                              <button
+                              <AspectRatioOption
                                 key={option.id}
-                                type="button"
-                                className={optionButtonClass(config.aspectRatio === option.id)}
-                                onClick={() => onUpdate({ aspectRatio: option.id })}
-                              >
-                                {option.label}
-                              </button>
+                                id={option.id}
+                                label={option.label}
+                                selected={config.aspectRatio === option.id}
+                                onSelect={() => onUpdate({ aspectRatio: option.id })}
+                              />
                             ))}
                           </div>
                         </section>
@@ -503,6 +552,8 @@ export function GraphicTextConfigSheet({
           </Drawer.Content>
         </Drawer.Backdrop>
       </Drawer>
+
+      {isOpen && previewNode && createPortal(previewNode, document.body)}
     </>
   )
 }

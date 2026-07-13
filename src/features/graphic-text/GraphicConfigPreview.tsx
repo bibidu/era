@@ -8,7 +8,9 @@ interface GraphicConfigPreviewProps {
   config: GraphicTextConfig
   markdown: string
   previewAreaHeight: number
-  pageWidth: number
+  sourceWidth: number
+  sourceHeight: number
+  scale: number
   showSafeArea?: boolean
 }
 
@@ -17,7 +19,9 @@ export function GraphicConfigPreview({
   config,
   markdown,
   previewAreaHeight,
-  pageWidth,
+  sourceWidth,
+  sourceHeight,
+  scale,
   showSafeArea = false,
 }: GraphicConfigPreviewProps) {
   const [activePage, setActivePage] = useState(0)
@@ -35,6 +39,9 @@ export function GraphicConfigPreview({
   const goNext = () => setActivePage((current) => Math.min(pages.length - 1, current + 1))
 
   if (!currentPage) return null
+
+  const scaledWidth = sourceWidth * scale
+  const scaledHeight = sourceHeight * scale
 
   return (
     <div className="graphic-config-preview" style={{ height: previewAreaHeight }}>
@@ -56,14 +63,28 @@ export function GraphicConfigPreview({
             <ChevronLeft size={22} />
           </button>
 
-          <GraphicPage
-            page={currentPage}
-            config={config}
-            markdown={markdown}
-            showSafeArea={showSafeArea}
-            displayWidth={pageWidth}
-            className="pointer-events-none rounded-xl shadow-lg"
-          />
+          <div
+            className="graphic-config-preview-page"
+            style={{ width: scaledWidth, height: scaledHeight }}
+          >
+            <div
+              className="graphic-config-preview-page-scale"
+              style={{
+                width: sourceWidth,
+                height: sourceHeight,
+                transform: `scale(${scale})`,
+              }}
+            >
+              <GraphicPage
+                page={currentPage}
+                config={config}
+                markdown={markdown}
+                showSafeArea={showSafeArea}
+                displayWidth={sourceWidth}
+                className="pointer-events-none rounded-xl shadow-lg"
+              />
+            </div>
+          </div>
 
           <button
             type="button"
