@@ -37,6 +37,14 @@ export interface GraphicLayout {
   aspectRatio: { width: number; height: number }
 }
 
+interface LayoutLine {
+  id: string
+  type: MarkdownBlockType
+  text: string
+  lineHeight: number
+  spacingAfter: number
+}
+
 function parseAspectRatio(ratio: GraphicAspectRatio) {
   const [width, height] = ratio.split(':').map(Number)
   return { width, height }
@@ -90,7 +98,7 @@ export function getGraphicLayout(
 }
 
 function createBlock(type: MarkdownBlockType, text: string, index: number): MarkdownBlock {
-  return { id: `${index}-${type}`, type, text }
+  return { id: `${index}-${type}`, type, text, isBlockEnd: true }
 }
 
 export function parseMarkdown(markdown: string): MarkdownBlock[] {
@@ -158,17 +166,33 @@ function blockSpacing(block: MarkdownBlock, config: GraphicTextConfig, exportSca
   return size * 0.08 + flexGap
 }
 
-function measurePlainText(text: string) {
-  return stripHighlightMarkers(text)
+function wrapPlainTextLines(text: string, charsPerLine: number) {
+  const chars = [...text]
+  if (!chars.length) return ['']
+
+  const lines: string[] = []
+  let current = ''
+
+  for (const char of chars) {
+    if (current.length >= charsPerLine) {
+      lines.push(current)
+      current = char
+    } else {
+      current += char
+    }
+  }
+
+  if (current) lines.push(current)
+  return lines
 }
 
-function estimateBlockHeight(
+function blockToLayoutLines(
   block: MarkdownBlock,
   config: GraphicTextConfig,
   layout: GraphicLayout,
-) {
+): LayoutLine[] {
+  const plainText = stripHighlightMarkers(block.text)
   const size = blockFontSize(block, config, layout.exportScale)
-  const plainText = measurePlainText(block.text)
   const availableWidth = layout.pageWidth - layout.safeX * 2 - (block.type === 'quote' ? 42 : 0)
   const prefixWidth = block.type === 'list' ? size * 1.35 : 0
   const approximateCharacterWidth = size * (block.type === 'title' || block.type === 'heading' ? 0.95 : 1)
@@ -176,68 +200,57 @@ function estimateBlockHeight(
     4,
     Math.floor((availableWidth - prefixWidth) / approximateCharacterWidth),
   )
-  const lines = Math.max(1, Math.ceil([...plainText].length / charsPerLine))
-  return lines * blockLineHeight(block, config, layout.exportScale) + blockSpacing(block, config, layout.exportScale)
+  const lineHeight = blockLineHeight(block, config, layout.exportScale)
+  const spacingAfter = blockSpacing(block, config, layout.exportScale)
+  const wrappedLines = wrapPlainTextLines(plainText, charsPerLine)
+
+  return wrappedLines.map((lineText, index) => ({
+    id: `${block.id}-l${index}`,
+    type: index === 0 ? block.type : 'paragraph',
+    text: wrappedLines.length === 1 ? block.text : lineText,
+    lineHeight,
+    spacingAfter: index === wrappedLines.length - 1 ? spacingAfter : 0,
+  }))
 }
 
-function splitOversizedBlock(
-  block: MarkdownBlock,
-  config: GraphicTextConfig,
-  layout: GraphicLayout,
-  maxHeight: number,
-) {
-  const size = blockFontSize(block, config, layout.exportScale)
-  const plainText = measurePlainText(block.text)
-  const availableWidth = layout.pageWidth - layout.safeX * 2
-  const charsPerLine = Math.max(4, Math.floor(availableWidth / (size * 0.98)))
-  const maxLines = Math.max(
-    1,
-    Math.floor((maxHeight - size * 0.55) / blockLineHeight(block, config, layout.exportScale)),
-  )
-  const maxChars = Math.max(charsPerLine, charsPerLine * maxLines)
-  const chars = [...plainText]
-  const parts: MarkdownBlock[] = []
-
-  for (let start = 0; start < chars.length; start += maxChars) {
-    parts.push({
-      ...block,
-      id: `${block.id}-${parts.length}`,
-      text: chars.slice(start, start + maxChars).join(''),
-      type: parts.length === 0 ? block.type : 'paragraph',
-    })
-  }
-
-  return parts
+function layoutLinesToBlocks(lines: LayoutLine[]): MarkdownBlock[] {
+  return lines.map((line) => ({
+    id: line.id,
+    type: line.type,
+    text: line.text,
+    isBlockEnd: line.spacingAfter > 0,
+  }))
 }
 
 export function paginateMarkdown(markdown: string, config: GraphicTextConfig): GraphicTextPage[] {
   const layout = getGraphicLayout(config)
   const availableHeight = layout.contentBottom - layout.safeTop
   const sourceBlocks = parseMarkdown(markdown)
-  const blocks = sourceBlocks.flatMap((block) => {
-    if (estimateBlockHeight(block, config, layout) <= availableHeight) return block
-    return splitOversizedBlock(block, config, layout, availableHeight)
-  })
+  const allLines = sourceBlocks.flatMap((block) => blockToLayoutLines(block, config, layout))
 
-  if (!blocks.length) {
+  if (!allLines.length) {
     return [{ index: 0, blocks: [] }]
   }
 
   const pages: GraphicTextPage[] = []
-  let current: MarkdownBlock[] = []
+  let currentLines: LayoutLine[] = []
   let usedHeight = 0
 
-  for (const block of blocks) {
-    const height = estimateBlockHeight(block, config, layout)
-    if (current.length > 0 && usedHeight + height > availableHeight) {
-      pages.push({ index: pages.length, blocks: current })
-      current = []
+  for (const line of allLines) {
+    const lineTotal = line.lineHeight + line.spacingAfter
+    if (currentLines.length > 0 && usedHeight + lineTotal > availableHeight) {
+      pages.push({ index: pages.length, blocks: layoutLinesToBlocks(currentLines) })
+      currentLines = []
       usedHeight = 0
     }
-    current.push(block)
-    usedHeight += height
+
+    currentLines.push(line)
+    usedHeight += lineTotal
   }
 
-  if (current.length) pages.push({ index: pages.length, blocks: current })
+  if (currentLines.length) {
+    pages.push({ index: pages.length, blocks: layoutLinesToBlocks(currentLines) })
+  }
+
   return pages
 }

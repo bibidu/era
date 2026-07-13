@@ -31,6 +31,7 @@ export interface MarkdownBlock {
   id: string
   type: MarkdownBlockType
   text: string
+  isBlockEnd?: boolean
 }
 
 export interface GraphicTextPage {

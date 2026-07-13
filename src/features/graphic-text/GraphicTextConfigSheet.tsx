@@ -1,6 +1,7 @@
 import { Drawer, useOverlayState } from '@heroui/react'
 import { Check, ImagePlus, Palette, ScanEye, Type } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { GreySlider } from '../../components/GreySlider'
 import { GraphicPage } from './GraphicPage'
@@ -31,6 +32,14 @@ const EDGE_OPTIONS: { id: EdgeStyle; label: string }[] = [
 ]
 
 const THEME_COLORS = ['#FACC15', '#FB923C', '#EF4444', '#22C55E', '#3B82F6', '#A855F7']
+
+function optionButtonClass(selected: boolean, heightClass = 'h-10') {
+  return `${heightClass} rounded-xl border text-sm ${
+    selected
+      ? 'border-2 border-black bg-white text-neutral-900'
+      : 'border border-neutral-300 bg-white text-neutral-700'
+  }`
+}
 
 export function GraphicTextConfigSheet({
   isOpen,
@@ -112,19 +121,22 @@ export function GraphicTextConfigSheet({
     onGenerate()
   }
 
+  const previewNode =
+    isOpen && previewAreaHeight > 80 ? (
+      <div className="graphic-config-preview" style={{ height: previewAreaHeight }}>
+        <GraphicPage
+          page={previewPage}
+          config={config}
+          showSafeArea={showSafeArea}
+          className="graphic-config-preview-page shadow-xl"
+        />
+      </div>
+    ) : null
+
   return (
     <Drawer state={state}>
       <Drawer.Backdrop isDismissable={false} className="graphic-config-backdrop">
-        {isOpen && previewAreaHeight > 0 && (
-          <div className="graphic-config-preview" style={{ height: previewAreaHeight }}>
-            <GraphicPage
-              page={previewPage}
-              config={config}
-              showSafeArea={showSafeArea}
-              className="graphic-config-preview-page shadow-xl"
-            />
-          </div>
-        )}
+        {previewNode && createPortal(previewNode, document.body)}
 
         <Drawer.Content placement="bottom" className="component-library-content">
           <Drawer.Dialog className="component-library flex h-[min(520px,68dvh)] max-h-[68dvh] flex-col bg-white text-neutral-900">
@@ -229,11 +241,7 @@ export function GraphicTextConfigSheet({
                         <button
                           key={option.id}
                           type="button"
-                          className={`h-10 rounded-xl border text-sm ${
-                            config.aspectRatio === option.id
-                              ? 'border-black bg-black text-white'
-                              : 'border-neutral-300 bg-white text-neutral-700'
-                          }`}
+                          className={optionButtonClass(config.aspectRatio === option.id)}
                           onClick={() => onUpdate({ aspectRatio: option.id })}
                         >
                           {option.label}
@@ -250,10 +258,10 @@ export function GraphicTextConfigSheet({
                       </div>
                       <button
                         type="button"
-                        className={`h-8 shrink-0 rounded-full px-3 text-xs font-medium ${
+                        className={`h-8 shrink-0 rounded-full border px-3 text-xs font-medium ${
                           showSafeArea
-                            ? 'bg-sky-500 text-white'
-                            : 'bg-neutral-100 text-neutral-600'
+                            ? 'border-2 border-black bg-white text-neutral-900'
+                            : 'border border-neutral-300 bg-white text-neutral-600'
                         }`}
                         onClick={() => setShowSafeArea((current) => !current)}
                       >
@@ -272,11 +280,7 @@ export function GraphicTextConfigSheet({
                         <button
                           key={option.id}
                           type="button"
-                          className={`h-11 rounded-xl border text-sm ${
-                            config.template === option.id
-                              ? 'border-black bg-black text-white'
-                              : 'border-neutral-300 bg-white text-neutral-700'
-                          }`}
+                          className={optionButtonClass(config.template === option.id, 'h-11')}
                           onClick={() => onUpdate({ template: option.id })}
                         >
                           {option.label}
@@ -372,11 +376,7 @@ function EdgeSetting({
           <button
             key={option.id}
             type="button"
-            className={`h-10 rounded-lg border text-sm ${
-              value === option.id
-                ? 'border-black bg-neutral-100 text-black'
-                : 'border-neutral-300 bg-white text-neutral-600'
-            }`}
+            className={optionButtonClass(value === option.id)}
             onClick={() => onStyleChange(option.id)}
           >
             {option.label}
