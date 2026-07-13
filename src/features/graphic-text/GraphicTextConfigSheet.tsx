@@ -1,7 +1,6 @@
 import { Drawer, useOverlayState } from '@heroui/react'
 import { Check, Highlighter, ImagePlus, Palette, ScanEye, Type } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { GraphicConfigPreview } from './GraphicConfigPreview'
 import { GraphicHighlightEditor } from './GraphicHighlightEditor'
@@ -288,10 +287,11 @@ export function GraphicTextConfigSheet({
     ) : null
 
   return (
-    <>
-      <Drawer state={state}>
-        <Drawer.Backdrop isDismissable={false} className="graphic-config-backdrop">
-          <Drawer.Content placement="bottom" className="component-library-content">
+    <Drawer state={state}>
+      <Drawer.Backdrop isDismissable={false} className="graphic-config-backdrop">
+        {sheetView === 'main' && previewNode}
+
+        <Drawer.Content placement="bottom" className="component-library-content">
             <Drawer.Dialog className="component-library flex h-[min(520px,68dvh)] max-h-[68dvh] flex-col bg-white text-neutral-900">
               <div
                 ref={(node) => {
@@ -562,8 +562,5 @@ export function GraphicTextConfigSheet({
           </Drawer.Content>
         </Drawer.Backdrop>
       </Drawer>
-
-      {isOpen && previewNode && createPortal(previewNode, document.body)}
-    </>
   )
 }
