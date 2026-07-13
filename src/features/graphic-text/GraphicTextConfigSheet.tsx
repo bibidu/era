@@ -3,10 +3,17 @@ import { Check, Highlighter, ImagePlus, Palette, ScanEye, Type } from 'lucide-re
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FONT_OPTIONS } from '../../data/fonts'
-import { GreySlider } from '../../components/GreySlider'
 import { GraphicConfigPreview } from './GraphicConfigPreview'
 import { GraphicHighlightEditor } from './GraphicHighlightEditor'
-import { computeGraphicPageDisplaySize } from './graphicPreviewLayout'
+import {
+  BODY_FONT_SIZE_OPTIONS,
+  BODY_LINE_HEIGHT_OPTIONS,
+  HEADING_MARGIN_OPTIONS,
+  TITLE_FONT_SIZE_OPTIONS,
+  TITLE_LINE_HEIGHT_OPTIONS,
+  TITLE_MARGIN_OPTIONS,
+} from './configSelectOptions'
+import { computeConfigPreviewPageSize } from './graphicPreviewLayout'
 import { getGraphicLayout, paginateMarkdown } from './layout'
 import type { GraphicTemplate, GraphicTextConfig } from './types'
 import { GRAPHIC_ASPECT_RATIO_OPTIONS } from './types'
@@ -31,12 +38,50 @@ const TEMPLATE_OPTIONS: { id: GraphicTemplate; label: string }[] = [
 
 const THEME_COLORS = ['#FACC15', '#FB923C', '#EF4444', '#22C55E', '#3B82F6', '#A855F7']
 
+const selectClassName =
+  'h-9 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-neutral-50 px-2 text-sm outline-none focus:border-neutral-500'
+
 function optionButtonClass(selected: boolean, heightClass = 'h-10') {
   return `${heightClass} rounded-xl border text-sm ${
     selected
       ? 'border-2 border-black bg-white text-neutral-900'
       : 'border border-neutral-300 bg-white text-neutral-700'
   }`
+}
+
+function nearestOption(value: number, options: readonly number[]) {
+  return options.reduce((closest, option) =>
+    Math.abs(option - value) < Math.abs(closest - value) ? option : closest,
+  )
+}
+
+interface ConfigSelectProps {
+  label: string
+  value: number
+  options: readonly number[]
+  onChange: (value: number) => void
+  format?: (value: number) => string
+}
+
+function ConfigSelect({ label, value, options, onChange, format }: ConfigSelectProps) {
+  const displayValue = nearestOption(value, options)
+  return (
+    <label className="flex min-w-0 flex-1 items-center gap-2 text-sm">
+      <span className="w-[4.6rem] shrink-0 text-neutral-600">{label}</span>
+      <select
+        value={displayValue}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className={selectClassName}
+        aria-label={label}
+      >
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {format ? format(option) : option}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
 }
 
 export function GraphicTextConfigSheet({
@@ -71,10 +116,10 @@ export function GraphicTextConfigSheet({
   const previewLayout = useMemo(() => getGraphicLayout(config), [config])
   const previewPageSize = useMemo(() => {
     if (!previewAreaHeight) return null
-    return computeGraphicPageDisplaySize(
+    return computeConfigPreviewPageSize(
       previewLayout.aspectRatio,
-      window.innerWidth - 32,
-      previewAreaHeight - 16,
+      window.innerWidth,
+      previewAreaHeight,
     )
   }, [previewLayout.aspectRatio, previewAreaHeight])
 
@@ -225,11 +270,11 @@ export function GraphicTextConfigSheet({
                     </div>
 
                     <Drawer.Body className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-                      <div className="flex flex-col gap-5 pb-2">
+                      <div className="flex flex-col gap-4 pb-2">
                         <section>
                           <div className="mb-2 flex items-center gap-2 text-sm font-medium">
                             <Type size={16} />
-                            字体配置
+                            字体
                           </div>
                           <select
                             value={config.fontId}
@@ -237,7 +282,7 @@ export function GraphicTextConfigSheet({
                               const font = FONT_OPTIONS.find((item) => item.id === event.target.value)
                               if (font) onUpdate({ fontId: font.id, fontFamily: font.fontFamily })
                             }}
-                            className="h-11 w-full rounded-xl border border-neutral-300 bg-neutral-50 px-3 text-sm outline-none focus:border-neutral-500"
+                            className="h-10 w-full rounded-xl border border-neutral-300 bg-neutral-50 px-3 text-sm outline-none focus:border-neutral-500"
                           >
                             {FONT_OPTIONS.map((font) => (
                               <option key={font.id} value={font.id}>
@@ -247,90 +292,55 @@ export function GraphicTextConfigSheet({
                           </select>
                         </section>
 
-                        <section>
-                          <div className="mb-1 flex items-center justify-between text-sm">
-                            <span className="font-medium">标题字号</span>
-                            <span className="text-neutral-500">{config.titleFontSize}px</span>
-                          </div>
-                          <GreySlider
-                            aria-label="标题字号"
-                            minValue={24}
-                            maxValue={56}
+                        <section className="grid grid-cols-2 gap-x-3 gap-y-2">
+                          <ConfigSelect
+                            label="标题字号"
                             value={config.titleFontSize}
+                            options={TITLE_FONT_SIZE_OPTIONS}
                             onChange={(value) => onUpdate({ titleFontSize: value })}
+                            format={(value) => `${value}px`}
                           />
-                        </section>
-
-                        <section>
-                          <div className="mb-1 flex items-center justify-between text-sm">
-                            <span className="font-medium">正文字号</span>
-                            <span className="text-neutral-500">{config.bodyFontSize}px</span>
-                          </div>
-                          <GreySlider
-                            aria-label="正文字号"
-                            minValue={10}
-                            maxValue={32}
+                          <ConfigSelect
+                            label="正文字号"
                             value={config.bodyFontSize}
+                            options={BODY_FONT_SIZE_OPTIONS}
                             onChange={(value) => onUpdate({ bodyFontSize: value })}
+                            format={(value) => `${value}px`}
                           />
-                        </section>
-
-                        <section>
-                          <div className="mb-1 flex items-center justify-between text-sm">
-                            <span className="font-medium">标题行高</span>
-                            <span className="text-neutral-500">{config.titleLineHeight.toFixed(2)}</span>
-                          </div>
-                          <GreySlider
-                            aria-label="标题行高"
-                            minValue={1}
-                            maxValue={2}
-                            step={0.02}
+                          <ConfigSelect
+                            label="标题行高"
                             value={config.titleLineHeight}
+                            options={TITLE_LINE_HEIGHT_OPTIONS}
                             onChange={(value) => onUpdate({ titleLineHeight: value })}
                           />
-                        </section>
-
-                        <section>
-                          <div className="mb-1 flex items-center justify-between text-sm">
-                            <span className="font-medium">正文行高</span>
-                            <span className="text-neutral-500">{config.bodyLineHeight.toFixed(2)}</span>
-                          </div>
-                          <GreySlider
-                            aria-label="正文行高"
-                            minValue={1}
-                            maxValue={2.2}
-                            step={0.02}
+                          <ConfigSelect
+                            label="正文行高"
                             value={config.bodyLineHeight}
+                            options={BODY_LINE_HEIGHT_OPTIONS}
                             onChange={(value) => onUpdate({ bodyLineHeight: value })}
                           />
-                        </section>
-
-                        <section>
-                          <div className="mb-1 flex items-center justify-between text-sm">
-                            <span className="font-medium">二级标题上间距</span>
-                            <span className="text-neutral-500">{config.headingMarginTop.toFixed(2)}</span>
-                          </div>
-                          <GreySlider
-                            aria-label="二级标题上间距"
-                            minValue={0}
-                            maxValue={1.2}
-                            step={0.02}
+                          <ConfigSelect
+                            label="一级上间距"
+                            value={config.titleMarginTop}
+                            options={TITLE_MARGIN_OPTIONS}
+                            onChange={(value) => onUpdate({ titleMarginTop: value })}
+                          />
+                          <ConfigSelect
+                            label="一级下间距"
+                            value={config.titleMarginBottom}
+                            options={TITLE_MARGIN_OPTIONS}
+                            onChange={(value) => onUpdate({ titleMarginBottom: value })}
+                          />
+                          <ConfigSelect
+                            label="二级上间距"
                             value={config.headingMarginTop}
+                            options={HEADING_MARGIN_OPTIONS}
                             onChange={(value) => onUpdate({ headingMarginTop: value })}
                           />
-                        </section>
-
-                        <section>
-                          <div className="mb-1 flex items-center justify-between text-sm">
-                            <span className="font-medium">二级标题下间距</span>
-                            <span className="text-neutral-500">{config.headingMarginBottom.toFixed(2)}</span>
-                          </div>
-                          <GreySlider
-                            aria-label="二级标题下间距"
-                            minValue={0}
-                            maxValue={1.2}
-                            step={0.02}
+                          <ConfigSelect
+                            label="二级下间距"
                             value={config.headingMarginBottom}
+                            options={HEADING_MARGIN_OPTIONS}
                             onChange={(value) => onUpdate({ headingMarginBottom: value })}
                           />
                         </section>
@@ -415,9 +425,6 @@ export function GraphicTextConfigSheet({
                               {showSafeArea ? '隐藏线框' : '查看线框'}
                             </button>
                           </div>
-                          <p className="mt-1 text-xs text-neutral-500">
-                            开启后预览区会用虚线标出正文排版范围
-                          </p>
                         </section>
 
                         <section>
@@ -467,13 +474,15 @@ export function GraphicTextConfigSheet({
                         )}
 
                         <section>
-                          <p className="mb-2 text-sm font-medium">顶部文案</p>
-                          <input
-                            value={config.topText}
-                            onChange={(event) => onUpdate({ topText: event.target.value })}
-                            placeholder="留空则显示「全文 xxx 字」"
-                            className="h-10 w-full rounded-lg border border-neutral-300 bg-neutral-50 px-3 text-sm outline-none"
-                          />
+                          <label className="flex items-center gap-2 text-sm">
+                            <span className="w-[4.6rem] shrink-0 font-medium text-neutral-600">顶部文案</span>
+                            <input
+                              value={config.topText}
+                              onChange={(event) => onUpdate({ topText: event.target.value })}
+                              placeholder="留空则显示「全文 xxx 字」"
+                              className="h-9 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-neutral-50 px-2 text-sm outline-none"
+                            />
+                          </label>
                         </section>
                       </div>
                     </Drawer.Body>

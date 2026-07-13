@@ -175,7 +175,7 @@ function blockSpacingAfter(
   const size = blockFontSize(block, config, exportScale)
   const flexGap = Math.round(size * 0.18)
 
-  if (type === 'title') return size * 0.28 + flexGap + blockGap(layout)
+  if (type === 'title') return size * config.titleMarginBottom + flexGap + blockGap(layout)
   if (type === 'heading') return size * config.headingMarginBottom + flexGap + blockGap(layout)
   return size * 0.08 + flexGap + blockGap(layout)
 }
@@ -190,6 +190,7 @@ function blockSpacingBefore(
 
   const type = resolveStyleType(block)
   const size = blockFontSize(block, config, exportScale)
+  if (type === 'title') return size * config.titleMarginTop
   if (type === 'heading') return size * config.headingMarginTop
   return 0
 }
