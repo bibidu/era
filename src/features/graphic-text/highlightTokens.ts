@@ -96,7 +96,7 @@ export function buildHighlightDisplayLines(markdown: string): HighlightDisplayLi
       blockIndex += 1
     } else if (line.startsWith('> ')) {
       flushParagraph()
-      const blockId = createBlockId(blockIndex, 'paragraph')
+      const blockId = createBlockId(blockIndex, 'quote')
       const plain = stripHighlightMarkers(line.slice(2).trim())
       result.push({ tokens: tokensFromText(blockId, plain, 0) })
       blockIndex += 1

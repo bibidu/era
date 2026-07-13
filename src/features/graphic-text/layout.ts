@@ -132,7 +132,7 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
       blocks.push(createBlock('list', line.replace(/^\d+\.\s+/, ''), blocks.length))
     } else if (line.startsWith('> ')) {
       flushParagraph()
-      blocks.push(createBlock('paragraph', line.slice(2).trim(), blocks.length))
+      blocks.push(createBlock('quote', line.slice(2).trim(), blocks.length))
     } else {
       paragraph.push(line)
     }
@@ -203,7 +203,13 @@ function blockToLayoutLines(
   const styleType = resolveStyleType(block)
   const plainText = stripHighlightMarkers(block.text)
   const size = blockFontSize(block, config, layout.exportScale)
-  const availableWidth = layout.pageWidth - layout.safeX * 2 - (block.type === 'list' ? size * 1.35 : 0)
+  const inset =
+    block.type === 'list'
+      ? size * 1.35
+      : block.type === 'quote' || styleType === 'quote'
+        ? size * 0.55
+        : 0
+  const availableWidth = layout.pageWidth - layout.safeX * 2 - inset
   const approximateCharacterWidth =
     size * (styleType === 'title' || styleType === 'heading' ? 0.95 : 1)
   const charsPerLine = Math.max(

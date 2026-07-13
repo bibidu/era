@@ -48,7 +48,7 @@ export interface GraphicTextPage {
 export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   fontId: 'song',
   fontFamily: '"Noto Serif SC", serif',
-  titleFontSize: 34,
+  titleFontSize: 56,
   bodyFontSize: 13,
   titleLineHeight: 1.2,
   bodyLineHeight: 1.48,
@@ -64,9 +64,9 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   highlightedCharKeys: [],
 }
 
-export const DEFAULT_MARKDOWN = `# 多 Agent 如何并行工作
+export const DEFAULT_MARKDOWN = `# 工程团队想抄 Dynamic Workflows ，我把它拆透了
 
-Git Worktree 可以让多个 Agent 在同一个仓库中并行开发，同时保持工作目录互相隔离。
+> Git Worktree 可以让多个 Agent 在同一个仓库中并行开发，同时保持工作目录互相隔离。
 
 ## 1. 先拆分任务
 
