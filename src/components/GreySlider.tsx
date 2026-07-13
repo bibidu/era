@@ -28,13 +28,7 @@ export function GreySlider({
   }
 
   return (
-    <div
-      className="grey-slider-wrap"
-      onPointerDown={(e) => {
-        e.stopPropagation()
-        draggingRef.current = true
-      }}
-    >
+    <div className="grey-slider-wrap">
       <input
         type="range"
         className="grey-range"
@@ -45,6 +39,9 @@ export function GreySlider({
         aria-label={ariaLabel}
         onInput={(e) => onChange(Number(e.currentTarget.value))}
         onChange={(e) => onChange(Number(e.currentTarget.value))}
+        onPointerDown={() => {
+          draggingRef.current = true
+        }}
         onPointerUp={(e) => commit(Number(e.currentTarget.value))}
         onPointerCancel={(e) => commit(Number(e.currentTarget.value))}
         onBlur={(e) => commit(Number(e.currentTarget.value))}

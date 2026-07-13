@@ -34,7 +34,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   titleFontSize: 34,
   bodyFontSize: 20,
   themeColor: '#FACC15',
-  template: 'reference',
+  template: 'solid',
   topStyle: 'bar',
   bottomStyle: 'minimal',
   topText: '图文笔记',
