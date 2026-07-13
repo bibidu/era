@@ -4,10 +4,12 @@ import { Plus, Save } from 'lucide-react'
 import { PosterCanvas } from './components/PosterCanvas'
 import { MaterialSheet } from './components/MaterialSheet'
 import { TextEditorSheet } from './components/TextEditorSheet'
+import { TopModeTabs, type AppMode } from './components/TopModeTabs'
 import type { TextElement } from './types'
 import { FONT_OPTIONS } from './data/fonts'
 import { exportPosterToImage, savePosterBlob } from './utils/exportPoster'
 import { loadImageMetaFromFile, type ImageSize } from './utils/imageMeta'
+import { GraphicTextWorkspace } from './features/graphic-text/GraphicTextWorkspace'
 
 function cleanupEditorUi() {
   document.body.classList.remove('keyboard-dock-open')
@@ -36,6 +38,7 @@ function createTextElement(): TextElement {
 }
 
 function App() {
+  const [mode, setMode] = useState<AppMode>('poster')
   const [posterUrl, setPosterUrl] = useState<string | null>(null)
   const [posterSize, setPosterSize] = useState<ImageSize | null>(null)
   const [texts, setTexts] = useState<TextElement[]>([])
@@ -206,63 +209,80 @@ function App() {
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden bg-white">
-      <header className="flex items-center justify-center border-b border-neutral-200 px-4 py-3">
-        <h1 className="text-base font-medium tracking-wide text-black">海报编辑器</h1>
+      <header className="flex shrink-0 items-center justify-center border-b border-neutral-200 px-4 py-2">
+        <TopModeTabs
+          value={mode}
+          onChange={(nextMode) => {
+            setMode(nextMode)
+            setMaterialOpen(false)
+            setEditorOpen(false)
+          }}
+        />
       </header>
 
-      <PosterCanvas
-        posterUrl={posterUrl}
-        posterSize={posterSize}
-        texts={texts}
-        selectedId={selectedId}
-        isExporting={isExporting}
-        onSelectText={handleSelectText}
-        onOpenConfig={handleOpenConfig}
-        onDeleteText={handleDeleteText}
-        onUploadPoster={handleUploadPoster}
-        onCanvasResize={handleCanvasResize}
-        onPosterSizeResolved={handlePosterSizeResolved}
-      />
+      {mode === 'poster' ? (
+        <>
+          <PosterCanvas
+            posterUrl={posterUrl}
+            posterSize={posterSize}
+            texts={texts}
+            selectedId={selectedId}
+            isExporting={isExporting}
+            onSelectText={handleSelectText}
+            onOpenConfig={handleOpenConfig}
+            onDeleteText={handleDeleteText}
+            onUploadPoster={handleUploadPoster}
+            onCanvasResize={handleCanvasResize}
+            onPosterSizeResolved={handlePosterSizeResolved}
+          />
 
-      <footer className="sticky bottom-0 border-t border-neutral-200 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        {saveMessage && (
-          <p className="mb-2 text-center text-xs text-neutral-600">{saveMessage}</p>
-        )}
-        <div className="flex gap-3">
-          <Button
-            variant="secondary"
-            className="flex-1 border-neutral-300 bg-white text-black"
-            isDisabled={!posterUrl}
-            onPress={() => setMaterialOpen(true)}
-          >
-            <Plus size={18} />
-            添加素材
-          </Button>
-          <Button
-            variant="primary"
-            className="flex-1 bg-black text-white"
-            isDisabled={!posterUrl || saving}
-            onPress={handleSave}
-          >
-            <Save size={18} />
-            {saving ? '保存中...' : '保存'}
-          </Button>
-        </div>
-      </footer>
+          <footer className="sticky bottom-0 border-t border-neutral-200 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            {saveMessage && (
+              <p className="mb-2 text-center text-xs text-neutral-600">{saveMessage}</p>
+            )}
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                className="flex-1 border-neutral-300 bg-white text-black"
+                isDisabled={!posterUrl}
+                onPress={() => setMaterialOpen(true)}
+              >
+                <Plus size={18} />
+                添加素材
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-1 bg-black text-white"
+                isDisabled={!posterUrl || saving}
+                onPress={handleSave}
+              >
+                <Save size={18} />
+                {saving ? '保存中...' : '保存'}
+              </Button>
+            </div>
+          </footer>
+        </>
+      ) : (
+        <GraphicTextWorkspace defaultBackgroundUrl={posterUrl} />
+      )}
 
-      <MaterialSheet
-        isOpen={materialOpen}
-        onOpenChange={setMaterialOpen}
-        onAddText={handleAddText}
-      />
+      {mode === 'poster' && (
+        <>
+          <MaterialSheet
+            isOpen={materialOpen}
+            onOpenChange={setMaterialOpen}
+            onAddText={handleAddText}
+          />
 
-      <TextEditorSheet
-        text={selectedText}
-        isOpen={editorOpen}
-        canvasHeight={canvasHeight}
-        onClose={handleEditorClose}
-        onUpdate={handleUpdateText}
-      />
+          <TextEditorSheet
+            text={selectedText}
+            isOpen={editorOpen}
+            canvasHeight={canvasHeight}
+            onClose={handleEditorClose}
+            onUpdate={handleUpdateText}
+          />
+        </>
+      )}
     </div>
   )
 }
