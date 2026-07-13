@@ -1,7 +1,7 @@
 import { Check, Highlighter, ImagePlus, Palette, ScanEye, Type } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FONT_OPTIONS } from '../../data/fonts'
+import { FONT_OPTIONS, composeFontFamily } from '../../data/fonts'
 import { GraphicConfigPreview } from './GraphicConfigPreview'
 import { GraphicHighlightEditor } from './GraphicHighlightEditor'
 import {
@@ -315,20 +315,50 @@ export function GraphicTextConfigSheet({
                             <Type size={16} />
                             字体
                           </div>
-                          <select
-                            value={config.fontId}
-                            onChange={(event) => {
-                              const font = FONT_OPTIONS.find((item) => item.id === event.target.value)
-                              if (font) onUpdate({ fontId: font.id, fontFamily: font.fontFamily })
-                            }}
-                            className="h-10 w-full rounded-xl border border-neutral-300 bg-neutral-50 px-3 text-sm outline-none focus:border-neutral-500"
-                          >
-                            {FONT_OPTIONS.map((font) => (
-                              <option key={font.id} value={font.id}>
-                                {font.label}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <label className="flex min-w-0 flex-1 items-center gap-2 text-sm">
+                              <span className="w-9 shrink-0 text-neutral-600">中文</span>
+                              <select
+                                value={config.chineseFontId}
+                                onChange={(event) => {
+                                  const chineseFontId = event.target.value
+                                  onUpdate({
+                                    chineseFontId,
+                                    fontFamily: composeFontFamily(chineseFontId, config.englishFontId),
+                                  })
+                                }}
+                                className={selectClassName}
+                                aria-label="中文字体"
+                              >
+                                {FONT_OPTIONS.map((font) => (
+                                  <option key={font.id} value={font.id}>
+                                    {font.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="flex min-w-0 flex-1 items-center gap-2 text-sm">
+                              <span className="w-9 shrink-0 text-neutral-600">英文</span>
+                              <select
+                                value={config.englishFontId}
+                                onChange={(event) => {
+                                  const englishFontId = event.target.value
+                                  onUpdate({
+                                    englishFontId,
+                                    fontFamily: composeFontFamily(config.chineseFontId, englishFontId),
+                                  })
+                                }}
+                                className={selectClassName}
+                                aria-label="英文字体"
+                              >
+                                {FONT_OPTIONS.map((font) => (
+                                  <option key={font.id} value={font.id}>
+                                    {font.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
                         </section>
 
                         <section className="flex flex-col gap-2">
@@ -342,6 +372,14 @@ export function GraphicTextConfigSheet({
                               format={(value) => `${value}px`}
                             />
                             <ConfigSelect
+                              label="标题行高"
+                              value={config.titleLineHeight}
+                              options={TITLE_LINE_HEIGHT_OPTIONS}
+                              onChange={(value) => onUpdate({ titleLineHeight: value })}
+                            />
+                          </div>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <ConfigSelect
                               label="正文"
                               labelClassName="w-9"
                               value={config.bodyFontSize}
@@ -349,20 +387,14 @@ export function GraphicTextConfigSheet({
                               onChange={(value) => onUpdate({ bodyFontSize: value })}
                               format={(value) => `${value}px`}
                             />
-                          </div>
-                          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-                            <ConfigSelect
-                              label="标题行高"
-                              value={config.titleLineHeight}
-                              options={TITLE_LINE_HEIGHT_OPTIONS}
-                              onChange={(value) => onUpdate({ titleLineHeight: value })}
-                            />
                             <ConfigSelect
                               label="正文行高"
                               value={config.bodyLineHeight}
                               options={BODY_LINE_HEIGHT_OPTIONS}
                               onChange={(value) => onUpdate({ bodyLineHeight: value })}
                             />
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
                             <ConfigSelect
                               label="一级上间距"
                               value={config.titleMarginTop}

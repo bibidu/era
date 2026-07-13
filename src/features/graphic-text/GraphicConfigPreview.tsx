@@ -28,12 +28,12 @@ export function GraphicConfigPreview({
   const currentPage = pages[activePage] ?? pages[0]
 
   useEffect(() => {
-    setActivePage(0)
-  }, [pages.length, config, markdown])
-
-  useEffect(() => {
     setActivePage((current) => Math.min(current, Math.max(pages.length - 1, 0)))
   }, [pages.length])
+
+  useEffect(() => {
+    setActivePage(0)
+  }, [markdown])
 
   const goPrev = () => setActivePage((current) => Math.max(0, current - 1))
   const goNext = () => setActivePage((current) => Math.min(pages.length - 1, current + 1))

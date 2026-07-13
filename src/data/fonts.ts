@@ -162,3 +162,28 @@ export const FONT_COUNT = FONT_OPTIONS.length
 export function getFontById(id: string): FontOption {
   return FONT_OPTIONS.find((f) => f.id === id) ?? FONT_OPTIONS[0]
 }
+
+function primaryFamilyName(fontFamily: string) {
+  return fontFamily.replace(/"/g, '').split(',')[0].trim()
+}
+
+function familyFallbacks(fontFamily: string) {
+  const parts = fontFamily.split(',').map((part) => part.trim())
+  return parts.length > 1 ? parts.slice(1).join(', ') : 'serif'
+}
+
+/** 英文字体在前、中文字体在后，由浏览器按字符回退 */
+export function composeFontFamily(chineseFontId: string, englishFontId: string): string {
+  const chinese = getFontById(chineseFontId)
+  const english = getFontById(englishFontId)
+
+  if (chineseFontId === englishFontId) {
+    return chinese.fontFamily
+  }
+
+  const englishPrimary = primaryFamilyName(english.fontFamily)
+  const chinesePrimary = primaryFamilyName(chinese.fontFamily)
+  const fallbacks = familyFallbacks(chinese.fontFamily)
+
+  return `"${englishPrimary}", "${chinesePrimary}", ${fallbacks}`
+}

@@ -227,7 +227,7 @@ export function GraphicPage({
       }
     >
       <div
-        className="absolute z-10 flex min-w-0 items-end gap-2 border-b border-neutral-300"
+        className="absolute z-10 flex min-w-0 items-center gap-2 border-b border-neutral-300"
         style={{
           left: `${percent.safeX}%`,
           right: `${percent.safeX}%`,
@@ -245,7 +245,7 @@ export function GraphicPage({
               {topBar.custom}
             </span>
             <span
-              className="mb-1 h-3 w-px shrink-0 bg-neutral-300"
+              className="h-3 w-px shrink-0 self-center bg-neutral-300"
               aria-hidden
             />
             <span
