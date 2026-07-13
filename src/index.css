@@ -152,8 +152,16 @@ body.is-dragging {
   pointer-events: none;
 }
 
+.graphic-config-preview-nav--portal {
+  position: fixed !important;
+  z-index: 10000 !important;
+  pointer-events: auto !important;
+  transform: translateY(-50%);
+}
+
 .graphic-config-preview-nav:disabled {
   opacity: 0.35;
+  pointer-events: none !important;
 }
 
 .graphic-safe-area-corner {
