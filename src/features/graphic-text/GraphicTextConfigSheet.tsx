@@ -7,6 +7,7 @@ import { GraphicHighlightEditor } from './GraphicHighlightEditor'
 import {
   BODY_FONT_SIZE_OPTIONS,
   BODY_LINE_HEIGHT_OPTIONS,
+  HEADING_FONT_SIZE_OPTIONS,
   HEADING_MARGIN_OPTIONS,
   TITLE_FONT_SIZE_OPTIONS,
   TITLE_LINE_HEIGHT_OPTIONS,
@@ -348,6 +349,16 @@ export function GraphicTextConfigSheet({
                               value={config.titleLineHeight}
                               options={TITLE_LINE_HEIGHT_OPTIONS}
                               onChange={(value) => onUpdate({ titleLineHeight: value })}
+                            />
+                          </div>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <ConfigSelect
+                              label="二级"
+                              labelClassName="w-9"
+                              value={config.headingFontSize}
+                              options={HEADING_FONT_SIZE_OPTIONS}
+                              onChange={(value) => onUpdate({ headingFontSize: value })}
+                              format={(value) => `${value}px`}
                             />
                           </div>
                           <div className="flex min-w-0 items-center gap-2">

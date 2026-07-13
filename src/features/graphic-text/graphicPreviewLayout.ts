@@ -1,5 +1,4 @@
 export const TOP_BAR_FONT_SIZE_PX = 10
-export const HEADING_FONT_SCALE = 0.58
 export const PREVIEW_NAV_BUTTON_WIDTH = 40
 export const PREVIEW_NAV_GAP = 8
 export const SHEET_MIN_HEIGHT_PX = 300

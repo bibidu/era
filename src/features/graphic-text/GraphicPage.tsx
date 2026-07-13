@@ -1,6 +1,6 @@
 import { useMemo, type CSSProperties } from 'react'
 import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
-import { HEADING_FONT_SCALE, TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
+import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
 import { buildCharHighlightSegments, themeAlpha } from './inlineHighlight'
 import { resolveTopBarParts } from './topBar'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
@@ -53,13 +53,14 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
   const styleType = resolveStyleType(block)
   const bodyUnit = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const titleUnit = `${(config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
+  const headingUnit = `${(config.headingFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const gap = '1.1cqw'
 
   if (styleType === 'title') {
     return `calc(${titleUnit} * ${config.titleMarginBottom + 0.18} + ${gap})`
   }
   if (styleType === 'heading') {
-    return `calc(${titleUnit} * ${HEADING_FONT_SCALE} * ${config.headingMarginBottom + 0.18} + ${gap})`
+    return `calc(${headingUnit} * ${config.headingMarginBottom + 0.18} + ${gap})`
   }
   return `calc(${bodyUnit} * 0.26 + ${gap})`
 }
@@ -67,8 +68,8 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
 function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSProperties {
   const styleType = resolveStyleType(block)
   const titleSize = `${(config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
+  const headingSize = `${(config.headingFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const bodySize = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
-  const headingSize = `calc(${titleSize} * ${HEADING_FONT_SCALE})`
   const marginBottom = blockEndMargin(block, config)
 
   if (styleType === 'title') {

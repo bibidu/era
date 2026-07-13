@@ -13,6 +13,7 @@ export interface GraphicTextConfig {
   fontId: string
   fontFamily: string
   titleFontSize: number
+  headingFontSize: number
   bodyFontSize: number
   titleLineHeight: number
   bodyLineHeight: number
@@ -49,6 +50,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   fontId: 'song',
   fontFamily: '"Noto Serif SC", serif',
   titleFontSize: 56,
+  headingFontSize: 32,
   bodyFontSize: 13,
   titleLineHeight: 1.2,
   bodyLineHeight: 1.48,
