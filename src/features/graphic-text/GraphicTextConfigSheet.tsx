@@ -1,11 +1,12 @@
 import { Drawer, useOverlayState } from '@heroui/react'
-import { Check, ImagePlus, Palette, Type } from 'lucide-react'
+import { Check, ImagePlus, Palette, ScanEye, Type } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { GreySlider } from '../../components/GreySlider'
 import { GraphicPage } from './GraphicPage'
 import { paginateMarkdown } from './layout'
 import type { EdgeStyle, GraphicTemplate, GraphicTextConfig } from './types'
+import { GRAPHIC_ASPECT_RATIO_OPTIONS } from './types'
 
 interface GraphicTextConfigSheetProps {
   isOpen: boolean
@@ -51,6 +52,7 @@ export function GraphicTextConfigSheet({
   })
   const sheetRef = useRef<HTMLDivElement>(null)
   const [previewBottom, setPreviewBottom] = useState(0)
+  const [showSafeArea, setShowSafeArea] = useState(false)
   const previewPage = useMemo(() => {
     const pages = paginateMarkdown(markdown, config)
     return pages[0] ?? { index: 0, blocks: [] }
@@ -106,6 +108,7 @@ export function GraphicTextConfigSheet({
             <GraphicPage
               page={previewPage}
               config={config}
+              showSafeArea={showSafeArea}
               className="graphic-config-preview-page shadow-xl"
             />
           </div>
@@ -205,6 +208,49 @@ export function GraphicTextConfigSheet({
                         />
                       </label>
                     </div>
+                  </section>
+
+                  <section>
+                    <p className="mb-2 text-sm font-medium">图片比例</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {GRAPHIC_ASPECT_RATIO_OPTIONS.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          className={`h-10 rounded-xl border text-sm ${
+                            config.aspectRatio === option.id
+                              ? 'border-black bg-black text-white'
+                              : 'border-neutral-300 bg-white text-neutral-700'
+                          }`}
+                          onClick={() => onUpdate({ aspectRatio: option.id })}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <ScanEye size={16} />
+                        文字安全区
+                      </div>
+                      <button
+                        type="button"
+                        className={`h-8 shrink-0 rounded-full px-3 text-xs font-medium ${
+                          showSafeArea
+                            ? 'bg-sky-500 text-white'
+                            : 'bg-neutral-100 text-neutral-600'
+                        }`}
+                        onClick={() => setShowSafeArea((current) => !current)}
+                      >
+                        {showSafeArea ? '隐藏线框' : '查看线框'}
+                      </button>
+                    </div>
+                    <p className="mt-1 text-xs text-neutral-500">
+                      开启后预览区会用虚线标出正文排版范围
+                    </p>
                   </section>
 
                   <section>

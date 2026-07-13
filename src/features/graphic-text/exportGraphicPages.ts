@@ -1,4 +1,4 @@
-import { GRAPHIC_EXPORT_SCALE, GRAPHIC_PAGE_SIZE } from './layout'
+import { getGraphicLayout } from './layout'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
@@ -90,10 +90,10 @@ function wrapSegments(
   return lines
 }
 
-function blockSpec(block: MarkdownBlock, config: GraphicTextConfig) {
+function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale: number) {
   if (block.type === 'title') {
     return {
-      size: config.titleFontSize * GRAPHIC_EXPORT_SCALE,
+      size: config.titleFontSize * exportScale,
       weight: 700,
       lineHeight: 1.22,
       spacing: 0.8,
@@ -101,14 +101,14 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig) {
   }
   if (block.type === 'heading') {
     return {
-      size: Math.round(config.titleFontSize * 0.72 * GRAPHIC_EXPORT_SCALE),
+      size: Math.round(config.titleFontSize * 0.72 * exportScale),
       weight: 700,
       lineHeight: 1.35,
       spacing: 0.65,
     }
   }
   return {
-    size: config.bodyFontSize * GRAPHIC_EXPORT_SCALE,
+    size: config.bodyFontSize * exportScale,
     weight: 400,
     lineHeight: 1.55,
     spacing: 0.55,
@@ -190,9 +190,20 @@ async function drawPage(
   page: GraphicTextPage,
   config: GraphicTextConfig,
 ): Promise<Blob> {
-  const { width, height, safeX, safeTop, footerTop, footerHeight, footerMarginBottom } =
-    GRAPHIC_PAGE_SIZE
-  const contentBottom = GRAPHIC_PAGE_SIZE.contentBottom
+  const layout = getGraphicLayout(config)
+  const {
+    pageWidth: width,
+    pageHeight: height,
+    safeX,
+    safeTop,
+    footerTop,
+    footerHeight,
+    footerMarginBottom,
+    contentBottom,
+    topBarY,
+    topBarHeight,
+    exportScale,
+  } = layout
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
@@ -226,8 +237,6 @@ async function drawPage(
 
   const edgeX = safeX
   const edgeWidth = width - safeX * 2
-  const topBarY = 60
-  const topBarHeight = 86
   drawEdge(ctx, config.topStyle, edgeX, topBarY, edgeWidth, topBarHeight, config.themeColor)
   ctx.fillStyle = '#171717'
   ctx.font = `600 28px ${config.fontFamily}`
@@ -248,7 +257,7 @@ async function drawPage(
   const maxContentY = contentBottom
 
   for (const block of page.blocks) {
-    const spec = blockSpec(block, config)
+    const spec = blockSpec(block, config, exportScale)
     const quoteInset = block.type === 'quote' ? 42 : 0
     const listInset = block.type === 'list' ? spec.size * 1.35 : 0
     ctx.font = `${spec.weight} ${spec.size}px ${config.fontFamily}`
