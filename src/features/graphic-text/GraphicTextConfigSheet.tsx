@@ -51,7 +51,7 @@ export function GraphicTextConfigSheet({
     },
   })
   const sheetRef = useRef<HTMLDivElement>(null)
-  const [previewBottom, setPreviewBottom] = useState(0)
+  const [previewAreaHeight, setPreviewAreaHeight] = useState(0)
   const [showSafeArea, setShowSafeArea] = useState(false)
   const previewPage = useMemo(() => {
     const pages = paginateMarkdown(markdown, config)
@@ -79,19 +79,31 @@ export function GraphicTextConfigSheet({
     if (!sheet) return
 
     const updatePreviewBounds = () => {
-      setPreviewBottom(sheet.getBoundingClientRect().height)
+      const sheet = sheetRef.current
+      if (!sheet) return
+      const sheetTop = sheet.getBoundingClientRect().top
+      setPreviewAreaHeight(Math.max(0, sheetTop))
     }
 
     updatePreviewBounds()
     const observer = new ResizeObserver(updatePreviewBounds)
     observer.observe(sheet)
     window.addEventListener('resize', updatePreviewBounds)
+    window.addEventListener('scroll', updatePreviewBounds, true)
     window.visualViewport?.addEventListener('resize', updatePreviewBounds)
+    window.visualViewport?.addEventListener('scroll', updatePreviewBounds)
+
+    const raf = window.requestAnimationFrame(updatePreviewBounds)
+    const timer = window.setInterval(updatePreviewBounds, 120)
 
     return () => {
+      window.cancelAnimationFrame(raf)
+      window.clearInterval(timer)
       observer.disconnect()
       window.removeEventListener('resize', updatePreviewBounds)
+      window.removeEventListener('scroll', updatePreviewBounds, true)
       window.visualViewport?.removeEventListener('resize', updatePreviewBounds)
+      window.visualViewport?.removeEventListener('scroll', updatePreviewBounds)
     }
   }, [isOpen])
 
@@ -103,8 +115,8 @@ export function GraphicTextConfigSheet({
   return (
     <Drawer state={state}>
       <Drawer.Backdrop isDismissable={false} className="graphic-config-backdrop">
-        {isOpen && previewBottom > 0 && (
-          <div className="graphic-config-preview" style={{ bottom: previewBottom }}>
+        {isOpen && previewAreaHeight > 0 && (
+          <div className="graphic-config-preview" style={{ height: previewAreaHeight }}>
             <GraphicPage
               page={previewPage}
               config={config}

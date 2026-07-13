@@ -55,7 +55,7 @@ export function getGraphicLayout(
   const topBarHeight = Math.round(86 * heightScale)
   const footerHeight = Math.round(72 * heightScale)
   const footerMarginBottom = Math.round(60 * heightScale)
-  const contentGapAboveFooter = Math.round(12 * heightScale)
+  const contentGapAboveFooter = Math.round(6 * heightScale)
   const contentPaddingBelowTop = Math.round(20 * heightScale)
 
   const footerTop = pageHeight - footerMarginBottom - footerHeight
@@ -145,7 +145,17 @@ function blockFontSize(block: MarkdownBlock, config: GraphicTextConfig, exportSc
 
 function blockLineHeight(block: MarkdownBlock, config: GraphicTextConfig, exportScale: number) {
   const size = blockFontSize(block, config, exportScale)
-  return size * (block.type === 'title' ? 1.22 : 1.55)
+  if (block.type === 'title') return size * 1.2
+  if (block.type === 'heading') return size * 1.32
+  return size * 1.48
+}
+
+function blockSpacing(block: MarkdownBlock, config: GraphicTextConfig, exportScale: number) {
+  const size = blockFontSize(block, config, exportScale)
+  const flexGap = Math.round(size * 0.18)
+  if (block.type === 'title') return size * 0.28 + flexGap
+  if (block.type === 'heading') return size * 0.2 + flexGap
+  return size * 0.08 + flexGap
 }
 
 function measurePlainText(text: string) {
@@ -161,15 +171,13 @@ function estimateBlockHeight(
   const plainText = measurePlainText(block.text)
   const availableWidth = layout.pageWidth - layout.safeX * 2 - (block.type === 'quote' ? 42 : 0)
   const prefixWidth = block.type === 'list' ? size * 1.35 : 0
-  const approximateCharacterWidth = size * 0.98
+  const approximateCharacterWidth = size * (block.type === 'title' || block.type === 'heading' ? 0.95 : 1)
   const charsPerLine = Math.max(
     4,
     Math.floor((availableWidth - prefixWidth) / approximateCharacterWidth),
   )
   const lines = Math.max(1, Math.ceil([...plainText].length / charsPerLine))
-  const spacing =
-    block.type === 'title' ? size * 0.8 : block.type === 'heading' ? size * 0.65 : size * 0.55
-  return lines * blockLineHeight(block, config, layout.exportScale) + spacing
+  return lines * blockLineHeight(block, config, layout.exportScale) + blockSpacing(block, config, layout.exportScale)
 }
 
 function splitOversizedBlock(
