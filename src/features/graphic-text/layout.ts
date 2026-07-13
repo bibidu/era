@@ -1,4 +1,5 @@
 import type {
+  GraphicAspectRatio,
   GraphicTextConfig,
   GraphicTextPage,
   MarkdownBlock,
@@ -6,44 +7,86 @@ import type {
 } from './types'
 import { stripHighlightMarkers } from './inlineHighlight'
 
-const PAGE_WIDTH = 1080
-const PAGE_HEIGHT = 1440
-const SAFE_X = 96
-const TOP_BAR_Y = 60
-const TOP_BAR_HEIGHT = 86
-const FOOTER_HEIGHT = 72
-const FOOTER_MARGIN_BOTTOM = 60
-const CONTENT_GAP_ABOVE_FOOTER = 12
-const CONTENT_PADDING_BELOW_TOP = 20
-
-const FOOTER_TOP = PAGE_HEIGHT - FOOTER_MARGIN_BOTTOM - FOOTER_HEIGHT
-const SAFE_TOP = TOP_BAR_Y + TOP_BAR_HEIGHT + CONTENT_PADDING_BELOW_TOP
-const CONTENT_BOTTOM = FOOTER_TOP - CONTENT_GAP_ABOVE_FOOTER
-const SAFE_BOTTOM = PAGE_HEIGHT - CONTENT_BOTTOM
-
 export const GRAPHIC_DISPLAY_BASE_WIDTH = 360
-export const GRAPHIC_EXPORT_SCALE = PAGE_WIDTH / GRAPHIC_DISPLAY_BASE_WIDTH
 
-export const GRAPHIC_PAGE_SIZE = {
-  width: PAGE_WIDTH,
-  height: PAGE_HEIGHT,
-  safeX: SAFE_X,
-  safeTop: SAFE_TOP,
-  safeBottom: SAFE_BOTTOM,
-  footerTop: FOOTER_TOP,
-  footerHeight: FOOTER_HEIGHT,
-  footerMarginBottom: FOOTER_MARGIN_BOTTOM,
-  contentBottom: CONTENT_BOTTOM,
+const REFERENCE_WIDTH = 1080
+const REFERENCE_HEIGHT = 1440
+
+export interface GraphicLayout {
+  pageWidth: number
+  pageHeight: number
+  exportScale: number
+  safeX: number
+  safeTop: number
+  safeBottom: number
+  contentBottom: number
+  footerTop: number
+  footerHeight: number
+  footerMarginBottom: number
+  topBarY: number
+  topBarHeight: number
+  percent: {
+    safeX: number
+    safeTop: number
+    contentBottom: number
+    footerBottom: number
+    footerHeight: number
+    topBarTop: number
+    topBarHeight: number
+  }
+  aspectRatio: { width: number; height: number }
 }
 
-export const GRAPHIC_LAYOUT_PERCENT = {
-  safeX: (SAFE_X / PAGE_WIDTH) * 100,
-  safeTop: (SAFE_TOP / PAGE_HEIGHT) * 100,
-  contentBottom: (SAFE_BOTTOM / PAGE_HEIGHT) * 100,
-  footerBottom: (FOOTER_MARGIN_BOTTOM / PAGE_HEIGHT) * 100,
-  footerHeight: (FOOTER_HEIGHT / PAGE_HEIGHT) * 100,
-  topBarTop: (TOP_BAR_Y / PAGE_HEIGHT) * 100,
-  topBarHeight: (TOP_BAR_HEIGHT / PAGE_HEIGHT) * 100,
+function parseAspectRatio(ratio: GraphicAspectRatio) {
+  const [width, height] = ratio.split(':').map(Number)
+  return { width, height }
+}
+
+export function getGraphicLayout(
+  config: Pick<GraphicTextConfig, 'aspectRatio'>,
+): GraphicLayout {
+  const aspect = parseAspectRatio(config.aspectRatio)
+  const pageWidth = REFERENCE_WIDTH
+  const pageHeight = Math.round((pageWidth * aspect.height) / aspect.width)
+  const heightScale = pageHeight / REFERENCE_HEIGHT
+
+  const safeX = 96
+  const topBarY = Math.round(60 * heightScale)
+  const topBarHeight = Math.round(86 * heightScale)
+  const footerHeight = Math.round(72 * heightScale)
+  const footerMarginBottom = Math.round(60 * heightScale)
+  const contentGapAboveFooter = Math.round(12 * heightScale)
+  const contentPaddingBelowTop = Math.round(20 * heightScale)
+
+  const footerTop = pageHeight - footerMarginBottom - footerHeight
+  const safeTop = topBarY + topBarHeight + contentPaddingBelowTop
+  const contentBottom = footerTop - contentGapAboveFooter
+  const safeBottom = pageHeight - contentBottom
+
+  return {
+    pageWidth,
+    pageHeight,
+    exportScale: pageWidth / GRAPHIC_DISPLAY_BASE_WIDTH,
+    safeX,
+    safeTop,
+    safeBottom,
+    contentBottom,
+    footerTop,
+    footerHeight,
+    footerMarginBottom,
+    topBarY,
+    topBarHeight,
+    percent: {
+      safeX: (safeX / pageWidth) * 100,
+      safeTop: (safeTop / pageHeight) * 100,
+      contentBottom: (safeBottom / pageHeight) * 100,
+      footerBottom: (footerMarginBottom / pageHeight) * 100,
+      footerHeight: (footerHeight / pageHeight) * 100,
+      topBarTop: (topBarY / pageHeight) * 100,
+      topBarHeight: (topBarHeight / pageHeight) * 100,
+    },
+    aspectRatio: aspect,
+  }
 }
 
 function createBlock(type: MarkdownBlockType, text: string, index: number): MarkdownBlock {
@@ -92,16 +135,16 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
   return blocks
 }
 
-function blockFontSize(block: MarkdownBlock, config: GraphicTextConfig) {
-  if (block.type === 'title') return config.titleFontSize * GRAPHIC_EXPORT_SCALE
+function blockFontSize(block: MarkdownBlock, config: GraphicTextConfig, exportScale: number) {
+  if (block.type === 'title') return config.titleFontSize * exportScale
   if (block.type === 'heading') {
-    return Math.round(config.titleFontSize * 0.72 * GRAPHIC_EXPORT_SCALE)
+    return Math.round(config.titleFontSize * 0.72 * exportScale)
   }
-  return config.bodyFontSize * GRAPHIC_EXPORT_SCALE
+  return config.bodyFontSize * exportScale
 }
 
-function blockLineHeight(block: MarkdownBlock, config: GraphicTextConfig) {
-  const size = blockFontSize(block, config)
+function blockLineHeight(block: MarkdownBlock, config: GraphicTextConfig, exportScale: number) {
+  const size = blockFontSize(block, config, exportScale)
   return size * (block.type === 'title' ? 1.22 : 1.55)
 }
 
@@ -109,10 +152,14 @@ function measurePlainText(text: string) {
   return stripHighlightMarkers(text)
 }
 
-function estimateBlockHeight(block: MarkdownBlock, config: GraphicTextConfig) {
-  const size = blockFontSize(block, config)
+function estimateBlockHeight(
+  block: MarkdownBlock,
+  config: GraphicTextConfig,
+  layout: GraphicLayout,
+) {
+  const size = blockFontSize(block, config, layout.exportScale)
   const plainText = measurePlainText(block.text)
-  const availableWidth = PAGE_WIDTH - SAFE_X * 2 - (block.type === 'quote' ? 42 : 0)
+  const availableWidth = layout.pageWidth - layout.safeX * 2 - (block.type === 'quote' ? 42 : 0)
   const prefixWidth = block.type === 'list' ? size * 1.35 : 0
   const approximateCharacterWidth = size * 0.98
   const charsPerLine = Math.max(
@@ -122,15 +169,23 @@ function estimateBlockHeight(block: MarkdownBlock, config: GraphicTextConfig) {
   const lines = Math.max(1, Math.ceil([...plainText].length / charsPerLine))
   const spacing =
     block.type === 'title' ? size * 0.8 : block.type === 'heading' ? size * 0.65 : size * 0.55
-  return lines * blockLineHeight(block, config) + spacing
+  return lines * blockLineHeight(block, config, layout.exportScale) + spacing
 }
 
-function splitOversizedBlock(block: MarkdownBlock, config: GraphicTextConfig, maxHeight: number) {
-  const size = blockFontSize(block, config)
+function splitOversizedBlock(
+  block: MarkdownBlock,
+  config: GraphicTextConfig,
+  layout: GraphicLayout,
+  maxHeight: number,
+) {
+  const size = blockFontSize(block, config, layout.exportScale)
   const plainText = measurePlainText(block.text)
-  const availableWidth = PAGE_WIDTH - SAFE_X * 2
+  const availableWidth = layout.pageWidth - layout.safeX * 2
   const charsPerLine = Math.max(4, Math.floor(availableWidth / (size * 0.98)))
-  const maxLines = Math.max(1, Math.floor((maxHeight - size * 0.55) / blockLineHeight(block, config)))
+  const maxLines = Math.max(
+    1,
+    Math.floor((maxHeight - size * 0.55) / blockLineHeight(block, config, layout.exportScale)),
+  )
   const maxChars = Math.max(charsPerLine, charsPerLine * maxLines)
   const chars = [...plainText]
   const parts: MarkdownBlock[] = []
@@ -148,11 +203,12 @@ function splitOversizedBlock(block: MarkdownBlock, config: GraphicTextConfig, ma
 }
 
 export function paginateMarkdown(markdown: string, config: GraphicTextConfig): GraphicTextPage[] {
-  const availableHeight = CONTENT_BOTTOM - SAFE_TOP
+  const layout = getGraphicLayout(config)
+  const availableHeight = layout.contentBottom - layout.safeTop
   const sourceBlocks = parseMarkdown(markdown)
   const blocks = sourceBlocks.flatMap((block) => {
-    if (estimateBlockHeight(block, config) <= availableHeight) return block
-    return splitOversizedBlock(block, config, availableHeight)
+    if (estimateBlockHeight(block, config, layout) <= availableHeight) return block
+    return splitOversizedBlock(block, config, layout, availableHeight)
   })
 
   if (!blocks.length) {
@@ -164,7 +220,7 @@ export function paginateMarkdown(markdown: string, config: GraphicTextConfig): G
   let usedHeight = 0
 
   for (const block of blocks) {
-    const height = estimateBlockHeight(block, config)
+    const height = estimateBlockHeight(block, config, layout)
     if (current.length > 0 && usedHeight + height > availableHeight) {
       pages.push({ index: pages.length, blocks: current })
       current = []

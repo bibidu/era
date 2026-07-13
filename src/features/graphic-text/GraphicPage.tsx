@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { GRAPHIC_DISPLAY_BASE_WIDTH, GRAPHIC_LAYOUT_PERCENT } from './layout'
+import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
 import { parseInlineHighlights, themeAlpha } from './inlineHighlight'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 
@@ -7,6 +7,7 @@ interface GraphicPageProps {
   page: GraphicTextPage
   config: GraphicTextConfig
   className?: string
+  showSafeArea?: boolean
 }
 
 function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSProperties {
@@ -67,8 +68,44 @@ function HighlightedText({
   )
 }
 
-export function GraphicPage({ page, config, className = '' }: GraphicPageProps) {
-  const layout = GRAPHIC_LAYOUT_PERCENT
+function SafeAreaGuide({
+  layout,
+}: {
+  layout: ReturnType<typeof getGraphicLayout>
+}) {
+  const { percent } = layout
+
+  return (
+    <div
+      className="graphic-safe-area-guide pointer-events-none absolute z-20"
+      style={{
+        left: `${percent.safeX}%`,
+        right: `${percent.safeX}%`,
+        top: `${percent.safeTop}%`,
+        bottom: `${percent.contentBottom}%`,
+      }}
+      aria-hidden
+    >
+      <div className="absolute inset-0 border-2 border-dashed border-sky-500/85" />
+      <span className="absolute left-[1.2cqw] top-[1.2cqw] rounded bg-sky-500/90 px-[1.4cqw] py-[.5cqw] text-[1.8cqw] font-medium text-white">
+        文字安全区
+      </span>
+      <span className="graphic-safe-area-corner left-0 top-0" />
+      <span className="graphic-safe-area-corner right-0 top-0" />
+      <span className="graphic-safe-area-corner bottom-0 left-0" />
+      <span className="graphic-safe-area-corner bottom-0 right-0" />
+    </div>
+  )
+}
+
+export function GraphicPage({
+  page,
+  config,
+  className = '',
+  showSafeArea = false,
+}: GraphicPageProps) {
+  const layout = getGraphicLayout(config)
+  const { percent, aspectRatio } = layout
   const backgroundStyle: CSSProperties =
     config.template === 'reference' && config.backgroundUrl
       ? {
@@ -87,10 +124,11 @@ export function GraphicPage({ page, config, className = '' }: GraphicPageProps) 
 
   return (
     <article
-      className={`graphic-page relative isolate aspect-[3/4] w-full overflow-hidden bg-[#fbf7ed] text-neutral-950 ${className}`}
+      className={`graphic-page relative isolate w-full overflow-hidden bg-[#fbf7ed] text-neutral-950 ${className}`}
       style={
         {
           ...backgroundStyle,
+          aspectRatio: `${aspectRatio.width} / ${aspectRatio.height}`,
           '--graphic-theme': config.themeColor,
           fontFamily: config.fontFamily,
           containerType: 'inline-size',
@@ -100,10 +138,10 @@ export function GraphicPage({ page, config, className = '' }: GraphicPageProps) 
       <div
         className={`absolute z-10 flex items-center justify-between rounded-[1.2cqw] px-[2.6cqw] ${edgeClasses(config.topStyle)}`}
         style={{
-          left: `${layout.safeX}%`,
-          right: `${layout.safeX}%`,
-          top: `${layout.topBarTop}%`,
-          height: `${layout.topBarHeight}%`,
+          left: `${percent.safeX}%`,
+          right: `${percent.safeX}%`,
+          top: `${percent.topBarTop}%`,
+          height: `${percent.topBarHeight}%`,
         }}
       >
         <span className="truncate text-[2.3cqw] font-semibold">{config.topText || '图文笔记'}</span>
@@ -115,10 +153,10 @@ export function GraphicPage({ page, config, className = '' }: GraphicPageProps) 
       <div
         className="absolute overflow-hidden"
         style={{
-          left: `${layout.safeX}%`,
-          right: `${layout.safeX}%`,
-          top: `${layout.safeTop}%`,
-          bottom: `${layout.contentBottom}%`,
+          left: `${percent.safeX}%`,
+          right: `${percent.safeX}%`,
+          top: `${percent.safeTop}%`,
+          bottom: `${percent.contentBottom}%`,
         }}
       >
         <div className="flex h-full flex-col justify-start gap-[1.1cqw]">
@@ -154,13 +192,15 @@ export function GraphicPage({ page, config, className = '' }: GraphicPageProps) 
         </div>
       </div>
 
+      {showSafeArea && <SafeAreaGuide layout={layout} />}
+
       <div
         className={`absolute flex items-center justify-between rounded-[1cqw] px-[2.6cqw] ${edgeClasses(config.bottomStyle)}`}
         style={{
-          left: `${layout.safeX}%`,
-          right: `${layout.safeX}%`,
-          bottom: `${layout.footerBottom}%`,
-          height: `${layout.footerHeight}%`,
+          left: `${percent.safeX}%`,
+          right: `${percent.safeX}%`,
+          bottom: `${percent.footerBottom}%`,
+          height: `${percent.footerHeight}%`,
         }}
       >
         <span className="truncate text-[1.8cqw]">{config.bottomText || '滑动查看下一页'}</span>
