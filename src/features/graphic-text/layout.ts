@@ -125,10 +125,10 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
       blocks.push(createBlock('heading', line.replace(/^#{2,6}\s+/, ''), blocks.length))
     } else if (/^[-*+]\s/.test(line)) {
       flushParagraph()
-      blocks.push(createBlock('paragraph', line.replace(/^[-*+]\s+/, ''), blocks.length))
+      blocks.push(createBlock('list', line.replace(/^[-*+]\s+/, ''), blocks.length))
     } else if (/^\d+\.\s/.test(line)) {
       flushParagraph()
-      blocks.push(createBlock('paragraph', line.replace(/^\d+\.\s+/, ''), blocks.length))
+      blocks.push(createBlock('list', line.replace(/^\d+\.\s+/, ''), blocks.length))
     } else if (line.startsWith('> ')) {
       flushParagraph()
       blocks.push(createBlock('paragraph', line.slice(2).trim(), blocks.length))
@@ -197,7 +197,7 @@ function blockToLayoutLines(
   const styleType = resolveStyleType(block)
   const plainText = stripHighlightMarkers(block.text)
   const size = blockFontSize(block, config, layout.exportScale)
-  const availableWidth = layout.pageWidth - layout.safeX * 2
+  const availableWidth = layout.pageWidth - layout.safeX * 2 - (block.type === 'list' ? size * 1.35 : 0)
   const approximateCharacterWidth =
     size * (styleType === 'title' || styleType === 'heading' ? 0.95 : 1)
   const charsPerLine = Math.max(

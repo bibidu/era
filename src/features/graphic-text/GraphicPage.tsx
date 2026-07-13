@@ -193,13 +193,33 @@ export function GraphicPage({
                 className={block.isBlockEnd ? 'mb-[1.1cqw]' : ''}
                 style={blockStyle(block, config)}
               >
-                <HighlightedText
-                  text={block.text}
-                  block={block}
-                  themeColor={config.themeColor}
-                  highlightedKeys={highlightedKeys}
-                  enableHighlight={block.type !== 'title'}
-                />
+                {block.type === 'list' ? (
+                  <div className="flex gap-[1.5cqw]">
+                    <span
+                      className="flex h-[1lh] w-[0.7em] shrink-0 items-center justify-center"
+                      aria-hidden
+                    >
+                      <span className="size-[0.32em] rounded-full bg-neutral-800" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <HighlightedText
+                        text={block.text}
+                        block={block}
+                        themeColor={config.themeColor}
+                        highlightedKeys={highlightedKeys}
+                        enableHighlight
+                      />
+                    </span>
+                  </div>
+                ) : (
+                  <HighlightedText
+                    text={block.text}
+                    block={block}
+                    themeColor={config.themeColor}
+                    highlightedKeys={highlightedKeys}
+                    enableHighlight={block.type !== 'title'}
+                  />
+                )}
               </div>
             ))
           )}
@@ -212,10 +232,6 @@ export function GraphicPage({
         className="absolute left-[3.2%] top-[3.2%] size-[1.5cqw] bg-[var(--graphic-theme)]"
         aria-hidden
       />
-      <div className="absolute bottom-[3.2%] right-[3.2%] flex gap-[.7cqw]" aria-hidden>
-        <span className="size-[.9cqw] bg-black" />
-        <span className="size-[.9cqw] bg-[var(--graphic-theme)]" />
-      </div>
     </article>
   )
 }

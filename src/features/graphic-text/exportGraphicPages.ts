@@ -188,7 +188,6 @@ async function drawPage(
     contentBottom,
     topBarY,
     topBarHeight,
-    bottomPadding,
     exportScale,
   } = layout
   const highlightedKeys = new Set(config.highlightedCharKeys)
@@ -255,19 +254,28 @@ async function drawPage(
     const plainText = stripHighlightMarkers(block.text)
     const blockId = block.sourceBlockId ?? block.id
     const charOffset = block.charOffset ?? 0
+    const listInset = block.type === 'list' ? spec.size * 1.35 : 0
     const enableHighlight = block.type !== 'title'
     const segments = enableHighlight
       ? buildCharHighlightSegments(block.text, blockId, highlightedKeys, charOffset)
       : [{ text: plainText, highlighted: false }]
-    const lines = wrapSegments(ctx, segments, maxWidth)
+    const lines = wrapSegments(ctx, segments, maxWidth - listInset)
     const lineHeight = spec.size * spec.lineHeight
 
-    for (const line of lines) {
+    for (const [lineIndex, line] of lines.entries()) {
       if (y + lineHeight > maxContentY) break
+      if (block.type === 'list' && lineIndex === 0) {
+        const bulletRadius = spec.size * 0.16
+        const centerY = y + lineHeight / 2
+        ctx.fillStyle = '#262626'
+        ctx.beginPath()
+        ctx.arc(safeX + bulletRadius * 2, centerY, bulletRadius, 0, Math.PI * 2)
+        ctx.fill()
+      }
       drawHighlightedLine(
         ctx,
         line,
-        safeX,
+        safeX + listInset,
         y,
         spec.size,
         config.themeColor,
@@ -282,10 +290,6 @@ async function drawPage(
 
   ctx.fillStyle = config.themeColor
   ctx.fillRect(34, 34, 16, 16)
-  ctx.fillStyle = '#171717'
-  ctx.fillRect(width - 64, height - bottomPadding - 10, 10, 10)
-  ctx.fillStyle = config.themeColor
-  ctx.fillRect(width - 46, height - bottomPadding - 10, 10, 10)
 
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png', 1))
   if (!blob) throw new Error('页面生成失败')

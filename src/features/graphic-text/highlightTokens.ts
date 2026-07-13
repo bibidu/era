@@ -84,13 +84,13 @@ export function buildHighlightDisplayLines(markdown: string): HighlightDisplayLi
       blockIndex += 1
     } else if (/^[-*+]\s/.test(line)) {
       flushParagraph()
-      const blockId = createBlockId(blockIndex, 'paragraph')
+      const blockId = createBlockId(blockIndex, 'list')
       const plain = stripHighlightMarkers(line.replace(/^[-*+]\s+/, ''))
       result.push({ tokens: tokensFromText(blockId, plain, 0) })
       blockIndex += 1
     } else if (/^\d+\.\s/.test(line)) {
       flushParagraph()
-      const blockId = createBlockId(blockIndex, 'paragraph')
+      const blockId = createBlockId(blockIndex, 'list')
       const plain = stripHighlightMarkers(line.replace(/^\d+\.\s+/, ''))
       result.push({ tokens: tokensFromText(blockId, plain, 0) })
       blockIndex += 1
