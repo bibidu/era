@@ -59,6 +59,29 @@ body.is-dragging {
   aspect-ratio: 3 / 4;
 }
 
+.graphic-config-backdrop {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.graphic-config-preview {
+  flex: 1;
+  min-height: 0;
+}
+
+.graphic-config-preview-page {
+  pointer-events: none;
+}
+
+.graphic-theme-highlight {
+  text-decoration: underline;
+  text-decoration-thickness: 0.12em;
+  text-underline-offset: 0.14em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
 .sheet-action-bar {
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
   background: #ffffff;

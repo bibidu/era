@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
-import { GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
+import { GRAPHIC_DISPLAY_BASE_WIDTH, GRAPHIC_LAYOUT_PERCENT } from './layout'
+import { parseInlineHighlights, themeAlpha } from './inlineHighlight'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 
 interface GraphicPageProps {
@@ -32,7 +33,42 @@ function edgeClasses(style: GraphicTextConfig['topStyle']) {
   return 'bg-white/70 text-black'
 }
 
+function HighlightedText({
+  text,
+  themeColor,
+  enableHighlight,
+}: {
+  text: string
+  themeColor: string
+  enableHighlight: boolean
+}) {
+  if (!enableHighlight) return <>{text}</>
+
+  const segments = parseInlineHighlights(text)
+  return (
+    <>
+      {segments.map((segment, index) =>
+        segment.highlighted ? (
+          <span
+            key={`${index}-${segment.text}`}
+            className="graphic-theme-highlight"
+            style={{
+              backgroundColor: themeAlpha(themeColor, 0.28),
+              textDecorationColor: themeColor,
+            }}
+          >
+            {segment.text}
+          </span>
+        ) : (
+          <span key={`${index}-${segment.text}`}>{segment.text}</span>
+        ),
+      )}
+    </>
+  )
+}
+
 export function GraphicPage({ page, config, className = '' }: GraphicPageProps) {
+  const layout = GRAPHIC_LAYOUT_PERCENT
   const backgroundStyle: CSSProperties =
     config.template === 'reference' && config.backgroundUrl
       ? {
@@ -62,7 +98,13 @@ export function GraphicPage({ page, config, className = '' }: GraphicPageProps) 
       }
     >
       <div
-        className={`absolute inset-x-[8.9%] top-[4.2%] z-10 flex h-[6.8%] items-center justify-between rounded-[1.2cqw] px-[2.6cqw] ${edgeClasses(config.topStyle)}`}
+        className={`absolute z-10 flex items-center justify-between rounded-[1.2cqw] px-[2.6cqw] ${edgeClasses(config.topStyle)}`}
+        style={{
+          left: `${layout.safeX}%`,
+          right: `${layout.safeX}%`,
+          top: `${layout.topBarTop}%`,
+          height: `${layout.topBarHeight}%`,
+        }}
       >
         <span className="truncate text-[2.3cqw] font-semibold">{config.topText || '图文笔记'}</span>
         <span className="rounded-full bg-black px-[1.8cqw] py-[.7cqw] text-[1.8cqw] font-semibold text-white">
@@ -70,7 +112,15 @@ export function GraphicPage({ page, config, className = '' }: GraphicPageProps) 
         </span>
       </div>
 
-      <div className="absolute inset-x-[8.9%] bottom-[11.8%] top-[12.5%] overflow-hidden">
+      <div
+        className="absolute overflow-hidden"
+        style={{
+          left: `${layout.safeX}%`,
+          right: `${layout.safeX}%`,
+          top: `${layout.safeTop}%`,
+          bottom: `${layout.contentBottom}%`,
+        }}
+      >
         <div className="flex h-full flex-col justify-start gap-[1.1cqw]">
           {page.blocks.length === 0 ? (
             <div className="flex h-full items-center justify-center text-center text-[3cqw] text-neutral-400">
@@ -93,7 +143,11 @@ export function GraphicPage({ page, config, className = '' }: GraphicPageProps) 
                     style={{ backgroundColor: config.themeColor }}
                   />
                 )}
-                {block.text}
+                <HighlightedText
+                  text={block.text}
+                  themeColor={config.themeColor}
+                  enableHighlight={block.type !== 'title'}
+                />
               </div>
             ))
           )}
@@ -101,12 +155,16 @@ export function GraphicPage({ page, config, className = '' }: GraphicPageProps) 
       </div>
 
       <div
-        className={`absolute inset-x-[8.9%] bottom-[4.2%] flex h-[5%] items-center justify-between rounded-[1cqw] px-[2.6cqw] ${edgeClasses(config.bottomStyle)}`}
+        className={`absolute flex items-center justify-between rounded-[1cqw] px-[2.6cqw] ${edgeClasses(config.bottomStyle)}`}
+        style={{
+          left: `${layout.safeX}%`,
+          right: `${layout.safeX}%`,
+          bottom: `${layout.footerBottom}%`,
+          height: `${layout.footerHeight}%`,
+        }}
       >
         <span className="truncate text-[1.8cqw]">{config.bottomText || '滑动查看下一页'}</span>
-        <span className="text-[1.8cqw] font-medium">
-          {page.index + 1}
-        </span>
+        <span className="text-[1.8cqw] font-medium">{page.index + 1}</span>
       </div>
 
       <div

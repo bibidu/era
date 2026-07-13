@@ -1,5 +1,6 @@
 import { ArrowLeft, ClipboardPaste, Settings2, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { MarkdownEditorDock } from '../../components/MarkdownEditorDock'
 import { GraphicPage } from './GraphicPage'
 import { GraphicTextConfigSheet } from './GraphicTextConfigSheet'
 import { exportGraphicPages, saveGraphicPages } from './exportGraphicPages'
@@ -26,6 +27,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     backgroundUrl: defaultBackgroundUrl,
   }))
   const [configOpen, setConfigOpen] = useState(false)
+  const [editorOpen, setEditorOpen] = useState(false)
   const [view, setView] = useState<GraphicView>('editor')
   const [pages, setPages] = useState<GraphicTextPage[]>([])
   const [activePage, setActivePage] = useState(0)
@@ -104,6 +106,18 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     }
   }
 
+  const configSheet = (
+    <GraphicTextConfigSheet
+      isOpen={configOpen}
+      config={config}
+      markdown={markdown}
+      onOpenChange={setConfigOpen}
+      onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
+      onGenerate={handleGenerate}
+      onBackgroundUpload={handleBackgroundUpload}
+    />
+  )
+
   if (view === 'preview') {
     return (
       <div className="flex min-h-0 flex-1 flex-col bg-neutral-100">
@@ -165,14 +179,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           </button>
         </div>
 
-        <GraphicTextConfigSheet
-          isOpen={configOpen}
-          config={config}
-          onOpenChange={setConfigOpen}
-          onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
-          onGenerate={handleGenerate}
-          onBackgroundUpload={handleBackgroundUpload}
-        />
+        {configSheet}
       </div>
     )
   }
@@ -195,16 +202,20 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
       </div>
 
       <div className="min-h-0 flex-1 p-4">
-        <textarea
-          value={markdown}
-          onChange={(event) => setMarkdown(event.target.value)}
-          placeholder="# 输入标题&#10;&#10;输入正文内容..."
-          inputMode="text"
-          autoCorrect="on"
-          spellCheck
-          className="h-full min-h-0 w-full resize-none rounded-2xl border border-neutral-300 bg-neutral-50 p-4 font-mono text-base leading-7 text-neutral-900 outline-none placeholder:text-neutral-400 focus:border-neutral-500"
-          style={{ fontSize: '16px' }}
-        />
+        <button
+          type="button"
+          onClick={() => setEditorOpen(true)}
+          className="h-full min-h-0 w-full rounded-2xl border border-neutral-300 bg-neutral-50 p-4 text-left font-mono text-base leading-7 text-neutral-900 outline-none active:border-neutral-500"
+          style={{ fontSize: '16px', WebkitUserSelect: 'none', userSelect: 'none' }}
+        >
+          {markdown ? (
+            <span className="line-clamp-[18] whitespace-pre-wrap">{markdown}</span>
+          ) : (
+            <span className="text-neutral-400">
+              {'# 输入标题\n\n正文可用 [[重点句子]] 标记主题色'}
+            </span>
+          )}
+        </button>
       </div>
 
       <div className="shrink-0 border-t border-neutral-200 bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">
@@ -231,14 +242,15 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
         </div>
       </div>
 
-      <GraphicTextConfigSheet
-        isOpen={configOpen}
-        config={config}
-        onOpenChange={setConfigOpen}
-        onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
-        onGenerate={handleGenerate}
-        onBackgroundUpload={handleBackgroundUpload}
-      />
+      {editorOpen && (
+        <MarkdownEditorDock
+          value={markdown}
+          onChange={setMarkdown}
+          onCommit={() => setEditorOpen(false)}
+        />
+      )}
+
+      {configSheet}
     </div>
   )
 }

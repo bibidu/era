@@ -29,8 +29,8 @@ export interface GraphicTextPage {
 }
 
 export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
-  fontId: 'system',
-  fontFamily: '"Noto Sans SC", system-ui, sans-serif',
+  fontId: 'song',
+  fontFamily: '"Noto Serif SC", serif',
   titleFontSize: 34,
   bodyFontSize: 20,
   themeColor: '#FACC15',
@@ -60,8 +60,8 @@ Git Worktree 可以让多个 Agent 在同一个仓库中并行开发，同时保
 
 ## 3. 并行执行
 
-Agent A 开发界面，Agent B 实现业务逻辑，Agent C 编写测试。它们可以同时运行，互不阻塞。
+Agent A 开发界面，Agent B 实现业务逻辑，Agent C 编写测试。[[它们可以同时运行，互不阻塞。]]
 
 ## 4. 统一通过 PR 合并
 
-任务完成后分别提交 Pull Request，通过代码审查和自动化测试后再合并到主分支。`
+任务完成后分别提交 Pull Request，**通过代码审查和自动化测试后再合并到主分支**。`

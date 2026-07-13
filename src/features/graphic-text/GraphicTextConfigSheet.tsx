@@ -1,13 +1,16 @@
 import { Drawer, useOverlayState } from '@heroui/react'
 import { Check, ImagePlus, Palette, Type } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { GreySlider } from '../../components/GreySlider'
+import { GraphicPage } from './GraphicPage'
+import { paginateMarkdown } from './layout'
 import type { EdgeStyle, GraphicTemplate, GraphicTextConfig } from './types'
 
 interface GraphicTextConfigSheetProps {
   isOpen: boolean
   config: GraphicTextConfig
+  markdown: string
   onOpenChange: (open: boolean) => void
   onUpdate: (updates: Partial<GraphicTextConfig>) => void
   onGenerate: () => void
@@ -31,12 +34,17 @@ const THEME_COLORS = ['#FACC15', '#FB923C', '#EF4444', '#22C55E', '#3B82F6', '#A
 export function GraphicTextConfigSheet({
   isOpen,
   config,
+  markdown,
   onOpenChange,
   onUpdate,
   onGenerate,
   onBackgroundUpload,
 }: GraphicTextConfigSheetProps) {
   const state = useOverlayState({ isOpen, onOpenChange })
+  const previewPage = useMemo(() => {
+    const pages = paginateMarkdown(markdown, config)
+    return pages[0] ?? { index: 0, blocks: [] }
+  }, [markdown, config])
 
   useEffect(() => {
     if (state.isOpen !== isOpen) state.setOpen(isOpen)
@@ -49,14 +57,22 @@ export function GraphicTextConfigSheet({
 
   return (
     <Drawer state={state}>
-      <Drawer.Backdrop isDismissable>
+      <Drawer.Backdrop isDismissable className="graphic-config-backdrop">
+        <div className="graphic-config-preview pointer-events-none flex min-h-0 flex-1 items-center justify-center px-4 pt-4">
+          <GraphicPage
+            page={previewPage}
+            config={config}
+            className="graphic-config-preview-page max-h-full w-[min(100%,17.5rem)] shadow-xl"
+          />
+        </div>
+
         <Drawer.Content placement="bottom" className="component-library-content">
-          <Drawer.Dialog className="component-library flex h-[min(680px,82dvh)] max-h-[82dvh] flex-col bg-white text-neutral-900">
+          <Drawer.Dialog className="component-library flex h-[min(520px,68dvh)] max-h-[68dvh] flex-col bg-white text-neutral-900">
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-3">
                 <div>
                   <Drawer.Heading className="text-base font-semibold">生成配置</Drawer.Heading>
-                  <p className="mt-0.5 text-xs text-neutral-500">安全区会自动避开模板四个边缘</p>
+                  <p className="mt-0.5 text-xs text-neutral-500">上方可实时预览，正文用 [[重点]] 标记主题色</p>
                 </div>
                 <button
                   type="button"
