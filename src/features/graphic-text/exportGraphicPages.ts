@@ -146,43 +146,48 @@ function drawHighlightedLine(
   ctx: CanvasRenderingContext2D,
   segments: LineSegment[],
   x: number,
-  y: number,
-  lineHeight: number,
+  yTop: number,
+  fontSize: number,
   themeColor: string,
   enableHighlight: boolean,
 ) {
-  let cursorX = x
   const paddingX = 4
-  const paddingY = 3
+  ctx.textBaseline = 'alphabetic'
 
   if (enableHighlight) {
     let bgX = x
     for (const segment of segments) {
       if (!segment.text) continue
-      const width = ctx.measureText(segment.text).width
+      const metrics = ctx.measureText(segment.text)
+      const ascent = metrics.actualBoundingBoxAscent ?? fontSize * 0.88
+      const descent = metrics.actualBoundingBoxDescent ?? fontSize * 0.12
       if (segment.highlighted) {
         ctx.fillStyle = themeAlpha(themeColor, 0.28)
-        ctx.fillRect(bgX - paddingX, y - paddingY, width + paddingX * 2, lineHeight)
+        ctx.fillRect(bgX - paddingX, yTop, metrics.width + paddingX * 2, ascent + descent + 4)
       }
-      bgX += width
+      bgX += metrics.width
     }
   }
 
-  cursorX = x
+  let cursorX = x
   for (const segment of segments) {
     if (!segment.text) continue
+    const metrics = ctx.measureText(segment.text)
+    const ascent = metrics.actualBoundingBoxAscent ?? fontSize * 0.88
+    const descent = metrics.actualBoundingBoxDescent ?? fontSize * 0.12
+    const baselineY = yTop + ascent
     ctx.fillStyle = '#171717'
-    ctx.fillText(segment.text, cursorX, y)
+    ctx.fillText(segment.text, cursorX, baselineY)
     if (enableHighlight && segment.highlighted) {
-      const width = ctx.measureText(segment.text).width
+      const underlineY = baselineY + descent + Math.max(2, fontSize * 0.05)
       ctx.strokeStyle = themeColor
-      ctx.lineWidth = Math.max(2, lineHeight * 0.08)
+      ctx.lineWidth = Math.max(2, fontSize * 0.06)
       ctx.beginPath()
-      ctx.moveTo(cursorX, y + lineHeight * 0.18)
-      ctx.lineTo(cursorX + width, y + lineHeight * 0.18)
+      ctx.moveTo(cursorX, underlineY)
+      ctx.lineTo(cursorX + metrics.width, underlineY)
       ctx.stroke()
     }
-    cursorX += ctx.measureText(segment.text).width
+    cursorX += metrics.width
   }
 }
 
@@ -293,13 +298,15 @@ async function drawPage(
         line,
         safeX + quoteInset + listInset,
         y,
-        lineHeight,
+        spec.size,
         config.themeColor,
         enableHighlight,
       )
       y += lineHeight
     }
-    y += spec.size * spec.spacing
+    if (block.isBlockEnd) {
+      y += spec.size * spec.spacing
+    }
   }
 
   drawEdge(

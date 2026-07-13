@@ -68,7 +68,7 @@ body.is-dragging {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 1;
+  z-index: 60;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -85,7 +85,6 @@ body.is-dragging {
   width: auto;
   height: auto;
   flex: 0 1 auto;
-  object-fit: contain;
 }
 
 .graphic-safe-area-corner {

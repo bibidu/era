@@ -159,7 +159,7 @@ export function GraphicPage({
           bottom: `${percent.contentBottom}%`,
         }}
       >
-        <div className="flex h-full flex-col justify-start gap-[1.1cqw]">
+        <div className="flex h-full flex-col justify-start">
           {page.blocks.length === 0 ? (
             <div className="flex h-full items-center justify-center text-center text-[3cqw] text-neutral-400">
               输入 Markdown 内容后生成
@@ -168,11 +168,11 @@ export function GraphicPage({
             page.blocks.map((block) => (
               <div
                 key={block.id}
-                className={
+                className={`${block.isBlockEnd ? 'mb-[1.1cqw]' : ''} ${
                   block.type === 'quote'
                     ? 'border-l-[.8cqw] border-[var(--graphic-theme)] bg-white/70 px-[2.4cqw] py-[1.3cqw]'
                     : ''
-                }
+                }`}
                 style={blockStyle(block, config)}
               >
                 {block.type === 'list' && (
