@@ -73,7 +73,7 @@ body.is-dragging {
   right: 0;
   z-index: 1;
   display: flex;
-  max-height: min(520px, 68dvh);
+  min-height: 300px;
   flex-direction: column;
   overflow: hidden;
   border-radius: 16px 16px 0 0;
@@ -83,6 +83,22 @@ body.is-dragging {
   pointer-events: auto;
 }
 
+.graphic-config-sheet-handle {
+  display: flex;
+  flex-shrink: 0;
+  touch-action: none;
+  cursor: row-resize;
+  justify-content: center;
+  padding: 10px 0 6px;
+}
+
+.graphic-config-sheet-handle-bar {
+  width: 36px;
+  height: 4px;
+  border-radius: 9999px;
+  background: #d4d4d4;
+}
+
 .graphic-config-preview-layer {
   position: fixed;
   top: 0;
@@ -90,6 +106,7 @@ body.is-dragging {
   right: 0;
   z-index: 2;
   pointer-events: auto;
+  background: rgb(115 115 115 / 0.55);
 }
 
 .graphic-config-preview {
