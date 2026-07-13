@@ -3,6 +3,8 @@ import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
 import { buildCharHighlightSegments, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
+import { splitWrapUnits } from './textWrap'
+import { resolveTopBarText } from './topBar'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -11,18 +13,6 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     image.onerror = () => reject(new Error('参考图加载失败'))
     image.src = src
   })
-}
-
-function roundedRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number,
-) {
-  ctx.beginPath()
-  ctx.roundRect(x, y, width, height, radius)
 }
 
 function drawCoverImage(
@@ -54,36 +44,48 @@ interface LineSegment {
   highlighted: boolean
 }
 
+interface WrapUnit {
+  text: string
+  highlighted: boolean
+}
+
+function flattenToUnits(segments: LineSegment[]): WrapUnit[] {
+  const units: WrapUnit[] = []
+  for (const segment of segments) {
+    for (const part of splitWrapUnits(segment.text)) {
+      units.push({ text: part, highlighted: segment.highlighted })
+    }
+  }
+  return units
+}
+
 function wrapSegments(
   ctx: CanvasRenderingContext2D,
   segments: LineSegment[],
   maxWidth: number,
 ): LineSegment[][] {
+  const units = flattenToUnits(segments)
   const lines: LineSegment[][] = [[]]
   let lineWidth = 0
 
-  const pushChar = (char: string, highlighted: boolean) => {
+  const pushUnit = (unit: WrapUnit) => {
+    const unitWidth = ctx.measureText(unit.text).width
+    if (lineWidth > 0 && lineWidth + unitWidth > maxWidth) {
+      lines.push([])
+      lineWidth = 0
+    }
     const currentLine = lines[lines.length - 1]
     const last = currentLine[currentLine.length - 1]
-    if (last && last.highlighted === highlighted) {
-      last.text += char
+    if (last && last.highlighted === unit.highlighted) {
+      last.text += unit.text
     } else {
-      currentLine.push({ text: char, highlighted })
+      currentLine.push({ text: unit.text, highlighted: unit.highlighted })
     }
-    lineWidth += ctx.measureText(char).width
+    lineWidth += unitWidth
   }
 
-  const newLine = () => {
-    lines.push([])
-    lineWidth = 0
-  }
-
-  for (const segment of segments) {
-    for (const char of [...segment.text]) {
-      const nextWidth = lineWidth + ctx.measureText(char).width
-      if (lineWidth > 0 && nextWidth > maxWidth) newLine()
-      pushChar(char, segment.highlighted)
-    }
+  for (const unit of units) {
+    pushUnit(unit)
   }
 
   if (!lines[0].length) lines[0].push({ text: '', highlighted: false })
@@ -101,7 +103,8 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
       size: config.titleFontSize * exportScale,
       weight: 700,
       lineHeight: config.titleLineHeight,
-      spacing: 0.8,
+      spacing: config.titleMarginBottom,
+      marginBefore: config.titleMarginTop,
     }
   }
   if (styleType === 'heading') {
@@ -110,6 +113,7 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
       weight: 700,
       lineHeight: config.titleLineHeight,
       spacing: 0.65,
+      marginBefore: 0.2,
     }
   }
   return {
@@ -117,33 +121,7 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
     weight: 400,
     lineHeight: config.bodyLineHeight,
     spacing: 0.55,
-  }
-}
-
-function drawEdge(
-  ctx: CanvasRenderingContext2D,
-  style: GraphicTextConfig['topStyle'],
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  themeColor: string,
-) {
-  if (style === 'bar') {
-    ctx.fillStyle = themeColor
-    roundedRect(ctx, x, y, width, height, 14)
-    ctx.fill()
-  } else if (style === 'outline') {
-    ctx.fillStyle = 'rgba(255,255,255,.86)'
-    ctx.strokeStyle = '#171717'
-    ctx.lineWidth = 3
-    roundedRect(ctx, x, y, width, height, 12)
-    ctx.fill()
-    ctx.stroke()
-  } else {
-    ctx.fillStyle = 'rgba(255,255,255,.78)'
-    roundedRect(ctx, x, y, width, height, 12)
-    ctx.fill()
+    marginBefore: 0,
   }
 }
 
@@ -199,6 +177,7 @@ function drawHighlightedLine(
 async function drawPage(
   page: GraphicTextPage,
   config: GraphicTextConfig,
+  markdown: string,
 ): Promise<Blob> {
   const layout = getGraphicLayout(config)
   const {
@@ -206,17 +185,14 @@ async function drawPage(
     pageHeight: height,
     safeX,
     safeTop,
-    footerTop,
-    footerHeight,
-    footerMarginBottom,
     contentBottom,
     topBarY,
     topBarHeight,
+    bottomPadding,
     exportScale,
-    hasTopBar,
-    hasBottomBar,
   } = layout
   const highlightedKeys = new Set(config.highlightedCharKeys)
+  const topBarText = resolveTopBarText(config, markdown)
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
@@ -250,23 +226,19 @@ async function drawPage(
 
   const edgeX = safeX
   const edgeWidth = width - safeX * 2
+  const underlineY = topBarY + topBarHeight - 6
 
-  if (hasTopBar) {
-    drawEdge(ctx, config.topStyle, edgeX, topBarY, edgeWidth, topBarHeight, config.themeColor)
-    ctx.fillStyle = '#171717'
-    ctx.font = `600 28px ${config.fontFamily}`
-    ctx.textBaseline = 'middle'
-    ctx.fillText(config.topText, edgeX + 28, topBarY + topBarHeight / 2, edgeWidth - 130)
+  ctx.strokeStyle = '#D4D4D4'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(edgeX, underlineY)
+  ctx.lineTo(edgeX + edgeWidth, underlineY)
+  ctx.stroke()
 
-    ctx.fillStyle = '#171717'
-    roundedRect(ctx, width - safeX - 78, topBarY + 18, 52, 50, 25)
-    ctx.fill()
-    ctx.fillStyle = '#FFFFFF'
-    ctx.font = `600 20px ${config.fontFamily}`
-    ctx.textAlign = 'center'
-    ctx.fillText(String(page.index + 1).padStart(2, '0'), width - safeX - 52, topBarY + 43)
-    ctx.textAlign = 'left'
-  }
+  ctx.fillStyle = '#525252'
+  ctx.font = `400 ${Math.round(24 * exportScale)}px ${config.fontFamily}`
+  ctx.textBaseline = 'bottom'
+  ctx.fillText(topBarText, edgeX, underlineY - 8, edgeWidth)
 
   let y = safeTop
   const maxWidth = width - safeX * 2
@@ -274,38 +246,28 @@ async function drawPage(
 
   for (const block of page.blocks) {
     const spec = blockSpec(block, config, exportScale)
-    const quoteInset = block.type === 'quote' ? 42 : 0
-    const listInset = block.type === 'list' ? spec.size * 1.35 : 0
+    if (block.type === 'title' || block.type === 'heading') {
+      y += spec.size * spec.marginBefore
+    }
+
     ctx.font = `${spec.weight} ${spec.size}px ${config.fontFamily}`
     ctx.textBaseline = 'top'
     const plainText = stripHighlightMarkers(block.text)
     const blockId = block.sourceBlockId ?? block.id
     const charOffset = block.charOffset ?? 0
-    const enableHighlight = block.type !== 'title' && block.type !== 'quote'
+    const enableHighlight = block.type !== 'title'
     const segments = enableHighlight
       ? buildCharHighlightSegments(block.text, blockId, highlightedKeys, charOffset)
       : [{ text: plainText, highlighted: false }]
-    const lines = wrapSegments(ctx, segments, maxWidth - quoteInset - listInset)
+    const lines = wrapSegments(ctx, segments, maxWidth)
     const lineHeight = spec.size * spec.lineHeight
 
-    if (block.type === 'quote') {
-      const quoteHeight = lines.length * lineHeight + 24
-      ctx.fillStyle = 'rgba(255,255,255,.72)'
-      ctx.fillRect(safeX, y - 8, maxWidth, quoteHeight)
-      ctx.fillStyle = config.themeColor
-      ctx.fillRect(safeX, y - 8, 8, quoteHeight)
-    }
-
-    for (const [lineIndex, line] of lines.entries()) {
+    for (const line of lines) {
       if (y + lineHeight > maxContentY) break
-      if (block.type === 'list' && lineIndex === 0) {
-        ctx.fillStyle = config.themeColor
-        ctx.fillRect(safeX, y + lineHeight * 0.42, 13, 13)
-      }
       drawHighlightedLine(
         ctx,
         line,
-        safeX + quoteInset + listInset,
+        safeX,
         y,
         spec.size,
         config.themeColor,
@@ -318,31 +280,12 @@ async function drawPage(
     }
   }
 
-  if (hasBottomBar) {
-    drawEdge(
-      ctx,
-      config.bottomStyle,
-      edgeX,
-      footerTop,
-      edgeWidth,
-      footerHeight,
-      config.themeColor,
-    )
-    ctx.fillStyle = '#171717'
-    ctx.font = `400 22px ${config.fontFamily}`
-    ctx.textBaseline = 'middle'
-    ctx.fillText(config.bottomText, edgeX + 28, footerTop + footerHeight / 2)
-    ctx.textAlign = 'right'
-    ctx.fillText(String(page.index + 1), width - safeX - 28, footerTop + footerHeight / 2)
-    ctx.textAlign = 'left'
-  }
-
   ctx.fillStyle = config.themeColor
   ctx.fillRect(34, 34, 16, 16)
   ctx.fillStyle = '#171717'
-  ctx.fillRect(width - 64, height - footerMarginBottom - 10, 10, 10)
+  ctx.fillRect(width - 64, height - bottomPadding - 10, 10, 10)
   ctx.fillStyle = config.themeColor
-  ctx.fillRect(width - 46, height - footerMarginBottom - 10, 10, 10)
+  ctx.fillRect(width - 46, height - bottomPadding - 10, 10, 10)
 
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png', 1))
   if (!blob) throw new Error('页面生成失败')
@@ -352,6 +295,7 @@ async function drawPage(
 export async function exportGraphicPages(
   pages: GraphicTextPage[],
   config: GraphicTextConfig,
+  markdown: string,
   onProgress?: (current: number, total: number) => void,
 ) {
   const font = FONT_OPTIONS.find((item) => item.id === config.fontId)
@@ -362,7 +306,7 @@ export async function exportGraphicPages(
 
   const blobs: Blob[] = []
   for (let index = 0; index < pages.length; index += 1) {
-    blobs.push(await drawPage(pages[index], config))
+    blobs.push(await drawPage(pages[index], config, markdown))
     onProgress?.(index + 1, pages.length)
     await new Promise((resolve) => window.setTimeout(resolve, 16))
   }

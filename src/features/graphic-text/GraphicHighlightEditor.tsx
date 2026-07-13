@@ -1,6 +1,6 @@
 import { ArrowLeft, Check } from 'lucide-react'
 import { useMemo } from 'react'
-import { buildHighlightCharTokens } from './highlightTokens'
+import { buildHighlightDisplayLines } from './highlightTokens'
 
 interface GraphicHighlightEditorProps {
   markdown: string
@@ -19,7 +19,7 @@ export function GraphicHighlightEditor({
   onConfirm,
   onBack,
 }: GraphicHighlightEditorProps) {
-  const tokens = useMemo(() => buildHighlightCharTokens(markdown), [markdown])
+  const displayLines = useMemo(() => buildHighlightDisplayLines(markdown), [markdown])
   const highlightedSet = useMemo(() => new Set(highlightedCharKeys), [highlightedCharKeys])
 
   const toggleToken = (key: string) => {
@@ -28,6 +28,8 @@ export function GraphicHighlightEditor({
     else next.add(key)
     onChange([...next])
   }
+
+  const hasContent = displayLines.some((line) => line.tokens.length > 0)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -55,37 +57,48 @@ export function GraphicHighlightEditor({
         <p className="mb-3 text-xs text-neutral-500">
           点击文字或标点即可高亮，已选 {highlightedCharKeys.length} 个字符
         </p>
-        {tokens.length === 0 ? (
+        {!hasContent ? (
           <p className="py-8 text-center text-sm text-neutral-400">暂无文字内容</p>
         ) : (
-          <div className="flex flex-wrap gap-1.5">
-            {tokens.map((token) => {
-              const selected = highlightedSet.has(token.key)
-              const isWhitespace = token.char.trim() === ''
+          <div className="flex flex-col gap-3">
+            {displayLines.map((line, lineIndex) => {
+              if (line.isParagraphBreak) {
+                return <div key={`break-${lineIndex}`} className="h-3" aria-hidden />
+              }
+              if (!line.tokens.length) return null
+
               return (
-                <button
-                  key={token.key}
-                  type="button"
-                  aria-label={isWhitespace ? '空格' : `高亮 ${token.char}`}
-                  aria-pressed={selected}
-                  className={`inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border px-2 text-sm transition-colors ${
-                    selected
-                      ? 'border-2 border-black font-medium text-neutral-900'
-                      : 'border border-neutral-300 bg-white text-neutral-700'
-                  } ${isWhitespace ? 'text-neutral-300' : ''}`}
-                  style={
-                    selected
-                      ? {
-                          backgroundColor: `${themeColor}47`,
-                          textDecoration: 'underline',
-                          textDecorationColor: themeColor,
+                <div key={`line-${lineIndex}`} className="flex flex-wrap gap-1.5">
+                  {line.tokens.map((token) => {
+                    const selected = highlightedSet.has(token.key)
+                    const isWhitespace = token.char.trim() === ''
+                    return (
+                      <button
+                        key={token.key}
+                        type="button"
+                        aria-label={isWhitespace ? '空格' : `高亮 ${token.char}`}
+                        aria-pressed={selected}
+                        className={`inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border px-2 text-sm transition-colors ${
+                          selected
+                            ? 'border-2 border-black font-medium text-neutral-900'
+                            : 'border border-neutral-300 bg-white text-neutral-700'
+                        } ${isWhitespace ? 'text-neutral-300' : ''}`}
+                        style={
+                          selected
+                            ? {
+                                backgroundColor: `${themeColor}47`,
+                                textDecoration: 'underline',
+                                textDecorationColor: themeColor,
+                              }
+                            : undefined
                         }
-                      : undefined
-                  }
-                  onClick={() => toggleToken(token.key)}
-                >
-                  {isWhitespace ? '␣' : token.char}
-                </button>
+                        onClick={() => toggleToken(token.key)}
+                      >
+                        {isWhitespace ? '␣' : token.char}
+                      </button>
+                    )
+                  })}
+                </div>
               )
             })}
           </div>

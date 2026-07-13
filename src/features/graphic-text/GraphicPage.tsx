@@ -1,11 +1,13 @@
 import { useMemo, type CSSProperties } from 'react'
 import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
 import { buildCharHighlightSegments, themeAlpha } from './inlineHighlight'
+import { resolveTopBarText } from './topBar'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 
 interface GraphicPageProps {
   page: GraphicTextPage
   config: GraphicTextConfig
+  markdown: string
   className?: string
   showSafeArea?: boolean
 }
@@ -20,7 +22,16 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
   const bodySize = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
 
   if (styleType === 'title') {
-    return { fontSize: titleSize, lineHeight: config.titleLineHeight, fontWeight: 700 }
+    const marginUnit = `${((config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100).toFixed(2)}cqw`
+    return {
+      fontSize: titleSize,
+      lineHeight: config.titleLineHeight,
+      fontWeight: 700,
+      marginTop: block.type === 'title' ? `calc(${marginUnit} * ${config.titleMarginTop})` : undefined,
+      marginBottom: block.isBlockEnd
+        ? `calc(${marginUnit} * ${config.titleMarginBottom})`
+        : undefined,
+    }
   }
   if (styleType === 'heading') {
     return {
@@ -31,12 +42,6 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
     }
   }
   return { fontSize: bodySize, lineHeight: config.bodyLineHeight, fontWeight: 400 }
-}
-
-function edgeClasses(style: GraphicTextConfig['topStyle']) {
-  if (style === 'bar') return 'bg-[var(--graphic-theme)] text-black'
-  if (style === 'outline') return 'border-2 border-black bg-white/80 text-black'
-  return 'bg-white/70 text-black'
 }
 
 function HighlightedText({
@@ -113,11 +118,13 @@ function SafeAreaGuide({
 export function GraphicPage({
   page,
   config,
+  markdown,
   className = '',
   showSafeArea = false,
 }: GraphicPageProps) {
   const layout = getGraphicLayout(config)
-  const { percent, aspectRatio, hasTopBar, hasBottomBar } = layout
+  const { percent, aspectRatio } = layout
+  const topBarText = resolveTopBarText(config, markdown)
   const highlightedKeys = useMemo(
     () => new Set(config.highlightedCharKeys),
     [config.highlightedCharKeys],
@@ -152,22 +159,18 @@ export function GraphicPage({
         } as CSSProperties
       }
     >
-      {hasTopBar && (
-        <div
-          className={`absolute z-10 flex items-center justify-between rounded-[1.2cqw] px-[2.6cqw] ${edgeClasses(config.topStyle)}`}
-          style={{
-            left: `${percent.safeX}%`,
-            right: `${percent.safeX}%`,
-            top: `${percent.topBarTop}%`,
-            height: `${percent.topBarHeight}%`,
-          }}
-        >
-          <span className="truncate text-[2.3cqw] font-semibold">{config.topText}</span>
-          <span className="rounded-full bg-black px-[1.8cqw] py-[.7cqw] text-[1.8cqw] font-semibold text-white">
-            {String(page.index + 1).padStart(2, '0')}
-          </span>
-        </div>
-      )}
+      <div
+        className="absolute z-10 flex items-end border-b border-neutral-300"
+        style={{
+          left: `${percent.safeX}%`,
+          right: `${percent.safeX}%`,
+          top: `${percent.topBarTop}%`,
+          height: `${percent.topBarHeight}%`,
+          paddingBottom: '0.8cqw',
+        }}
+      >
+        <span className="truncate text-[2.1cqw] font-normal text-neutral-600">{topBarText}</span>
+      </div>
 
       <div
         className="absolute overflow-hidden"
@@ -187,25 +190,15 @@ export function GraphicPage({
             page.blocks.map((block) => (
               <div
                 key={block.id}
-                className={`${block.isBlockEnd ? 'mb-[1.1cqw]' : ''} ${
-                  block.type === 'quote'
-                    ? 'border-l-[.8cqw] border-[var(--graphic-theme)] bg-white/70 px-[2.4cqw] py-[1.3cqw]'
-                    : ''
-                }`}
+                className={block.isBlockEnd ? 'mb-[1.1cqw]' : ''}
                 style={blockStyle(block, config)}
               >
-                {block.type === 'list' && (
-                  <span
-                    className="mr-[1.5cqw] inline-block size-[1.2cqw] rounded-sm align-[.1cqw]"
-                    style={{ backgroundColor: config.themeColor }}
-                  />
-                )}
                 <HighlightedText
                   text={block.text}
                   block={block}
                   themeColor={config.themeColor}
                   highlightedKeys={highlightedKeys}
-                  enableHighlight={block.type !== 'title' && block.type !== 'quote'}
+                  enableHighlight={block.type !== 'title'}
                 />
               </div>
             ))
@@ -214,21 +207,6 @@ export function GraphicPage({
       </div>
 
       {showSafeArea && <SafeAreaGuide layout={layout} />}
-
-      {hasBottomBar && (
-        <div
-          className={`absolute flex items-center justify-between rounded-[1cqw] px-[2.6cqw] ${edgeClasses(config.bottomStyle)}`}
-          style={{
-            left: `${percent.safeX}%`,
-            right: `${percent.safeX}%`,
-            bottom: `${percent.footerBottom}%`,
-            height: `${percent.footerHeight}%`,
-          }}
-        >
-          <span className="truncate text-[1.8cqw]">{config.bottomText}</span>
-          <span className="text-[1.8cqw] font-medium">{page.index + 1}</span>
-        </div>
-      )}
 
       <div
         className="absolute left-[3.2%] top-[3.2%] size-[1.5cqw] bg-[var(--graphic-theme)]"

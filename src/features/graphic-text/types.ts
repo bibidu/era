@@ -1,5 +1,4 @@
 export type GraphicTemplate = 'reference' | 'solid' | 'grid'
-export type EdgeStyle = 'minimal' | 'bar' | 'outline'
 export type GraphicAspectRatio = '3:4' | '1:1' | '4:3' | '9:16' | '16:9'
 
 export const GRAPHIC_ASPECT_RATIO_OPTIONS: { id: GraphicAspectRatio; label: string }[] = [
@@ -17,13 +16,12 @@ export interface GraphicTextConfig {
   bodyFontSize: number
   titleLineHeight: number
   bodyLineHeight: number
+  titleMarginTop: number
+  titleMarginBottom: number
   themeColor: string
   aspectRatio: GraphicAspectRatio
   template: GraphicTemplate
-  topStyle: EdgeStyle
-  bottomStyle: EdgeStyle
   topText: string
-  bottomText: string
   backgroundUrl: string | null
   highlightedCharKeys: string[]
 }
@@ -52,13 +50,12 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   bodyFontSize: 20,
   titleLineHeight: 1.2,
   bodyLineHeight: 1.48,
+  titleMarginTop: 0.28,
+  titleMarginBottom: 0.28,
   themeColor: '#FACC15',
   aspectRatio: '9:16',
   template: 'solid',
-  topStyle: 'bar',
-  bottomStyle: 'minimal',
-  topText: '图文笔记',
-  bottomText: '滑动查看下一页',
+  topText: '',
   backgroundUrl: null,
   highlightedCharKeys: [],
 }
