@@ -16,8 +16,8 @@ export interface GraphicTextConfig {
   bodyFontSize: number
   titleLineHeight: number
   bodyLineHeight: number
-  titleMarginTop: number
-  titleMarginBottom: number
+  headingMarginTop: number
+  headingMarginBottom: number
   themeColor: string
   aspectRatio: GraphicAspectRatio
   template: GraphicTemplate
@@ -50,8 +50,8 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   bodyFontSize: 20,
   titleLineHeight: 1.2,
   bodyLineHeight: 1.48,
-  titleMarginTop: 0.28,
-  titleMarginBottom: 0.28,
+  headingMarginTop: 0.28,
+  headingMarginBottom: 0.28,
   themeColor: '#FACC15',
   aspectRatio: '9:16',
   template: 'solid',

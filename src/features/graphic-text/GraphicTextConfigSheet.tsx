@@ -6,7 +6,8 @@ import { FONT_OPTIONS } from '../../data/fonts'
 import { GreySlider } from '../../components/GreySlider'
 import { GraphicHighlightEditor } from './GraphicHighlightEditor'
 import { GraphicPage } from './GraphicPage'
-import { paginateMarkdown } from './layout'
+import { computeGraphicPageDisplaySize } from './graphicPreviewLayout'
+import { getGraphicLayout, paginateMarkdown } from './layout'
 import type { GraphicTemplate, GraphicTextConfig } from './types'
 import { GRAPHIC_ASPECT_RATIO_OPTIONS } from './types'
 
@@ -67,6 +68,15 @@ export function GraphicTextConfigSheet({
   const lastHeightRef = useRef(0)
 
   const previewPages = useMemo(() => paginateMarkdown(markdown, config), [markdown, config])
+  const previewLayout = useMemo(() => getGraphicLayout(config), [config])
+  const previewPageSize = useMemo(() => {
+    if (!previewAreaHeight) return null
+    return computeGraphicPageDisplaySize(
+      previewLayout.aspectRatio,
+      window.innerWidth - 32,
+      previewAreaHeight - 16,
+    )
+  }, [previewLayout.aspectRatio, previewAreaHeight])
 
   useEffect(() => {
     if (isOpen !== state.isOpen) state.setOpen(isOpen)
@@ -165,9 +175,9 @@ export function GraphicTextConfigSheet({
   }
 
   const previewNode =
-    previewReady && previewAreaHeight > 0 ? (
+    previewReady && previewAreaHeight > 0 && previewPageSize ? (
       <div className="graphic-config-preview" style={{ height: previewAreaHeight }}>
-        <div className="graphic-config-preview-pager">
+        <div className="graphic-config-preview-pager graphic-pager flex snap-x snap-mandatory">
           {previewPages.map((page) => (
             <div key={page.index} className="graphic-config-preview-slide">
               <GraphicPage
@@ -175,7 +185,8 @@ export function GraphicTextConfigSheet({
                 config={config}
                 markdown={markdown}
                 showSafeArea={showSafeArea}
-                className="graphic-config-preview-page shadow-xl"
+                displayWidth={previewPageSize.width}
+                className="rounded-xl shadow-lg"
               />
             </div>
           ))}
@@ -304,31 +315,31 @@ export function GraphicTextConfigSheet({
 
                         <section>
                           <div className="mb-1 flex items-center justify-between text-sm">
-                            <span className="font-medium">标题上间距</span>
-                            <span className="text-neutral-500">{config.titleMarginTop.toFixed(2)}</span>
+                            <span className="font-medium">二级标题上间距</span>
+                            <span className="text-neutral-500">{config.headingMarginTop.toFixed(2)}</span>
                           </div>
                           <GreySlider
-                            aria-label="标题上间距"
+                            aria-label="二级标题上间距"
                             minValue={0}
                             maxValue={1.2}
                             step={0.02}
-                            value={config.titleMarginTop}
-                            onChange={(value) => onUpdate({ titleMarginTop: value })}
+                            value={config.headingMarginTop}
+                            onChange={(value) => onUpdate({ headingMarginTop: value })}
                           />
                         </section>
 
                         <section>
                           <div className="mb-1 flex items-center justify-between text-sm">
-                            <span className="font-medium">标题下间距</span>
-                            <span className="text-neutral-500">{config.titleMarginBottom.toFixed(2)}</span>
+                            <span className="font-medium">二级标题下间距</span>
+                            <span className="text-neutral-500">{config.headingMarginBottom.toFixed(2)}</span>
                           </div>
                           <GreySlider
-                            aria-label="标题下间距"
+                            aria-label="二级标题下间距"
                             minValue={0}
                             maxValue={1.2}
                             step={0.02}
-                            value={config.titleMarginBottom}
-                            onChange={(value) => onUpdate({ titleMarginBottom: value })}
+                            value={config.headingMarginBottom}
+                            onChange={(value) => onUpdate({ headingMarginBottom: value })}
                           />
                         </section>
 
