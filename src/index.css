@@ -59,8 +59,16 @@ body.is-dragging {
   max-height: calc(100dvh - 14rem);
 }
 
-.graphic-config-backdrop {
-  position: relative;
+.graphic-config-backdrop.drawer__backdrop {
+  pointer-events: none !important;
+}
+
+.graphic-config-backdrop .drawer__content {
+  pointer-events: none !important;
+}
+
+.graphic-config-backdrop .drawer__dialog {
+  pointer-events: auto !important;
 }
 
 .graphic-config-preview {
@@ -68,7 +76,7 @@ body.is-dragging {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 51;
+  z-index: 120;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -86,7 +94,7 @@ body.is-dragging {
   gap: 8px;
   height: 100%;
   min-height: 0;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .graphic-config-preview-indicator {
@@ -98,15 +106,19 @@ body.is-dragging {
 }
 
 .graphic-config-preview-stage {
+  position: relative;
   display: flex;
   min-height: 0;
   flex: 1;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  pointer-events: none;
 }
 
 .graphic-config-preview-nav {
+  position: relative;
+  z-index: 5;
   display: flex;
   flex-shrink: 0;
   align-items: center;
@@ -118,6 +130,25 @@ body.is-dragging {
   background: rgb(255 255 255 / 0.95);
   color: rgb(38 38 38);
   box-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.graphic-config-preview-page {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.graphic-config-preview-page-scale {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  pointer-events: none;
 }
 
 .graphic-config-preview-nav:disabled {

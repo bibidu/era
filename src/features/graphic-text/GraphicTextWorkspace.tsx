@@ -5,7 +5,7 @@ import { GraphicPage } from './GraphicPage'
 import { GraphicTextConfigSheet } from './GraphicTextConfigSheet'
 import { exportGraphicPages, saveGraphicPages } from './exportGraphicPages'
 import { paginateMarkdown, getGraphicLayout } from './layout'
-import { computeGraphicPageDisplaySize } from './graphicPreviewLayout'
+import { computeWorkspacePagerPageSize } from './graphicPreviewLayout'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
 import {
@@ -55,11 +55,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
 
   const pagerPageSize = useMemo(() => {
     const layout = getGraphicLayout(config)
-    return computeGraphicPageDisplaySize(
-      layout.aspectRatio,
-      window.innerWidth - 32,
-      window.innerHeight - 14 * 16,
-    )
+    return computeWorkspacePagerPageSize(layout.aspectRatio)
   }, [config])
 
   const handlePaste = async () => {
