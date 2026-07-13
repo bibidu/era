@@ -28,6 +28,7 @@ export function buildNumericOptions(
 }
 
 export const TITLE_FONT_SIZE_OPTIONS = buildNumericOptions(40, 100, 2, 31)
+export const HEADING_FONT_SIZE_OPTIONS = buildNumericOptions(20, 56, 1)
 export const BODY_FONT_SIZE_OPTIONS = buildNumericOptions(8, 16, 1)
 export const TITLE_LINE_HEIGHT_OPTIONS = buildNumericOptions(1, 2, 0.05)
 export const BODY_LINE_HEIGHT_OPTIONS = buildNumericOptions(1, 2.2, 0.05)
