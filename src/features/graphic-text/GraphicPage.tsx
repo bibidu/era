@@ -293,8 +293,8 @@ export function GraphicPage({
                     }}
                   >
                     <div className="flex gap-[1.5cqw]">
-                      <span
-                        className="w-[0.55cqw] shrink-0 self-stretch rounded-full"
+                        <span
+                        className="w-[0.9cqw] shrink-0 self-stretch rounded-full"
                         style={{ backgroundColor: config.themeColor }}
                         aria-hidden
                       />

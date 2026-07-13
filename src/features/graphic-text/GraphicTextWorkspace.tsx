@@ -43,14 +43,10 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   }, [defaultBackgroundUrl, config.backgroundUrl])
 
   useEffect(() => {
-    const fonts = [getFontById(config.chineseFontId), getFontById(config.englishFontId)]
-    const uniqueFonts = [...new Map(fonts.map((font) => [font.id, font])).values()]
-    uniqueFonts
-      .filter((font) => font.source !== 'system')
-      .forEach((font) => {
-        void ensureFontReady(font, markdown || font.sample)
-      })
-  }, [config.chineseFontId, config.englishFontId, markdown])
+    const font = getFontById(config.fontId)
+    if (font.source === 'system') return
+    void ensureFontReady(font, markdown || font.sample)
+  }, [config.fontId, markdown])
 
   const estimatedPages = useMemo(
     () => paginateMarkdown(markdown, config),
