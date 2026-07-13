@@ -222,7 +222,7 @@ async function drawPage(
         : block.type === 'quote' || styleType === 'quote'
           ? quoteInset(spec.size)
           : 0
-    const enableHighlight = block.type !== 'title'
+    const enableHighlight = true
     const segments = enableHighlight
       ? buildCharHighlightSegments(block.text, blockId, highlightedKeys, charOffset)
       : [{ text: plainText, highlighted: false }]

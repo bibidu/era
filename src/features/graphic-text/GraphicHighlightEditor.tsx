@@ -4,7 +4,6 @@ import { buildHighlightDisplayLines } from './highlightTokens'
 
 interface GraphicHighlightEditorProps {
   markdown: string
-  themeColor: string
   highlightedCharKeys: string[]
   onChange: (keys: string[]) => void
   onConfirm: () => void
@@ -13,7 +12,6 @@ interface GraphicHighlightEditorProps {
 
 export function GraphicHighlightEditor({
   markdown,
-  themeColor,
   highlightedCharKeys,
   onChange,
   onConfirm,
@@ -80,18 +78,9 @@ export function GraphicHighlightEditor({
                         aria-pressed={selected}
                         className={`inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border px-2 text-sm transition-colors ${
                           selected
-                            ? 'border-2 border-black font-medium text-neutral-900'
+                            ? 'border-2 border-black bg-white font-medium text-neutral-900'
                             : 'border border-neutral-300 bg-white text-neutral-700'
                         } ${isWhitespace ? 'text-neutral-300' : ''}`}
-                        style={
-                          selected
-                            ? {
-                                backgroundColor: `${themeColor}47`,
-                                textDecoration: 'underline',
-                                textDecorationColor: themeColor,
-                              }
-                            : undefined
-                        }
                         onClick={() => toggleToken(token.key)}
                       >
                         {isWhitespace ? '␣' : token.char}

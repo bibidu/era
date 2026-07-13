@@ -1,5 +1,5 @@
+import { parseMarkdown } from './layout'
 import { stripHighlightMarkers } from './inlineHighlight'
-import type { MarkdownBlockType } from './types'
 
 export interface HighlightCharToken {
   key: string
@@ -12,10 +12,6 @@ export interface HighlightDisplayLine {
   isParagraphBreak?: boolean
 }
 
-function createBlockId(index: number, type: MarkdownBlockType) {
-  return `${index}-${type}`
-}
-
 function tokensFromText(blockId: string, text: string, startOffset: number): HighlightCharToken[] {
   const plain = stripHighlightMarkers(text)
   return [...plain].map((char, index) => ({
@@ -25,87 +21,21 @@ function tokensFromText(blockId: string, text: string, startOffset: number): Hig
   }))
 }
 
-function emitParagraphLines(
-  lines: string[],
-  blockIndex: number,
-  result: HighlightDisplayLine[],
-): number {
-  const blockId = createBlockId(blockIndex, 'paragraph')
-  let offset = 0
+export function buildHighlightDisplayLines(markdown: string): HighlightDisplayLine[] {
+  const blocks = parseMarkdown(markdown)
+  const result: HighlightDisplayLine[] = []
 
-  lines.forEach((line, lineIndex) => {
-    const plain = stripHighlightMarkers(line.trim())
-    result.push({ tokens: tokensFromText(blockId, plain, offset) })
-    offset += plain.length
-    if (lineIndex < lines.length - 1) {
-      result[result.length - 1].tokens.push({
-        key: `${blockId}:${offset}`,
-        char: ' ',
-        blockId,
-      })
-      offset += 1
+  blocks.forEach((block, index) => {
+    if (index > 0) {
+      result.push({ tokens: [], isParagraphBreak: true })
     }
+
+    const plain = stripHighlightMarkers(block.text)
+    if (!plain) return
+
+    result.push({ tokens: tokensFromText(block.id, plain, 0) })
   })
 
-  return blockIndex + 1
-}
-
-export function buildHighlightDisplayLines(markdown: string): HighlightDisplayLine[] {
-  const rawLines = markdown.replace(/\r\n/g, '\n').split('\n')
-  const result: HighlightDisplayLine[] = []
-  let blockIndex = 0
-  let paragraphLines: string[] = []
-
-  const flushParagraph = () => {
-    if (!paragraphLines.length) return
-    blockIndex = emitParagraphLines(paragraphLines, blockIndex, result)
-    paragraphLines = []
-  }
-
-  for (const rawLine of rawLines) {
-    const line = rawLine.trim()
-    if (!line) {
-      flushParagraph()
-      result.push({ tokens: [], isParagraphBreak: true })
-      continue
-    }
-
-    if (line.startsWith('# ')) {
-      flushParagraph()
-      const blockId = createBlockId(blockIndex, 'title')
-      const plain = stripHighlightMarkers(line.slice(2).trim())
-      result.push({ tokens: tokensFromText(blockId, plain, 0) })
-      blockIndex += 1
-    } else if (/^#{2,6}\s/.test(line)) {
-      flushParagraph()
-      const blockId = createBlockId(blockIndex, 'heading')
-      const plain = stripHighlightMarkers(line.replace(/^#{2,6}\s+/, ''))
-      result.push({ tokens: tokensFromText(blockId, plain, 0) })
-      blockIndex += 1
-    } else if (/^[-*+]\s/.test(line)) {
-      flushParagraph()
-      const blockId = createBlockId(blockIndex, 'list')
-      const plain = stripHighlightMarkers(line.replace(/^[-*+]\s+/, ''))
-      result.push({ tokens: tokensFromText(blockId, plain, 0) })
-      blockIndex += 1
-    } else if (/^\d+\.\s/.test(line)) {
-      flushParagraph()
-      const blockId = createBlockId(blockIndex, 'list')
-      const plain = stripHighlightMarkers(line.replace(/^\d+\.\s+/, ''))
-      result.push({ tokens: tokensFromText(blockId, plain, 0) })
-      blockIndex += 1
-    } else if (line.startsWith('> ')) {
-      flushParagraph()
-      const blockId = createBlockId(blockIndex, 'quote')
-      const plain = stripHighlightMarkers(line.slice(2).trim())
-      result.push({ tokens: tokensFromText(blockId, plain, 0) })
-      blockIndex += 1
-    } else {
-      paragraphLines.push(line)
-    }
-  }
-
-  flushParagraph()
   return result
 }
 
