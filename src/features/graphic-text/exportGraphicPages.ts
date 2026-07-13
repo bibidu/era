@@ -282,7 +282,7 @@ async function drawPage(
     y += lineHeight
 
     if (styleType === 'quote' && block.isBlockEnd && quoteBarStart !== null) {
-      const barWidth = Math.max(3, spec.size * 0.12)
+      const barWidth = Math.max(4, spec.size * 0.18)
       ctx.fillStyle = config.themeColor
       ctx.fillRect(safeX, quoteBarStart, barWidth, y - quoteBarStart)
       quoteBarStart = null
@@ -307,15 +307,11 @@ export async function exportGraphicPages(
   markdown: string,
   onProgress?: (current: number, total: number) => void,
 ) {
-  const sample = pages.flatMap((page) => page.blocks.map((block) => block.text)).join('')
-  const fonts = [getFontById(config.chineseFontId), getFontById(config.englishFontId)]
-  const uniqueFonts = [...new Map(fonts.map((font) => [font.id, font])).values()]
-
-  await Promise.all(
-    uniqueFonts
-      .filter((font) => font.source !== 'system')
-      .map((font) => ensureFontReady(font, sample || font.sample)),
-  )
+  const font = getFontById(config.fontId)
+  if (font.source !== 'system') {
+    const sample = pages.flatMap((page) => page.blocks.map((block) => block.text)).join('')
+    await ensureFontReady(font, sample || font.sample)
+  }
 
   const blobs: Blob[] = []
   for (let index = 0; index < pages.length; index += 1) {

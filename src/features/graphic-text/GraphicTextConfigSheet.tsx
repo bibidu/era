@@ -1,7 +1,7 @@
 import { Check, Highlighter, ImagePlus, Palette, ScanEye, Type } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FONT_OPTIONS, composeFontFamily } from '../../data/fonts'
+import { FONT_OPTIONS } from '../../data/fonts'
 import { GraphicConfigPreview } from './GraphicConfigPreview'
 import { GraphicHighlightEditor } from './GraphicHighlightEditor'
 import {
@@ -16,8 +16,9 @@ import { computeConfigPreviewLayout } from './graphicPreviewLayout'
 import { getGraphicLayout, paginateMarkdown } from './layout'
 import {
   clampSheetHeight,
-  computeDefaultSheetHeight,
   getViewportHeight,
+  readCachedSheetHeight,
+  writeCachedSheetHeight,
 } from './topBar'
 import type { GraphicTemplate, GraphicTextConfig } from './types'
 import { GRAPHIC_ASPECT_RATIO_OPTIONS } from './types'
@@ -156,7 +157,7 @@ export function GraphicTextConfigSheet({
   const sheetRef = useRef<HTMLDivElement | null>(null)
   const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
   const [viewportHeight, setViewportHeight] = useState(getViewportHeight)
-  const [sheetHeight, setSheetHeight] = useState(computeDefaultSheetHeight)
+  const [sheetHeight, setSheetHeight] = useState(readCachedSheetHeight)
   const [showSafeArea, setShowSafeArea] = useState(false)
   const [sheetView, setSheetView] = useState<ConfigSheetView>('main')
   const [highlightDraft, setHighlightDraft] = useState<string[]>(config.highlightedCharKeys)
@@ -201,7 +202,7 @@ export function GraphicTextConfigSheet({
     }
 
     syncViewport()
-    setSheetHeight(computeDefaultSheetHeight(getViewportHeight()))
+    setSheetHeight(readCachedSheetHeight(getViewportHeight()))
     window.addEventListener('resize', syncViewport)
     window.visualViewport?.addEventListener('resize', syncViewport)
 
@@ -230,6 +231,7 @@ export function GraphicTextConfigSheet({
     const nextHeight = clampSheetHeight(resizeRef.current.startHeight + delta, nextViewport)
     setViewportHeight(nextViewport)
     setSheetHeight(nextHeight)
+    writeCachedSheetHeight(nextHeight)
   }
 
   const handleResizeEnd = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -315,50 +317,20 @@ export function GraphicTextConfigSheet({
                             <Type size={16} />
                             字体
                           </div>
-                          <div className="flex min-w-0 items-center gap-2">
-                            <label className="flex min-w-0 flex-1 items-center gap-2 text-sm">
-                              <span className="w-9 shrink-0 text-neutral-600">中文</span>
-                              <select
-                                value={config.chineseFontId}
-                                onChange={(event) => {
-                                  const chineseFontId = event.target.value
-                                  onUpdate({
-                                    chineseFontId,
-                                    fontFamily: composeFontFamily(chineseFontId, config.englishFontId),
-                                  })
-                                }}
-                                className={selectClassName}
-                                aria-label="中文字体"
-                              >
-                                {FONT_OPTIONS.map((font) => (
-                                  <option key={font.id} value={font.id}>
-                                    {font.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <label className="flex min-w-0 flex-1 items-center gap-2 text-sm">
-                              <span className="w-9 shrink-0 text-neutral-600">英文</span>
-                              <select
-                                value={config.englishFontId}
-                                onChange={(event) => {
-                                  const englishFontId = event.target.value
-                                  onUpdate({
-                                    englishFontId,
-                                    fontFamily: composeFontFamily(config.chineseFontId, englishFontId),
-                                  })
-                                }}
-                                className={selectClassName}
-                                aria-label="英文字体"
-                              >
-                                {FONT_OPTIONS.map((font) => (
-                                  <option key={font.id} value={font.id}>
-                                    {font.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                          </div>
+                          <select
+                            value={config.fontId}
+                            onChange={(event) => {
+                              const font = FONT_OPTIONS.find((item) => item.id === event.target.value)
+                              if (font) onUpdate({ fontId: font.id, fontFamily: font.fontFamily })
+                            }}
+                            className="h-10 w-full rounded-xl border border-neutral-300 bg-neutral-50 px-3 text-sm outline-none focus:border-neutral-500"
+                          >
+                            {FONT_OPTIONS.map((font) => (
+                              <option key={font.id} value={font.id}>
+                                {font.label}
+                              </option>
+                            ))}
+                          </select>
                         </section>
 
                         <section className="flex flex-col gap-2">

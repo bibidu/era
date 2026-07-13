@@ -45,3 +45,28 @@ export function computeDefaultSheetHeight(viewportHeight = getViewportHeight()) 
 export function clampSheetHeight(height: number, viewportHeight = getViewportHeight()) {
   return Math.max(300, Math.min(height, viewportHeight - 140))
 }
+
+const SHEET_HEIGHT_STORAGE_KEY = 'era-graphic-config-sheet-height'
+
+export function readCachedSheetHeight(viewportHeight = getViewportHeight()) {
+  try {
+    const raw = localStorage.getItem(SHEET_HEIGHT_STORAGE_KEY)
+    if (raw) {
+      const parsed = Number(raw)
+      if (Number.isFinite(parsed)) {
+        return clampSheetHeight(parsed, viewportHeight)
+      }
+    }
+  } catch {
+    // ignore storage read errors
+  }
+  return computeDefaultSheetHeight(viewportHeight)
+}
+
+export function writeCachedSheetHeight(height: number) {
+  try {
+    localStorage.setItem(SHEET_HEIGHT_STORAGE_KEY, String(Math.round(height)))
+  } catch {
+    // ignore storage write errors
+  }
+}
