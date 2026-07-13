@@ -6,6 +6,7 @@ import type {
   MarkdownBlockType,
 } from './types'
 import { stripHighlightMarkers } from './inlineHighlight'
+import { wrapPlainTextLines } from './textWrap'
 
 export const GRAPHIC_DISPLAY_BASE_WIDTH = 360
 
@@ -20,19 +21,13 @@ export interface GraphicLayout {
   safeTop: number
   safeBottom: number
   contentBottom: number
-  footerTop: number
-  footerHeight: number
-  footerMarginBottom: number
+  bottomPadding: number
   topBarY: number
   topBarHeight: number
-  hasTopBar: boolean
-  hasBottomBar: boolean
   percent: {
     safeX: number
     safeTop: number
     contentBottom: number
-    footerBottom: number
-    footerHeight: number
     topBarTop: number
     topBarHeight: number
   }
@@ -45,6 +40,7 @@ interface LayoutLine {
   styleType: MarkdownBlockType
   text: string
   lineHeight: number
+  spacingBefore: number
   spacingAfter: number
   sourceBlockId: string
   charOffset: number
@@ -60,7 +56,7 @@ function resolveStyleType(block: Pick<MarkdownBlock, 'type' | 'styleType'>): Mar
 }
 
 export function getGraphicLayout(
-  config: Pick<GraphicTextConfig, 'aspectRatio' | 'topText' | 'bottomText'>,
+  config: Pick<GraphicTextConfig, 'aspectRatio'>,
 ): GraphicLayout {
   const aspect = parseAspectRatio(config.aspectRatio)
   const pageWidth = REFERENCE_WIDTH
@@ -68,24 +64,13 @@ export function getGraphicLayout(
   const heightScale = pageHeight / REFERENCE_HEIGHT
 
   const safeX = 96
-  const topBarY = Math.round(60 * heightScale)
-  const topBarHeight = Math.round(86 * heightScale)
-  const footerHeight = Math.round(72 * heightScale)
-  const footerMarginBottom = Math.round(60 * heightScale)
-  const contentGapAboveFooter = Math.round(6 * heightScale)
-  const contentPaddingBelowTop = Math.round(20 * heightScale)
-  const edgePadding = Math.round(48 * heightScale)
+  const topBarY = Math.round(84 * heightScale)
+  const topBarHeight = Math.round(44 * heightScale)
+  const contentPaddingBelowTop = Math.round(40 * heightScale)
+  const bottomPadding = Math.round(56 * heightScale)
 
-  const hasTopBar = config.topText.trim().length > 0
-  const hasBottomBar = config.bottomText.trim().length > 0
-
-  const footerTop = pageHeight - footerMarginBottom - footerHeight
-  const safeTop = hasTopBar
-    ? topBarY + topBarHeight + contentPaddingBelowTop
-    : edgePadding
-  const contentBottom = hasBottomBar
-    ? footerTop - contentGapAboveFooter
-    : pageHeight - edgePadding
+  const safeTop = topBarY + topBarHeight + contentPaddingBelowTop
+  const contentBottom = pageHeight - bottomPadding
   const safeBottom = pageHeight - contentBottom
 
   return {
@@ -96,19 +81,13 @@ export function getGraphicLayout(
     safeTop,
     safeBottom,
     contentBottom,
-    footerTop,
-    footerHeight,
-    footerMarginBottom,
+    bottomPadding,
     topBarY,
     topBarHeight,
-    hasTopBar,
-    hasBottomBar,
     percent: {
       safeX: (safeX / pageWidth) * 100,
       safeTop: (safeTop / pageHeight) * 100,
       contentBottom: (safeBottom / pageHeight) * 100,
-      footerBottom: (footerMarginBottom / pageHeight) * 100,
-      footerHeight: (footerHeight / pageHeight) * 100,
       topBarTop: (topBarY / pageHeight) * 100,
       topBarHeight: (topBarHeight / pageHeight) * 100,
     },
@@ -146,13 +125,13 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
       blocks.push(createBlock('heading', line.replace(/^#{2,6}\s+/, ''), blocks.length))
     } else if (/^[-*+]\s/.test(line)) {
       flushParagraph()
-      blocks.push(createBlock('list', line.replace(/^[-*+]\s+/, ''), blocks.length))
+      blocks.push(createBlock('paragraph', line.replace(/^[-*+]\s+/, ''), blocks.length))
     } else if (/^\d+\.\s/.test(line)) {
       flushParagraph()
-      blocks.push(createBlock('list', line.replace(/^\d+\.\s+/, ''), blocks.length))
+      blocks.push(createBlock('paragraph', line.replace(/^\d+\.\s+/, ''), blocks.length))
     } else if (line.startsWith('> ')) {
       flushParagraph()
-      blocks.push(createBlock('quote', line.slice(2).trim(), blocks.length))
+      blocks.push(createBlock('paragraph', line.slice(2).trim(), blocks.length))
     } else {
       paragraph.push(line)
     }
@@ -178,33 +157,36 @@ function blockLineHeight(block: MarkdownBlock, config: GraphicTextConfig, export
   return size * config.bodyLineHeight
 }
 
-function blockSpacing(block: MarkdownBlock, config: GraphicTextConfig, exportScale: number) {
+function blockSpacingAfter(
+  block: MarkdownBlock,
+  config: GraphicTextConfig,
+  exportScale: number,
+  isLastLine: boolean,
+) {
+  if (!isLastLine) return 0
+
   const type = resolveStyleType(block)
   const size = blockFontSize(block, config, exportScale)
   const flexGap = Math.round(size * 0.18)
-  if (type === 'title') return size * 0.28 + flexGap
+
+  if (type === 'title') return size * config.titleMarginBottom + flexGap
   if (type === 'heading') return size * 0.2 + flexGap
   return size * 0.08 + flexGap
 }
 
-function wrapPlainTextLines(text: string, charsPerLine: number) {
-  const chars = [...text]
-  if (!chars.length) return ['']
+function blockSpacingBefore(
+  block: MarkdownBlock,
+  config: GraphicTextConfig,
+  exportScale: number,
+  isFirstLine: boolean,
+) {
+  if (!isFirstLine) return 0
 
-  const lines: string[] = []
-  let current = ''
-
-  for (const char of chars) {
-    if (current.length >= charsPerLine) {
-      lines.push(current)
-      current = char
-    } else {
-      current += char
-    }
-  }
-
-  if (current) lines.push(current)
-  return lines
+  const type = resolveStyleType(block)
+  const size = blockFontSize(block, config, exportScale)
+  if (type === 'title') return size * config.titleMarginTop
+  if (type === 'heading') return size * 0.2
+  return 0
 }
 
 function blockToLayoutLines(
@@ -215,16 +197,14 @@ function blockToLayoutLines(
   const styleType = resolveStyleType(block)
   const plainText = stripHighlightMarkers(block.text)
   const size = blockFontSize(block, config, layout.exportScale)
-  const availableWidth = layout.pageWidth - layout.safeX * 2 - (block.type === 'quote' ? 42 : 0)
-  const prefixWidth = block.type === 'list' ? size * 1.35 : 0
+  const availableWidth = layout.pageWidth - layout.safeX * 2
   const approximateCharacterWidth =
     size * (styleType === 'title' || styleType === 'heading' ? 0.95 : 1)
   const charsPerLine = Math.max(
     4,
-    Math.floor((availableWidth - prefixWidth) / approximateCharacterWidth),
+    Math.floor(availableWidth / approximateCharacterWidth),
   )
   const lineHeight = blockLineHeight(block, config, layout.exportScale)
-  const spacingAfter = blockSpacing(block, config, layout.exportScale)
   const wrappedLines = wrapPlainTextLines(plainText, charsPerLine)
 
   let charOffset = 0
@@ -235,7 +215,13 @@ function blockToLayoutLines(
       styleType,
       text: wrappedLines.length === 1 ? block.text : lineText,
       lineHeight,
-      spacingAfter: index === wrappedLines.length - 1 ? spacingAfter : 0,
+      spacingBefore: blockSpacingBefore(block, config, layout.exportScale, index === 0),
+      spacingAfter: blockSpacingAfter(
+        block,
+        config,
+        layout.exportScale,
+        index === wrappedLines.length - 1,
+      ),
       sourceBlockId: block.id,
       charOffset,
     }
@@ -271,7 +257,7 @@ export function paginateMarkdown(markdown: string, config: GraphicTextConfig): G
   let usedHeight = 0
 
   for (const line of allLines) {
-    const lineTotal = line.lineHeight + line.spacingAfter
+    const lineTotal = line.spacingBefore + line.lineHeight + line.spacingAfter
     if (currentLines.length > 0 && usedHeight + lineTotal > availableHeight) {
       pages.push({ index: pages.length, blocks: layoutLinesToBlocks(currentLines) })
       currentLines = []

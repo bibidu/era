@@ -92,7 +92,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     setSaving(true)
     setSaveProgress(`正在生成 0/${pages.length}`)
     try {
-      const blobs = await exportGraphicPages(pages, config, (current, total) => {
+      const blobs = await exportGraphicPages(pages, config, markdown, (current, total) => {
         setSaveProgress(`正在生成 ${current}/${total}`)
       })
       setSaveProgress('请选择“存储到照片”')
@@ -159,6 +159,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
               <GraphicPage
                 page={page}
                 config={config}
+                markdown={markdown}
                 className="max-h-full max-w-full rounded-xl shadow-lg"
               />
             </div>

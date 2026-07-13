@@ -7,7 +7,7 @@ import { GreySlider } from '../../components/GreySlider'
 import { GraphicHighlightEditor } from './GraphicHighlightEditor'
 import { GraphicPage } from './GraphicPage'
 import { paginateMarkdown } from './layout'
-import type { EdgeStyle, GraphicTemplate, GraphicTextConfig } from './types'
+import type { GraphicTemplate, GraphicTextConfig } from './types'
 import { GRAPHIC_ASPECT_RATIO_OPTIONS } from './types'
 
 interface GraphicTextConfigSheetProps {
@@ -26,12 +26,6 @@ const TEMPLATE_OPTIONS: { id: GraphicTemplate; label: string }[] = [
   { id: 'reference', label: '参考图' },
   { id: 'solid', label: '纯色纸张' },
   { id: 'grid', label: '网格纸' },
-]
-
-const EDGE_OPTIONS: { id: EdgeStyle; label: string }[] = [
-  { id: 'minimal', label: '极简' },
-  { id: 'bar', label: '色块' },
-  { id: 'outline', label: '描边' },
 ]
 
 const THEME_COLORS = ['#FACC15', '#FB923C', '#EF4444', '#22C55E', '#3B82F6', '#A855F7']
@@ -179,6 +173,7 @@ export function GraphicTextConfigSheet({
               <GraphicPage
                 page={page}
                 config={config}
+                markdown={markdown}
                 showSafeArea={showSafeArea}
                 className="graphic-config-preview-page shadow-xl"
               />
@@ -304,6 +299,36 @@ export function GraphicTextConfigSheet({
                             step={0.02}
                             value={config.bodyLineHeight}
                             onChange={(value) => onUpdate({ bodyLineHeight: value })}
+                          />
+                        </section>
+
+                        <section>
+                          <div className="mb-1 flex items-center justify-between text-sm">
+                            <span className="font-medium">标题上间距</span>
+                            <span className="text-neutral-500">{config.titleMarginTop.toFixed(2)}</span>
+                          </div>
+                          <GreySlider
+                            aria-label="标题上间距"
+                            minValue={0}
+                            maxValue={1.2}
+                            step={0.02}
+                            value={config.titleMarginTop}
+                            onChange={(value) => onUpdate({ titleMarginTop: value })}
+                          />
+                        </section>
+
+                        <section>
+                          <div className="mb-1 flex items-center justify-between text-sm">
+                            <span className="font-medium">标题下间距</span>
+                            <span className="text-neutral-500">{config.titleMarginBottom.toFixed(2)}</span>
+                          </div>
+                          <GreySlider
+                            aria-label="标题下间距"
+                            minValue={0}
+                            maxValue={1.2}
+                            step={0.02}
+                            value={config.titleMarginBottom}
+                            onChange={(value) => onUpdate({ titleMarginBottom: value })}
                           />
                         </section>
 
@@ -438,20 +463,15 @@ export function GraphicTextConfigSheet({
                           </section>
                         )}
 
-                        <EdgeSetting
-                          label="顶部样式"
-                          value={config.topStyle}
-                          text={config.topText}
-                          onStyleChange={(topStyle) => onUpdate({ topStyle })}
-                          onTextChange={(topText) => onUpdate({ topText })}
-                        />
-                        <EdgeSetting
-                          label="底部样式"
-                          value={config.bottomStyle}
-                          text={config.bottomText}
-                          onStyleChange={(bottomStyle) => onUpdate({ bottomStyle })}
-                          onTextChange={(bottomText) => onUpdate({ bottomText })}
-                        />
+                        <section>
+                          <p className="mb-2 text-sm font-medium">顶部文案</p>
+                          <input
+                            value={config.topText}
+                            onChange={(event) => onUpdate({ topText: event.target.value })}
+                            placeholder="留空则显示「全文 xxx 字」"
+                            className="h-10 w-full rounded-lg border border-neutral-300 bg-neutral-50 px-3 text-sm outline-none"
+                          />
+                        </section>
                       </div>
                     </Drawer.Body>
 
@@ -472,45 +492,5 @@ export function GraphicTextConfigSheet({
         </Drawer.Backdrop>
       </Drawer>
     </>
-  )
-}
-
-interface EdgeSettingProps {
-  label: string
-  value: EdgeStyle
-  text: string
-  onStyleChange: (style: EdgeStyle) => void
-  onTextChange: (text: string) => void
-}
-
-function EdgeSetting({
-  label,
-  value,
-  text,
-  onStyleChange,
-  onTextChange,
-}: EdgeSettingProps) {
-  return (
-    <section>
-      <p className="mb-2 text-sm font-medium">{label}</p>
-      <div className="mb-2 grid grid-cols-3 gap-2">
-        {EDGE_OPTIONS.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            className={optionButtonClass(value === option.id)}
-            onClick={() => onStyleChange(option.id)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-      <input
-        value={text}
-        onChange={(event) => onTextChange(event.target.value)}
-        placeholder={`${label}文字（留空则不显示）`}
-        className="h-10 w-full rounded-lg border border-neutral-300 bg-neutral-50 px-3 text-sm outline-none"
-      />
-    </section>
   )
 }
