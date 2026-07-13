@@ -1,6 +1,6 @@
-import { Drawer, useOverlayState } from '@heroui/react'
 import { Check, Highlighter, ImagePlus, Palette, ScanEye, Type } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { GraphicConfigPreview } from './GraphicConfigPreview'
 import { GraphicHighlightEditor } from './GraphicHighlightEditor'
@@ -148,17 +148,7 @@ export function GraphicTextConfigSheet({
   onGenerate,
   onBackgroundUpload,
 }: GraphicTextConfigSheetProps) {
-  const isOpenRef = useRef(isOpen)
-  isOpenRef.current = isOpen
-
-  const state = useOverlayState({
-    isOpen,
-    onOpenChange: (open) => {
-      if (!open && isOpenRef.current) onOpenChange(false)
-    },
-  })
   const sheetRef = useRef<HTMLDivElement | null>(null)
-  const [sheetNode, setSheetNode] = useState<HTMLDivElement | null>(null)
   const [previewAreaHeight, setPreviewAreaHeight] = useState(0)
   const [previewReady, setPreviewReady] = useState(false)
   const [showSafeArea, setShowSafeArea] = useState(false)
@@ -184,8 +174,13 @@ export function GraphicTextConfigSheet({
   }, [config, previewAreaHeight])
 
   useEffect(() => {
-    if (isOpen !== state.isOpen) state.setOpen(isOpen)
-  }, [isOpen, state])
+    if (!isOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [isOpen])
 
   useEffect(() => {
     if (!isOpen) {
@@ -205,23 +200,9 @@ export function GraphicTextConfigSheet({
 
   useEffect(() => {
     if (!isOpen) return
-    const onVisible = () => {
-      if (document.visibilityState === 'visible' && isOpenRef.current) {
-        state.setOpen(true)
-      }
-    }
-    document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [isOpen, state])
-
-  useEffect(() => {
-    if (!isOpen) return
 
     const updatePreviewBounds = () => {
-      const anchor =
-        sheetNode?.closest('.drawer__dialog') ??
-        sheetRef.current ??
-        sheetNode
+      const anchor = sheetRef.current
       if (!anchor) return
       const sheetTop = anchor.getBoundingClientRect().top
       if (sheetTop <= 0) return
@@ -248,9 +229,8 @@ export function GraphicTextConfigSheet({
     const timer = window.setInterval(updatePreviewBounds, 100)
 
     const observer = new ResizeObserver(updatePreviewBounds)
-    if (sheetNode) observer.observe(sheetNode)
-    const dialog = sheetNode?.closest('.drawer__dialog')
-    if (dialog) observer.observe(dialog)
+    const anchor = sheetRef.current
+    if (anchor) observer.observe(anchor)
 
     window.addEventListener('resize', updatePreviewBounds)
     window.addEventListener('scroll', updatePreviewBounds, true)
@@ -267,7 +247,7 @@ export function GraphicTextConfigSheet({
       window.visualViewport?.removeEventListener('resize', updatePreviewBounds)
       window.visualViewport?.removeEventListener('scroll', updatePreviewBounds)
     }
-  }, [isOpen, sheetNode])
+  }, [isOpen])
 
   const handleGenerate = () => {
     onOpenChange(false)
@@ -293,44 +273,36 @@ export function GraphicTextConfigSheet({
       />
     ) : null
 
-  return (
-    <Drawer state={state}>
-      <Drawer.Backdrop isDismissable={false} className="graphic-config-backdrop">
-        {previewNode}
+  if (!isOpen) return null
 
-        <Drawer.Content placement="bottom" className="component-library-content">
-            <Drawer.Dialog className="component-library flex h-[min(520px,68dvh)] max-h-[68dvh] flex-col bg-white text-neutral-900">
-              <div
-                ref={(node) => {
-                  sheetRef.current = node
-                  setSheetNode(node)
-                }}
-                className="flex min-h-0 flex-1 flex-col"
+  const isCustomThemeColor = !THEME_COLORS.includes(config.themeColor)
+
+  const sheetContent = (
+    <div ref={sheetRef} className="graphic-config-sheet-panel component-library">
+      <div className="flex min-h-0 flex-1 flex-col">
+        {sheetView === 'highlight' ? (
+          <GraphicHighlightEditor
+            markdown={markdown}
+            highlightedCharKeys={highlightDraft}
+            onChange={setHighlightDraft}
+            onConfirm={handleHighlightConfirm}
+            onBack={() => setSheetView('main')}
+          />
+        ) : (
+          <>
+            <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-2">
+              <p className="text-sm font-semibold">生成配置</p>
+              <button
+                type="button"
+                aria-label="关闭"
+                className="component-done-btn"
+                onClick={() => onOpenChange(false)}
               >
-                {sheetView === 'highlight' ? (
-                  <GraphicHighlightEditor
-                    markdown={markdown}
-                    themeColor={config.themeColor}
-                    highlightedCharKeys={highlightDraft}
-                    onChange={setHighlightDraft}
-                    onConfirm={handleHighlightConfirm}
-                    onBack={() => setSheetView('main')}
-                  />
-                ) : (
-                  <>
-                    <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-2">
-                      <Drawer.Heading className="text-sm font-semibold">生成配置</Drawer.Heading>
-                      <button
-                        type="button"
-                        aria-label="关闭"
-                        className="component-done-btn"
-                        onClick={() => onOpenChange(false)}
-                      >
-                        <Check size={15} />
-                      </button>
-                    </div>
+                <Check size={15} />
+              </button>
+            </div>
 
-                    <Drawer.Body className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
                       <div className="flex flex-col gap-4 pb-2">
                         <section>
                           <div className="mb-2 flex items-center gap-2 text-sm font-medium">
@@ -430,12 +402,16 @@ export function GraphicTextConfigSheet({
                                 onClick={() => onUpdate({ themeColor: color })}
                               />
                             ))}
-                            <label className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-300 bg-white">
+                            <label
+                              className={`theme-color-palette-btn relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border ${
+                                isCustomThemeColor ? 'border-2 border-black' : 'border-neutral-300'
+                              }`}
+                            >
                               <input
                                 type="color"
                                 value={config.themeColor}
                                 onChange={(event) => onUpdate({ themeColor: event.target.value })}
-                                className="absolute inset-[-8px] size-14 cursor-pointer"
+                                className="absolute inset-[-8px] size-14 cursor-pointer opacity-0"
                                 aria-label="自定义主题色"
                               />
                             </label>
@@ -551,23 +527,28 @@ export function GraphicTextConfigSheet({
                           </label>
                         </section>
                       </div>
-                    </Drawer.Body>
+            </div>
 
-                    <div className="shrink-0 border-t border-neutral-200 bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">
-                      <button
-                        type="button"
-                        className="h-12 w-full rounded-xl bg-black text-sm font-semibold text-white active:bg-neutral-800"
-                        onClick={handleGenerate}
-                      >
-                        生成图文
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </Drawer.Dialog>
-          </Drawer.Content>
-        </Drawer.Backdrop>
-      </Drawer>
+            <div className="shrink-0 border-t border-neutral-200 bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">
+              <button
+                type="button"
+                className="h-12 w-full rounded-xl bg-black text-sm font-semibold text-white active:bg-neutral-800"
+                onClick={handleGenerate}
+              >
+                生成图文
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+
+  return createPortal(
+    <div className="graphic-config-root">
+      {previewNode && <div className="graphic-config-preview-layer">{previewNode}</div>}
+      {sheetContent}
+    </div>,
+    document.body,
   )
 }

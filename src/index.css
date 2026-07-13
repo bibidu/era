@@ -59,32 +59,59 @@ body.is-dragging {
   max-height: calc(100dvh - 14rem);
 }
 
-.graphic-config-backdrop.drawer__backdrop {
-  pointer-events: none !important;
+.graphic-config-root {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  pointer-events: none;
 }
 
-.graphic-config-backdrop .drawer__content {
-  z-index: 1 !important;
-  pointer-events: none !important;
+.graphic-config-sheet-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  display: flex;
+  max-height: min(520px, 68dvh);
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 16px 16px 0 0;
+  background: #ffffff;
+  color: #171717;
+  box-shadow: 0 -4px 24px rgb(0 0 0 / 0.12);
+  pointer-events: auto;
 }
 
-.graphic-config-backdrop .drawer__dialog {
-  pointer-events: auto !important;
-}
-
-.graphic-config-backdrop .graphic-config-preview {
-  position: absolute;
+.graphic-config-preview-layer {
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 10;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.graphic-config-preview {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
   padding: max(12px, env(safe-area-inset-top)) 8px 8px;
-  pointer-events: none;
   box-sizing: border-box;
+}
+
+.theme-color-palette-btn {
+  background: conic-gradient(
+    from 180deg,
+    #ef4444,
+    #f97316,
+    #eab308,
+    #22c55e,
+    #3b82f6,
+    #a855f7,
+    #ef4444
+  );
 }
 
 .graphic-config-preview-body {
@@ -95,7 +122,6 @@ body.is-dragging {
   gap: 8px;
   height: 100%;
   min-height: 0;
-  pointer-events: none;
 }
 
 .graphic-config-preview-indicator {
@@ -114,7 +140,6 @@ body.is-dragging {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  pointer-events: none;
 }
 
 .graphic-config-preview-nav {
@@ -131,9 +156,14 @@ body.is-dragging {
   background: rgb(255 255 255 / 0.95);
   color: rgb(38 38 38);
   box-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
-  pointer-events: auto;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+
+.graphic-config-preview-nav:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .graphic-config-preview-page {
@@ -150,18 +180,6 @@ body.is-dragging {
   left: 0;
   transform-origin: top left;
   pointer-events: none;
-}
-
-.graphic-config-preview-nav--portal {
-  position: fixed !important;
-  z-index: 10000 !important;
-  pointer-events: auto !important;
-  transform: translateY(-50%);
-}
-
-.graphic-config-preview-nav:disabled {
-  opacity: 0.35;
-  pointer-events: none !important;
 }
 
 .graphic-safe-area-corner {

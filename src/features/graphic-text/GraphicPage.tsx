@@ -322,7 +322,7 @@ export function GraphicPage({
                     block={block}
                     themeColor={config.themeColor}
                     highlightedKeys={highlightedKeys}
-                    enableHighlight={block.type !== 'title'}
+                    enableHighlight
                   />
                 )}
               </div>
