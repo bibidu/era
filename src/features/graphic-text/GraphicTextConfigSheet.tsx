@@ -1,6 +1,6 @@
 import { Drawer, useOverlayState } from '@heroui/react'
 import { Check, ImagePlus, Palette, Type } from 'lucide-react'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { GreySlider } from '../../components/GreySlider'
 import { GraphicPage } from './GraphicPage'
@@ -40,15 +40,58 @@ export function GraphicTextConfigSheet({
   onGenerate,
   onBackgroundUpload,
 }: GraphicTextConfigSheetProps) {
-  const state = useOverlayState({ isOpen, onOpenChange })
+  const isOpenRef = useRef(isOpen)
+  isOpenRef.current = isOpen
+
+  const state = useOverlayState({
+    isOpen,
+    onOpenChange: (open) => {
+      if (!open && isOpenRef.current) onOpenChange(false)
+    },
+  })
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const [previewBottom, setPreviewBottom] = useState(0)
   const previewPage = useMemo(() => {
     const pages = paginateMarkdown(markdown, config)
     return pages[0] ?? { index: 0, blocks: [] }
   }, [markdown, config])
 
   useEffect(() => {
-    if (state.isOpen !== isOpen) state.setOpen(isOpen)
+    if (isOpen !== state.isOpen) state.setOpen(isOpen)
   }, [isOpen, state])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && isOpenRef.current) {
+        state.setOpen(true)
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [isOpen, state])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const sheet = sheetRef.current
+    if (!sheet) return
+
+    const updatePreviewBounds = () => {
+      setPreviewBottom(sheet.getBoundingClientRect().height)
+    }
+
+    updatePreviewBounds()
+    const observer = new ResizeObserver(updatePreviewBounds)
+    observer.observe(sheet)
+    window.addEventListener('resize', updatePreviewBounds)
+    window.visualViewport?.addEventListener('resize', updatePreviewBounds)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', updatePreviewBounds)
+      window.visualViewport?.removeEventListener('resize', updatePreviewBounds)
+    }
+  }, [isOpen])
 
   const handleGenerate = () => {
     onOpenChange(false)
@@ -57,23 +100,22 @@ export function GraphicTextConfigSheet({
 
   return (
     <Drawer state={state}>
-      <Drawer.Backdrop isDismissable className="graphic-config-backdrop">
-        <div className="graphic-config-preview pointer-events-none flex min-h-0 flex-1 items-center justify-center px-4 pt-4">
-          <GraphicPage
-            page={previewPage}
-            config={config}
-            className="graphic-config-preview-page max-h-full w-[min(100%,17.5rem)] shadow-xl"
-          />
-        </div>
+      <Drawer.Backdrop isDismissable={false} className="graphic-config-backdrop">
+        {isOpen && previewBottom > 0 && (
+          <div className="graphic-config-preview" style={{ bottom: previewBottom }}>
+            <GraphicPage
+              page={previewPage}
+              config={config}
+              className="graphic-config-preview-page shadow-xl"
+            />
+          </div>
+        )}
 
         <Drawer.Content placement="bottom" className="component-library-content">
           <Drawer.Dialog className="component-library flex h-[min(520px,68dvh)] max-h-[68dvh] flex-col bg-white text-neutral-900">
-            <div className="flex min-h-0 flex-1 flex-col">
-              <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-3">
-                <div>
-                  <Drawer.Heading className="text-base font-semibold">生成配置</Drawer.Heading>
-                  <p className="mt-0.5 text-xs text-neutral-500">上方可实时预览，正文用 [[重点]] 标记主题色</p>
-                </div>
+            <div ref={sheetRef} className="flex min-h-0 flex-1 flex-col">
+              <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-2">
+                <Drawer.Heading className="text-sm font-semibold">生成配置</Drawer.Heading>
                 <button
                   type="button"
                   aria-label="关闭"
@@ -84,10 +126,10 @@ export function GraphicTextConfigSheet({
                 </button>
               </div>
 
-              <Drawer.Body className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-                <div className="flex flex-col gap-6 pb-3">
+              <Drawer.Body className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+                <div className="flex flex-col gap-5 pb-2">
                   <section>
-                    <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+                    <div className="mb-2 flex items-center gap-2 text-sm font-medium">
                       <Type size={16} />
                       字体配置
                     </div>
@@ -107,7 +149,7 @@ export function GraphicTextConfigSheet({
                     </select>
                   </section>
 
-                  <section className="touch-none">
+                  <section>
                     <div className="mb-1 flex items-center justify-between text-sm">
                       <span className="font-medium">标题字号</span>
                       <span className="text-neutral-500">{config.titleFontSize}px</span>
@@ -121,7 +163,7 @@ export function GraphicTextConfigSheet({
                     />
                   </section>
 
-                  <section className="touch-none">
+                  <section>
                     <div className="mb-1 flex items-center justify-between text-sm">
                       <span className="font-medium">正文字号</span>
                       <span className="text-neutral-500">{config.bodyFontSize}px</span>
@@ -136,7 +178,7 @@ export function GraphicTextConfigSheet({
                   </section>
 
                   <section>
-                    <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+                    <div className="mb-2 flex items-center gap-2 text-sm font-medium">
                       <Palette size={16} />
                       主题色
                     </div>
@@ -166,7 +208,7 @@ export function GraphicTextConfigSheet({
                   </section>
 
                   <section>
-                    <p className="mb-3 text-sm font-medium">页面模板</p>
+                    <p className="mb-2 text-sm font-medium">页面模板</p>
                     <div className="grid grid-cols-3 gap-2">
                       {TEMPLATE_OPTIONS.map((option) => (
                         <button
@@ -185,33 +227,35 @@ export function GraphicTextConfigSheet({
                     </div>
                   </section>
 
-                  <section>
-                    <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-                      <ImagePlus size={16} />
-                      参考图背景
-                    </div>
-                    <label className="flex min-h-24 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed border-neutral-300 bg-neutral-50">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(event) => {
-                          const file = event.target.files?.[0]
-                          if (file) onBackgroundUpload(file)
-                          event.target.value = ''
-                        }}
-                      />
-                      {config.backgroundUrl ? (
-                        <img
-                          src={config.backgroundUrl}
-                          alt="参考图"
-                          className="h-32 w-full object-cover"
+                  {config.template === 'reference' && (
+                    <section>
+                      <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                        <ImagePlus size={16} />
+                        参考图背景
+                      </div>
+                      <label className="flex min-h-24 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed border-neutral-300 bg-neutral-50">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(event) => {
+                            const file = event.target.files?.[0]
+                            if (file) onBackgroundUpload(file)
+                            event.target.value = ''
+                          }}
                         />
-                      ) : (
-                        <span className="text-sm text-neutral-500">上传参考图</span>
-                      )}
-                    </label>
-                  </section>
+                        {config.backgroundUrl ? (
+                          <img
+                            src={config.backgroundUrl}
+                            alt="参考图"
+                            className="h-32 w-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-sm text-neutral-500">上传参考图</span>
+                        )}
+                      </label>
+                    </section>
+                  )}
 
                   <EdgeSetting
                     label="顶部样式"
@@ -264,7 +308,7 @@ function EdgeSetting({
 }: EdgeSettingProps) {
   return (
     <section>
-      <p className="mb-3 text-sm font-medium">{label}</p>
+      <p className="mb-2 text-sm font-medium">{label}</p>
       <div className="mb-2 grid grid-cols-3 gap-2">
         {EDGE_OPTIONS.map((option) => (
           <button
