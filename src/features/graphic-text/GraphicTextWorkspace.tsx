@@ -212,7 +212,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
             <span className="line-clamp-[18] whitespace-pre-wrap">{markdown}</span>
           ) : (
             <span className="text-neutral-400">
-              {'# 输入标题\n\n正文可用 [[重点句子]] 标记主题色'}
+              {'# 输入标题\n\n正文内容支持 Markdown 语法'}
             </span>
           )}
         </button>

@@ -1,6 +1,6 @@
-import type { CSSProperties } from 'react'
+import { useMemo, type CSSProperties } from 'react'
 import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
-import { parseInlineHighlights, themeAlpha } from './inlineHighlight'
+import { buildCharHighlightSegments, themeAlpha } from './inlineHighlight'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 
 interface GraphicPageProps {
@@ -10,22 +10,27 @@ interface GraphicPageProps {
   showSafeArea?: boolean
 }
 
+function resolveStyleType(block: MarkdownBlock) {
+  return block.styleType ?? block.type
+}
+
 function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSProperties {
+  const styleType = resolveStyleType(block)
   const titleSize = `${(config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const bodySize = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
 
-  if (block.type === 'title') {
-    return { fontSize: titleSize, lineHeight: 1.22, fontWeight: 700 }
+  if (styleType === 'title') {
+    return { fontSize: titleSize, lineHeight: config.titleLineHeight, fontWeight: 700 }
   }
-  if (block.type === 'heading') {
+  if (styleType === 'heading') {
     return {
       fontSize: `calc(${titleSize} * .72)`,
-      lineHeight: 1.35,
+      lineHeight: config.titleLineHeight,
       fontWeight: 700,
-      marginTop: '1.2cqw',
+      marginTop: block.type === 'heading' ? '1.2cqw' : undefined,
     }
   }
-  return { fontSize: bodySize, lineHeight: 1.55, fontWeight: 400 }
+  return { fontSize: bodySize, lineHeight: config.bodyLineHeight, fontWeight: 400 }
 }
 
 function edgeClasses(style: GraphicTextConfig['topStyle']) {
@@ -36,16 +41,23 @@ function edgeClasses(style: GraphicTextConfig['topStyle']) {
 
 function HighlightedText({
   text,
+  block,
   themeColor,
+  highlightedKeys,
   enableHighlight,
 }: {
   text: string
+  block: MarkdownBlock
   themeColor: string
+  highlightedKeys: ReadonlySet<string>
   enableHighlight: boolean
 }) {
   if (!enableHighlight) return <>{text}</>
 
-  const segments = parseInlineHighlights(text)
+  const blockId = block.sourceBlockId ?? block.id
+  const charOffset = block.charOffset ?? 0
+  const segments = buildCharHighlightSegments(text, blockId, highlightedKeys, charOffset)
+
   return (
     <>
       {segments.map((segment, index) =>
@@ -105,7 +117,12 @@ export function GraphicPage({
   showSafeArea = false,
 }: GraphicPageProps) {
   const layout = getGraphicLayout(config)
-  const { percent, aspectRatio } = layout
+  const { percent, aspectRatio, hasTopBar, hasBottomBar } = layout
+  const highlightedKeys = useMemo(
+    () => new Set(config.highlightedCharKeys),
+    [config.highlightedCharKeys],
+  )
+
   const backgroundStyle: CSSProperties =
     config.template === 'reference' && config.backgroundUrl
       ? {
@@ -135,20 +152,22 @@ export function GraphicPage({
         } as CSSProperties
       }
     >
-      <div
-        className={`absolute z-10 flex items-center justify-between rounded-[1.2cqw] px-[2.6cqw] ${edgeClasses(config.topStyle)}`}
-        style={{
-          left: `${percent.safeX}%`,
-          right: `${percent.safeX}%`,
-          top: `${percent.topBarTop}%`,
-          height: `${percent.topBarHeight}%`,
-        }}
-      >
-        <span className="truncate text-[2.3cqw] font-semibold">{config.topText || '图文笔记'}</span>
-        <span className="rounded-full bg-black px-[1.8cqw] py-[.7cqw] text-[1.8cqw] font-semibold text-white">
-          {String(page.index + 1).padStart(2, '0')}
-        </span>
-      </div>
+      {hasTopBar && (
+        <div
+          className={`absolute z-10 flex items-center justify-between rounded-[1.2cqw] px-[2.6cqw] ${edgeClasses(config.topStyle)}`}
+          style={{
+            left: `${percent.safeX}%`,
+            right: `${percent.safeX}%`,
+            top: `${percent.topBarTop}%`,
+            height: `${percent.topBarHeight}%`,
+          }}
+        >
+          <span className="truncate text-[2.3cqw] font-semibold">{config.topText}</span>
+          <span className="rounded-full bg-black px-[1.8cqw] py-[.7cqw] text-[1.8cqw] font-semibold text-white">
+            {String(page.index + 1).padStart(2, '0')}
+          </span>
+        </div>
+      )}
 
       <div
         className="absolute overflow-hidden"
@@ -183,8 +202,10 @@ export function GraphicPage({
                 )}
                 <HighlightedText
                   text={block.text}
+                  block={block}
                   themeColor={config.themeColor}
-                  enableHighlight={block.type !== 'title'}
+                  highlightedKeys={highlightedKeys}
+                  enableHighlight={block.type !== 'title' && block.type !== 'quote'}
                 />
               </div>
             ))
@@ -194,18 +215,20 @@ export function GraphicPage({
 
       {showSafeArea && <SafeAreaGuide layout={layout} />}
 
-      <div
-        className={`absolute flex items-center justify-between rounded-[1cqw] px-[2.6cqw] ${edgeClasses(config.bottomStyle)}`}
-        style={{
-          left: `${percent.safeX}%`,
-          right: `${percent.safeX}%`,
-          bottom: `${percent.footerBottom}%`,
-          height: `${percent.footerHeight}%`,
-        }}
-      >
-        <span className="truncate text-[1.8cqw]">{config.bottomText || '滑动查看下一页'}</span>
-        <span className="text-[1.8cqw] font-medium">{page.index + 1}</span>
-      </div>
+      {hasBottomBar && (
+        <div
+          className={`absolute flex items-center justify-between rounded-[1cqw] px-[2.6cqw] ${edgeClasses(config.bottomStyle)}`}
+          style={{
+            left: `${percent.safeX}%`,
+            right: `${percent.safeX}%`,
+            bottom: `${percent.footerBottom}%`,
+            height: `${percent.footerHeight}%`,
+          }}
+        >
+          <span className="truncate text-[1.8cqw]">{config.bottomText}</span>
+          <span className="text-[1.8cqw] font-medium">{page.index + 1}</span>
+        </div>
+      )}
 
       <div
         className="absolute left-[3.2%] top-[3.2%] size-[1.5cqw] bg-[var(--graphic-theme)]"
