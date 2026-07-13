@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { GreySlider } from '../../components/GreySlider'
+import { GraphicConfigPreview } from './GraphicConfigPreview'
 import { GraphicHighlightEditor } from './GraphicHighlightEditor'
-import { GraphicPage } from './GraphicPage'
 import { computeGraphicPageDisplaySize } from './graphicPreviewLayout'
 import { getGraphicLayout, paginateMarkdown } from './layout'
 import type { GraphicTemplate, GraphicTextConfig } from './types'
@@ -176,22 +176,14 @@ export function GraphicTextConfigSheet({
 
   const previewNode =
     previewReady && previewAreaHeight > 0 && previewPageSize ? (
-      <div className="graphic-config-preview" style={{ height: previewAreaHeight }}>
-        <div className="graphic-config-preview-pager graphic-pager flex snap-x snap-mandatory">
-          {previewPages.map((page) => (
-            <div key={page.index} className="graphic-config-preview-slide">
-              <GraphicPage
-                page={page}
-                config={config}
-                markdown={markdown}
-                showSafeArea={showSafeArea}
-                displayWidth={previewPageSize.width}
-                className="rounded-xl shadow-lg"
-              />
-            </div>
-          ))}
-        </div>
-      </div>
+      <GraphicConfigPreview
+        pages={previewPages}
+        config={config}
+        markdown={markdown}
+        previewAreaHeight={previewAreaHeight}
+        pageWidth={previewPageSize.width}
+        showSafeArea={showSafeArea}
+      />
     ) : null
 
   return (
@@ -276,7 +268,7 @@ export function GraphicTextConfigSheet({
                           </div>
                           <GreySlider
                             aria-label="正文字号"
-                            minValue={14}
+                            minValue={10}
                             maxValue={32}
                             value={config.bodyFontSize}
                             onChange={(value) => onUpdate({ bodyFontSize: value })}

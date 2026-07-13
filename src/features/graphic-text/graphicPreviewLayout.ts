@@ -16,4 +16,5 @@ export function computeGraphicPageDisplaySize(
   return { width, height }
 }
 
-export const TOP_BAR_FONT_SIZE_PX = 14
+export const TOP_BAR_FONT_SIZE_PX = 10
+export const HEADING_FONT_SCALE = 0.58
