@@ -109,13 +109,21 @@ interface ConfigSelectProps {
   options: readonly number[]
   onChange: (value: number) => void
   format?: (value: number) => string
+  labelClassName?: string
 }
 
-function ConfigSelect({ label, value, options, onChange, format }: ConfigSelectProps) {
+function ConfigSelect({
+  label,
+  value,
+  options,
+  onChange,
+  format,
+  labelClassName = 'w-[4.6rem]',
+}: ConfigSelectProps) {
   const displayValue = nearestOption(value, options)
   return (
     <label className="flex min-w-0 flex-1 items-center gap-2 text-sm">
-      <span className="w-[4.6rem] shrink-0 text-neutral-600">{label}</span>
+      <span className={`${labelClassName} shrink-0 text-neutral-600`}>{label}</span>
       <select
         value={displayValue}
         onChange={(event) => onChange(Number(event.target.value))}
@@ -341,14 +349,16 @@ export function GraphicTextConfigSheet({
                         <section className="flex flex-col gap-2">
                           <div className="flex min-w-0 items-center gap-2">
                             <ConfigSelect
-                              label="标题字号"
+                              label="标题"
+                              labelClassName="w-9"
                               value={config.titleFontSize}
                               options={TITLE_FONT_SIZE_OPTIONS}
                               onChange={(value) => onUpdate({ titleFontSize: value })}
                               format={(value) => `${value}px`}
                             />
                             <ConfigSelect
-                              label="正文字号"
+                              label="正文"
+                              labelClassName="w-9"
                               value={config.bodyFontSize}
                               options={BODY_FONT_SIZE_OPTIONS}
                               onChange={(value) => onUpdate({ bodyFontSize: value })}
@@ -443,7 +453,7 @@ export function GraphicTextConfigSheet({
 
                         <section>
                           <p className="mb-2 text-sm font-medium">图片比例</p>
-                          <div className="component-scroll-row -mx-1 flex items-end gap-1 overflow-x-auto px-1 py-1">
+                          <div className="component-scroll-row flex items-end gap-0.5 overflow-x-auto py-1">
                             {GRAPHIC_ASPECT_RATIO_OPTIONS.map((option) => (
                               <AspectRatioOption
                                 key={option.id}
