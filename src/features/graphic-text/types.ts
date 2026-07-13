@@ -16,6 +16,8 @@ export interface GraphicTextConfig {
   bodyFontSize: number
   titleLineHeight: number
   bodyLineHeight: number
+  titleMarginTop: number
+  titleMarginBottom: number
   headingMarginTop: number
   headingMarginBottom: number
   themeColor: string
@@ -50,6 +52,8 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   bodyFontSize: 13,
   titleLineHeight: 1.2,
   bodyLineHeight: 1.48,
+  titleMarginTop: 0.28,
+  titleMarginBottom: 0.28,
   headingMarginTop: 0.28,
   headingMarginBottom: 0.28,
   themeColor: '#FACC15',

@@ -26,7 +26,9 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
   const titleUnit = `${(config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const gap = '1.1cqw'
 
-  if (styleType === 'title') return `calc(${titleUnit} * 0.46 + ${gap})`
+  if (styleType === 'title') {
+    return `calc(${titleUnit} * ${config.titleMarginBottom + 0.18} + ${gap})`
+  }
   if (styleType === 'heading') {
     return `calc(${titleUnit} * ${HEADING_FONT_SCALE} * ${config.headingMarginBottom + 0.18} + ${gap})`
   }
@@ -45,6 +47,8 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
       fontSize: titleSize,
       lineHeight: config.titleLineHeight,
       fontWeight: 700,
+      marginTop:
+        block.type === 'title' ? `calc(${titleSize} * ${config.titleMarginTop})` : undefined,
       marginBottom,
     }
   }

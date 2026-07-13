@@ -55,8 +55,8 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
       size: config.titleFontSize * exportScale,
       weight: 700,
       lineHeight: config.titleLineHeight,
-      spacing: 0.28,
-      marginBefore: 0,
+      spacing: config.titleMarginBottom,
+      marginBefore: config.titleMarginTop,
     }
   }
   if (styleType === 'heading') {
@@ -196,7 +196,7 @@ async function drawPage(
 
   for (const block of page.blocks) {
     const spec = blockSpec(block, config, exportScale)
-    if (block.type === 'heading') {
+    if (block.type === 'title' || block.type === 'heading') {
       y += spec.size * spec.marginBefore
     }
 
