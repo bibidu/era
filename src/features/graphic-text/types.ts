@@ -58,7 +58,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   headingMarginBottom: 0.28,
   themeColor: '#FACC15',
   aspectRatio: '9:16',
-  template: 'solid',
+  template: 'grid',
   topText: '',
   backgroundUrl: null,
   highlightedCharKeys: [],

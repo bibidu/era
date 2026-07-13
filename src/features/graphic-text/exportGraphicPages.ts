@@ -4,7 +4,7 @@ import { FONT_OPTIONS } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
 import { buildCharHighlightSegments, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
 import { HEADING_FONT_SCALE, TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
-import { resolveTopBarText } from './topBar'
+import { resolveTopBarParts } from './topBar'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -151,7 +151,7 @@ async function drawPage(
     exportScale,
   } = layout
   const highlightedKeys = new Set(config.highlightedCharKeys)
-  const topBarText = resolveTopBarText(config, markdown)
+  const topBar = resolveTopBarParts(config, markdown)
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
@@ -195,9 +195,32 @@ async function drawPage(
   ctx.stroke()
 
   ctx.fillStyle = '#525252'
-  ctx.font = `400 ${Math.round(TOP_BAR_FONT_SIZE_PX * exportScale)}px ${config.fontFamily}`
+  const topBarFontSize = Math.round(TOP_BAR_FONT_SIZE_PX * exportScale)
+  ctx.font = `400 ${topBarFontSize}px ${config.fontFamily}`
   ctx.textBaseline = 'bottom'
-  ctx.fillText(topBarText, edgeX, underlineY - 8, edgeWidth)
+  const topBarTextY = underlineY - 8
+
+  if (topBar.custom) {
+    const gap = Math.max(6, Math.round(8 * exportScale))
+    const dividerWidth = Math.max(1, Math.round(exportScale))
+    const dividerHeight = Math.round(topBarFontSize * 0.85)
+    const countWidth = ctx.measureText(topBar.countText).width
+    const customMaxWidth = edgeWidth - countWidth - gap * 2 - dividerWidth
+    let customText = topBar.custom
+    while (customText.length > 1 && ctx.measureText(`${customText}…`).width > customMaxWidth) {
+      customText = customText.slice(0, -1)
+    }
+    if (customText !== topBar.custom) customText += '…'
+    const customWidth = ctx.measureText(customText).width
+    ctx.fillText(customText, edgeX, topBarTextY)
+    const dividerX = edgeX + customWidth + gap
+    ctx.fillStyle = '#D4D4D4'
+    ctx.fillRect(dividerX, topBarTextY - dividerHeight, dividerWidth, dividerHeight)
+    ctx.fillStyle = '#525252'
+    ctx.fillText(topBar.countText, dividerX + gap + dividerWidth, topBarTextY)
+  } else {
+    ctx.fillText(topBar.countText, edgeX, topBarTextY, edgeWidth)
+  }
 
   let y = safeTop
   const listInset = (size: number) => size * 1.35

@@ -14,6 +14,11 @@ import {
 } from './configSelectOptions'
 import { computeConfigPreviewLayout } from './graphicPreviewLayout'
 import { getGraphicLayout, paginateMarkdown } from './layout'
+import {
+  clampSheetHeight,
+  computeDefaultSheetHeight,
+  getViewportHeight,
+} from './topBar'
 import type { GraphicTemplate, GraphicTextConfig } from './types'
 import { GRAPHIC_ASPECT_RATIO_OPTIONS } from './types'
 
@@ -149,13 +154,14 @@ export function GraphicTextConfigSheet({
   onBackgroundUpload,
 }: GraphicTextConfigSheetProps) {
   const sheetRef = useRef<HTMLDivElement | null>(null)
-  const [previewAreaHeight, setPreviewAreaHeight] = useState(0)
-  const [previewReady, setPreviewReady] = useState(false)
+  const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
+  const [viewportHeight, setViewportHeight] = useState(getViewportHeight)
+  const [sheetHeight, setSheetHeight] = useState(computeDefaultSheetHeight)
   const [showSafeArea, setShowSafeArea] = useState(false)
   const [sheetView, setSheetView] = useState<ConfigSheetView>('main')
   const [highlightDraft, setHighlightDraft] = useState<string[]>(config.highlightedCharKeys)
-  const stableCountRef = useRef(0)
-  const lastHeightRef = useRef(0)
+
+  const previewAreaHeight = Math.max(0, viewportHeight - sheetHeight)
 
   const previewPages = useMemo(() => paginateMarkdown(markdown, config), [markdown, config])
   const previewConfig = useMemo(
@@ -185,10 +191,23 @@ export function GraphicTextConfigSheet({
   useEffect(() => {
     if (!isOpen) {
       setSheetView('main')
-      setPreviewReady(false)
-      setPreviewAreaHeight(0)
-      stableCountRef.current = 0
-      lastHeightRef.current = 0
+      return
+    }
+
+    const syncViewport = () => {
+      const nextViewport = getViewportHeight()
+      setViewportHeight(nextViewport)
+      setSheetHeight((current) => clampSheetHeight(current, nextViewport))
+    }
+
+    syncViewport()
+    setSheetHeight(computeDefaultSheetHeight(getViewportHeight()))
+    window.addEventListener('resize', syncViewport)
+    window.visualViewport?.addEventListener('resize', syncViewport)
+
+    return () => {
+      window.removeEventListener('resize', syncViewport)
+      window.visualViewport?.removeEventListener('resize', syncViewport)
     }
   }, [isOpen])
 
@@ -198,56 +217,27 @@ export function GraphicTextConfigSheet({
     }
   }, [sheetView, config.highlightedCharKeys])
 
-  useEffect(() => {
-    if (!isOpen) return
+  const handleResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    resizeRef.current = { startY: event.clientY, startHeight: sheetHeight }
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
 
-    const updatePreviewBounds = () => {
-      const anchor = sheetRef.current
-      if (!anchor) return
-      const sheetTop = anchor.getBoundingClientRect().top
-      if (sheetTop <= 0) return
+  const handleResizeMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!resizeRef.current) return
+    const delta = resizeRef.current.startY - event.clientY
+    const nextViewport = getViewportHeight()
+    const nextHeight = clampSheetHeight(resizeRef.current.startHeight + delta, nextViewport)
+    setViewportHeight(nextViewport)
+    setSheetHeight(nextHeight)
+  }
 
-      if (Math.abs(sheetTop - lastHeightRef.current) < 1) {
-        stableCountRef.current += 1
-      } else {
-        stableCountRef.current = 0
-        lastHeightRef.current = sheetTop
-        setPreviewReady(false)
-      }
-
-      setPreviewAreaHeight(sheetTop)
-      if (stableCountRef.current >= 2) {
-        setPreviewReady(true)
-      }
+  const handleResizeEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    resizeRef.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
     }
-
-    updatePreviewBounds()
-    const raf1 = window.requestAnimationFrame(updatePreviewBounds)
-    const raf2 = window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(updatePreviewBounds)
-    })
-    const timer = window.setInterval(updatePreviewBounds, 100)
-
-    const observer = new ResizeObserver(updatePreviewBounds)
-    const anchor = sheetRef.current
-    if (anchor) observer.observe(anchor)
-
-    window.addEventListener('resize', updatePreviewBounds)
-    window.addEventListener('scroll', updatePreviewBounds, true)
-    window.visualViewport?.addEventListener('resize', updatePreviewBounds)
-    window.visualViewport?.addEventListener('scroll', updatePreviewBounds)
-
-    return () => {
-      window.cancelAnimationFrame(raf1)
-      window.cancelAnimationFrame(raf2)
-      window.clearInterval(timer)
-      observer.disconnect()
-      window.removeEventListener('resize', updatePreviewBounds)
-      window.removeEventListener('scroll', updatePreviewBounds, true)
-      window.visualViewport?.removeEventListener('resize', updatePreviewBounds)
-      window.visualViewport?.removeEventListener('scroll', updatePreviewBounds)
-    }
-  }, [isOpen])
+  }
 
   const handleGenerate = () => {
     onOpenChange(false)
@@ -260,7 +250,7 @@ export function GraphicTextConfigSheet({
   }
 
   const previewNode =
-    previewReady && previewAreaHeight > 0 && previewLayout ? (
+    previewAreaHeight > 0 && previewLayout ? (
       <GraphicConfigPreview
         pages={previewPages}
         config={previewConfig}
@@ -278,7 +268,23 @@ export function GraphicTextConfigSheet({
   const isCustomThemeColor = !THEME_COLORS.includes(config.themeColor)
 
   const sheetContent = (
-    <div ref={sheetRef} className="graphic-config-sheet-panel component-library">
+    <div
+      ref={sheetRef}
+      className="graphic-config-sheet-panel component-library"
+      style={{ height: sheetHeight }}
+    >
+      <div
+        className="graphic-config-sheet-handle"
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="调节面板高度"
+        onPointerDown={handleResizeStart}
+        onPointerMove={handleResizeMove}
+        onPointerUp={handleResizeEnd}
+        onPointerCancel={handleResizeEnd}
+      >
+        <span className="graphic-config-sheet-handle-bar" />
+      </div>
       <div className="flex min-h-0 flex-1 flex-col">
         {sheetView === 'highlight' ? (
           <GraphicHighlightEditor
@@ -546,7 +552,11 @@ export function GraphicTextConfigSheet({
 
   return createPortal(
     <div className="graphic-config-root">
-      {previewNode && <div className="graphic-config-preview-layer">{previewNode}</div>}
+      {previewNode && (
+        <div className="graphic-config-preview-layer" style={{ height: previewAreaHeight }}>
+          {previewNode}
+        </div>
+      )}
       {sheetContent}
     </div>,
     document.body,

@@ -2,7 +2,7 @@ import { useMemo, type CSSProperties } from 'react'
 import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
 import { HEADING_FONT_SCALE, TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
 import { buildCharHighlightSegments, themeAlpha } from './inlineHighlight'
-import { resolveTopBarText } from './topBar'
+import { resolveTopBarParts } from './topBar'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 
 interface GraphicPageProps {
@@ -190,7 +190,7 @@ export function GraphicPage({
 }: GraphicPageProps) {
   const layout = getGraphicLayout(config)
   const { percent, aspectRatio } = layout
-  const topBarText = resolveTopBarText(config, markdown)
+  const topBar = resolveTopBarParts(config, markdown)
   const highlightedKeys = useMemo(
     () => new Set(config.highlightedCharKeys),
     [config.highlightedCharKeys],
@@ -227,7 +227,7 @@ export function GraphicPage({
       }
     >
       <div
-        className="absolute z-10 flex items-end border-b border-neutral-300"
+        className="absolute z-10 flex min-w-0 items-end gap-2 border-b border-neutral-300"
         style={{
           left: `${percent.safeX}%`,
           right: `${percent.safeX}%`,
@@ -236,12 +236,33 @@ export function GraphicPage({
           paddingBottom: '6px',
         }}
       >
-        <span
-          className="truncate font-normal text-neutral-600"
-          style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px` }}
-        >
-          {topBarText}
-        </span>
+        {topBar.custom ? (
+          <>
+            <span
+              className="min-w-0 truncate font-normal text-neutral-600"
+              style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px` }}
+            >
+              {topBar.custom}
+            </span>
+            <span
+              className="mb-1 h-3 w-px shrink-0 bg-neutral-300"
+              aria-hidden
+            />
+            <span
+              className="shrink-0 font-normal text-neutral-600"
+              style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px` }}
+            >
+              {topBar.countText}
+            </span>
+          </>
+        ) : (
+          <span
+            className="truncate font-normal text-neutral-600"
+            style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px` }}
+          >
+            {topBar.countText}
+          </span>
+        )}
       </div>
 
       <div
