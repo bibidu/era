@@ -1,6 +1,6 @@
 import { getGraphicLayout } from './layout'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
-import { FONT_OPTIONS } from '../../data/fonts'
+import { getFontById } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
 import { buildCharHighlightSegments, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
 import { HEADING_FONT_SCALE, TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
@@ -199,6 +199,10 @@ async function drawPage(
   ctx.font = `400 ${topBarFontSize}px ${config.fontFamily}`
   ctx.textBaseline = 'bottom'
   const topBarTextY = underlineY - 8
+  const topBarMetrics = ctx.measureText(topBar.countText || '文')
+  const topBarAscent = topBarMetrics.actualBoundingBoxAscent ?? topBarFontSize * 0.85
+  const topBarDescent = topBarMetrics.actualBoundingBoxDescent ?? topBarFontSize * 0.15
+  const topBarMidY = topBarTextY - (topBarAscent + topBarDescent) / 2
 
   if (topBar.custom) {
     const gap = Math.max(6, Math.round(8 * exportScale))
@@ -215,7 +219,7 @@ async function drawPage(
     ctx.fillText(customText, edgeX, topBarTextY)
     const dividerX = edgeX + customWidth + gap
     ctx.fillStyle = '#D4D4D4'
-    ctx.fillRect(dividerX, topBarTextY - dividerHeight, dividerWidth, dividerHeight)
+    ctx.fillRect(dividerX, topBarMidY - dividerHeight / 2, dividerWidth, dividerHeight)
     ctx.fillStyle = '#525252'
     ctx.fillText(topBar.countText, dividerX + gap + dividerWidth, topBarTextY)
   } else {
@@ -303,11 +307,15 @@ export async function exportGraphicPages(
   markdown: string,
   onProgress?: (current: number, total: number) => void,
 ) {
-  const font = FONT_OPTIONS.find((item) => item.id === config.fontId)
-  if (font && font.source !== 'system') {
-    const sample = pages.flatMap((page) => page.blocks.map((block) => block.text)).join('')
-    await ensureFontReady(font, sample || font.sample)
-  }
+  const sample = pages.flatMap((page) => page.blocks.map((block) => block.text)).join('')
+  const fonts = [getFontById(config.chineseFontId), getFontById(config.englishFontId)]
+  const uniqueFonts = [...new Map(fonts.map((font) => [font.id, font])).values()]
+
+  await Promise.all(
+    uniqueFonts
+      .filter((font) => font.source !== 'system')
+      .map((font) => ensureFontReady(font, sample || font.sample)),
+  )
 
   const blobs: Blob[] = []
   for (let index = 0; index < pages.length; index += 1) {

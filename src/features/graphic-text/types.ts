@@ -1,3 +1,5 @@
+import { composeFontFamily } from '../../data/fonts'
+
 export type GraphicTemplate = 'reference' | 'solid' | 'grid'
 export type GraphicAspectRatio = '3:4' | '1:1' | '4:3' | '9:16' | '16:9'
 
@@ -10,7 +12,8 @@ export const GRAPHIC_ASPECT_RATIO_OPTIONS: { id: GraphicAspectRatio; label: stri
 ]
 
 export interface GraphicTextConfig {
-  fontId: string
+  chineseFontId: string
+  englishFontId: string
   fontFamily: string
   titleFontSize: number
   bodyFontSize: number
@@ -46,8 +49,9 @@ export interface GraphicTextPage {
 }
 
 export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
-  fontId: 'song',
-  fontFamily: '"Noto Serif SC", serif',
+  chineseFontId: 'song',
+  englishFontId: 'system',
+  fontFamily: composeFontFamily('song', 'system'),
   titleFontSize: 56,
   bodyFontSize: 13,
   titleLineHeight: 1.2,

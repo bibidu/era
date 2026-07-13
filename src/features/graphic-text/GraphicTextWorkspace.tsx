@@ -6,7 +6,7 @@ import { GraphicTextConfigSheet } from './GraphicTextConfigSheet'
 import { exportGraphicPages, saveGraphicPages } from './exportGraphicPages'
 import { paginateMarkdown, getGraphicLayout } from './layout'
 import { computeWorkspacePagerPageSize } from './graphicPreviewLayout'
-import { FONT_OPTIONS } from '../../data/fonts'
+import { getFontById } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
 import {
   DEFAULT_GRAPHIC_TEXT_CONFIG,
@@ -43,10 +43,14 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   }, [defaultBackgroundUrl, config.backgroundUrl])
 
   useEffect(() => {
-    const font = FONT_OPTIONS.find((item) => item.id === config.fontId)
-    if (!font || font.source === 'system') return
-    void ensureFontReady(font, markdown || font.sample)
-  }, [config.fontId, markdown])
+    const fonts = [getFontById(config.chineseFontId), getFontById(config.englishFontId)]
+    const uniqueFonts = [...new Map(fonts.map((font) => [font.id, font])).values()]
+    uniqueFonts
+      .filter((font) => font.source !== 'system')
+      .forEach((font) => {
+        void ensureFontReady(font, markdown || font.sample)
+      })
+  }, [config.chineseFontId, config.englishFontId, markdown])
 
   const estimatedPages = useMemo(
     () => paginateMarkdown(markdown, config),
