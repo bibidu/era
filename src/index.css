@@ -42,6 +42,23 @@ body.is-dragging {
   image-orientation: from-image;
 }
 
+.graphic-pager {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.graphic-pager::-webkit-scrollbar {
+  display: none;
+}
+
+.graphic-pager .graphic-page {
+  width: min(calc(100vw - 2rem), calc((100dvh - 14rem) * 0.75));
+  height: auto;
+  max-width: 100%;
+  aspect-ratio: 3 / 4;
+}
+
 .sheet-action-bar {
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
   background: #ffffff;
