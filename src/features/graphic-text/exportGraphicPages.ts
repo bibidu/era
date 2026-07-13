@@ -68,6 +68,15 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
       marginBefore: config.headingMarginTop,
     }
   }
+  if (styleType === 'quote') {
+    return {
+      size: config.bodyFontSize * exportScale,
+      weight: 700,
+      lineHeight: config.bodyLineHeight,
+      spacing: 0.08,
+      marginBefore: 0,
+    }
+  }
   return {
     size: config.bodyFontSize * exportScale,
     weight: 400,
@@ -192,6 +201,7 @@ async function drawPage(
 
   let y = safeTop
   const listInset = (size: number) => size * 1.35
+  const quoteInset = (size: number) => size * 0.55
   const blockGap = width * 0.011
 
   for (const block of page.blocks) {
@@ -201,24 +211,38 @@ async function drawPage(
     }
 
     ctx.font = `${spec.weight} ${spec.size}px ${config.fontFamily}`
-    ctx.textBaseline = 'top'
     const plainText = stripHighlightMarkers(block.text)
     const blockId = block.sourceBlockId ?? block.id
     const charOffset = block.charOffset ?? 0
-    const inset = block.type === 'list' ? listInset(spec.size) : 0
+    const styleType = resolveStyleType(block)
+    const inset =
+      block.type === 'list'
+        ? listInset(spec.size)
+        : block.type === 'quote' || styleType === 'quote'
+          ? quoteInset(spec.size)
+          : 0
     const enableHighlight = block.type !== 'title'
     const segments = enableHighlight
       ? buildCharHighlightSegments(block.text, blockId, highlightedKeys, charOffset)
       : [{ text: plainText, highlighted: false }]
     const lineHeight = spec.size * spec.lineHeight
+    const textMetrics = ctx.measureText(plainText || '文')
+    const ascent = textMetrics.actualBoundingBoxAscent ?? spec.size * 0.88
+    const descent = textMetrics.actualBoundingBoxDescent ?? spec.size * 0.12
 
     if (block.type === 'list') {
       const bulletRadius = spec.size * 0.16
-      const centerY = y + lineHeight / 2
+      const centerY = y + ascent * 0.48
       ctx.fillStyle = '#262626'
       ctx.beginPath()
       ctx.arc(safeX + bulletRadius * 2, centerY, bulletRadius, 0, Math.PI * 2)
       ctx.fill()
+    }
+
+    if (block.type === 'quote') {
+      const barWidth = Math.max(3, spec.size * 0.12)
+      ctx.fillStyle = config.themeColor
+      ctx.fillRect(safeX, y, barWidth, ascent + descent)
     }
 
     drawHighlightedLine(

@@ -64,6 +64,14 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
       marginBottom,
     }
   }
+  if (styleType === 'quote') {
+    return {
+      fontSize: bodySize,
+      lineHeight: config.bodyLineHeight,
+      fontWeight: 700,
+      marginBottom,
+    }
+  }
   return {
     fontSize: bodySize,
     lineHeight: config.bodyLineHeight,
@@ -233,6 +241,27 @@ export function GraphicPage({
                       <span className="size-[0.32em] rounded-full bg-neutral-800" />
                     </span>
                     <span className="min-w-0 flex-1">
+                      <HighlightedText
+                        text={block.text}
+                        block={block}
+                        themeColor={config.themeColor}
+                        highlightedKeys={highlightedKeys}
+                        enableHighlight
+                      />
+                    </span>
+                  </div>
+                ) : resolveStyleType(block) === 'quote' ? (
+                  <div className="flex gap-[1.5cqw]">
+                    {block.type === 'quote' ? (
+                      <span
+                        className="w-[0.55cqw] shrink-0 self-stretch rounded-full"
+                        style={{ backgroundColor: config.themeColor }}
+                        aria-hidden
+                      />
+                    ) : (
+                      <span className="w-[0.55cqw] shrink-0" aria-hidden />
+                    )}
+                    <span className="min-w-0 flex-1 font-bold">
                       <HighlightedText
                         text={block.text}
                         block={block}
