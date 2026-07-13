@@ -18,6 +18,35 @@ function resolveStyleType(block: MarkdownBlock) {
   return block.styleType ?? block.type
 }
 
+type RenderUnit =
+  | { kind: 'block'; block: MarkdownBlock }
+  | { kind: 'quote'; blocks: MarkdownBlock[] }
+
+function buildRenderUnits(blocks: MarkdownBlock[]): RenderUnit[] {
+  const units: RenderUnit[] = []
+
+  for (const block of blocks) {
+    const styleType = resolveStyleType(block)
+    if (styleType === 'quote') {
+      const sourceId = block.sourceBlockId ?? block.id
+      const last = units[units.length - 1]
+      if (
+        last?.kind === 'quote' &&
+        (last.blocks[0].sourceBlockId ?? last.blocks[0].id) === sourceId
+      ) {
+        last.blocks.push(block)
+      } else {
+        units.push({ kind: 'quote', blocks: [block] })
+      }
+      continue
+    }
+
+    units.push({ kind: 'block', block })
+  }
+
+  return units
+}
+
 function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string | undefined {
   if (!block.isBlockEnd) return undefined
 
@@ -230,7 +259,44 @@ export function GraphicPage({
               输入 Markdown 内容后生成
             </div>
           ) : (
-            page.blocks.map((block) => (
+            buildRenderUnits(page.blocks).map((unit) => {
+              if (unit.kind === 'quote') {
+                const firstBlock = unit.blocks[0]
+                const lastBlock = unit.blocks[unit.blocks.length - 1]
+                return (
+                  <div
+                    key={firstBlock.id}
+                    style={{
+                      ...blockStyle(firstBlock, config),
+                      marginBottom: blockEndMargin(lastBlock, config),
+                    }}
+                  >
+                    <div className="flex gap-[1.5cqw]">
+                      <span
+                        className="w-[0.55cqw] shrink-0 self-stretch rounded-full"
+                        style={{ backgroundColor: config.themeColor }}
+                        aria-hidden
+                      />
+                      <div className="min-w-0 flex-1 font-bold">
+                        {unit.blocks.map((block) => (
+                          <div key={block.id}>
+                            <HighlightedText
+                              text={block.text}
+                              block={block}
+                              themeColor={config.themeColor}
+                              highlightedKeys={highlightedKeys}
+                              enableHighlight
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+
+              const block = unit.block
+              return (
               <div key={block.id} style={blockStyle(block, config)}>
                 {block.type === 'list' ? (
                   <div className="flex gap-[1.5cqw]">
@@ -250,27 +316,6 @@ export function GraphicPage({
                       />
                     </span>
                   </div>
-                ) : resolveStyleType(block) === 'quote' ? (
-                  <div className="flex gap-[1.5cqw]">
-                    {block.type === 'quote' ? (
-                      <span
-                        className="w-[0.55cqw] shrink-0 self-stretch rounded-full"
-                        style={{ backgroundColor: config.themeColor }}
-                        aria-hidden
-                      />
-                    ) : (
-                      <span className="w-[0.55cqw] shrink-0" aria-hidden />
-                    )}
-                    <span className="min-w-0 flex-1 font-bold">
-                      <HighlightedText
-                        text={block.text}
-                        block={block}
-                        themeColor={config.themeColor}
-                        highlightedKeys={highlightedKeys}
-                        enableHighlight
-                      />
-                    </span>
-                  </div>
                 ) : (
                   <HighlightedText
                     text={block.text}
@@ -281,7 +326,8 @@ export function GraphicPage({
                   />
                 )}
               </div>
-            ))
+              )
+            })
           )}
         </div>
       </div>

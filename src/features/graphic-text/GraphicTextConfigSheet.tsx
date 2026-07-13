@@ -168,6 +168,13 @@ export function GraphicTextConfigSheet({
   const lastHeightRef = useRef(0)
 
   const previewPages = useMemo(() => paginateMarkdown(markdown, config), [markdown, config])
+  const previewConfig = useMemo(
+    () =>
+      sheetView === 'highlight'
+        ? { ...config, highlightedCharKeys: highlightDraft }
+        : config,
+    [config, sheetView, highlightDraft],
+  )
   const previewLayout = useMemo(() => {
     if (!previewAreaHeight) return null
     return computeConfigPreviewLayout(
@@ -276,7 +283,7 @@ export function GraphicTextConfigSheet({
     previewReady && previewAreaHeight > 0 && previewLayout ? (
       <GraphicConfigPreview
         pages={previewPages}
-        config={config}
+        config={previewConfig}
         markdown={markdown}
         previewAreaHeight={previewAreaHeight}
         sourceWidth={previewLayout.sourceWidth}
@@ -289,7 +296,7 @@ export function GraphicTextConfigSheet({
   return (
     <Drawer state={state}>
       <Drawer.Backdrop isDismissable={false} className="graphic-config-backdrop">
-        {sheetView === 'main' && previewNode}
+        {previewNode}
 
         <Drawer.Content placement="bottom" className="component-library-content">
             <Drawer.Dialog className="component-library flex h-[min(520px,68dvh)] max-h-[68dvh] flex-col bg-white text-neutral-900">

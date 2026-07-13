@@ -203,9 +203,11 @@ async function drawPage(
   const listInset = (size: number) => size * 1.35
   const quoteInset = (size: number) => size * 0.55
   const blockGap = width * 0.011
+  let quoteBarStart: number | null = null
 
   for (const block of page.blocks) {
     const spec = blockSpec(block, config, exportScale)
+    const styleType = resolveStyleType(block)
     if (block.type === 'title' || block.type === 'heading') {
       y += spec.size * spec.marginBefore
     }
@@ -214,7 +216,6 @@ async function drawPage(
     const plainText = stripHighlightMarkers(block.text)
     const blockId = block.sourceBlockId ?? block.id
     const charOffset = block.charOffset ?? 0
-    const styleType = resolveStyleType(block)
     const inset =
       block.type === 'list'
         ? listInset(spec.size)
@@ -228,7 +229,10 @@ async function drawPage(
     const lineHeight = spec.size * spec.lineHeight
     const textMetrics = ctx.measureText(plainText || '文')
     const ascent = textMetrics.actualBoundingBoxAscent ?? spec.size * 0.88
-    const descent = textMetrics.actualBoundingBoxDescent ?? spec.size * 0.12
+
+    if (block.type === 'quote') {
+      quoteBarStart = y
+    }
 
     if (block.type === 'list') {
       const bulletRadius = spec.size * 0.16
@@ -237,12 +241,6 @@ async function drawPage(
       ctx.beginPath()
       ctx.arc(safeX + bulletRadius * 2, centerY, bulletRadius, 0, Math.PI * 2)
       ctx.fill()
-    }
-
-    if (block.type === 'quote') {
-      const barWidth = Math.max(3, spec.size * 0.12)
-      ctx.fillStyle = config.themeColor
-      ctx.fillRect(safeX, y, barWidth, ascent + descent)
     }
 
     drawHighlightedLine(
@@ -255,6 +253,13 @@ async function drawPage(
       enableHighlight,
     )
     y += lineHeight
+
+    if (styleType === 'quote' && block.isBlockEnd && quoteBarStart !== null) {
+      const barWidth = Math.max(3, spec.size * 0.12)
+      ctx.fillStyle = config.themeColor
+      ctx.fillRect(safeX, quoteBarStart, barWidth, y - quoteBarStart)
+      quoteBarStart = null
+    }
 
     if (block.isBlockEnd) {
       y += spec.size * (spec.spacing + 0.18) + blockGap
