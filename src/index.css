@@ -68,7 +68,7 @@ body.is-dragging {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 60;
+  z-index: 51;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -78,13 +78,20 @@ body.is-dragging {
   box-sizing: border-box;
 }
 
+.graphic-config-preview-inner {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: flex-end;
+  justify-content: center;
+}
+
 .graphic-config-preview-page {
   pointer-events: none;
-  max-height: 100%;
-  max-width: 100%;
-  width: auto;
-  height: auto;
-  flex: 0 1 auto;
+  width: auto !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
 }
 
 .graphic-safe-area-corner {

@@ -59,7 +59,8 @@ export function GraphicTextConfigSheet({
       if (!open && isOpenRef.current) onOpenChange(false)
     },
   })
-  const sheetRef = useRef<HTMLDivElement>(null)
+  const sheetRef = useRef<HTMLDivElement | null>(null)
+  const [sheetNode, setSheetNode] = useState<HTMLDivElement | null>(null)
   const [previewAreaHeight, setPreviewAreaHeight] = useState(0)
   const [showSafeArea, setShowSafeArea] = useState(false)
   const previewPage = useMemo(() => {
@@ -83,30 +84,41 @@ export function GraphicTextConfigSheet({
   }, [isOpen, state])
 
   useEffect(() => {
-    if (!isOpen) return
-    const sheet = sheetRef.current
-    if (!sheet) return
+    if (!isOpen) {
+      setPreviewAreaHeight(0)
+      return
+    }
 
     const updatePreviewBounds = () => {
-      const sheet = sheetRef.current
-      if (!sheet) return
-      const sheetTop = sheet.getBoundingClientRect().top
-      setPreviewAreaHeight(Math.max(0, sheetTop))
+      const anchor =
+        sheetNode?.closest('.drawer__dialog') ??
+        sheetRef.current ??
+        sheetNode
+      if (!anchor) return
+      const sheetTop = anchor.getBoundingClientRect().top
+      if (sheetTop > 0) setPreviewAreaHeight(sheetTop)
     }
 
     updatePreviewBounds()
+    const raf1 = window.requestAnimationFrame(updatePreviewBounds)
+    const raf2 = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(updatePreviewBounds)
+    })
+    const timer = window.setInterval(updatePreviewBounds, 100)
+
     const observer = new ResizeObserver(updatePreviewBounds)
-    observer.observe(sheet)
+    if (sheetNode) observer.observe(sheetNode)
+    const dialog = sheetNode?.closest('.drawer__dialog')
+    if (dialog) observer.observe(dialog)
+
     window.addEventListener('resize', updatePreviewBounds)
     window.addEventListener('scroll', updatePreviewBounds, true)
     window.visualViewport?.addEventListener('resize', updatePreviewBounds)
     window.visualViewport?.addEventListener('scroll', updatePreviewBounds)
 
-    const raf = window.requestAnimationFrame(updatePreviewBounds)
-    const timer = window.setInterval(updatePreviewBounds, 120)
-
     return () => {
-      window.cancelAnimationFrame(raf)
+      window.cancelAnimationFrame(raf1)
+      window.cancelAnimationFrame(raf2)
       window.clearInterval(timer)
       observer.disconnect()
       window.removeEventListener('resize', updatePreviewBounds)
@@ -114,16 +126,19 @@ export function GraphicTextConfigSheet({
       window.visualViewport?.removeEventListener('resize', updatePreviewBounds)
       window.visualViewport?.removeEventListener('scroll', updatePreviewBounds)
     }
-  }, [isOpen])
+  }, [isOpen, sheetNode])
 
   const handleGenerate = () => {
     onOpenChange(false)
     onGenerate()
   }
 
-  const previewNode =
-    isOpen && previewAreaHeight > 80 ? (
-      <div className="graphic-config-preview" style={{ height: previewAreaHeight }}>
+  const previewHeight =
+    previewAreaHeight > 0 ? previewAreaHeight : Math.round(window.innerHeight * 0.34)
+
+  const previewNode = (
+    <div className="graphic-config-preview" style={{ height: previewHeight }}>
+      <div className="graphic-config-preview-inner">
         <GraphicPage
           page={previewPage}
           config={config}
@@ -131,16 +146,24 @@ export function GraphicTextConfigSheet({
           className="graphic-config-preview-page shadow-xl"
         />
       </div>
-    ) : null
+    </div>
+  )
 
   return (
-    <Drawer state={state}>
-      <Drawer.Backdrop isDismissable={false} className="graphic-config-backdrop">
-        {previewNode && createPortal(previewNode, document.body)}
+    <>
+      {isOpen && createPortal(previewNode, document.body)}
 
-        <Drawer.Content placement="bottom" className="component-library-content">
-          <Drawer.Dialog className="component-library flex h-[min(520px,68dvh)] max-h-[68dvh] flex-col bg-white text-neutral-900">
-            <div ref={sheetRef} className="flex min-h-0 flex-1 flex-col">
+      <Drawer state={state}>
+        <Drawer.Backdrop isDismissable={false} className="graphic-config-backdrop">
+          <Drawer.Content placement="bottom" className="component-library-content">
+            <Drawer.Dialog className="component-library flex h-[min(520px,68dvh)] max-h-[68dvh] flex-col bg-white text-neutral-900">
+              <div
+                ref={(node) => {
+                  sheetRef.current = node
+                  setSheetNode(node)
+                }}
+                className="flex min-h-0 flex-1 flex-col"
+              >
               <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-2">
                 <Drawer.Heading className="text-sm font-semibold">生成配置</Drawer.Heading>
                 <button
@@ -350,6 +373,7 @@ export function GraphicTextConfigSheet({
         </Drawer.Content>
       </Drawer.Backdrop>
     </Drawer>
+    </>
   )
 }
 
