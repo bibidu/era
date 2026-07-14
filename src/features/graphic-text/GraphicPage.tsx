@@ -4,6 +4,7 @@ import {
   CODE_FONT_FAMILY,
   CODE_HORIZONTAL_PADDING_SCALE,
   CODE_SIZE_SCALE,
+  CODE_TEXT_COLOR,
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
 import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
@@ -372,11 +373,11 @@ export function GraphicPage({
                         fontFamily: CODE_FONT_FAMILY,
                         fontSize: codeSize,
                         lineHeight: config.bodyLineHeight,
-                        color: '#262626',
+                        color: CODE_TEXT_COLOR,
                       }}
                     >
                       {unit.blocks.map((block) => (
-                        <div key={block.id} className="whitespace-pre-wrap break-all">
+                        <div key={block.id} className="whitespace-pre">
                           <HighlightedText
                             text={block.text}
                             block={block}

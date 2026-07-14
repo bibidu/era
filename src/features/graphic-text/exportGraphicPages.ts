@@ -3,6 +3,7 @@ import {
   CODE_FONT_FAMILY,
   CODE_HORIZONTAL_PADDING_SCALE,
   CODE_SIZE_SCALE,
+  CODE_TEXT_COLOR,
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
 import { getGraphicLayout } from './layout'
@@ -115,6 +116,7 @@ function drawHighlightedLine(
   fontSize: number,
   themeColor: string,
   enableHighlight: boolean,
+  textColor = '#171717',
 ) {
   const paddingX = 4
   ctx.textBaseline = 'alphabetic'
@@ -141,7 +143,7 @@ function drawHighlightedLine(
     const ascent = metrics.actualBoundingBoxAscent ?? fontSize * 0.88
     const descent = metrics.actualBoundingBoxDescent ?? fontSize * 0.12
     const baselineY = yTop + ascent
-    ctx.fillStyle = '#171717'
+    ctx.fillStyle = textColor
     ctx.fillText(segment.text, cursorX, baselineY)
     if (enableHighlight && segment.highlighted) {
       const underlineY = baselineY + descent + Math.max(2, fontSize * 0.05)
@@ -316,6 +318,7 @@ async function drawPage(
       spec.size,
       config.themeColor,
       enableHighlight,
+      styleType === 'code' ? CODE_TEXT_COLOR : '#171717',
     )
     y += lineHeight
 
