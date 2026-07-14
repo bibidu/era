@@ -1,4 +1,11 @@
 import { useMemo, type CSSProperties } from 'react'
+import {
+  CODE_BACKGROUND,
+  CODE_FONT_FAMILY,
+  CODE_HORIZONTAL_PADDING_SCALE,
+  CODE_SIZE_SCALE,
+  CODE_VERTICAL_PADDING_SCALE,
+} from './codeBlock'
 import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
 import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
 import { buildCharHighlightSegments, themeAlpha } from './inlineHighlight'
@@ -21,6 +28,7 @@ function resolveStyleType(block: MarkdownBlock) {
 type RenderUnit =
   | { kind: 'block'; block: MarkdownBlock }
   | { kind: 'quote'; blocks: MarkdownBlock[] }
+  | { kind: 'code'; blocks: MarkdownBlock[] }
 
 function buildRenderUnits(blocks: MarkdownBlock[]): RenderUnit[] {
   const units: RenderUnit[] = []
@@ -41,6 +49,20 @@ function buildRenderUnits(blocks: MarkdownBlock[]): RenderUnit[] {
       continue
     }
 
+    if (styleType === 'code') {
+      const sourceId = block.sourceBlockId ?? block.id
+      const last = units[units.length - 1]
+      if (
+        last?.kind === 'code' &&
+        (last.blocks[0].sourceBlockId ?? last.blocks[0].id) === sourceId
+      ) {
+        last.blocks.push(block)
+      } else {
+        units.push({ kind: 'code', blocks: [block] })
+      }
+      continue
+    }
+
     units.push({ kind: 'block', block })
   }
 
@@ -52,6 +74,7 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
 
   const styleType = resolveStyleType(block)
   const bodyUnit = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
+  const codeUnit = `${((config.bodyFontSize * CODE_SIZE_SCALE) / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const titleUnit = `${(config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const headingUnit = `${(config.headingFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const gap = '1.1cqw'
@@ -62,6 +85,9 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
   if (styleType === 'heading') {
     return `calc(${headingUnit} * ${config.headingMarginBottom + 0.18} + ${gap})`
   }
+  if (styleType === 'code') {
+    return `calc(${codeUnit} * 0.26 + ${gap})`
+  }
   return `calc(${bodyUnit} * 0.26 + ${gap})`
 }
 
@@ -70,6 +96,7 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
   const titleSize = `${(config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const headingSize = `${(config.headingFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const bodySize = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
+  const codeSize = `${((config.bodyFontSize * CODE_SIZE_SCALE) / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const marginBottom = blockEndMargin(block, config)
 
   if (styleType === 'title') {
@@ -99,6 +126,15 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
       fontSize: bodySize,
       lineHeight: config.bodyLineHeight,
       fontWeight: 700,
+      marginBottom,
+    }
+  }
+  if (styleType === 'code') {
+    return {
+      fontSize: codeSize,
+      lineHeight: config.bodyLineHeight,
+      fontWeight: 400,
+      fontFamily: CODE_FONT_FAMILY,
       marginBottom,
     }
   }
@@ -312,6 +348,44 @@ export function GraphicPage({
                           </div>
                         ))}
                       </div>
+                    </div>
+                  </div>
+                )
+              }
+
+              if (unit.kind === 'code') {
+                const firstBlock = unit.blocks[0]
+                const lastBlock = unit.blocks[unit.blocks.length - 1]
+                const codeSize = `${((config.bodyFontSize * CODE_SIZE_SCALE) / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
+                return (
+                  <div
+                    key={firstBlock.id}
+                    style={{
+                      marginBottom: blockEndMargin(lastBlock, config),
+                    }}
+                  >
+                    <div
+                      className="overflow-hidden rounded-[1.2cqw]"
+                      style={{
+                        backgroundColor: CODE_BACKGROUND,
+                        padding: `calc(${codeSize} * ${CODE_VERTICAL_PADDING_SCALE}) calc(${codeSize} * ${CODE_HORIZONTAL_PADDING_SCALE})`,
+                        fontFamily: CODE_FONT_FAMILY,
+                        fontSize: codeSize,
+                        lineHeight: config.bodyLineHeight,
+                        color: '#262626',
+                      }}
+                    >
+                      {unit.blocks.map((block) => (
+                        <div key={block.id} className="whitespace-pre-wrap break-all">
+                          <HighlightedText
+                            text={block.text}
+                            block={block}
+                            themeColor={config.themeColor}
+                            highlightedKeys={highlightedKeys}
+                            enableHighlight
+                          />
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )
