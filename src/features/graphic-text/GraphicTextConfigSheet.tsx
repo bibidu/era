@@ -21,7 +21,7 @@ import {
   readCachedSheetHeight,
   writeCachedSheetHeight,
 } from './topBar'
-import type { GraphicTemplate, GraphicTextConfig } from './types'
+import type { GraphicAspectRatio, GraphicTemplate, GraphicTextConfig } from './types'
 import { GRAPHIC_ASPECT_RATIO_OPTIONS } from './types'
 
 interface GraphicTextConfigSheetProps {
@@ -43,6 +43,19 @@ const TEMPLATE_OPTIONS: { id: GraphicTemplate; label: string }[] = [
 ]
 
 const THEME_COLORS = ['#FACC15', '#FB923C', '#EF4444', '#22C55E', '#3B82F6', '#A855F7']
+
+const PAPER_COLORS = [
+  '#FBF7ED',
+  '#FFF8F0',
+  '#FEFCE8',
+  '#ECFDF5',
+  '#EFF6FF',
+  '#FDF2F8',
+  '#FAF5FF',
+  '#F5F5F4',
+]
+
+const ENABLED_ASPECT_RATIOS = new Set<GraphicAspectRatio>(['9:16', '3:4'])
 
 const selectClassName =
   'h-9 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-neutral-50 px-2 text-sm outline-none focus:border-neutral-500'
@@ -76,11 +89,13 @@ function AspectRatioOption({
   id,
   label,
   selected,
+  disabled = false,
   onSelect,
 }: {
   id: string
   label: string
   selected: boolean
+  disabled?: boolean
   onSelect: () => void
 }) {
   const preview = aspectPreviewSize(id)
@@ -88,19 +103,32 @@ function AspectRatioOption({
     <button
       type="button"
       aria-label={`图片比例 ${label}`}
+      disabled={disabled}
       className={`flex shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-2 ${
-        selected ? 'text-neutral-900' : 'text-neutral-600'
+        disabled
+          ? 'cursor-not-allowed text-neutral-300'
+          : selected
+            ? 'text-neutral-900'
+            : 'text-neutral-600'
       }`}
-      onClick={onSelect}
+      onClick={() => {
+        if (!disabled) onSelect()
+      }}
     >
       <div
         className={`flex items-center justify-center rounded-md border bg-white ${
-          selected ? 'border-2 border-black' : 'border border-neutral-300'
+          disabled
+            ? 'border border-neutral-200 opacity-50'
+            : selected
+              ? 'border-2 border-black'
+              : 'border border-neutral-300'
         }`}
         style={{ width: preview.width + 12, height: preview.height + 12 }}
       >
         <div
-          className={`rounded-sm ${selected ? 'bg-neutral-900' : 'bg-neutral-300'}`}
+          className={`rounded-sm ${
+            disabled ? 'bg-neutral-200' : selected ? 'bg-neutral-900' : 'bg-neutral-300'
+          }`}
           style={{ width: preview.width, height: preview.height }}
         />
       </div>
@@ -243,7 +271,6 @@ export function GraphicTextConfigSheet({
   }
 
   const handleGenerate = () => {
-    onOpenChange(false)
     onGenerate()
   }
 
@@ -313,6 +340,22 @@ export function GraphicTextConfigSheet({
 
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
                       <div className="flex flex-col gap-4 pb-2">
+                        <section>
+                          <button
+                            type="button"
+                            className="flex h-11 w-full items-center justify-between rounded-xl border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900"
+                            onClick={() => setSheetView('highlight')}
+                          >
+                            <span className="flex items-center gap-2">
+                              <Highlighter size={16} />
+                              高亮设置
+                            </span>
+                            <span className="text-xs text-neutral-500">
+                              已选 {config.highlightedCharKeys.length} 字
+                            </span>
+                          </button>
+                        </section>
+
                         <section>
                           <div className="mb-2 flex items-center gap-2 text-sm font-medium">
                             <Type size={16} />
@@ -440,22 +483,6 @@ export function GraphicTextConfigSheet({
                         </section>
 
                         <section>
-                          <button
-                            type="button"
-                            className="flex h-11 w-full items-center justify-between rounded-xl border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900"
-                            onClick={() => setSheetView('highlight')}
-                          >
-                            <span className="flex items-center gap-2">
-                              <Highlighter size={16} />
-                              高亮设置
-                            </span>
-                            <span className="text-xs text-neutral-500">
-                              已选 {config.highlightedCharKeys.length} 字
-                            </span>
-                          </button>
-                        </section>
-
-                        <section>
                           <p className="mb-2 text-sm font-medium">图片比例</p>
                           <div className="component-scroll-row flex items-end gap-0.5 overflow-x-auto py-1">
                             {GRAPHIC_ASPECT_RATIO_OPTIONS.map((option) => (
@@ -464,6 +491,7 @@ export function GraphicTextConfigSheet({
                                 id={option.id}
                                 label={option.label}
                                 selected={config.aspectRatio === option.id}
+                                disabled={!ENABLED_ASPECT_RATIOS.has(option.id)}
                                 onSelect={() => onUpdate({ aspectRatio: option.id })}
                               />
                             ))}
@@ -505,6 +533,29 @@ export function GraphicTextConfigSheet({
                             ))}
                           </div>
                         </section>
+
+                        {config.template === 'solid' && (
+                          <section>
+                            <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                              <Palette size={16} />
+                              纸张主题色
+                            </div>
+                            <div className="flex items-center gap-3 overflow-x-auto py-1">
+                              {PAPER_COLORS.map((color) => (
+                                <button
+                                  key={color}
+                                  type="button"
+                                  aria-label={`纸张色 ${color}`}
+                                  className={`size-9 shrink-0 rounded-full border-2 ${
+                                    config.paperColor === color ? 'border-black' : 'border-transparent'
+                                  }`}
+                                  style={{ backgroundColor: color }}
+                                  onClick={() => onUpdate({ paperColor: color })}
+                                />
+                              ))}
+                            </div>
+                          </section>
+                        )}
 
                         {config.template === 'reference' && (
                           <section>
@@ -569,7 +620,19 @@ export function GraphicTextConfigSheet({
     <div className="graphic-config-root">
       {previewNode && (
         <div className="graphic-config-preview-layer" style={{ height: previewAreaHeight }}>
-          {previewNode}
+          <button
+            type="button"
+            aria-label="关闭配置"
+            className="graphic-config-preview-dismiss"
+            onClick={() => onOpenChange(false)}
+          />
+          <div className="graphic-config-preview-center">{previewNode}</div>
+          <button
+            type="button"
+            aria-label="关闭配置"
+            className="graphic-config-preview-dismiss"
+            onClick={() => onOpenChange(false)}
+          />
         </div>
       )}
       {sheetContent}
