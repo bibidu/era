@@ -6,6 +6,12 @@ import type {
   MarkdownBlockType,
 } from './types'
 import { stripHighlightMarkers } from './inlineHighlight'
+import {
+  CODE_HORIZONTAL_PADDING_SCALE,
+  CODE_SIZE_SCALE,
+  codeCharsPerLine,
+  wrapCodeTextLines,
+} from './codeBlock'
 import { estimateCharsPerLine, wrapPlainTextLines } from './textWrap'
 import { getFontById } from '../../data/fonts'
 
@@ -107,6 +113,8 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
   const lines = markdown.replace(/\r\n/g, '\n').split('\n')
   const blocks: MarkdownBlock[] = []
   let paragraph: string[] = []
+  let codeLines: string[] = []
+  let inCodeBlock = false
 
   const flushParagraph = () => {
     const text = paragraph.join(' ').trim()
@@ -114,8 +122,31 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
     paragraph = []
   }
 
+  const flushCodeBlock = () => {
+    if (!codeLines.length) return
+    blocks.push(createBlock('code', codeLines.join('\n'), blocks.length))
+    codeLines = []
+  }
+
   for (const rawLine of lines) {
     const line = rawLine.trim()
+
+    if (inCodeBlock) {
+      if (line.startsWith('```')) {
+        inCodeBlock = false
+        flushCodeBlock()
+      } else {
+        codeLines.push(rawLine.replace(/\s+$/, ''))
+      }
+      continue
+    }
+
+    if (line.startsWith('```')) {
+      flushParagraph()
+      inCodeBlock = true
+      continue
+    }
+
     if (!line) {
       flushParagraph()
       continue
@@ -142,6 +173,7 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
   }
 
   flushParagraph()
+  if (inCodeBlock) flushCodeBlock()
   return blocks
 }
 
@@ -150,6 +182,9 @@ function blockFontSize(block: MarkdownBlock, config: GraphicTextConfig, exportSc
   if (type === 'title') return config.titleFontSize * exportScale
   if (type === 'heading') {
     return Math.round(config.headingFontSize * exportScale)
+  }
+  if (type === 'code') {
+    return Math.round(config.bodyFontSize * CODE_SIZE_SCALE * exportScale)
   }
   return config.bodyFontSize * exportScale
 }
@@ -211,13 +246,20 @@ function blockToLayoutLines(
       ? size * 1.35
       : block.type === 'quote' || styleType === 'quote'
         ? size * 0.55
-        : 0
+        : block.type === 'code' || styleType === 'code'
+          ? size * CODE_HORIZONTAL_PADDING_SCALE * 2
+          : 0
   const availableWidth = layout.pageWidth - layout.safeX * 2 - inset
   const font = getFontById(config.fontId)
   const fontWeight = styleType === 'title' || styleType === 'heading' ? 700 : 400
-  const charsPerLine = estimateCharsPerLine(font.fontFamily, size, fontWeight, availableWidth)
+  const wrappedLines =
+    block.type === 'code' || styleType === 'code'
+      ? wrapCodeTextLines(plainText, codeCharsPerLine(availableWidth, size))
+      : wrapPlainTextLines(
+          plainText,
+          estimateCharsPerLine(font.fontFamily, size, fontWeight, availableWidth),
+        )
   const lineHeight = blockLineHeight(block, config, layout.exportScale)
-  const wrappedLines = wrapPlainTextLines(plainText, charsPerLine)
 
   let charOffset = 0
   return wrappedLines.map((lineText, index) => {

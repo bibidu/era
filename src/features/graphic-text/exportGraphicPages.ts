@@ -1,3 +1,10 @@
+import {
+  CODE_BACKGROUND,
+  CODE_FONT_FAMILY,
+  CODE_HORIZONTAL_PADDING_SCALE,
+  CODE_SIZE_SCALE,
+  CODE_VERTICAL_PADDING_SCALE,
+} from './codeBlock'
 import { getGraphicLayout } from './layout'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { getFontById } from '../../data/fonts'
@@ -57,6 +64,7 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
       lineHeight: config.titleLineHeight,
       spacing: config.titleMarginBottom,
       marginBefore: config.titleMarginTop,
+      fontFamily: config.fontFamily,
     }
   }
   if (styleType === 'heading') {
@@ -66,6 +74,7 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
       lineHeight: config.titleLineHeight,
       spacing: config.headingMarginBottom,
       marginBefore: config.headingMarginTop,
+      fontFamily: config.fontFamily,
     }
   }
   if (styleType === 'quote') {
@@ -75,6 +84,17 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
       lineHeight: config.bodyLineHeight,
       spacing: 0.08,
       marginBefore: 0,
+      fontFamily: config.fontFamily,
+    }
+  }
+  if (styleType === 'code') {
+    return {
+      size: Math.round(config.bodyFontSize * CODE_SIZE_SCALE * exportScale),
+      weight: 400,
+      lineHeight: config.bodyLineHeight,
+      spacing: 0.08,
+      marginBefore: 0,
+      fontFamily: CODE_FONT_FAMILY,
     }
   }
   return {
@@ -83,6 +103,7 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
     lineHeight: config.bodyLineHeight,
     spacing: 0.08,
     marginBefore: 0,
+    fontFamily: config.fontFamily,
   }
 }
 
@@ -229,8 +250,10 @@ async function drawPage(
   let y = safeTop
   const listInset = (size: number) => size * 1.35
   const quoteInset = (size: number) => size * 0.55
+  const codeInset = (size: number) => size * CODE_HORIZONTAL_PADDING_SCALE
   const blockGap = width * 0.011
   let quoteBarStart: number | null = null
+  let codeBlockSourceId: string | null = null
 
   for (const block of page.blocks) {
     const spec = blockSpec(block, config, exportScale)
@@ -239,7 +262,7 @@ async function drawPage(
       y += spec.size * spec.marginBefore
     }
 
-    ctx.font = `${spec.weight} ${spec.size}px ${config.fontFamily}`
+    ctx.font = `${spec.weight} ${spec.size}px ${spec.fontFamily}`
     const plainText = stripHighlightMarkers(block.text)
     const blockId = block.sourceBlockId ?? block.id
     const charOffset = block.charOffset ?? 0
@@ -248,7 +271,9 @@ async function drawPage(
         ? listInset(spec.size)
         : block.type === 'quote' || styleType === 'quote'
           ? quoteInset(spec.size)
-          : 0
+          : block.type === 'code' || styleType === 'code'
+            ? codeInset(spec.size)
+            : 0
     const enableHighlight = true
     const segments = enableHighlight
       ? buildCharHighlightSegments(block.text, blockId, highlightedKeys, charOffset)
@@ -259,6 +284,19 @@ async function drawPage(
 
     if (block.type === 'quote') {
       quoteBarStart = y
+    }
+
+    if (styleType === 'code') {
+      if (codeBlockSourceId !== blockId) {
+        codeBlockSourceId = blockId
+      }
+      const padY = spec.size * CODE_VERTICAL_PADDING_SCALE
+      const bgX = safeX
+      const bgW = width - safeX * 2
+      ctx.fillStyle = CODE_BACKGROUND
+      ctx.fillRect(bgX, y - padY * 0.35, bgW, lineHeight + padY * 0.7)
+    } else {
+      codeBlockSourceId = null
     }
 
     if (block.type === 'list') {
@@ -286,6 +324,10 @@ async function drawPage(
       ctx.fillStyle = config.themeColor
       ctx.fillRect(safeX, quoteBarStart, barWidth, y - quoteBarStart)
       quoteBarStart = null
+    }
+
+    if (styleType === 'code' && block.isBlockEnd) {
+      codeBlockSourceId = null
     }
 
     if (block.isBlockEnd) {

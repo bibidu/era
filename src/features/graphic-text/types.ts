@@ -29,7 +29,7 @@ export interface GraphicTextConfig {
   highlightedCharKeys: string[]
 }
 
-export type MarkdownBlockType = 'title' | 'heading' | 'paragraph' | 'list' | 'quote'
+export type MarkdownBlockType = 'title' | 'heading' | 'paragraph' | 'list' | 'quote' | 'code'
 
 export interface MarkdownBlock {
   id: string
@@ -79,6 +79,11 @@ export const DEFAULT_MARKDOWN = `# 工程团队想抄 Dynamic Workflows ，我�
 ## 2. 创建独立 Worktree
 
 每个 Agent 都在自己的 worktree 中工作，拥有独立的文件目录、依赖状态和开发进度。
+
+\`\`\`bash
+git worktree add ../agent-a-ui -b feature/ui agent/main
+cd ../agent-a-ui && npm install
+\`\`\`
 
 > 一个 Agent 对应一个分支和一个 worktree。
 
