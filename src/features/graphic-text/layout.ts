@@ -6,7 +6,8 @@ import type {
   MarkdownBlockType,
 } from './types'
 import { stripHighlightMarkers } from './inlineHighlight'
-import { wrapPlainTextLines } from './textWrap'
+import { estimateCharsPerLine, wrapPlainTextLines } from './textWrap'
+import { getFontById } from '../../data/fonts'
 
 export const GRAPHIC_DISPLAY_BASE_WIDTH = 360
 
@@ -48,6 +49,9 @@ interface LayoutLine {
 
 function parseAspectRatio(ratio: GraphicAspectRatio) {
   const [width, height] = ratio.split(':').map(Number)
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return { width: 3, height: 4 }
+  }
   return { width, height }
 }
 
@@ -209,12 +213,9 @@ function blockToLayoutLines(
         ? size * 0.55
         : 0
   const availableWidth = layout.pageWidth - layout.safeX * 2 - inset
-  const approximateCharacterWidth =
-    size * (styleType === 'title' || styleType === 'heading' ? 0.95 : 1)
-  const charsPerLine = Math.max(
-    4,
-    Math.floor(availableWidth / approximateCharacterWidth),
-  )
+  const font = getFontById(config.fontId)
+  const fontWeight = styleType === 'title' || styleType === 'heading' ? 700 : 400
+  const charsPerLine = estimateCharsPerLine(font.fontFamily, size, fontWeight, availableWidth)
   const lineHeight = blockLineHeight(block, config, layout.exportScale)
   const wrappedLines = wrapPlainTextLines(plainText, charsPerLine)
 

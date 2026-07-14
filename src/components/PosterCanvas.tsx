@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import type { TextElement } from '../types'
+import { H_PADDING } from '../types'
 import {
   DEFAULT_POSTER_SIZE,
   fitSizeInBox,
@@ -23,6 +24,7 @@ interface PosterCanvasProps {
   onSelectText: (id: string) => void
   onOpenConfig: (id: string) => void
   onDeleteText: (id: string) => void
+  onUpdateText: (id: string, updates: Partial<TextElement>) => void
   onUploadPoster: (file: File) => void
   onCanvasResize?: (width: number, height: number) => void
   onPosterSizeResolved?: (size: ImageSize) => void
@@ -37,6 +39,7 @@ export function PosterCanvas({
   onSelectText,
   onOpenConfig,
   onDeleteText,
+  onUpdateText,
   onUploadPoster,
   onCanvasResize,
   onPosterSizeResolved,
@@ -45,6 +48,15 @@ export function PosterCanvas({
   const canvasRef = useRef<HTMLDivElement>(null)
   const [canvasSize, setCanvasSize] = useState<ImageSize>({ width: 0, height: 0 })
   const [resolvedSize, setResolvedSize] = useState<ImageSize | null>(null)
+  const dragRef = useRef<{
+    id: string
+    startX: number
+    startY: number
+    originX: number
+    originY: number
+    pointerId: number
+    aligned: boolean
+  } | null>(null)
 
   const contentSize = resolvedSize ?? posterSize ?? DEFAULT_POSTER_SIZE
   const isDisplayReady = Boolean(resolvedSize && canvasSize.width > 0 && canvasSize.height > 0)
@@ -89,6 +101,53 @@ export function PosterCanvas({
     return () => ro.disconnect()
   }, [onCanvasResize, canvasSize.width, canvasSize.height])
 
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const finishDrag = (pointerId: number) => {
+      if (!dragRef.current || dragRef.current.pointerId !== pointerId) return
+      dragRef.current = null
+      document.body.classList.remove('is-dragging')
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const drag = dragRef.current
+      if (!drag || drag.pointerId !== event.pointerId) return
+
+      const dx = event.clientX - drag.startX
+      const dy = event.clientY - drag.startY
+      const maxX = Math.max(0, canvas.clientWidth - H_PADDING)
+      const maxY = Math.max(0, canvas.clientHeight - 24)
+      const y = Math.min(Math.max(0, drag.originY + dy), maxY)
+      const updates: Partial<TextElement> = { y: Math.round(y) }
+
+      if (!drag.aligned) {
+        const x = Math.min(Math.max(0, drag.originX + dx), maxX)
+        updates.x = Math.round(x)
+      }
+
+      onUpdateText(drag.id, updates)
+    }
+
+    const handlePointerUp = (event: PointerEvent) => {
+      if (dragRef.current?.pointerId === event.pointerId) {
+        canvas.releasePointerCapture(event.pointerId)
+        finishDrag(event.pointerId)
+      }
+    }
+
+    canvas.addEventListener('pointermove', handlePointerMove)
+    canvas.addEventListener('pointerup', handlePointerUp)
+    canvas.addEventListener('pointercancel', handlePointerUp)
+    return () => {
+      canvas.removeEventListener('pointermove', handlePointerMove)
+      canvas.removeEventListener('pointerup', handlePointerUp)
+      canvas.removeEventListener('pointercancel', handlePointerUp)
+      document.body.classList.remove('is-dragging')
+    }
+  }, [onUpdateText])
+
   const handleImageLoad = (event: SyntheticEvent<HTMLImageElement>) => {
     const img = event.currentTarget
     if (!img.naturalWidth || !img.naturalHeight) return
@@ -109,7 +168,7 @@ export function PosterCanvas({
         <div
           ref={canvasRef}
           id="poster-canvas"
-          className="poster-canvas relative shrink-0 overflow-hidden rounded-2xl border border-neutral-300 bg-neutral-100 shadow-sm"
+          className={`poster-canvas relative shrink-0 overflow-hidden rounded-2xl border border-neutral-300 bg-neutral-100 shadow-sm${isExporting ? ' is-exporting' : ''}`}
           style={{
             width: canvasSize.width > 0 ? `${canvasSize.width}px` : undefined,
             height: canvasSize.height > 0 ? `${canvasSize.height}px` : undefined,
@@ -159,11 +218,28 @@ export function PosterCanvas({
               return (
                 <div
                   key={text.id}
-                  className={isSelected ? 'z-20' : 'z-0'}
+                  className={`material-drag-handle ${isSelected ? 'z-20' : 'z-0'}`}
                   style={getWrapperStyle(text)}
                   onClick={(e) => {
                     e.stopPropagation()
                     onSelectText(text.id)
+                  }}
+                  onPointerDown={(e) => {
+                    if (isExporting || e.button !== 0) return
+                    e.stopPropagation()
+                    onSelectText(text.id)
+                    const aligned = text.textAlign !== 'none'
+                    dragRef.current = {
+                      id: text.id,
+                      startX: e.clientX,
+                      startY: e.clientY,
+                      originX: text.x,
+                      originY: text.y,
+                      pointerId: e.pointerId,
+                      aligned,
+                    }
+                    canvasRef.current?.setPointerCapture(e.pointerId)
+                    document.body.classList.add('is-dragging')
                   }}
                 >
                   <div className="relative inline-block max-w-full">

@@ -1,14 +1,10 @@
 import type { TextElement } from '../types'
 import { H_PADDING } from '../types'
 import { FONT_OPTIONS } from '../data/fonts'
-import { ensureFontReady } from './fontLoad'
+import { ensureFontsReadyForExport } from './fontLoad'
 import { formatCanvasFont } from './pixelFont'
-import { withTimeout } from './async'
 import { loadOrientedImageBitmap } from './imageMeta'
-import { resolvePresetColors } from './textLayout'
-
-const EXPORT_FONT_TIMEOUT_MS = 8000
-const FONTS_READY_TIMEOUT_MS = 3000
+import { getTextWrapMaxWidth, resolvePresetColors, wrapTextContentToLines } from './textLayout'
 
 /** 按原图尺寸绘制，避免拉伸变形 */
 function drawPosterBackground(
@@ -204,8 +200,11 @@ function drawTextElement(
   ctx.textBaseline = 'top'
 
   const { color, backgroundColor, borderColor } = resolvePresetColors(text)
-  const lines = (text.content || '').split('\n')
   if (!text.content.trim()) return
+
+  const displayWidth = canvasWidth / scaleX
+  const maxWrapWidth = getTextWrapMaxWidth(text, displayWidth) * scaleX
+  const lines = wrapTextContentToLines(ctx, text.content, maxWrapWidth)
 
   const layouts = buildLineLayouts(ctx, text, lines, fontSize, scaleX, scaleY, canvasWidth)
 
@@ -244,18 +243,18 @@ export async function exportPosterToImage(
   imageHeight: number,
 ): Promise<Blob> {
   const fontIds = new Set(texts.map((t) => t.fontId))
-  await Promise.all(
-    [...fontIds].map(async (fontId) => {
-      const font = FONT_OPTIONS.find((f) => f.id === fontId)
-      if (!font || font.source === 'system') return
-      const sample = texts
-        .filter((t) => t.fontId === fontId)
-        .map((t) => t.content)
-        .join('')
-      await withTimeout(ensureFontReady(font, sample || font.sample), EXPORT_FONT_TIMEOUT_MS, true)
-    }),
-  )
-  await withTimeout(document.fonts.ready, FONTS_READY_TIMEOUT_MS, undefined)
+  const fonts = [...fontIds]
+    .map((fontId) => FONT_OPTIONS.find((f) => f.id === fontId))
+    .filter((font): font is (typeof FONT_OPTIONS)[number] => Boolean(font))
+  const sampleByFontId = new Map<string, string>()
+  for (const fontId of fontIds) {
+    const sample = texts
+      .filter((t) => t.fontId === fontId)
+      .map((t) => t.content)
+      .join('')
+    sampleByFontId.set(fontId, sample)
+  }
+  await ensureFontsReadyForExport(fonts, sampleByFontId)
 
   const bitmap = await loadOrientedImageBitmap(posterUrl)
   const width = imageWidth
@@ -298,14 +297,16 @@ export async function savePosterBlob(blob: Blob, filename: string): Promise<void
 
   if (navigator.share && navigator.canShare?.({ files: [file] })) {
     try {
-      await withTimeout(
+      await Promise.race([
         navigator.share({ files: [file], title: '海报' }),
-        12000,
-        undefined,
-      )
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error('分享超时')), 12000)
+        }),
+      ])
       return
     } catch (err) {
       if ((err as Error).name === 'AbortError') return
+      throw err
     }
   }
 

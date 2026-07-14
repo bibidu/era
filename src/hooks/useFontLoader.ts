@@ -1,43 +1,34 @@
 import { useCallback, useState } from 'react'
 import type { FontOption } from '../data/fonts'
-import { ensureFontReady, isRemoteFontLoaded } from '../utils/fontLoad'
-import { isPixelFontLoaded } from '../utils/pixelFont'
-
-const loadedFontIds = new Set<string>([
-  'system', 'pingfang', 'yahei',
-])
+import { ensureFontReady, isFontLoaded as isFontLoadedGlobal } from '../utils/fontLoad'
 
 export function useFontLoader() {
-  const [loadedFonts, setLoadedFonts] = useState<Set<string>>(() => new Set(loadedFontIds))
+  const [loadedRevision, setLoadedRevision] = useState(0)
   const [loadingFonts, setLoadingFonts] = useState<Set<string>>(() => new Set())
 
   const isFontLoaded = useCallback(
     (font: FontOption) => {
-      if (font.source === 'system') return true
-      return loadedFonts.has(font.id) || isPixelFontLoaded(font.id) || isRemoteFontLoaded(font.id)
+      void loadedRevision
+      return isFontLoadedGlobal(font)
     },
-    [loadedFonts],
+    [loadedRevision],
   )
 
   const loadFont = useCallback(async (font: FontOption, sampleText?: string): Promise<boolean> => {
     if (font.source === 'system') return true
 
-    if (isFontLoaded(font) && font.source === 'cdn') {
+    if (isFontLoadedGlobal(font) && font.source === 'cdn') {
       return ensureFontReady(font, sampleText ?? font.sample)
     }
 
-    if (isFontLoaded(font)) return true
-    if (loadingFonts.has(font.id)) return false
+    if (isFontLoadedGlobal(font)) return true
 
     setLoadingFonts((prev) => new Set(prev).add(font.id))
 
     try {
       const ok = await ensureFontReady(font, sampleText ?? font.sample)
-      if (!ok) return false
-
-      loadedFontIds.add(font.id)
-      setLoadedFonts((prev) => new Set(prev).add(font.id))
-      return true
+      if (ok) setLoadedRevision((n) => n + 1)
+      return ok
     } catch {
       return false
     } finally {
@@ -47,7 +38,7 @@ export function useFontLoader() {
         return next
       })
     }
-  }, [isFontLoaded, loadingFonts])
+  }, [])
 
-  return { loadedFonts, loadingFonts, isFontLoaded, loadFont }
+  return { loadingFonts, isFontLoaded, loadFont }
 }

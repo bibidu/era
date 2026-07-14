@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@heroui/react'
 import { Plus, Save } from 'lucide-react'
 import { PosterCanvas } from './components/PosterCanvas'
@@ -38,7 +38,7 @@ function createTextElement(): TextElement {
 }
 
 function App() {
-  const [mode, setMode] = useState<AppMode>('graphic')
+  const [mode, setMode] = useState<AppMode>('poster')
   const [posterUrl, setPosterUrl] = useState<string | null>(null)
   const [posterSize, setPosterSize] = useState<ImageSize | null>(null)
   const [texts, setTexts] = useState<TextElement[]>([])
@@ -48,31 +48,47 @@ function App() {
   const [saving, setSaving] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [canvasHeight, setCanvasHeight] = useState(560)
   const posterUrlRef = useRef<string | null>(null)
   const editorSnapshotRef = useRef<TextElement | null>(null)
   const isNewTextRef = useRef(false)
 
   const handleUploadPoster = useCallback((file: File) => {
-    if (!file.type.startsWith('image/')) return
+    if (!file.type.startsWith('image/')) {
+      setUploadError('请选择图片文件')
+      window.setTimeout(() => setUploadError(null), 2500)
+      return
+    }
 
     void (async () => {
       let size: ImageSize = { width: 3, height: 4 }
       try {
         size = await loadImageMetaFromFile(file)
       } catch {
-        size = { width: 3, height: 4 }
+        setUploadError('无法读取图片信息，已使用默认比例')
+        window.setTimeout(() => setUploadError(null), 2500)
       }
 
       const reader = new FileReader()
+      reader.onerror = () => {
+        setUploadError('图片读取失败，请重试')
+        window.setTimeout(() => setUploadError(null), 2500)
+      }
       reader.onload = () => {
-        const result = reader.result as string
+        const result = reader.result
+        if (typeof result !== 'string') {
+          setUploadError('图片读取失败，请重试')
+          window.setTimeout(() => setUploadError(null), 2500)
+          return
+        }
         if (posterUrlRef.current?.startsWith('blob:')) {
           URL.revokeObjectURL(posterUrlRef.current)
         }
         posterUrlRef.current = result
         setPosterSize(size)
         setPosterUrl(result)
+        setUploadError(null)
       }
       reader.readAsDataURL(file)
     })()
@@ -166,6 +182,11 @@ function App() {
     setEditorOpen(false)
   }, [])
 
+  useEffect(() => {
+    document.body.classList.toggle('is-exporting', isExporting)
+    return () => document.body.classList.remove('is-exporting')
+  }, [isExporting])
+
   const handleSave = useCallback(async () => {
     const canvasEl = document.getElementById('poster-canvas')
     if (!canvasEl || !posterUrl || !posterSize) return
@@ -184,7 +205,9 @@ function App() {
     setIsExporting(true)
 
     try {
-      await new Promise((r) => setTimeout(r, 80))
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      })
       const blob = await exportPosterToImage(
         posterUrl,
         texts,
@@ -195,8 +218,9 @@ function App() {
       )
       await savePosterBlob(blob, `poster-${Date.now()}.png`)
       setSaveMessage('已保存到本地')
-    } catch {
-      setSaveMessage('保存失败，请重试')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '保存失败，请重试'
+      setSaveMessage(message)
     } finally {
       setIsExporting(false)
       setSaving(false)
@@ -231,14 +255,15 @@ function App() {
             onSelectText={handleSelectText}
             onOpenConfig={handleOpenConfig}
             onDeleteText={handleDeleteText}
+            onUpdateText={handleUpdateText}
             onUploadPoster={handleUploadPoster}
             onCanvasResize={handleCanvasResize}
             onPosterSizeResolved={handlePosterSizeResolved}
           />
 
           <footer className="sticky bottom-0 border-t border-neutral-200 bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            {saveMessage && (
-              <p className="mb-2 text-center text-xs text-neutral-600">{saveMessage}</p>
+            {(saveMessage || uploadError) && (
+              <p className="mb-2 text-center text-xs text-neutral-600">{saveMessage || uploadError}</p>
             )}
             <div className="flex gap-3">
               <Button

@@ -37,10 +37,12 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   const pagerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!config.backgroundUrl && defaultBackgroundUrl) {
-      setConfig((current) => ({ ...current, backgroundUrl: defaultBackgroundUrl }))
-    }
-  }, [defaultBackgroundUrl, config.backgroundUrl])
+    if (!defaultBackgroundUrl) return
+    setConfig((current) => {
+      if (current.template !== 'reference') return current
+      return { ...current, backgroundUrl: defaultBackgroundUrl }
+    })
+  }, [defaultBackgroundUrl])
 
   useEffect(() => {
     const font = getFontById(config.fontId)
@@ -76,12 +78,28 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   }
 
   const handleBackgroundUpload = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setSaveProgress('请选择图片文件')
+      window.setTimeout(() => setSaveProgress(''), 2200)
+      return
+    }
+
     const reader = new FileReader()
+    reader.onerror = () => {
+      setSaveProgress('图片读取失败，请重试')
+      window.setTimeout(() => setSaveProgress(''), 2200)
+    }
     reader.onload = () => {
+      const result = reader.result
+      if (typeof result !== 'string') {
+        setSaveProgress('图片读取失败，请重试')
+        window.setTimeout(() => setSaveProgress(''), 2200)
+        return
+      }
       setConfig((current) => ({
         ...current,
         template: 'reference',
-        backgroundUrl: reader.result as string,
+        backgroundUrl: result,
       }))
     }
     reader.readAsDataURL(file)
@@ -242,7 +260,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           <button
             type="button"
             className="flex h-12 items-center justify-center gap-2 rounded-xl bg-black text-sm font-semibold text-white active:bg-neutral-800"
-            onClick={() => setConfigOpen(true)}
+            onClick={handleGenerate}
           >
             <Sparkles size={18} />
             生成

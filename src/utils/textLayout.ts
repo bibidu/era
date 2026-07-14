@@ -110,6 +110,60 @@ export function getPresetBackground(text: TextElement): string | null {
   return null
 }
 
+/** 与 DOM 预览一致的文本换行最大宽度（逻辑像素） */
+export function getTextWrapMaxWidth(text: TextElement, containerWidth: number): number {
+  const aligned = text.textAlign !== 'none'
+  if (aligned) {
+    return Math.max(0, containerWidth - H_PADDING * 2)
+  }
+  return Math.max(0, containerWidth - text.x - H_PADDING)
+}
+
+function wrapParagraph(
+  ctx: CanvasRenderingContext2D,
+  paragraph: string,
+  maxWidth: number,
+): string[] {
+  if (!paragraph) return ['']
+  if (maxWidth <= 0) return [paragraph]
+
+  const lines: string[] = []
+  let line = ''
+
+  for (const ch of paragraph) {
+    const candidate = line + ch
+    if (line && ctx.measureText(candidate).width > maxWidth) {
+      const spaceIdx = line.lastIndexOf(' ')
+      if (spaceIdx > 0) {
+        lines.push(line.slice(0, spaceIdx))
+        line = line.slice(spaceIdx + 1) + ch
+      } else {
+        lines.push(line)
+        line = ch
+      }
+    } else {
+      line = candidate
+    }
+  }
+
+  if (line) lines.push(line)
+  return lines.length ? lines : ['']
+}
+
+/** 将文本按 Canvas 度量折行，匹配 pre-wrap + break-word 行为 */
+export function wrapTextContentToLines(
+  ctx: CanvasRenderingContext2D,
+  content: string,
+  maxWidth: number,
+): string[] {
+  if (!content) return []
+  const lines: string[] = []
+  for (const paragraph of content.split('\n')) {
+    lines.push(...wrapParagraph(ctx, paragraph, maxWidth))
+  }
+  return lines
+}
+
 export function getPresetUpdates(preset: TextStylePreset): Partial<TextElement> {
   switch (preset) {
     case 'box':

@@ -26,6 +26,11 @@ body {
   touch-action: manipulation;
 }
 
+body.is-exporting .export-hide,
+.poster-canvas.is-exporting .export-hide {
+  display: none !important;
+}
+
 body.is-dragging {
   overflow: hidden;
   touch-action: none;

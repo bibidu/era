@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from 'react'
 import { PRESET_COLORS, STYLE_PRESETS } from '../data/editorPresets'
 import { getFontById, CLASSIC_WEB_FONT_IDS } from '../data/fonts'
 import type { FontOption, TextDecoration, TextElement } from '../types'
-import { ALIGN_OPTIONS } from '../types'
+import { ALIGN_OPTIONS, H_PADDING } from '../types'
 import { useFontLoader } from '../hooks/useFontLoader'
 import { getPresetUpdates } from '../utils/textLayout'
 import { FontGrid } from './FontGrid'
@@ -49,6 +49,7 @@ export function TextEditorSheet({
   const [fontError, setFontError] = useState<string | null>(null)
   const [fontSizeDraft, setFontSizeDraft] = useState(24)
   const [topDraft, setTopDraft] = useState(0)
+  const [leftDraft, setLeftDraft] = useState(0)
 
   useEffect(() => {
     if (isOpen !== state.isOpen) {
@@ -75,7 +76,8 @@ export function TextEditorSheet({
     if (!text) return
     setFontSizeDraft(text.fontSize)
     setTopDraft(Math.round(text.y))
-  }, [text?.id, text?.fontSize, text?.y])
+    setLeftDraft(Math.round(text.x))
+  }, [text?.id, text?.fontSize, text?.y, text?.x])
 
   useEffect(() => {
     if (!text) return
@@ -96,7 +98,8 @@ export function TextEditorSheet({
   if (!isOpen || !text) return null
 
   const maxTop = Math.max(0, Math.round(canvasHeight - 24))
-  const isKeyboardTab = activeTab === 'keyboard'
+  const maxLeft = Math.max(0, Math.round(360 - H_PADDING))
+  const isFreePosition = text.textAlign === 'none'
 
   const handleFontSelect = async (font: FontOption) => {
     if (font.source !== 'system') {
@@ -124,6 +127,14 @@ export function TextEditorSheet({
     setTopDraft(y)
     onUpdate(text.id, { y })
   }
+
+  const commitLeft = (value: number) => {
+    const x = Math.min(Math.max(0, Math.round(value)), maxLeft)
+    setLeftDraft(x)
+    onUpdate(text.id, { x })
+  }
+
+  const isKeyboardTab = activeTab === 'keyboard'
 
   const toggleDecoration = (decoration: TextDecoration) => {
     onUpdate(text.id, {
@@ -340,6 +351,24 @@ export function TextEditorSheet({
                         onChangeEnd={commitTop}
                       />
                     </section>
+
+                    {isFreePosition && (
+                      <section className="touch-none">
+                        <div className="mb-2 flex items-center justify-between">
+                          <Label className="text-sm text-neutral-600">距左侧</Label>
+                          <span className="text-sm text-neutral-500">{leftDraft}px</span>
+                        </div>
+                        <GreySlider
+                          aria-label="距左侧"
+                          minValue={0}
+                          maxValue={maxLeft}
+                          step={1}
+                          value={leftDraft}
+                          onChange={setLeftDraft}
+                          onChangeEnd={commitLeft}
+                        />
+                      </section>
+                    )}
                   </div>
                 )}
               </Drawer.Body>
