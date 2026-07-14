@@ -110,15 +110,16 @@ body.is-dragging {
   left: 0;
   right: 0;
   z-index: 2;
-  display: flex;
-  align-items: stretch;
   pointer-events: auto;
   background: rgb(115 115 115 / 0.55);
 }
 
 .graphic-config-preview-dismiss {
-  flex: 1;
-  min-width: 0;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 0;
+  width: 50%;
   border: none;
   padding: 0;
   background: transparent;
@@ -126,12 +127,29 @@ body.is-dragging {
   -webkit-tap-highlight-color: transparent;
 }
 
+.graphic-config-preview-dismiss-left {
+  left: 0;
+}
+
+.graphic-config-preview-dismiss-right {
+  right: 0;
+}
+
 .graphic-config-preview-center {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  z-index: 1;
   display: flex;
-  flex-shrink: 0;
+  height: 100%;
   align-items: center;
   justify-content: center;
-  min-width: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.graphic-config-preview-center > * {
+  pointer-events: auto;
 }
 
 .graphic-config-preview {
@@ -139,7 +157,7 @@ body.is-dragging {
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
-  width: 100%;
+  height: 100%;
   padding: max(12px, env(safe-area-inset-top)) 0 8px;
   box-sizing: border-box;
 }
@@ -438,13 +456,22 @@ body.text-input-open .drawer__dialog {
   touch-action: manipulation;
 }
 
+.keyboard-dock--markdown {
+  display: flex;
+  max-height: 50vh;
+  height: 50vh;
+  flex-direction: column;
+}
+
 .keyboard-dock-input {
+  min-height: 0;
+  flex: 1;
   border-top: 1px solid #e5e5e5;
 }
 
 .keyboard-dock-textarea {
-  min-height: 72px;
-  max-height: 96px;
+  min-height: 0;
+  max-height: none;
 }
 
 body.keyboard-dock-open {

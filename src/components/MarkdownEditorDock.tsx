@@ -67,7 +67,7 @@ export function MarkdownEditorDock({ value, onChange, onCommit }: MarkdownEditor
   }, [])
 
   return createPortal(
-    <div ref={dockRef} className="keyboard-dock">
+    <div ref={dockRef} className="keyboard-dock keyboard-dock--markdown">
       <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-2">
         <p className="text-sm font-medium text-neutral-900">编辑 Markdown</p>
         <button
@@ -80,19 +80,18 @@ export function MarkdownEditorDock({ value, onChange, onCommit }: MarkdownEditor
         </button>
       </div>
 
-      <div className="keyboard-dock-input px-4 py-3">
+      <div className="keyboard-dock-input flex min-h-0 flex-1 px-4 py-3">
         <textarea
           ref={inputRef}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="# 输入标题&#10;&#10;正文可用 [[重点句子]] 或 **重点句子** 标记主题色"
-          rows={6}
           inputMode="text"
           enterKeyHint="done"
           autoComplete="off"
           autoCorrect="on"
           spellCheck
-          className="keyboard-dock-textarea max-h-40 w-full resize-none rounded-xl border border-neutral-300 bg-neutral-50 px-3 py-3 font-mono text-base leading-7 text-neutral-900 outline-none placeholder:text-neutral-400"
+          className="keyboard-dock-textarea min-h-0 w-full flex-1 resize-none rounded-xl border border-neutral-300 bg-neutral-50 px-3 py-3 font-mono text-base leading-7 text-neutral-900 outline-none placeholder:text-neutral-400"
           style={{
             fontSize: '16px',
             WebkitUserSelect: 'text',
