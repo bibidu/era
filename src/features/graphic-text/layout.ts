@@ -9,7 +9,7 @@ import { stripHighlightMarkers } from './inlineHighlight'
 import {
   CODE_HORIZONTAL_PADDING_SCALE,
   CODE_SIZE_SCALE,
-  codeCharsPerLine,
+  estimateCodeLineWidth,
   wrapCodeTextLines,
 } from './codeBlock'
 import { estimateCharsPerLine, wrapPlainTextLines } from './textWrap'
@@ -254,7 +254,7 @@ function blockToLayoutLines(
   const fontWeight = styleType === 'title' || styleType === 'heading' ? 700 : 400
   const wrappedLines =
     block.type === 'code' || styleType === 'code'
-      ? wrapCodeTextLines(plainText, codeCharsPerLine(availableWidth, size))
+      ? wrapCodeTextLines(plainText, estimateCodeLineWidth(size, availableWidth), size)
       : wrapPlainTextLines(
           plainText,
           estimateCharsPerLine(font.fontFamily, size, fontWeight, availableWidth),
