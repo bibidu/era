@@ -618,19 +618,24 @@ export function GraphicTextConfigSheet({
 
   return createPortal(
     <div className="graphic-config-root">
-      {previewNode && (
+      {previewNode && previewLayout && (
         <div className="graphic-config-preview-layer" style={{ height: previewAreaHeight }}>
           <button
             type="button"
             aria-label="关闭配置"
-            className="graphic-config-preview-dismiss"
+            className="graphic-config-preview-dismiss graphic-config-preview-dismiss-left"
             onClick={() => onOpenChange(false)}
           />
-          <div className="graphic-config-preview-center">{previewNode}</div>
+          <div
+            className="graphic-config-preview-center"
+            style={{ width: previewLayout.width }}
+          >
+            {previewNode}
+          </div>
           <button
             type="button"
             aria-label="关闭配置"
-            className="graphic-config-preview-dismiss"
+            className="graphic-config-preview-dismiss graphic-config-preview-dismiss-right"
             onClick={() => onOpenChange(false)}
           />
         </div>
