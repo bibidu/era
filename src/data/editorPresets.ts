@@ -15,15 +15,6 @@ export const PRESET_COLORS = [
   '#6B7280',
 ]
 
-export const TEXT_TEMPLATES = [
-  { id: 'title', label: '大标题', content: '大标题' },
-  { id: 'subtitle', label: '副标题', content: '副标题文字' },
-  { id: 'slogan', label: '口号', content: '口号标语' },
-  { id: 'date', label: '日期', content: '2026.07.11' },
-  { id: 'quote', label: '金句', content: '一句话金句' },
-  { id: 'name', label: '署名', content: '@署名' },
-]
-
 export interface StylePresetOption {
   id: TextStylePreset
   label: string

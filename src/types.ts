@@ -19,9 +19,7 @@ export interface TextElement {
   backgroundColor: string | null
 }
 
-export type FontSource = 'system' | 'google'
-
-export type { FontOption } from './data/fonts'
+export type { FontOption, FontSource } from './data/fonts'
 export { FONT_OPTIONS, FONT_COUNT } from './data/fonts'
 
 export const ALIGN_OPTIONS: { id: TextAlign; label: string }[] = [

@@ -44,7 +44,7 @@ const RAW_FONT_OPTIONS: FontOption[] = [
     fontFamily: '"Noto Sans SC", sans-serif',
     sample: '黑体',
     source: 'google',
-    googleFamily: 'Noto+Sans+SC:wght@700',
+    googleFamily: 'Noto+Sans+SC:wght@400;700',
   },
   {
     id: 'song',

@@ -28,8 +28,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Install Playwright browser
+        run: npx playwright install chromium
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build and verify fonts
+        run: npm run verify:fonts
 
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4

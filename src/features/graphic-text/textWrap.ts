@@ -24,6 +24,26 @@ function unitWidthCost(unit: string): number {
   return 1
 }
 
+/** 基于 Canvas 度量估算每行可容纳的字符成本单位 */
+export function estimateCharsPerLine(
+  fontFamily: string,
+  fontSize: number,
+  fontWeight: number,
+  availableWidth: number,
+): number {
+  const fallback = Math.max(4, Math.floor(availableWidth / (fontSize * 0.95)))
+  if (typeof document === 'undefined') return fallback
+
+  const ctx = document.createElement('canvas').getContext('2d')
+  if (!ctx) return fallback
+
+  const primary = fontFamily.replace(/"/g, '').split(',')[0].trim()
+  ctx.font = `${fontWeight} ${fontSize}px ${primary}`
+  const charWidth = ctx.measureText('汉').width
+  if (!charWidth) return fallback
+  return Math.max(4, Math.floor(availableWidth / charWidth))
+}
+
 export function wrapPlainTextLines(text: string, charsPerLine: number): string[] {
   const units = splitWrapUnits(text)
   if (!units.length) return ['']

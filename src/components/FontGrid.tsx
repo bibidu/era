@@ -26,20 +26,20 @@ export function FontGrid({
         const selected = selectedFontId === font.id
 
         return (
-          <button
-            key={font.id}
-            type="button"
-            className={`component-font-chip relative flex h-[52px] items-center justify-center rounded-lg px-1 ${
-              selected ? 'component-font-chip--selected' : ''
-            }`}
-            style={{ fontFamily: loaded ? font.fontFamily : 'system-ui, sans-serif' }}
-            onClick={() => onSelect(font)}
-          >
-            <span className="truncate px-1 text-sm leading-tight">{font.label}</span>
+          <div key={font.id} className="relative">
+            <button
+              type="button"
+              className={`component-font-chip relative flex h-[52px] w-full items-center justify-center rounded-lg px-1 ${
+                selected ? 'component-font-chip--selected' : ''
+              }`}
+              style={{ fontFamily: loaded ? font.fontFamily : 'system-ui, sans-serif' }}
+              onClick={() => onSelect(font)}
+            >
+              <span className="truncate px-1 text-sm leading-tight">{font.label}</span>
+            </button>
             {needsCloud && (
-              <span
-                role="button"
-                tabIndex={-1}
+              <button
+                type="button"
                 aria-label={`加载${font.label}`}
                 className="absolute bottom-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-neutral-200 text-neutral-600"
                 onClick={(e) => {
@@ -52,9 +52,9 @@ export function FontGrid({
                 ) : (
                   <Cloud size={10} strokeWidth={1.5} />
                 )}
-              </span>
+              </button>
             )}
-          </button>
+          </div>
         )
       })}
     </div>
