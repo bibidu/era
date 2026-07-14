@@ -75,6 +75,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     setPages(nextPages)
     setActivePage(0)
     setView('preview')
+    setConfigOpen(true)
   }
 
   const handleBackgroundUpload = (file: File) => {

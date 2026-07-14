@@ -22,6 +22,7 @@ export interface GraphicTextConfig {
   headingMarginTop: number
   headingMarginBottom: number
   themeColor: string
+  paperColor: string
   aspectRatio: GraphicAspectRatio
   template: GraphicTemplate
   topText: string
@@ -59,6 +60,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   headingMarginTop: 0.88,
   headingMarginBottom: 0.32,
   themeColor: '#FACC15',
+  paperColor: '#FBF7ED',
   aspectRatio: '9:16',
   template: 'grid',
   topText: '',

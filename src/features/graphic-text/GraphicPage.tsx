@@ -241,7 +241,9 @@ export function GraphicPage({
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }
-      : config.template === 'grid'
+      : config.template === 'solid'
+        ? { backgroundColor: config.paperColor }
+        : config.template === 'grid'
         ? {
             backgroundColor: '#FBF7ED',
             backgroundImage:

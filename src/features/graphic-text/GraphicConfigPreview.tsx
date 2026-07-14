@@ -1,5 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { GraphicPage } from './GraphicPage'
 import type { GraphicTextConfig, GraphicTextPage } from './types'
 
@@ -24,8 +23,8 @@ export function GraphicConfigPreview({
   scale,
   showSafeArea = false,
 }: GraphicConfigPreviewProps) {
+  const pagerRef = useRef<HTMLDivElement>(null)
   const [activePage, setActivePage] = useState(0)
-  const currentPage = pages[activePage] ?? pages[0]
 
   useEffect(() => {
     setActivePage((current) => Math.min(current, Math.max(pages.length - 1, 0)))
@@ -35,10 +34,19 @@ export function GraphicConfigPreview({
     setActivePage(0)
   }, [markdown])
 
-  const goPrev = () => setActivePage((current) => Math.max(0, current - 1))
-  const goNext = () => setActivePage((current) => Math.min(pages.length - 1, current + 1))
+  useEffect(() => {
+    const pager = pagerRef.current
+    if (!pager || !pager.clientWidth) return
+    pager.scrollLeft = activePage * pager.clientWidth
+  }, [activePage, sourceWidth, scale, pages.length])
 
-  if (!currentPage) return null
+  const handlePagerScroll = () => {
+    const pager = pagerRef.current
+    if (!pager || !pager.clientWidth) return
+    setActivePage(Math.round(pager.scrollLeft / pager.clientWidth))
+  }
+
+  if (!pages.length) return null
 
   const scaledWidth = sourceWidth * scale
   const scaledHeight = sourceHeight * scale
@@ -52,49 +60,37 @@ export function GraphicConfigPreview({
           </p>
         )}
 
-        <div className="graphic-config-preview-stage">
-          <button
-            type="button"
-            aria-label="上一页"
-            className="graphic-config-preview-nav"
-            disabled={activePage <= 0}
-            onClick={goPrev}
-          >
-            <ChevronLeft size={22} />
-          </button>
-
-          <div
-            className="graphic-config-preview-page"
-            style={{ width: scaledWidth, height: scaledHeight }}
-          >
-            <div
-              className="graphic-config-preview-page-scale"
-              style={{
-                width: sourceWidth,
-                height: sourceHeight,
-                transform: `scale(${scale})`,
-              }}
-            >
-              <GraphicPage
-                page={currentPage}
-                config={config}
-                markdown={markdown}
-                showSafeArea={showSafeArea}
-                displayWidth={sourceWidth}
-                className="pointer-events-none rounded-xl shadow-lg"
-              />
+        <div
+          ref={pagerRef}
+          className="graphic-config-preview-pager"
+          onScroll={handlePagerScroll}
+        >
+          {pages.map((page) => (
+            <div key={page.index} className="graphic-config-preview-slide">
+              <div
+                className="graphic-config-preview-slide-inner"
+                style={{ width: scaledWidth, height: scaledHeight }}
+              >
+              <div
+                className="graphic-config-preview-page-scale"
+                style={{
+                  width: sourceWidth,
+                  height: sourceHeight,
+                  transform: `scale(${scale})`,
+                }}
+              >
+                <GraphicPage
+                  page={page}
+                  config={config}
+                  markdown={markdown}
+                  showSafeArea={showSafeArea}
+                  displayWidth={sourceWidth}
+                  className="pointer-events-none rounded-xl shadow-lg"
+                />
+              </div>
+              </div>
             </div>
-          </div>
-
-          <button
-            type="button"
-            aria-label="下一页"
-            className="graphic-config-preview-nav"
-            disabled={activePage >= pages.length - 1}
-            onClick={goNext}
-          >
-            <ChevronRight size={22} />
-          </button>
+          ))}
         </div>
       </div>
     </div>

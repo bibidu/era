@@ -110,8 +110,28 @@ body.is-dragging {
   left: 0;
   right: 0;
   z-index: 2;
+  display: flex;
+  align-items: stretch;
   pointer-events: auto;
   background: rgb(115 115 115 / 0.55);
+}
+
+.graphic-config-preview-dismiss {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.graphic-config-preview-center {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
 }
 
 .graphic-config-preview {
@@ -119,7 +139,8 @@ body.is-dragging {
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
-  padding: max(12px, env(safe-area-inset-top)) 8px 8px;
+  width: 100%;
+  padding: max(12px, env(safe-area-inset-top)) 0 8px;
   box-sizing: border-box;
 }
 
@@ -162,6 +183,64 @@ body.is-dragging {
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+.graphic-config-preview-pager {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+}
+
+.graphic-config-preview-slide {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 100%;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+
+.graphic-config-preview-slide-inner {
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.graphic-highlight-row-radio {
+  display: flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 2px solid #a3a3a3;
+  background: #ffffff;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.graphic-highlight-row-radio[aria-checked='true'] {
+  border-color: #171717;
+}
+
+.graphic-highlight-row-radio-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: transparent;
+}
+
+.graphic-highlight-row-radio[aria-checked='true'] .graphic-highlight-row-radio-dot {
+  background: #171717;
 }
 
 .graphic-config-preview-nav {

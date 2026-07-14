@@ -181,7 +181,7 @@ async function drawPage(
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas 不可用')
 
-  ctx.fillStyle = '#FBF7ED'
+  ctx.fillStyle = config.template === 'solid' ? config.paperColor : '#FBF7ED'
   ctx.fillRect(0, 0, width, height)
 
   if (config.template === 'reference' && config.backgroundUrl) {
