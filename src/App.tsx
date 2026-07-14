@@ -5,7 +5,7 @@ import { PosterWorkspace } from './features/poster/PosterWorkspace'
 import { usePosterEditor } from './features/poster/usePosterEditor'
 
 function App() {
-  const [mode, setMode] = useState<AppMode>('poster')
+  const [mode, setMode] = useState<AppMode>('graphic')
   const poster = usePosterEditor()
 
   return (
