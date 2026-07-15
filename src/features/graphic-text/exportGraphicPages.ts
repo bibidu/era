@@ -21,7 +21,11 @@ import {
 import { drawPageGradientBackground } from './pageGradientOverlay'
 import { drawPagePaperOverlay } from './pagePaperOverlay'
 import { drawPagePixelOverlay } from './pagePixelOverlay'
-import { shouldDrawBaseBackground, shouldDrawPageOverlay } from './pageLayering'
+import {
+  shouldDrawBaseBackground,
+  shouldDrawPageOverlay,
+  shouldDrawReferenceBackground,
+} from './pageLayering'
 import { resolveTopBarParts } from './topBar'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -223,7 +227,7 @@ async function drawPage(
     ctx.fillStyle = resolvePageBaseFillColor(config)
     ctx.fillRect(0, 0, width, height)
 
-    if (config.backgroundType === 'reference' && config.backgroundUrl) {
+    if (shouldDrawReferenceBackground(config) && config.backgroundUrl) {
       const image = await loadImage(config.backgroundUrl)
       drawCoverImage(ctx, image, width, height)
       ctx.fillStyle = 'rgba(255,255,255,.82)'

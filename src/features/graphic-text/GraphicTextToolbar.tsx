@@ -154,7 +154,7 @@ export function GraphicTextToolbar({
             </div>
           </div>
         ) : inTemplateMode ? (
-          <div className="graphic-text-toolbar-template flex min-w-0 flex-1 items-center">
+          <div className="graphic-text-toolbar-text-adjust graphic-text-toolbar-template flex min-w-0 flex-1 items-center">
             <button
               type="button"
               aria-label="返回"
@@ -177,11 +177,18 @@ export function GraphicTextToolbar({
               <button
                 type="button"
                 aria-label="参考图"
-                aria-pressed={config.backgroundType === 'reference'}
-                className={`graphic-text-toolbar-item ${config.backgroundType === 'reference' ? 'graphic-text-toolbar-item--active' : ''}`}
+                aria-pressed={config.overlayStacked && config.backgroundType === 'reference'}
+                className={`graphic-text-toolbar-item graphic-text-toolbar-template-item ${
+                  config.overlayStacked && config.backgroundType === 'reference'
+                    ? 'graphic-text-toolbar-item--active'
+                    : ''
+                } ${!config.overlayStacked ? 'graphic-text-toolbar-template-item--muted' : ''}`}
                 onClick={onPickReferenceImage}
               >
-                <TemplatePreviewSquare selected={config.backgroundType === 'reference'}>
+                <TemplatePreviewSquare
+                  className="graphic-text-toolbar-template-preview"
+                  selected={config.overlayStacked && config.backgroundType === 'reference'}
+                >
                   {config.backgroundUrl ? (
                     <img src={config.backgroundUrl} alt="" className="size-full object-cover" />
                   ) : null}
@@ -193,10 +200,15 @@ export function GraphicTextToolbar({
                 type="button"
                 aria-label="纯色"
                 aria-pressed={templateNav === 'solid'}
-                className={`graphic-text-toolbar-item ${templateNav === 'solid' ? 'graphic-text-toolbar-item--active' : ''}`}
+                className={`graphic-text-toolbar-item graphic-text-toolbar-template-item ${
+                  templateNav === 'solid' ? 'graphic-text-toolbar-item--active' : ''
+                } ${!config.overlayStacked ? 'graphic-text-toolbar-template-item--muted' : ''}`}
                 onClick={onSelectTemplateSolid}
               >
-                <TemplatePreviewSquare selected={config.backgroundType === 'solid'}>
+                <TemplatePreviewSquare
+                  className="graphic-text-toolbar-template-preview"
+                  selected={config.overlayStacked && config.backgroundType === 'solid'}
+                >
                   <span
                     className="size-full"
                     style={{ backgroundColor: config.paperColor }}
@@ -210,14 +222,14 @@ export function GraphicTextToolbar({
                 type="button"
                 aria-label="特殊质感"
                 aria-pressed={templateNav === 'texture'}
-                className={`graphic-text-toolbar-item ${templateNav === 'texture' ? 'graphic-text-toolbar-item--active' : ''}`}
+                className={`graphic-text-toolbar-item graphic-text-toolbar-template-item ${
+                  templateNav === 'texture' ? 'graphic-text-toolbar-item--active' : ''
+                }`}
                 onClick={onSelectTemplateTexture}
               >
                 <TemplatePreviewSquare
-                  selected={
-                    templateNav === 'texture' ||
-                    (config.pageOverlay !== 'none' && config.pageOverlay !== 'grid')
-                  }
+                  className="graphic-text-toolbar-template-preview"
+                  selected={templateNav === 'texture' || config.pageOverlay !== 'none'}
                 >
                   <span className="size-full bg-neutral-100" aria-hidden />
                 </TemplatePreviewSquare>

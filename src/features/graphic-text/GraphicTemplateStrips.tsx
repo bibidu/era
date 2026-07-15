@@ -100,11 +100,17 @@ export function GraphicTemplateTextureStrip({
             type="button"
             aria-label={option.label}
             aria-pressed={config.pageOverlay === option.id}
-            className="graphic-toolbar-strip-template-btn"
-            onClick={() => onUpdate({ pageOverlay: option.id })}
+            className={`graphic-toolbar-strip-template-btn graphic-toolbar-strip-template-btn--horizontal ${
+              config.pageOverlay === option.id ? 'graphic-toolbar-strip-template-btn--selected' : ''
+            }`}
+            onClick={() =>
+              onUpdate({
+                pageOverlay: config.pageOverlay === option.id ? 'none' : option.id,
+              })
+            }
           >
             <TemplatePreviewSquare
-              className={option.previewClassName}
+              className={`graphic-toolbar-strip-template-preview ${option.previewClassName ?? ''}`}
               selected={config.pageOverlay === option.id}
             >
               {option.preview}
