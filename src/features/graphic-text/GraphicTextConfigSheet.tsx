@@ -24,6 +24,21 @@ interface GraphicTextConfigSheetProps {
   onUpdate: (updates: Partial<GraphicTextConfig>) => void
 }
 
+function applySheetLayout(
+  dialogEl: HTMLElement | null,
+  previewLayerEl: HTMLElement | null,
+  sheetHeight: number,
+  viewportHeight: number,
+) {
+  if (dialogEl) {
+    dialogEl.style.height = `${sheetHeight}px`
+    dialogEl.style.maxHeight = `${sheetHeight}px`
+  }
+  if (previewLayerEl) {
+    previewLayerEl.style.height = `${Math.max(0, viewportHeight - sheetHeight)}px`
+  }
+}
+
 export function GraphicTextConfigSheet({
   isOpen,
   panel,
@@ -42,8 +57,12 @@ export function GraphicTextConfigSheet({
     },
   })
   const dialogRef = useRef<HTMLDivElement | null>(null)
+  const dialogElRef = useRef<HTMLElement | null>(null)
+  const previewLayerRef = useRef<HTMLDivElement | null>(null)
   const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
   const isDraggingRef = useRef(false)
+  const rafRef = useRef<number | null>(null)
+  const pendingHeightRef = useRef(0)
   const [viewportHeight, setViewportHeight] = useState(getViewportHeight)
   const [sheetHeight, setSheetHeight] = useState(0)
   const [highlightDraft, setHighlightDraft] = useState({
@@ -103,6 +122,11 @@ export function GraphicTextConfigSheet({
   }, [isOpen])
 
   useLayoutEffect(() => {
+    dialogElRef.current =
+      dialogRef.current?.querySelector<HTMLElement>('.graphic-config-drawer-dialog') ?? null
+  }, [isOpen])
+
+  useLayoutEffect(() => {
     if (!isOpen) {
       setSheetHeight(0)
       return
@@ -113,7 +137,9 @@ export function GraphicTextConfigSheet({
 
     const updateHeight = () => {
       if (isDraggingRef.current) return
-      setSheetHeight(dialog.getBoundingClientRect().height)
+      const measured = dialog.getBoundingClientRect().height
+      setSheetHeight(measured)
+      applySheetLayout(dialogElRef.current, previewLayerRef.current, measured, getViewportHeight())
     }
 
     updateHeight()
@@ -139,33 +165,72 @@ export function GraphicTextConfigSheet({
     config.highlightPickerColor,
   ])
 
-  const handleResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    isDraggingRef.current = true
-    const currentHeight = sheetHeight || dialogRef.current?.getBoundingClientRect().height || readCachedSheetHeight()
-    resizeRef.current = { startY: event.clientY, startHeight: currentHeight }
-    event.currentTarget.setPointerCapture(event.pointerId)
+  const handlePointerMoveRef = useRef<(event: PointerEvent) => void>(() => {})
+  const handlePointerEndRef = useRef<() => void>(() => {})
+
+  const scheduleHeightState = (nextHeight: number, nextViewport: number) => {
+    pendingHeightRef.current = nextHeight
+    if (rafRef.current !== null) return
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null
+      setViewportHeight(nextViewport)
+      setSheetHeight(pendingHeightRef.current)
+    })
   }
 
-  const handleResizeMove = (event: React.PointerEvent<HTMLDivElement>) => {
+  const onWindowPointerMove = (event: PointerEvent) => {
+    handlePointerMoveRef.current(event)
+  }
+
+  const onWindowPointerEnd = () => {
+    handlePointerEndRef.current()
+  }
+
+  handlePointerMoveRef.current = (event: PointerEvent) => {
     if (!resizeRef.current) return
     const delta = resizeRef.current.startY - event.clientY
     const nextViewport = getViewportHeight()
     const nextHeight = clampSheetHeight(resizeRef.current.startHeight + delta, nextViewport)
-    setViewportHeight(nextViewport)
-    setSheetHeight(nextHeight)
+    applySheetLayout(dialogElRef.current, previewLayerRef.current, nextHeight, nextViewport)
+    scheduleHeightState(nextHeight, nextViewport)
   }
 
-  const handleResizeEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+  handlePointerEndRef.current = () => {
     if (!resizeRef.current) return
     isDraggingRef.current = false
     resizeRef.current = null
-    if (sheetHeight > 0) {
-      writeCachedSheetHeight(sheetHeight)
+    window.removeEventListener('pointermove', onWindowPointerMove)
+    window.removeEventListener('pointerup', onWindowPointerEnd)
+    window.removeEventListener('pointercancel', onWindowPointerEnd)
+
+    const finalHeight = pendingHeightRef.current
+    if (finalHeight > 0) {
+      writeCachedSheetHeight(finalHeight)
+      setSheetHeight(finalHeight)
     }
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current)
+      }
+      window.removeEventListener('pointermove', onWindowPointerMove)
+      window.removeEventListener('pointerup', onWindowPointerEnd)
+      window.removeEventListener('pointercancel', onWindowPointerEnd)
     }
+  }, [])
+
+  const handleResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    isDraggingRef.current = true
+    const currentHeight =
+      sheetHeight || dialogRef.current?.getBoundingClientRect().height || readCachedSheetHeight()
+    pendingHeightRef.current = currentHeight
+    resizeRef.current = { startY: event.clientY, startHeight: currentHeight }
+    window.addEventListener('pointermove', onWindowPointerMove)
+    window.addEventListener('pointerup', onWindowPointerEnd)
+    window.addEventListener('pointercancel', onWindowPointerEnd)
   }
 
   const handleClose = () => {
@@ -231,7 +296,11 @@ export function GraphicTextConfigSheet({
     <Drawer state={state}>
       <Drawer.Backdrop isDismissable className="graphic-config-drawer-backdrop">
         {previewNode && previewLayout && (
-          <div className="graphic-config-preview-layer" style={{ height: previewAreaHeight }}>
+          <div
+            ref={previewLayerRef}
+            className="graphic-config-preview-layer"
+            style={{ height: previewAreaHeight }}
+          >
             <button
               type="button"
               aria-label="关闭配置"
@@ -272,9 +341,6 @@ export function GraphicTextConfigSheet({
                 aria-orientation="horizontal"
                 aria-label="调节面板高度"
                 onPointerDown={handleResizeStart}
-                onPointerMove={handleResizeMove}
-                onPointerUp={handleResizeEnd}
-                onPointerCancel={handleResizeEnd}
               >
                 <span className="graphic-config-sheet-handle-bar" />
               </div>
