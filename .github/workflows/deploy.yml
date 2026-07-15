@@ -37,6 +37,11 @@ jobs:
       - name: Build and verify fonts
         run: npm run verify:fonts
 
+      - name: Inject build version
+        run: node scripts/inject-build-version.mjs
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
