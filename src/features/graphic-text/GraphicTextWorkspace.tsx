@@ -156,7 +156,8 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     return computeGraphicPageDisplaySize(
       layout.aspectRatio,
       window.innerWidth - PAGER_PAGE_PADDING,
-      window.innerHeight - 200 - (configPanel ? sheetHeight : 0),
+      getViewportHeight() -
+        (configPanel && sheetHeight > 0 ? sheetHeight : toolbarDockHeight || 200),
     )
   }, [config, pagerSize, configPanel, sheetHeight])
 
@@ -320,8 +321,19 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   const showTextAdjustStrip =
     textAdjustField !== null && isTextAdjustTarget(fontSizeNav)
 
+  const sheetOpen = configPanel !== null && sheetHeight > 0
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-neutral-100">
+    <div
+      className="flex min-h-0 flex-1 flex-col bg-neutral-100"
+      style={
+        sheetOpen
+          ? {
+              paddingBottom: `calc(${sheetHeight}px + env(safe-area-inset-bottom, 0px))`,
+            }
+          : undefined
+      }
+    >
       <div
         ref={pagerRef}
         className="graphic-pager relative z-0 flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden"
