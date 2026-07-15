@@ -7,7 +7,7 @@ import { GraphicPage } from './GraphicPage'
 import { GraphicSaveImagesSheet } from './GraphicSaveImagesSheet'
 import { GraphicTextConfigSheet } from './GraphicTextConfigSheet'
 import { GraphicTextToolbar } from './GraphicTextToolbar'
-import { GraphicAspectStrip, GraphicFontStrip } from './GraphicToolbarStrips'
+import { GraphicAspectStrip, GraphicFontStrip, GraphicTemplateStrip } from './GraphicToolbarStrips'
 import type { GraphicConfigPanel, ToolbarStrip } from './graphicConfigPanels'
 import { paginateMarkdown, getGraphicLayout } from './layout'
 import { computeWorkspacePagerPageSize } from './graphicPreviewLayout'
@@ -33,7 +33,6 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   const [showSafeArea, setShowSafeArea] = useState(false)
   const [saveSheetOpen, setSaveSheetOpen] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
-  const [activePage, setActivePage] = useState(0)
   const [pasteError, setPasteError] = useState('')
   const pagerRef = useRef<HTMLDivElement>(null)
 
@@ -52,10 +51,6 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   }, [config.fontId, markdown])
 
   const pages = useMemo(() => paginateMarkdown(markdown, config), [markdown, config])
-
-  useEffect(() => {
-    setActivePage((current) => Math.min(current, Math.max(0, pages.length - 1)))
-  }, [pages.length])
 
   const pagerPageSize = useMemo(() => {
     const layout = getGraphicLayout(config)
@@ -89,12 +84,6 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
       }))
     }
     reader.readAsDataURL(file)
-  }
-
-  const handlePagerScroll = () => {
-    const pager = pagerRef.current
-    if (!pager || !pager.clientWidth) return
-    setActivePage(Math.round(pager.scrollLeft / pager.clientWidth))
   }
 
   const closeToolbarStrip = () => {
@@ -155,19 +144,9 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           />
         )}
 
-        <div className="flex h-12 shrink-0 items-center justify-center border-b border-neutral-200 bg-white px-3">
-          <div className="text-center">
-            <p className="text-sm font-medium">图文预览</p>
-            <p className="text-[11px] text-neutral-500">
-              {pages.length ? `${activePage + 1} / ${pages.length}` : '0 / 0'}
-            </p>
-          </div>
-        </div>
-
         <div
           ref={pagerRef}
           className="graphic-pager relative z-0 flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden"
-          onScroll={handlePagerScroll}
         >
           {pages.map((page) => (
             <div
@@ -193,6 +172,13 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
         )}
         {toolbarStrip === 'aspect' && (
           <GraphicAspectStrip selected={config.aspectRatio} onSelect={handleAspectSelect} />
+        )}
+        {toolbarStrip === 'template' && (
+          <GraphicTemplateStrip
+            config={config}
+            onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
+            onBackgroundUpload={handleBackgroundUpload}
+          />
         )}
 
         <GraphicTextToolbar
@@ -231,7 +217,6 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
             if (!open) setConfigPanel(null)
           }}
           onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
-          onBackgroundUpload={handleBackgroundUpload}
         />
       )}
 

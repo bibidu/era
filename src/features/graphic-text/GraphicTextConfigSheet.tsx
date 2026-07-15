@@ -1,6 +1,6 @@
 import { Drawer, useOverlayState } from '@heroui/react'
 import { X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { GraphicConfigPreview } from './GraphicConfigPreview'
 import { GraphicHighlightEditor } from './GraphicHighlightEditor'
 import {
@@ -31,50 +31,10 @@ interface GraphicTextConfigSheetProps {
   showSafeArea: boolean
   onOpenChange: (open: boolean) => void
   onUpdate: (updates: Partial<GraphicTextConfig>) => void
-  onBackgroundUpload: (file: File) => void
 }
-
-const PAPER_COLORS = [
-  '#FBF7ED',
-  '#FFF8F0',
-  '#FEFCE8',
-  '#ECFDF5',
-  '#EFF6FF',
-  '#FDF2F8',
-  '#FAF5FF',
-  '#F5F5F4',
-]
 
 const selectClassName =
   'h-9 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-neutral-50 px-2 text-sm outline-none focus:border-neutral-500'
-
-function TemplatePreviewSquare({
-  children,
-  className = '',
-  compact = false,
-}: {
-  children?: ReactNode
-  className?: string
-  compact?: boolean
-}) {
-  return (
-    <div
-      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-neutral-200 bg-neutral-50 ${
-        compact ? 'size-8' : 'size-11'
-      } ${className}`}
-    >
-      {children}
-    </div>
-  )
-}
-
-function templateOptionButtonClass(selected: boolean) {
-  return `inline-flex h-11 shrink-0 items-center gap-2.5 rounded-xl border px-3 text-sm ${
-    selected
-      ? 'border-2 border-black bg-white text-neutral-900'
-      : 'border border-neutral-300 bg-white text-neutral-700'
-  }`
-}
 
 function nearestOption(value: number, options: readonly number[]) {
   return options.reduce((closest, option) =>
@@ -127,7 +87,6 @@ export function GraphicTextConfigSheet({
   showSafeArea,
   onOpenChange,
   onUpdate,
-  onBackgroundUpload,
 }: GraphicTextConfigSheetProps) {
   const onCloseRef = useRef<() => void>(() => onOpenChange(false))
   const state = useOverlayState({
@@ -139,11 +98,8 @@ export function GraphicTextConfigSheet({
   })
   const sheetRef = useRef<HTMLDivElement | null>(null)
   const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
-  const referenceInputRef = useRef<HTMLInputElement | null>(null)
-  const solidPickerRef = useRef<HTMLDivElement | null>(null)
   const [viewportHeight, setViewportHeight] = useState(getViewportHeight)
   const [sheetHeight, setSheetHeight] = useState(readCachedSheetHeight)
-  const [solidColorPickerOpen, setSolidColorPickerOpen] = useState(false)
   const [highlightDraft, setHighlightDraft] = useState({
     underline: config.underlineHighlightColors,
     quote: config.quoteHighlightColors,
@@ -174,19 +130,6 @@ export function GraphicTextConfigSheet({
       previewAreaHeight,
     )
   }, [config, previewAreaHeight])
-
-  useEffect(() => {
-    if (!solidColorPickerOpen) return
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!solidPickerRef.current?.contains(event.target as Node)) {
-        setSolidColorPickerOpen(false)
-      }
-    }
-
-    document.addEventListener('pointerdown', handlePointerDown)
-    return () => document.removeEventListener('pointerdown', handlePointerDown)
-  }, [solidColorPickerOpen])
 
   useEffect(() => {
     if (isOpen !== state.isOpen) {
@@ -381,117 +324,6 @@ export function GraphicTextConfigSheet({
                 onChange={(value) => onUpdate({ headingMarginBottom: value })}
               />
             </div>
-          </div>
-        )
-      case 'template':
-        return (
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              ref={referenceInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) onBackgroundUpload(file)
-                event.target.value = ''
-              }}
-            />
-            <button
-              type="button"
-              className={templateOptionButtonClass(config.backgroundType === 'reference')}
-              onClick={() => {
-                onUpdate({ backgroundType: 'reference' })
-                referenceInputRef.current?.click()
-              }}
-            >
-              <span>参考图</span>
-              <TemplatePreviewSquare compact>
-                {config.backgroundUrl ? (
-                  <img
-                    src={config.backgroundUrl}
-                    alt="参考图预览"
-                    className="size-full object-cover"
-                  />
-                ) : null}
-              </TemplatePreviewSquare>
-            </button>
-
-            <div ref={solidPickerRef} className="relative shrink-0">
-              {solidColorPickerOpen && (
-                <div className="absolute bottom-[calc(100%+8px)] left-0 z-20 rounded-xl border border-neutral-200 bg-white p-2 shadow-lg">
-                  <div className="component-scroll-row flex items-center gap-2 overflow-x-auto whitespace-nowrap">
-                    {PAPER_COLORS.map((color) => (
-                      <button
-                        key={color}
-                        type="button"
-                        aria-label={`纸张色 ${color}`}
-                        className={`size-7 shrink-0 rounded-full border-2 ${
-                          config.paperColor === color ? 'border-black' : 'border-transparent'
-                        }`}
-                        style={{ backgroundColor: color }}
-                        onClick={() => {
-                          onUpdate({
-                            backgroundType: 'solid',
-                            paperColor: color,
-                          })
-                          setSolidColorPickerOpen(false)
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-              <button
-                type="button"
-                className={templateOptionButtonClass(config.backgroundType === 'solid')}
-                onClick={() => {
-                  onUpdate({ backgroundType: 'solid' })
-                  setSolidColorPickerOpen((current) => !current)
-                }}
-              >
-                <span>纯色纸张</span>
-                <TemplatePreviewSquare compact>
-                  <span
-                    className="size-full"
-                    style={{ backgroundColor: config.paperColor }}
-                    aria-hidden
-                  />
-                </TemplatePreviewSquare>
-              </button>
-            </div>
-
-            <button
-              type="button"
-              aria-label="方格块"
-              aria-pressed={config.pageOverlay === 'grid'}
-              className={`inline-flex shrink-0 rounded-xl p-0.5 ${
-                config.pageOverlay === 'grid' ? 'border-2 border-black' : 'border border-neutral-300'
-              }`}
-              onClick={() =>
-                onUpdate({
-                  pageOverlay: config.pageOverlay === 'grid' ? 'none' : 'grid',
-                })
-              }
-            >
-              <TemplatePreviewSquare compact className="graphic-grid-preview" />
-            </button>
-
-            <button
-              type="button"
-              aria-label="像素边框"
-              aria-pressed={config.pageOverlay === 'pixel'}
-              className={`inline-flex shrink-0 rounded-xl p-0.5 ${
-                config.pageOverlay === 'pixel' ? 'border-2 border-black' : 'border border-neutral-300'
-              }`}
-              onClick={() =>
-                onUpdate({
-                  pageOverlay: config.pageOverlay === 'pixel' ? 'none' : 'pixel',
-                })
-              }
-            >
-              <TemplatePreviewSquare compact className="graphic-pixel-preview" />
-            </button>
           </div>
         )
       case 'top-text':

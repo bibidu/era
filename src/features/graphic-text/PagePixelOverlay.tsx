@@ -35,8 +35,8 @@ export function PagePixelOverlay() {
           key={index}
           x={rect.x}
           y={rect.y}
-          width={rect.w}
-          height={rect.h}
+          width={rect.size}
+          height={rect.size}
           fill={hexToRgba(rect.color, rect.alpha)}
         />
       ))}
