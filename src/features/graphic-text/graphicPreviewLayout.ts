@@ -1,7 +1,7 @@
 export const TOP_BAR_FONT_SIZE_PX = 10
 export const PREVIEW_NAV_BUTTON_WIDTH = 40
 export const PREVIEW_NAV_GAP = 8
-export const SHEET_MIN_HEIGHT_PX = 300
+export const SHEET_MIN_HEIGHT_PX = 150
 export const PREVIEW_MIN_HEIGHT_PX = 140
 export const PREVIEW_VERTICAL_PADDING = 18
 export const WORKSPACE_PREVIEW_HORIZONTAL_PADDING = 32

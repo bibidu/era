@@ -1,3 +1,4 @@
+import { SHEET_MIN_HEIGHT_PX } from './graphicPreviewLayout'
 import { stripHighlightMarkers } from './inlineHighlight'
 import { parseMarkdown } from './layout'
 import type { GraphicTextConfig } from './types'
@@ -37,13 +38,13 @@ export function getViewportHeight() {
 
 export function computeDefaultSheetHeight(viewportHeight = getViewportHeight()) {
   return Math.max(
-    300,
+    SHEET_MIN_HEIGHT_PX,
     Math.min(Math.round(viewportHeight * 0.46), viewportHeight - 200),
   )
 }
 
 export function clampSheetHeight(height: number, viewportHeight = getViewportHeight()) {
-  return Math.max(300, Math.min(height, viewportHeight - 200))
+  return Math.max(SHEET_MIN_HEIGHT_PX, Math.min(height, viewportHeight - 200))
 }
 
 const SHEET_HEIGHT_STORAGE_KEY = 'era-graphic-config-sheet-height'

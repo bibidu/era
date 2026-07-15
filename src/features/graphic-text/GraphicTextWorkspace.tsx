@@ -250,6 +250,19 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
             </div>
           ))}
         </div>
+
+        {configPanel && (
+          <GraphicTextConfigSheet
+            isOpen={configPanel !== null}
+            panel={configPanel}
+            config={config}
+            markdown={markdown}
+            onOpenChange={(open) => {
+              if (!open) setConfigPanel(null)
+            }}
+            onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
+          />
+        )}
       </div>
 
       <div className="relative z-20 shrink-0">
@@ -309,20 +322,6 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           pasteError={pasteError}
           onCommit={() => setEditorOpen(false)}
           onDismiss={() => setEditorOpen(false)}
-        />
-      )}
-
-      {configPanel && (
-        <GraphicTextConfigSheet
-          isOpen={configPanel !== null}
-          panel={configPanel}
-          config={config}
-          markdown={markdown}
-          showSafeArea={showSafeArea}
-          onOpenChange={(open) => {
-            if (!open) setConfigPanel(null)
-          }}
-          onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
         />
       )}
 
