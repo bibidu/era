@@ -8,6 +8,8 @@ export interface HighlightPickerColors {
   circle: string
 }
 
+export type HighlightPickerColor = string
+
 export const DEFAULT_HIGHLIGHT_PICKER_COLORS: HighlightPickerColors = {
   underline: '#FACC15',
   quote: '#FACC15',

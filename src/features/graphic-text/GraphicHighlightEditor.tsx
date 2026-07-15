@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, Palette } from 'lucide-react'
+import { ArrowLeft, Check } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { HAND_DRAWN_CIRCLE_PATH, HAND_DRAWN_CIRCLE_VIEWBOX } from './circleHighlight'
 import {
@@ -11,8 +11,9 @@ import type { GraphicTextConfig } from './types'
 import {
   THEME_COLORS,
   type HighlightColorMap,
-  type HighlightPickerColors,
 } from './highlightColors'
+
+const TAB_PREVIEW_COLOR = '#171717'
 
 export type HighlightStyleTab = 'underline' | 'quote' | 'circle'
 
@@ -24,11 +25,9 @@ const HIGHLIGHT_STYLE_TABS: { id: HighlightStyleTab; label: string }[] = [
 
 function HighlightStyleTabLabel({
   tab,
-  themeColor,
   selected,
 }: {
   tab: HighlightStyleTab
-  themeColor: string
   selected: boolean
 }) {
   const textClass = selected ? 'text-neutral-900' : 'text-neutral-500'
@@ -39,7 +38,7 @@ function HighlightStyleTabLabel({
         <span>下划线</span>
         <span
           className="absolute -bottom-0.5 left-0 right-0 h-0.5 rounded-full"
-          style={{ backgroundColor: themeColor }}
+          style={{ backgroundColor: TAB_PREVIEW_COLOR }}
           aria-hidden
         />
       </span>
@@ -51,7 +50,7 @@ function HighlightStyleTabLabel({
       <span className={`flex items-center gap-1.5 text-xs font-medium ${textClass}`}>
         <span
           className="h-3.5 w-0.5 shrink-0 rounded-full"
-          style={{ backgroundColor: themeColor }}
+          style={{ backgroundColor: TAB_PREVIEW_COLOR }}
           aria-hidden
         />
         引用
@@ -71,7 +70,7 @@ function HighlightStyleTabLabel({
         <path
           d={HAND_DRAWN_CIRCLE_PATH}
           fill="none"
-          stroke={themeColor}
+          stroke={TAB_PREVIEW_COLOR}
           strokeWidth={3}
           vectorEffect="non-scaling-stroke"
           strokeLinecap="round"
@@ -92,18 +91,16 @@ function HighlightThemePalette({
   const isCustomColor = !THEME_COLORS.includes(color)
 
   return (
-    <div className="shrink-0 border-b border-neutral-200 px-4 py-3">
-      <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-        <Palette size={16} />
-        主题色
-      </div>
-      <div className="flex items-center gap-3 overflow-x-auto py-1">
+    <div className="flex shrink-0 items-center border-b border-neutral-200 px-4 py-3">
+      <span className="shrink-0 text-sm font-medium">主题色</span>
+      <div className="mx-10 h-4 w-px shrink-0 bg-neutral-200" aria-hidden />
+      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
         {THEME_COLORS.map((swatch) => (
           <button
             key={swatch}
             type="button"
             aria-label={`主题色 ${swatch}`}
-            className={`size-9 shrink-0 rounded-full border-2 ${
+            className={`size-6 shrink-0 rounded-full border-2 ${
               color === swatch ? 'border-black' : 'border-transparent'
             }`}
             style={{ backgroundColor: swatch }}
@@ -111,7 +108,7 @@ function HighlightThemePalette({
           />
         ))}
         <label
-          className={`theme-color-palette-btn relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border ${
+          className={`theme-color-palette-btn relative flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border ${
             isCustomColor ? 'border-2 border-black' : 'border-neutral-300'
           }`}
         >
@@ -119,7 +116,7 @@ function HighlightThemePalette({
             type="color"
             value={color}
             onChange={(event) => onChange(event.target.value)}
-            className="absolute inset-[-8px] size-14 cursor-pointer opacity-0"
+            className="absolute inset-[-8px] size-12 cursor-pointer opacity-0"
             aria-label="自定义主题色"
           />
         </label>
@@ -134,11 +131,11 @@ interface GraphicHighlightEditorProps {
   underlineHighlightColors: HighlightColorMap
   quoteHighlightColors: HighlightColorMap
   circleHighlightColors: HighlightColorMap
-  highlightPickerColors: HighlightPickerColors
+  highlightPickerColor: string
   onUnderlineChange: (colors: HighlightColorMap) => void
   onQuoteChange: (colors: HighlightColorMap) => void
   onCircleChange: (colors: HighlightColorMap) => void
-  onPickerColorsChange: (colors: HighlightPickerColors) => void
+  onPickerColorChange: (color: string) => void
   onConfirm: () => void
   onBack: () => void
 }
@@ -150,27 +147,67 @@ function isRowFullySelected(tokens: HighlightCharToken[], highlightedSet: Set<st
 function HighlightTokenButton({
   token,
   selected,
+  styleTab,
+  highlightColor,
   onToggle,
 }: {
   token: HighlightCharToken
   selected: boolean
+  styleTab: HighlightStyleTab
+  highlightColor?: string
   onToggle: (key: string) => void
 }) {
   const isWhitespace = token.char.trim() === ''
+  const previewColor = highlightColor ?? TAB_PREVIEW_COLOR
+
   return (
     <button
       type="button"
       data-highlight-token={token.key}
       aria-label={isWhitespace ? '空格' : `高亮 ${token.char}`}
       aria-pressed={selected}
-      className={`inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border px-2 text-sm transition-colors ${
+      className={`relative inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border px-2 text-sm transition-colors ${
         selected
           ? 'border-2 border-black bg-white font-medium text-neutral-900'
           : 'border border-neutral-300 bg-white text-neutral-700'
       } ${isWhitespace ? 'text-neutral-300' : ''}`}
       onClick={() => onToggle(token.key)}
     >
-      {isWhitespace ? '␣' : token.char}
+      {selected && styleTab === 'quote' && (
+        <span
+          className="absolute bottom-1.5 left-1.5 top-1.5 w-0.5 rounded-full"
+          style={{ backgroundColor: previewColor }}
+          aria-hidden
+        />
+      )}
+      <span className={`relative z-[1] ${selected && styleTab === 'quote' ? 'pl-1' : ''}`}>
+        {isWhitespace ? '␣' : token.char}
+      </span>
+      {selected && styleTab === 'underline' && (
+        <span
+          className="absolute bottom-1 left-1.5 right-1.5 h-0.5 rounded-full"
+          style={{ backgroundColor: previewColor }}
+          aria-hidden
+        />
+      )}
+      {selected && styleTab === 'circle' && (
+        <svg
+          className="pointer-events-none absolute -inset-0.5 h-[calc(100%+4px)] w-[calc(100%+4px)]"
+          viewBox={HAND_DRAWN_CIRCLE_VIEWBOX}
+          preserveAspectRatio="none"
+          aria-hidden
+        >
+          <path
+            d={HAND_DRAWN_CIRCLE_PATH}
+            fill="none"
+            stroke={previewColor}
+            strokeWidth={2.5}
+            vectorEffect="non-scaling-stroke"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
     </button>
   )
 }
@@ -227,12 +264,16 @@ function buildPageBarSegments(
 function HighlightParagraphRows({
   tokens,
   highlightedSet,
+  activeColorMap,
+  activeStyleTab,
   charPageMap,
   onToggleToken,
   onToggleRow,
 }: {
   tokens: HighlightCharToken[]
   highlightedSet: Set<string>
+  activeColorMap: HighlightColorMap
+  activeStyleTab: HighlightStyleTab
   charPageMap: Map<string, number>
   onToggleToken: (key: string) => void
   onToggleRow: (rowTokens: HighlightCharToken[]) => void
@@ -351,6 +392,8 @@ function HighlightParagraphRows({
                     key={token.key}
                     token={token}
                     selected={highlightedSet.has(token.key)}
+                    styleTab={activeStyleTab}
+                    highlightColor={activeColorMap[token.key]}
                     onToggle={onToggleToken}
                   />
                 ))}
@@ -371,11 +414,11 @@ export function GraphicHighlightEditor({
   underlineHighlightColors,
   quoteHighlightColors,
   circleHighlightColors,
-  highlightPickerColors,
+  highlightPickerColor,
   onUnderlineChange,
   onQuoteChange,
   onCircleChange,
-  onPickerColorsChange,
+  onPickerColorChange,
   onConfirm,
   onBack,
 }: GraphicHighlightEditorProps) {
@@ -419,7 +462,7 @@ export function GraphicHighlightEditor({
       : activeStyleTab === 'quote'
         ? onQuoteChange
         : onCircleChange
-  const activePickerColor = highlightPickerColors[activeStyleTab]
+  const activePickerColor = highlightPickerColor
 
   const highlightedSet = useMemo(() => new Set(Object.keys(activeColorMap)), [activeColorMap])
 
@@ -460,6 +503,8 @@ export function GraphicHighlightEditor({
         key={`paragraph-${lineIndex}`}
         tokens={line.tokens}
         highlightedSet={highlightedSet}
+        activeColorMap={activeColorMap}
+        activeStyleTab={activeStyleTab}
         charPageMap={charPageMap}
         onToggleToken={toggleToken}
         onToggleRow={toggleRow}
@@ -489,15 +534,7 @@ export function GraphicHighlightEditor({
         </button>
       </div>
 
-      <HighlightThemePalette
-        color={activePickerColor}
-        onChange={(color) =>
-          onPickerColorsChange({
-            ...highlightPickerColors,
-            [activeStyleTab]: color,
-          })
-        }
-      />
+      <HighlightThemePalette color={highlightPickerColor} onChange={onPickerColorChange} />
 
       <div className="shrink-0 px-4 py-2.5">
         <div
@@ -525,11 +562,7 @@ export function GraphicHighlightEditor({
                 className={`graphic-highlight-tab ${selected ? 'graphic-highlight-tab--active' : ''}`}
                 onClick={() => setActiveStyleTab(tab.id)}
               >
-                <HighlightStyleTabLabel
-                  tab={tab.id}
-                  themeColor={highlightPickerColors[tab.id]}
-                  selected={selected}
-                />
+                <HighlightStyleTabLabel tab={tab.id} selected={selected} />
               </button>
             )
           })}
