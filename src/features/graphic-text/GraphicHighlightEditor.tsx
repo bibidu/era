@@ -166,10 +166,8 @@ function HighlightTokenButton({
       data-highlight-token={token.key}
       aria-label={isWhitespace ? '空格' : `高亮 ${token.char}`}
       aria-pressed={selected}
-      className={`relative inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border px-2 text-sm transition-colors ${
-        selected
-          ? 'border-2 border-black bg-white font-medium text-neutral-900'
-          : 'border border-neutral-300 bg-white text-neutral-700'
+      className={`relative inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-neutral-300 bg-white px-2 text-sm transition-colors ${
+        selected ? 'font-medium text-neutral-900' : 'text-neutral-700'
       } ${isWhitespace ? 'text-neutral-300' : ''}`}
       onClick={() => onToggle(token.key)}
     >
