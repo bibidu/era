@@ -530,6 +530,32 @@ body.is-dragging {
   background-size: 8px 8px;
 }
 
+.graphic-pixel-preview {
+  position: relative;
+  background-color: #f5f8fc;
+  background-image:
+  linear-gradient(rgb(163 163 163 / 0.45) 1px, transparent 1px),
+  linear-gradient(90deg, rgb(163 163 163 / 0.45) 1px, transparent 1px);
+  background-size: 10px 10px;
+}
+
+.graphic-pixel-preview::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 40%;
+  height: 40%;
+  background:
+    linear-gradient(rgb(59 130 246 / 0.35), rgb(59 130 246 / 0.35)) 0 100% / 35% 35% no-repeat,
+    linear-gradient(rgb(59 130 246 / 0.22), rgb(59 130 246 / 0.22)) 30% 70% / 28% 28% no-repeat,
+    linear-gradient(rgb(168 85 247 / 0.3), rgb(168 85 247 / 0.3)) 100% 100% / 38% 38% no-repeat,
+    linear-gradient(rgb(34 197 94 / 0.28), rgb(34 197 94 / 0.28)) 78% 82% / 24% 24% no-repeat,
+    linear-gradient(rgb(59 130 246 / 0.18), rgb(59 130 246 / 0.18)) 100% 18% / 18% 55% no-repeat,
+    linear-gradient(rgb(168 85 247 / 0.16), rgb(168 85 247 / 0.16)) 12% 0 / 42% 22% no-repeat;
+  pointer-events: none;
+}
+
 .graphic-circle-highlight-svg {
   position: absolute;
   left: -0.58em;

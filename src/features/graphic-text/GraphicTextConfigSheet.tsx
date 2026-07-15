@@ -628,14 +628,38 @@ export function GraphicTextConfigSheet({
 
                             <button
                               type="button"
-                              aria-label="网格纸"
-                              aria-pressed={config.showGrid}
+                              aria-label="方格块"
+                              aria-pressed={config.pageOverlay === 'grid'}
                               className={`inline-flex shrink-0 rounded-xl p-0.5 ${
-                                config.showGrid ? 'border-2 border-black' : 'border border-neutral-300'
+                                config.pageOverlay === 'grid'
+                                  ? 'border-2 border-black'
+                                  : 'border border-neutral-300'
                               }`}
-                              onClick={() => onUpdate({ showGrid: !config.showGrid })}
+                              onClick={() =>
+                                onUpdate({
+                                  pageOverlay: config.pageOverlay === 'grid' ? 'none' : 'grid',
+                                })
+                              }
                             >
                               <TemplatePreviewSquare compact className="graphic-grid-preview" />
+                            </button>
+
+                            <button
+                              type="button"
+                              aria-label="像素边框"
+                              aria-pressed={config.pageOverlay === 'pixel'}
+                              className={`inline-flex shrink-0 rounded-xl p-0.5 ${
+                                config.pageOverlay === 'pixel'
+                                  ? 'border-2 border-black'
+                                  : 'border border-neutral-300'
+                              }`}
+                              onClick={() =>
+                                onUpdate({
+                                  pageOverlay: config.pageOverlay === 'pixel' ? 'none' : 'pixel',
+                                })
+                              }
+                            >
+                              <TemplatePreviewSquare compact className="graphic-pixel-preview" />
                             </button>
                           </div>
                         </section>

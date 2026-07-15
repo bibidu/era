@@ -22,7 +22,7 @@ export function resolvePageBackgroundStyle(config: GraphicTextConfig): CSSProper
     style.backgroundColor = DEFAULT_PAGE_BASE_COLOR
   }
 
-  if (config.showGrid) {
+  if (config.pageOverlay === 'grid') {
     if (style.backgroundImage) {
       style.backgroundImage = `${GRID_BACKGROUND_IMAGE}, ${style.backgroundImage}`
       style.backgroundSize = `${GRID_SIZE_CQW} ${GRID_SIZE_CQW}, ${style.backgroundSize ?? 'cover'}`
