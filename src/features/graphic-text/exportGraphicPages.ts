@@ -18,6 +18,7 @@ import {
   drawPageGridOverlay,
   resolvePageBaseFillColor,
 } from './pageBackground'
+import { drawPagePaperOverlay } from './pagePaperOverlay'
 import { drawPagePixelOverlay } from './pagePixelOverlay'
 import { resolveTopBarParts } from './topBar'
 
@@ -232,6 +233,10 @@ async function drawPage(
 
   if (config.pageOverlay === 'pixel') {
     drawPagePixelOverlay(ctx, width, height)
+  }
+
+  if (config.pageOverlay === 'paper') {
+    drawPagePaperOverlay(ctx, width, height)
   }
 
   const edgeX = safeX
