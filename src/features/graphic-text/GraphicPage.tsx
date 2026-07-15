@@ -28,7 +28,6 @@ function resolveStyleType(block: MarkdownBlock) {
 
 type RenderUnit =
   | { kind: 'block'; block: MarkdownBlock }
-  | { kind: 'quote'; blocks: MarkdownBlock[] }
   | { kind: 'code'; blocks: MarkdownBlock[] }
 
 function buildRenderUnits(blocks: MarkdownBlock[]): RenderUnit[] {
@@ -36,19 +35,6 @@ function buildRenderUnits(blocks: MarkdownBlock[]): RenderUnit[] {
 
   for (const block of blocks) {
     const styleType = resolveStyleType(block)
-    if (styleType === 'quote') {
-      const sourceId = block.sourceBlockId ?? block.id
-      const last = units[units.length - 1]
-      if (
-        last?.kind === 'quote' &&
-        (last.blocks[0].sourceBlockId ?? last.blocks[0].id) === sourceId
-      ) {
-        last.blocks.push(block)
-      } else {
-        units.push({ kind: 'quote', blocks: [block] })
-      }
-      continue
-    }
 
     if (styleType === 'code') {
       const sourceId = block.sourceBlockId ?? block.id
@@ -213,9 +199,7 @@ function renderBlockText(
   underlineKeys: ReadonlySet<string>,
   quoteKeys: ReadonlySet<string>,
 ) {
-  const styleType = resolveStyleType(block)
-  const showQuoteBar =
-    styleType !== 'quote' && blockHasHighlightedChar(block, quoteKeys)
+  const showQuoteBar = blockHasHighlightedChar(block, quoteKeys)
 
   const textNode = (
     <HighlightedText
@@ -390,41 +374,6 @@ export function GraphicPage({
             </div>
           ) : (
             buildRenderUnits(page.blocks).map((unit) => {
-              if (unit.kind === 'quote') {
-                const firstBlock = unit.blocks[0]
-                const lastBlock = unit.blocks[unit.blocks.length - 1]
-                return (
-                  <div
-                    key={firstBlock.id}
-                    style={{
-                      ...blockStyle(firstBlock, config),
-                      marginBottom: blockEndMargin(lastBlock, config),
-                    }}
-                  >
-                    <div className="flex gap-[1.5cqw]">
-                        <span
-                        className="w-[0.9cqw] shrink-0 self-stretch rounded-full"
-                        style={{ backgroundColor: config.themeColor }}
-                        aria-hidden
-                      />
-                      <div className="min-w-0 flex-1 font-bold">
-                        {unit.blocks.map((block) => (
-                          <div key={block.id}>
-                            <HighlightedText
-                              text={block.text}
-                              block={block}
-                              themeColor={config.themeColor}
-                              highlightedKeys={underlineKeys}
-                              enableHighlight
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )
-              }
-
               if (unit.kind === 'code') {
                 const firstBlock = unit.blocks[0]
                 const lastBlock = unit.blocks[unit.blocks.length - 1]

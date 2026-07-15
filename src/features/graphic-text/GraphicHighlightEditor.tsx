@@ -9,12 +9,52 @@ import {
 export type HighlightStyleTab = 'underline' | 'quote'
 
 const HIGHLIGHT_STYLE_TABS: { id: HighlightStyleTab; label: string }[] = [
-  { id: 'underline', label: '下划线样式' },
-  { id: 'quote', label: '引用样式' },
+  { id: 'underline', label: '下划线' },
+  { id: 'quote', label: '引用' },
 ]
+
+function HighlightStyleTabLabel({
+  tab,
+  themeColor,
+  selected,
+}: {
+  tab: HighlightStyleTab
+  themeColor: string
+  selected: boolean
+}) {
+  const textClass = selected ? 'text-neutral-900' : 'text-neutral-500'
+
+  if (tab === 'underline') {
+    return (
+      <span
+        className={`text-xs font-medium ${textClass}`}
+        style={{
+          textDecoration: 'underline',
+          textDecorationColor: themeColor,
+          textDecorationThickness: '2px',
+          textUnderlineOffset: '3px',
+        }}
+      >
+        下划线
+      </span>
+    )
+  }
+
+  return (
+    <span className={`flex items-center gap-1.5 text-xs font-medium ${textClass}`}>
+      <span
+        className="h-3.5 w-0.5 shrink-0 rounded-full"
+        style={{ backgroundColor: themeColor }}
+        aria-hidden
+      />
+      引用
+    </span>
+  )
+}
 
 interface GraphicHighlightEditorProps {
   markdown: string
+  themeColor: string
   underlineHighlightedCharKeys: string[]
   quoteHighlightedCharKeys: string[]
   onUnderlineChange: (keys: string[]) => void
@@ -158,6 +198,7 @@ function HighlightParagraphRows({
 
 export function GraphicHighlightEditor({
   markdown,
+  themeColor,
   underlineHighlightedCharKeys,
   quoteHighlightedCharKeys,
   onUnderlineChange,
@@ -250,7 +291,7 @@ export function GraphicHighlightEditor({
               }`}
               onClick={() => setActiveStyleTab(tab.id)}
             >
-              <span className="text-xs font-medium">{tab.label}</span>
+              <HighlightStyleTabLabel tab={tab.id} themeColor={themeColor} selected={selected} />
             </button>
           )
         })}

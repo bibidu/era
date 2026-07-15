@@ -6,9 +6,10 @@ interface MarkdownEditorDockProps {
   value: string
   onChange: (value: string) => void
   onCommit: () => void
+  onDismiss: () => void
 }
 
-export function MarkdownEditorDock({ value, onChange, onCommit }: MarkdownEditorDockProps) {
+export function MarkdownEditorDock({ value, onChange, onCommit, onDismiss }: MarkdownEditorDockProps) {
   const dockRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -67,7 +68,14 @@ export function MarkdownEditorDock({ value, onChange, onCommit }: MarkdownEditor
   }, [])
 
   return createPortal(
-    <div ref={dockRef} className="keyboard-dock keyboard-dock--markdown">
+    <div className="keyboard-dock-root">
+      <button
+        type="button"
+        aria-label="关闭编辑"
+        className="keyboard-dock-overlay"
+        onClick={onDismiss}
+      />
+      <div ref={dockRef} className="keyboard-dock keyboard-dock--markdown">
       <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-2">
         <p className="text-sm font-medium text-neutral-900">编辑 Markdown</p>
         <button
@@ -98,6 +106,7 @@ export function MarkdownEditorDock({ value, onChange, onCommit }: MarkdownEditor
             userSelect: 'text',
           }}
         />
+      </div>
       </div>
     </div>,
     document.body,
