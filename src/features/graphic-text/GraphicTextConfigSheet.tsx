@@ -6,7 +6,12 @@ import { GraphicHighlightEditor } from './GraphicHighlightEditor'
 import { computeConfigPreviewLayout } from './graphicPreviewLayout'
 import { type GraphicConfigPanel } from './graphicConfigPanels'
 import { getGraphicLayout, paginateMarkdown } from './layout'
-import { getViewportHeight } from './topBar'
+import {
+  clampSheetHeight,
+  getViewportHeight,
+  readCachedSheetHeight,
+  writeCachedSheetHeight,
+} from './topBar'
 import type { GraphicTextConfig } from './types'
 
 interface GraphicTextConfigSheetProps {
@@ -37,6 +42,8 @@ export function GraphicTextConfigSheet({
     },
   })
   const dialogRef = useRef<HTMLDivElement | null>(null)
+  const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
+  const isDraggingRef = useRef(false)
   const [viewportHeight, setViewportHeight] = useState(getViewportHeight)
   const [sheetHeight, setSheetHeight] = useState(0)
   const [highlightDraft, setHighlightDraft] = useState({
@@ -50,17 +57,14 @@ export function GraphicTextConfigSheet({
 
   const previewPages = useMemo(() => paginateMarkdown(markdown, config), [markdown, config])
   const previewConfig = useMemo(
-    () =>
-      panel === 'highlight'
-        ? {
-            ...config,
-            underlineHighlightColors: highlightDraft.underline,
-            quoteHighlightColors: highlightDraft.quote,
-            circleHighlightColors: highlightDraft.circle,
-            highlightPickerColor: highlightDraft.pickerColor,
-          }
-        : config,
-    [config, panel, highlightDraft],
+    () => ({
+      ...config,
+      underlineHighlightColors: highlightDraft.underline,
+      quoteHighlightColors: highlightDraft.quote,
+      circleHighlightColors: highlightDraft.circle,
+      highlightPickerColor: highlightDraft.pickerColor,
+    }),
+    [config, highlightDraft],
   )
   const previewLayout = useMemo(() => {
     if (!previewAreaHeight) return null
@@ -79,9 +83,16 @@ export function GraphicTextConfigSheet({
   useEffect(() => {
     if (!isOpen) return
 
-    const syncViewport = () => setViewportHeight(getViewportHeight())
+    const syncViewport = () => {
+      const nextViewport = getViewportHeight()
+      setViewportHeight(nextViewport)
+      if (!isDraggingRef.current) {
+        setSheetHeight((current) => (current > 0 ? clampSheetHeight(current, nextViewport) : current))
+      }
+    }
 
     syncViewport()
+    setSheetHeight(readCachedSheetHeight(getViewportHeight()))
     window.addEventListener('resize', syncViewport)
     window.visualViewport?.addEventListener('resize', syncViewport)
 
@@ -101,6 +112,7 @@ export function GraphicTextConfigSheet({
     if (!dialog) return
 
     const updateHeight = () => {
+      if (isDraggingRef.current) return
       setSheetHeight(dialog.getBoundingClientRect().height)
     }
 
@@ -126,6 +138,35 @@ export function GraphicTextConfigSheet({
     config.circleHighlightColors,
     config.highlightPickerColor,
   ])
+
+  const handleResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    isDraggingRef.current = true
+    const currentHeight = sheetHeight || dialogRef.current?.getBoundingClientRect().height || readCachedSheetHeight()
+    resizeRef.current = { startY: event.clientY, startHeight: currentHeight }
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  const handleResizeMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!resizeRef.current) return
+    const delta = resizeRef.current.startY - event.clientY
+    const nextViewport = getViewportHeight()
+    const nextHeight = clampSheetHeight(resizeRef.current.startHeight + delta, nextViewport)
+    setViewportHeight(nextViewport)
+    setSheetHeight(nextHeight)
+  }
+
+  const handleResizeEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!resizeRef.current) return
+    isDraggingRef.current = false
+    resizeRef.current = null
+    if (sheetHeight > 0) {
+      writeCachedSheetHeight(sheetHeight)
+    }
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+  }
 
   const handleClose = () => {
     if (panel === 'highlight') {
@@ -181,6 +222,11 @@ export function GraphicTextConfigSheet({
     />
   )
 
+  const dialogStyle =
+    sheetHeight > 0
+      ? { height: sheetHeight, maxHeight: sheetHeight }
+      : undefined
+
   return (
     <Drawer state={state}>
       <Drawer.Backdrop isDismissable className="graphic-config-drawer-backdrop">
@@ -208,22 +254,34 @@ export function GraphicTextConfigSheet({
         )}
         <Drawer.Content placement="bottom" className="graphic-config-drawer-content">
           <div ref={dialogRef} className="w-full">
-            <Drawer.Dialog className="graphic-config-drawer-dialog graphic-config-drawer-dialog--highlight component-library">
-            <button
-              type="button"
-              aria-label="关闭"
-              className="graphic-sheet-close"
-              onClick={handleClose}
+            <Drawer.Dialog
+              className="graphic-config-drawer-dialog graphic-config-drawer-dialog--highlight component-library"
+              style={dialogStyle}
             >
-              <X size={18} />
-            </button>
-            <div className="graphic-config-sheet-handle" aria-hidden>
-              <span className="graphic-config-sheet-handle-bar" />
-            </div>
-            <div className="graphic-config-sheet-body">
-              <div className="graphic-config-sheet-highlight">{panelBody}</div>
-            </div>
-          </Drawer.Dialog>
+              <button
+                type="button"
+                aria-label="关闭"
+                className="graphic-sheet-close"
+                onClick={handleClose}
+              >
+                <X size={18} />
+              </button>
+              <div
+                className="graphic-config-sheet-handle"
+                role="separator"
+                aria-orientation="horizontal"
+                aria-label="调节面板高度"
+                onPointerDown={handleResizeStart}
+                onPointerMove={handleResizeMove}
+                onPointerUp={handleResizeEnd}
+                onPointerCancel={handleResizeEnd}
+              >
+                <span className="graphic-config-sheet-handle-bar" />
+              </div>
+              <div className="graphic-config-sheet-body">
+                <div className="graphic-config-sheet-highlight">{panelBody}</div>
+              </div>
+            </Drawer.Dialog>
           </div>
         </Drawer.Content>
       </Drawer.Backdrop>

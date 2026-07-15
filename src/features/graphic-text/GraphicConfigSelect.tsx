@@ -15,6 +15,7 @@ export interface GraphicConfigSelectProps {
   format?: (value: number) => string
   labelClassName?: string
   className?: string
+  hideLabel?: boolean
 }
 
 export function GraphicConfigSelect({
@@ -25,8 +26,27 @@ export function GraphicConfigSelect({
   format,
   labelClassName = 'w-[4.6rem]',
   className = '',
+  hideLabel = false,
 }: GraphicConfigSelectProps) {
   const displayValue = nearestOption(value, options)
+
+  if (hideLabel) {
+    return (
+      <select
+        value={displayValue}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className={`${selectClassName} ${className}`}
+        aria-label={label}
+      >
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {format ? format(option) : option}
+          </option>
+        ))}
+      </select>
+    )
+  }
+
   return (
     <label className={`flex min-w-0 flex-1 items-center gap-2 text-sm ${className}`}>
       <span className={`${labelClassName} shrink-0 text-neutral-600`}>{label}</span>

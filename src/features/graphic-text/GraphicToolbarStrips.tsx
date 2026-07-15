@@ -246,7 +246,7 @@ function TextAdjustFieldControl({
       return (
         <GraphicConfigSelect
           label="标题字号"
-          labelClassName="shrink-0"
+          hideLabel
           className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
           value={config.titleFontSize}
           options={TITLE_FONT_SIZE_OPTIONS}
@@ -259,8 +259,8 @@ function TextAdjustFieldControl({
       return (
         <GraphicConfigSelect
           label="标题行高"
-          labelClassName="shrink-0"
-          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+          hideLabel
+          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo w-full"
           value={config.titleLineHeight}
           options={TITLE_LINE_HEIGHT_OPTIONS}
           onChange={(value) => onUpdate({ titleLineHeight: value })}
@@ -271,8 +271,8 @@ function TextAdjustFieldControl({
       return (
         <GraphicConfigSelect
           label="上间距"
-          labelClassName="shrink-0"
-          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+          hideLabel
+          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo w-full"
           value={config.titleMarginTop}
           options={TITLE_MARGIN_OPTIONS}
           onChange={(value) => onUpdate({ titleMarginTop: value })}
@@ -282,8 +282,8 @@ function TextAdjustFieldControl({
     return (
       <GraphicConfigSelect
         label="下间距"
-        labelClassName="shrink-0"
-        className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+        hideLabel
+        className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo w-full"
         value={config.titleMarginBottom}
         options={TITLE_MARGIN_OPTIONS}
         onChange={(value) => onUpdate({ titleMarginBottom: value })}
@@ -296,8 +296,8 @@ function TextAdjustFieldControl({
       return (
         <GraphicConfigSelect
           label="二级字号"
-          labelClassName="shrink-0"
-          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+          hideLabel
+          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo w-full"
           value={config.headingFontSize}
           options={HEADING_FONT_SIZE_OPTIONS}
           onChange={(value) => onUpdate({ headingFontSize: value })}
@@ -309,8 +309,8 @@ function TextAdjustFieldControl({
       return (
         <GraphicConfigSelect
           label="上间距"
-          labelClassName="shrink-0"
-          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+          hideLabel
+          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo w-full"
           value={config.headingMarginTop}
           options={HEADING_MARGIN_OPTIONS}
           onChange={(value) => onUpdate({ headingMarginTop: value })}
@@ -320,8 +320,8 @@ function TextAdjustFieldControl({
     return (
       <GraphicConfigSelect
         label="下间距"
-        labelClassName="shrink-0"
-        className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+        hideLabel
+        className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo w-full"
         value={config.headingMarginBottom}
         options={HEADING_MARGIN_OPTIONS}
         onChange={(value) => onUpdate({ headingMarginBottom: value })}
@@ -333,8 +333,8 @@ function TextAdjustFieldControl({
     return (
       <GraphicConfigSelect
         label="正文字号"
-        labelClassName="shrink-0"
-        className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+        hideLabel
+        className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo w-full"
         value={config.bodyFontSize}
         options={BODY_FONT_SIZE_OPTIONS}
         onChange={(value) => onUpdate({ bodyFontSize: value })}
@@ -346,8 +346,8 @@ function TextAdjustFieldControl({
   return (
     <GraphicConfigSelect
       label="正文行高"
-      labelClassName="shrink-0"
-      className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+      hideLabel
+      className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo w-full"
       value={config.bodyLineHeight}
       options={BODY_LINE_HEIGHT_OPTIONS}
       onChange={(value) => onUpdate({ bodyLineHeight: value })}

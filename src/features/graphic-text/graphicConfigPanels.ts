@@ -1,8 +1,11 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   CaseSensitive,
+  Heading1,
+  Heading2,
   Highlighter,
   LayoutTemplate,
+  Pilcrow,
   Ratio,
   ScanEye,
   TextCursorInput,
@@ -40,10 +43,10 @@ export const GRAPHIC_TEXT_ADJUST_MENU = {
 /** @deprecated use GRAPHIC_TEXT_ADJUST_MENU */
 export const GRAPHIC_FONT_SIZE_MENU = GRAPHIC_TEXT_ADJUST_MENU
 
-export const FONT_SIZE_TARGETS: { id: FontSizeTarget; label: string }[] = [
-  { id: 'title', label: '标题' },
-  { id: 'heading', label: '二级标题' },
-  { id: 'body', label: '正文' },
+export const FONT_SIZE_TARGETS: { id: FontSizeTarget; label: string; icon: LucideIcon }[] = [
+  { id: 'title', label: '标题', icon: Heading1 },
+  { id: 'heading', label: '二级标题', icon: Heading2 },
+  { id: 'body', label: '正文', icon: Pilcrow },
 ]
 
 export const TEXT_ADJUST_FIELDS: Record<
