@@ -3,11 +3,9 @@ import { Check, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { GraphicPage } from './GraphicPage'
 import { exportGraphicPages, saveGraphicPages } from './exportGraphicPages'
-import { computeGraphicPageDisplaySize } from './graphicPreviewLayout'
+import { computeSaveThumbLayout } from './graphicPreviewLayout'
 import { getGraphicLayout } from './layout'
 import type { GraphicTextConfig, GraphicTextPage } from './types'
-
-const THUMB_WIDTH_PX = 120
 
 interface GraphicSaveImagesSheetProps {
   isOpen: boolean
@@ -29,9 +27,9 @@ export function GraphicSaveImagesSheet({
   const [saving, setSaving] = useState(false)
   const [saveProgress, setSaveProgress] = useState('')
 
-  const thumbSize = useMemo(() => {
+  const thumbLayout = useMemo(() => {
     const layout = getGraphicLayout(config)
-    return computeGraphicPageDisplaySize(layout.aspectRatio, THUMB_WIDTH_PX, Number.POSITIVE_INFINITY)
+    return computeSaveThumbLayout(layout.aspectRatio)
   }, [config])
 
   useEffect(() => {
@@ -111,27 +109,37 @@ export function GraphicSaveImagesSheet({
               <div className="flex items-start gap-3">
                 {pages.map((page, index) => {
                   const selected = selectedIndexes.has(index)
+                  if (!thumbLayout) return null
                   return (
                     <button
                       key={page.index}
                       type="button"
                       aria-label={`第 ${index + 1} 页`}
                       aria-pressed={selected}
-                      className="graphic-save-thumb relative shrink-0 overflow-hidden rounded-2xl"
-                      style={
-                        thumbSize
-                          ? { width: thumbSize.width, height: thumbSize.height }
-                          : { width: THUMB_WIDTH_PX }
-                      }
+                      className="graphic-save-thumb relative shrink-0"
                       onClick={() => toggleIndex(index)}
                     >
-                      <GraphicPage
-                        page={page}
-                        config={config}
-                        markdown={markdown}
-                        displayWidth={thumbSize?.width ?? THUMB_WIDTH_PX}
-                        className="pointer-events-none size-full rounded-2xl"
-                      />
+                      <div
+                        className="graphic-save-thumb-frame overflow-hidden rounded-xl border border-black bg-white"
+                        style={{ width: thumbLayout.width, height: thumbLayout.height }}
+                      >
+                        <div
+                          className="graphic-save-thumb-scale origin-top-left"
+                          style={{
+                            width: thumbLayout.sourceWidth,
+                            height: thumbLayout.sourceHeight,
+                            transform: `scale(${thumbLayout.scale})`,
+                          }}
+                        >
+                          <GraphicPage
+                            page={page}
+                            config={config}
+                            markdown={markdown}
+                            displayWidth={thumbLayout.sourceWidth}
+                            className="pointer-events-none rounded-xl"
+                          />
+                        </div>
+                      </div>
                       <span
                         className={`absolute right-2 top-2 flex size-6 items-center justify-center rounded-full border-2 ${
                           selected

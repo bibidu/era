@@ -1,5 +1,18 @@
+import { useRef } from 'react'
 import { FONT_OPTIONS, type FontOption } from '../../data/fonts'
-import { GRAPHIC_ASPECT_RATIO_OPTIONS, type GraphicAspectRatio } from './types'
+import { PAPER_COLORS, TemplatePreviewSquare } from './graphicTemplateOptions'
+import { PixelPreviewArt } from './PixelPreviewArt'
+import { GRAPHIC_ASPECT_RATIO_OPTIONS, type GraphicAspectRatio, type GraphicTextConfig } from './types'
+
+function StripShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="graphic-toolbar-strip">
+      <div className="graphic-toolbar-strip-scroll component-scroll-row flex gap-2">
+        {children}
+      </div>
+    </div>
+  )
+}
 
 interface GraphicFontStripProps {
   selectedFontId: string
@@ -8,24 +21,22 @@ interface GraphicFontStripProps {
 
 export function GraphicFontStrip({ selectedFontId, onSelect }: GraphicFontStripProps) {
   return (
-    <div className="graphic-toolbar-strip">
-      <div className="graphic-toolbar-strip-scroll component-scroll-row flex items-stretch gap-2 overflow-x-auto">
-        {FONT_OPTIONS.map((font) => {
-          const selected = selectedFontId === font.id
-          return (
-            <button
-              key={font.id}
-              type="button"
-              className={`graphic-toolbar-strip-chip ${selected ? 'graphic-toolbar-strip-chip--selected' : ''}`}
-              style={{ fontFamily: font.fontFamily }}
-              onClick={() => onSelect(font)}
-            >
-              {font.label}
-            </button>
-          )
-        })}
-      </div>
-    </div>
+    <StripShell>
+      {FONT_OPTIONS.map((font) => {
+        const selected = selectedFontId === font.id
+        return (
+          <button
+            key={font.id}
+            type="button"
+            className={`graphic-toolbar-strip-chip ${selected ? 'graphic-toolbar-strip-chip--selected' : ''}`}
+            style={{ fontFamily: font.fontFamily }}
+            onClick={() => onSelect(font)}
+          >
+            {font.label}
+          </button>
+        )
+      })}
+    </StripShell>
   )
 }
 
@@ -34,7 +45,7 @@ function parseAspectNumbers(id: string) {
   return { width, height }
 }
 
-function aspectPreviewSize(id: string, maxDim = 22) {
+function aspectPreviewSize(id: string, maxDim = 20) {
   const { width, height } = parseAspectNumbers(id)
   const scale = maxDim / Math.max(width, height)
   return { width: width * scale, height: height * scale }
@@ -47,33 +58,140 @@ interface GraphicAspectStripProps {
 
 export function GraphicAspectStrip({ selected, onSelect }: GraphicAspectStripProps) {
   return (
-    <div className="graphic-toolbar-strip">
-      <div className="graphic-toolbar-strip-scroll component-scroll-row flex items-center gap-3 overflow-x-auto">
-        {GRAPHIC_ASPECT_RATIO_OPTIONS.map((option) => {
-          const preview = aspectPreviewSize(option.id)
-          const isSelected = selected === option.id
-          return (
-            <button
-              key={option.id}
-              type="button"
-              aria-label={`图片比例 ${option.label}`}
-              className={`graphic-toolbar-strip-ratio ${isSelected ? 'graphic-toolbar-strip-ratio--selected' : ''}`}
-              onClick={() => onSelect(option.id)}
+    <StripShell>
+      {GRAPHIC_ASPECT_RATIO_OPTIONS.map((option) => {
+        const preview = aspectPreviewSize(option.id)
+        const isSelected = selected === option.id
+        return (
+          <button
+            key={option.id}
+            type="button"
+            aria-label={`图片比例 ${option.label}`}
+            className={`graphic-toolbar-strip-ratio ${isSelected ? 'graphic-toolbar-strip-ratio--selected' : ''}`}
+            onClick={() => onSelect(option.id)}
+          >
+            <span
+              className={`graphic-toolbar-strip-ratio-frame ${isSelected ? 'graphic-toolbar-strip-ratio-frame--selected' : ''}`}
+              style={{ width: preview.width + 8, height: preview.height + 8 }}
             >
               <span
-                className={`graphic-toolbar-strip-ratio-frame ${isSelected ? 'graphic-toolbar-strip-ratio-frame--selected' : ''}`}
-                style={{ width: preview.width + 10, height: preview.height + 10 }}
-              >
-                <span
-                  className={`graphic-toolbar-strip-ratio-inner ${isSelected ? 'graphic-toolbar-strip-ratio-inner--selected' : ''}`}
-                  style={{ width: preview.width, height: preview.height }}
-                />
-              </span>
-              <span className="graphic-toolbar-strip-ratio-label">{option.label}</span>
-            </button>
-          )
-        })}
-      </div>
-    </div>
+                className={`graphic-toolbar-strip-ratio-inner ${isSelected ? 'graphic-toolbar-strip-ratio-inner--selected' : ''}`}
+                style={{ width: preview.width, height: preview.height }}
+              />
+            </span>
+            <span className="graphic-toolbar-strip-ratio-label">{option.label}</span>
+          </button>
+        )
+      })}
+    </StripShell>
+  )
+}
+
+interface GraphicTemplateStripProps {
+  config: GraphicTextConfig
+  onUpdate: (updates: Partial<GraphicTextConfig>) => void
+  onBackgroundUpload: (file: File) => void
+}
+
+export function GraphicTemplateStrip({
+  config,
+  onUpdate,
+  onBackgroundUpload,
+}: GraphicTemplateStripProps) {
+  const referenceInputRef = useRef<HTMLInputElement | null>(null)
+
+  return (
+    <StripShell>
+      <input
+        ref={referenceInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          if (file) onBackgroundUpload(file)
+          event.target.value = ''
+        }}
+      />
+
+      <button
+        type="button"
+        aria-label="参考图"
+        className="graphic-toolbar-strip-template-btn"
+        onClick={() => {
+          onUpdate({ backgroundType: 'reference' })
+          referenceInputRef.current?.click()
+        }}
+      >
+        <TemplatePreviewSquare selected={config.backgroundType === 'reference'}>
+          {config.backgroundUrl ? (
+            <img src={config.backgroundUrl} alt="" className="size-full object-cover" />
+          ) : null}
+        </TemplatePreviewSquare>
+        <span>参考图</span>
+      </button>
+
+      <button
+        type="button"
+        aria-label="纯色纸张"
+        className="graphic-toolbar-strip-template-btn"
+        onClick={() => onUpdate({ backgroundType: 'solid' })}
+      >
+        <TemplatePreviewSquare selected={config.backgroundType === 'solid'}>
+          <span className="size-full" style={{ backgroundColor: config.paperColor }} aria-hidden />
+        </TemplatePreviewSquare>
+        <span>纯色</span>
+      </button>
+
+      {PAPER_COLORS.map((color) => (
+        <button
+          key={color}
+          type="button"
+          aria-label={`纸张色 ${color}`}
+          className={`graphic-toolbar-strip-color ${
+            config.backgroundType === 'solid' && config.paperColor === color
+              ? 'graphic-toolbar-strip-color--selected'
+              : ''
+          }`}
+          style={{ backgroundColor: color }}
+          onClick={() => onUpdate({ backgroundType: 'solid', paperColor: color })}
+        />
+      ))}
+
+      <button
+        type="button"
+        aria-label="方格块"
+        aria-pressed={config.pageOverlay === 'grid'}
+        className="graphic-toolbar-strip-template-btn"
+        onClick={() =>
+          onUpdate({
+            pageOverlay: config.pageOverlay === 'grid' ? 'none' : 'grid',
+          })
+        }
+      >
+        <TemplatePreviewSquare
+          className="graphic-grid-preview"
+          selected={config.pageOverlay === 'grid'}
+        />
+        <span>方格</span>
+      </button>
+
+      <button
+        type="button"
+        aria-label="像素边框"
+        aria-pressed={config.pageOverlay === 'pixel'}
+        className="graphic-toolbar-strip-template-btn"
+        onClick={() =>
+          onUpdate({
+            pageOverlay: config.pageOverlay === 'pixel' ? 'none' : 'pixel',
+          })
+        }
+      >
+        <TemplatePreviewSquare selected={config.pageOverlay === 'pixel'}>
+          <PixelPreviewArt />
+        </TemplatePreviewSquare>
+        <span>像素</span>
+      </button>
+    </StripShell>
   )
 }

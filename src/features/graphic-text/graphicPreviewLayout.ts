@@ -5,7 +5,27 @@ export const SHEET_MIN_HEIGHT_PX = 300
 export const PREVIEW_MIN_HEIGHT_PX = 140
 export const PREVIEW_VERTICAL_PADDING = 18
 export const WORKSPACE_PREVIEW_HORIZONTAL_PADDING = 32
-export const WORKSPACE_PREVIEW_VERTICAL_RESERVE = 14 * 16
+export const WORKSPACE_PREVIEW_VERTICAL_RESERVE = 11 * 16
+export const SAVE_THUMB_WIDTH_PX = 120
+
+export function computeSaveThumbLayout(
+  aspect: { width: number; height: number },
+  viewportWidth = window.innerWidth,
+  viewportHeight = window.innerHeight,
+  thumbWidth = SAVE_THUMB_WIDTH_PX,
+) {
+  const sourceSize = computeWorkspacePagerPageSize(aspect, viewportWidth, viewportHeight)
+  if (!sourceSize) return null
+
+  const scale = thumbWidth / sourceSize.width
+  return {
+    sourceWidth: sourceSize.width,
+    sourceHeight: sourceSize.height,
+    scale,
+    width: thumbWidth,
+    height: sourceSize.height * scale,
+  }
+}
 
 export function computeGraphicPageDisplaySize(
   aspect: { width: number; height: number },
