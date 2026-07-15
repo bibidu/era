@@ -10,7 +10,7 @@ import { getGraphicLayout } from './layout'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { getFontById } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
-import { buildCharHighlightSegments, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
+import { buildCharHighlightSegments, blockHasHighlightedChar, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
 import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
 import { resolveTopBarParts } from './topBar'
 
@@ -173,7 +173,8 @@ async function drawPage(
     topBarHeight,
     exportScale,
   } = layout
-  const highlightedKeys = new Set(config.highlightedCharKeys)
+  const underlineKeys = new Set(config.underlineHighlightedCharKeys)
+  const quoteKeys = new Set(config.quoteHighlightedCharKeys)
   const topBar = resolveTopBarParts(config, markdown)
   const canvas = document.createElement('canvas')
   canvas.width = width
@@ -268,17 +269,20 @@ async function drawPage(
     const plainText = stripHighlightMarkers(block.text)
     const blockId = block.sourceBlockId ?? block.id
     const charOffset = block.charOffset ?? 0
+    const hasQuoteHighlightBar =
+      styleType !== 'quote' && blockHasHighlightedChar(block, quoteKeys)
+    const quoteBarInset = hasQuoteHighlightBar ? quoteInset(spec.size) : 0
     const inset =
       block.type === 'list'
-        ? listInset(spec.size)
+        ? listInset(spec.size) + quoteBarInset
         : block.type === 'quote' || styleType === 'quote'
           ? quoteInset(spec.size)
           : block.type === 'code' || styleType === 'code'
             ? codeInset(spec.size)
-            : 0
+            : quoteBarInset
     const enableHighlight = true
     const segments = enableHighlight
-      ? buildCharHighlightSegments(block.text, blockId, highlightedKeys, charOffset)
+      ? buildCharHighlightSegments(block.text, blockId, underlineKeys, charOffset)
       : [{ text: plainText, highlighted: false }]
     const lineHeight = spec.size * spec.lineHeight
     const textMetrics = ctx.measureText(plainText || '文')
@@ -306,8 +310,14 @@ async function drawPage(
       const centerY = y + ascent * 0.48
       ctx.fillStyle = '#262626'
       ctx.beginPath()
-      ctx.arc(safeX + bulletRadius * 2, centerY, bulletRadius, 0, Math.PI * 2)
+      ctx.arc(safeX + quoteBarInset + bulletRadius * 2, centerY, bulletRadius, 0, Math.PI * 2)
       ctx.fill()
+    }
+
+    if (hasQuoteHighlightBar) {
+      const barWidth = Math.max(4, spec.size * 0.18)
+      ctx.fillStyle = config.themeColor
+      ctx.fillRect(safeX, y, barWidth, lineHeight)
     }
 
     drawHighlightedLine(

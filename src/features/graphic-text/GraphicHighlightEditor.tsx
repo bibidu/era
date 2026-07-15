@@ -6,10 +6,19 @@ import {
   type HighlightDisplayLine,
 } from './highlightTokens'
 
+export type HighlightStyleTab = 'underline' | 'quote'
+
+const HIGHLIGHT_STYLE_TABS: { id: HighlightStyleTab; label: string }[] = [
+  { id: 'underline', label: '下划线样式' },
+  { id: 'quote', label: '引用样式' },
+]
+
 interface GraphicHighlightEditorProps {
   markdown: string
-  highlightedCharKeys: string[]
-  onChange: (keys: string[]) => void
+  underlineHighlightedCharKeys: string[]
+  quoteHighlightedCharKeys: string[]
+  onUnderlineChange: (keys: string[]) => void
+  onQuoteChange: (keys: string[]) => void
   onConfirm: () => void
   onBack: () => void
 }
@@ -149,26 +158,35 @@ function HighlightParagraphRows({
 
 export function GraphicHighlightEditor({
   markdown,
-  highlightedCharKeys,
-  onChange,
+  underlineHighlightedCharKeys,
+  quoteHighlightedCharKeys,
+  onUnderlineChange,
+  onQuoteChange,
   onConfirm,
   onBack,
 }: GraphicHighlightEditorProps) {
+  const [activeStyleTab, setActiveStyleTab] = useState<HighlightStyleTab>('underline')
   const displayLines = useMemo(() => buildHighlightDisplayLines(markdown), [markdown])
-  const highlightedSet = useMemo(() => new Set(highlightedCharKeys), [highlightedCharKeys])
+
+  const activeKeys =
+    activeStyleTab === 'underline' ? underlineHighlightedCharKeys : quoteHighlightedCharKeys
+  const onActiveChange =
+    activeStyleTab === 'underline' ? onUnderlineChange : onQuoteChange
+
+  const highlightedSet = useMemo(() => new Set(activeKeys), [activeKeys])
 
   const toggleToken = (key: string) => {
-    const next = new Set(highlightedCharKeys)
+    const next = new Set(activeKeys)
     if (next.has(key)) next.delete(key)
     else next.add(key)
-    onChange([...next])
+    onActiveChange([...next])
   }
 
   const toggleRow = (rowTokens: HighlightCharToken[]) => {
     if (!rowTokens.length) return
 
     const allSelected = isRowFullySelected(rowTokens, highlightedSet)
-    const next = new Set(highlightedCharKeys)
+    const next = new Set(activeKeys)
 
     if (allSelected) {
       rowTokens.forEach((token) => next.delete(token.key))
@@ -176,7 +194,7 @@ export function GraphicHighlightEditor({
       rowTokens.forEach((token) => next.add(token.key))
     }
 
-    onChange([...next])
+    onActiveChange([...next])
   }
 
   const hasContent = displayLines.some((line) => line.tokens.length > 0)
@@ -220,9 +238,30 @@ export function GraphicHighlightEditor({
         </button>
       </div>
 
+      <div className="flex shrink-0 border-b border-neutral-200 px-2">
+        {HIGHLIGHT_STYLE_TABS.map((tab) => {
+          const selected = activeStyleTab === tab.id
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              className={`component-tab flex flex-1 flex-row items-center justify-center py-2.5 ${
+                selected ? 'component-tab--active' : 'text-neutral-500'
+              }`}
+              onClick={() => setActiveStyleTab(tab.id)}
+            >
+              <span className="text-xs font-medium">{tab.label}</span>
+            </button>
+          )
+        })}
+      </div>
+
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
         <p className="mb-3 text-xs text-neutral-500">
-          点击文字或标点即可高亮，已选 {highlightedCharKeys.length} 个字符
+          {activeStyleTab === 'underline'
+            ? '点击文字设置下划线高亮，已选'
+            : '点击文字设置引用高亮（所在行左侧显示竖杠），已选'}{' '}
+          {activeKeys.length} 个字符
         </p>
         {!hasContent ? (
           <p className="py-8 text-center text-sm text-neutral-400">暂无文字内容</p>
