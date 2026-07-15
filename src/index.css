@@ -362,6 +362,89 @@ body.is-dragging {
   width: 100%;
 }
 
+.graphic-highlight-toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.graphic-highlight-color-anchor {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.graphic-highlight-color-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  background: conic-gradient(
+    from 180deg,
+    #ef4444,
+    #f97316,
+    #eab308,
+    #22c55e,
+    #3b82f6,
+    #a855f7,
+    #ef4444
+  );
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.graphic-highlight-color-trigger-swatch {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #ffffff;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+}
+
+.graphic-highlight-color-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  width: max-content;
+  max-width: min(18rem, calc(100vw - 2rem));
+  padding: 10px 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+}
+
+.graphic-highlight-color-popover-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.graphic-highlight-color-swatch {
+  position: relative;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 9999px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.graphic-highlight-color-swatch--selected {
+  border-color: #171717;
+}
+
+.graphic-highlight-color-swatch--picker {
+  overflow: hidden;
+}
+
 .graphic-sheet-close {
   position: absolute;
   top: 10px;
@@ -1027,14 +1110,20 @@ body.is-dragging {
   border-width: 0 2px 2px 0;
 }
 
-.graphic-theme-highlight {
+.graphic-theme-brush {
+  position: relative;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.graphic-theme-underline {
   position: relative;
   isolation: isolate;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
 
-.graphic-theme-highlight::after {
+.graphic-theme-underline::after {
   content: '';
   position: absolute;
   left: -0.02em;
@@ -1090,7 +1179,8 @@ body.is-dragging {
   align-items: center;
   justify-content: center;
   min-height: 36px;
-  padding: 6px 8px;
+  min-width: 0;
+  padding: 6px 6px;
   border: none;
   border-radius: 9px;
   background: transparent;

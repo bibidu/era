@@ -70,7 +70,8 @@ function drawStyledLine(
   text: string,
   blockId: string,
   charOffset: number,
-  segments: LineSegment[],
+  brushSegments: LineSegment[],
+  underlineSegments: LineSegment[],
   circleColors: Readonly<Record<string, string>>,
   x: number,
   yTop: number,
@@ -90,7 +91,7 @@ function drawStyledLine(
 
   if (enableHighlight) {
     let bgX = x
-    for (const segment of segments) {
+    for (const segment of brushSegments) {
       if (!segment.text) continue
       const metrics = ctx.measureText(segment.text)
       if (segment.color) {
@@ -123,7 +124,7 @@ function drawStyledLine(
     }
 
     let underlineX = x
-    for (const segment of segments) {
+    for (const segment of underlineSegments) {
       if (!segment.text) continue
       const metrics = ctx.measureText(segment.text)
       if (segment.color) {
@@ -211,6 +212,7 @@ async function drawPage(
     topBarHeight,
     exportScale,
   } = layout
+  const brushColors = config.brushHighlightColors
   const underlineColors = config.underlineHighlightColors
   const quoteColors = config.quoteHighlightColors
   const circleColors = config.circleHighlightColors
@@ -323,7 +325,10 @@ async function drawPage(
           ? codeInset(spec.size)
           : quoteBarInset
     const enableHighlight = true
-    const segments = enableHighlight
+    const brushSegments = enableHighlight
+      ? buildCharHighlightColorSegments(block.text, blockId, brushColors, charOffset)
+      : [{ text: plainText, color: null }]
+    const underlineSegments = enableHighlight
       ? buildCharHighlightColorSegments(block.text, blockId, underlineColors, charOffset)
       : [{ text: plainText, color: null }]
     const lineHeight = spec.size * spec.lineHeight
@@ -363,7 +368,8 @@ async function drawPage(
       block.text,
       blockId,
       charOffset,
-      segments,
+      brushSegments,
+      underlineSegments,
       circleColors,
       safeX + inset,
       y,
