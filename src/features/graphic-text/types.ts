@@ -29,6 +29,7 @@ export interface GraphicTextConfig {
   backgroundUrl: string | null
   underlineHighlightedCharKeys: string[]
   quoteHighlightedCharKeys: string[]
+  circleHighlightedCharKeys: string[]
 }
 
 export type MarkdownBlockType = 'title' | 'heading' | 'paragraph' | 'list' | 'quote' | 'code'
@@ -68,6 +69,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   backgroundUrl: null,
   underlineHighlightedCharKeys: [],
   quoteHighlightedCharKeys: [],
+  circleHighlightedCharKeys: [],
 }
 
 export const DEFAULT_MARKDOWN = `# 工程团队想抄 Dynamic Workflows ，我把它拆透了

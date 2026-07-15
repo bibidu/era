@@ -192,6 +192,7 @@ export function GraphicTextConfigSheet({
   const [highlightDraft, setHighlightDraft] = useState({
     underline: config.underlineHighlightedCharKeys,
     quote: config.quoteHighlightedCharKeys,
+    circle: config.circleHighlightedCharKeys,
   })
 
   const previewAreaHeight = Math.max(0, viewportHeight - sheetHeight)
@@ -204,6 +205,7 @@ export function GraphicTextConfigSheet({
             ...config,
             underlineHighlightedCharKeys: highlightDraft.underline,
             quoteHighlightedCharKeys: highlightDraft.quote,
+            circleHighlightedCharKeys: highlightDraft.circle,
           }
         : config,
     [config, sheetView, highlightDraft],
@@ -253,9 +255,15 @@ export function GraphicTextConfigSheet({
       setHighlightDraft({
         underline: config.underlineHighlightedCharKeys,
         quote: config.quoteHighlightedCharKeys,
+        circle: config.circleHighlightedCharKeys,
       })
     }
-  }, [sheetView, config.underlineHighlightedCharKeys, config.quoteHighlightedCharKeys])
+  }, [
+    sheetView,
+    config.underlineHighlightedCharKeys,
+    config.quoteHighlightedCharKeys,
+    config.circleHighlightedCharKeys,
+  ])
 
   const handleResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
     event.preventDefault()
@@ -288,6 +296,7 @@ export function GraphicTextConfigSheet({
     onUpdate({
       underlineHighlightedCharKeys: highlightDraft.underline,
       quoteHighlightedCharKeys: highlightDraft.quote,
+      circleHighlightedCharKeys: highlightDraft.circle,
     })
     setSheetView('main')
   }
@@ -335,11 +344,15 @@ export function GraphicTextConfigSheet({
             themeColor={config.themeColor}
             underlineHighlightedCharKeys={highlightDraft.underline}
             quoteHighlightedCharKeys={highlightDraft.quote}
+            circleHighlightedCharKeys={highlightDraft.circle}
             onUnderlineChange={(keys) =>
               setHighlightDraft((current) => ({ ...current, underline: keys }))
             }
             onQuoteChange={(keys) =>
               setHighlightDraft((current) => ({ ...current, quote: keys }))
+            }
+            onCircleChange={(keys) =>
+              setHighlightDraft((current) => ({ ...current, circle: keys }))
             }
             onConfirm={handleHighlightConfirm}
             onBack={() => setSheetView('main')}
@@ -361,6 +374,40 @@ export function GraphicTextConfigSheet({
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
                       <div className="flex flex-col gap-4 pb-2">
                         <section>
+                          <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                            <Palette size={16} />
+                            主题色
+                          </div>
+                          <div className="flex items-center gap-3 overflow-x-auto py-1">
+                            {THEME_COLORS.map((color) => (
+                              <button
+                                key={color}
+                                type="button"
+                                aria-label={`主题色 ${color}`}
+                                className={`size-9 shrink-0 rounded-full border-2 ${
+                                  config.themeColor === color ? 'border-black' : 'border-transparent'
+                                }`}
+                                style={{ backgroundColor: color }}
+                                onClick={() => onUpdate({ themeColor: color })}
+                              />
+                            ))}
+                            <label
+                              className={`theme-color-palette-btn relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border ${
+                                isCustomThemeColor ? 'border-2 border-black' : 'border-neutral-300'
+                              }`}
+                            >
+                              <input
+                                type="color"
+                                value={config.themeColor}
+                                onChange={(event) => onUpdate({ themeColor: event.target.value })}
+                                className="absolute inset-[-8px] size-14 cursor-pointer opacity-0"
+                                aria-label="自定义主题色"
+                              />
+                            </label>
+                          </div>
+                        </section>
+
+                        <section>
                           <button
                             type="button"
                             className="flex h-11 w-full items-center justify-between rounded-xl border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900"
@@ -373,7 +420,8 @@ export function GraphicTextConfigSheet({
                             <span className="text-xs text-neutral-500">
                               已选{' '}
                               {config.underlineHighlightedCharKeys.length +
-                                config.quoteHighlightedCharKeys.length}{' '}
+                                config.quoteHighlightedCharKeys.length +
+                                config.circleHighlightedCharKeys.length}{' '}
                               字
                             </span>
                           </button>
@@ -468,40 +516,6 @@ export function GraphicTextConfigSheet({
                               options={HEADING_MARGIN_OPTIONS}
                               onChange={(value) => onUpdate({ headingMarginBottom: value })}
                             />
-                          </div>
-                        </section>
-
-                        <section>
-                          <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-                            <Palette size={16} />
-                            主题色
-                          </div>
-                          <div className="flex items-center gap-3 overflow-x-auto py-1">
-                            {THEME_COLORS.map((color) => (
-                              <button
-                                key={color}
-                                type="button"
-                                aria-label={`主题色 ${color}`}
-                                className={`size-9 shrink-0 rounded-full border-2 ${
-                                  config.themeColor === color ? 'border-black' : 'border-transparent'
-                                }`}
-                                style={{ backgroundColor: color }}
-                                onClick={() => onUpdate({ themeColor: color })}
-                              />
-                            ))}
-                            <label
-                              className={`theme-color-palette-btn relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border ${
-                                isCustomThemeColor ? 'border-2 border-black' : 'border-neutral-300'
-                              }`}
-                            >
-                              <input
-                                type="color"
-                                value={config.themeColor}
-                                onChange={(event) => onUpdate({ themeColor: event.target.value })}
-                                className="absolute inset-[-8px] size-14 cursor-pointer opacity-0"
-                                aria-label="自定义主题色"
-                              />
-                            </label>
                           </div>
                         </section>
 

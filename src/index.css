@@ -326,11 +326,45 @@ body.is-dragging {
 }
 
 .graphic-theme-highlight {
-  text-decoration: underline;
-  text-decoration-thickness: 0.12em;
-  text-underline-offset: 0.14em;
+  position: relative;
+  isolation: isolate;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
+}
+
+.graphic-theme-highlight::after {
+  content: '';
+  position: absolute;
+  left: -0.02em;
+  right: -0.02em;
+  bottom: 0.04em;
+  height: max(2px, 0.1em);
+  background-color: var(--graphic-highlight-underline, currentColor);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.graphic-circle-highlight {
+  position: relative;
+  display: inline;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.graphic-circle-highlight-text {
+  position: relative;
+  z-index: 1;
+}
+
+.graphic-circle-highlight-svg {
+  position: absolute;
+  left: -0.32em;
+  top: -0.24em;
+  width: calc(100% + 0.64em);
+  height: calc(100% + 0.48em);
+  overflow: visible;
+  pointer-events: none;
+  z-index: 2;
 }
 
 .sheet-action-bar {
