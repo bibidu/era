@@ -127,7 +127,7 @@ function HighlightRowPageIndicator({ page }: { page: number }) {
   const isOdd = page % 2 === 1
   return (
     <span
-      className={`graphic-highlight-page-indicator mt-1 ${
+      className={`graphic-highlight-page-indicator ${
         isOdd ? 'graphic-highlight-page-indicator--odd' : 'graphic-highlight-page-indicator--even'
       }`}
       aria-label={`第 ${page} 页`}
@@ -195,12 +195,8 @@ function HighlightParagraphRows({
     'inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-transparent px-2 text-sm'
 
   return (
-    <div className="relative">
-      <div
-        ref={measureRef}
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 flex flex-wrap gap-1.5 pl-7 pr-3 opacity-0"
-        aria-hidden
-      >
+    <div className="graphic-highlight-paragraph">
+      <div ref={measureRef} className="graphic-highlight-row-measure" aria-hidden>
         {tokens.map((token) => (
           <span key={token.key} data-highlight-token={token.key} className={measureTokenClassName}>
             {token.char.trim() === '' ? '␣' : token.char}
@@ -211,19 +207,23 @@ function HighlightParagraphRows({
       {visualRows?.map((rowTokens, rowIndex) => {
         const allSelected = isRowFullySelected(rowTokens, highlightedSet)
         const page = charPageMap.get(rowTokens[0]?.key ?? '') ?? 1
+        const isParagraphEnd = rowIndex === visualRows.length - 1
         return (
-          <div key={`row-${rowIndex}`} className="mb-1.5 flex items-start gap-2 last:mb-0">
+          <div
+            key={`row-${rowIndex}`}
+            className={`graphic-highlight-row${isParagraphEnd ? ' graphic-highlight-row--paragraph-end' : ''}`}
+          >
             <button
               type="button"
               aria-label={allSelected ? '取消全选本行' : '全选本行'}
               aria-checked={allSelected}
               role="radio"
-              className="graphic-highlight-row-radio mt-1 shrink-0"
+              className="graphic-highlight-row-radio shrink-0"
               onClick={() => onToggleRow(rowTokens)}
             >
               <span className="graphic-highlight-row-radio-dot" />
             </button>
-            <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+            <div className="graphic-highlight-row-tokens">
               {rowTokens.map((token) => (
                 <HighlightTokenButton
                   key={token.key}
@@ -305,9 +305,7 @@ export function GraphicHighlightEditor({
         : '点击文字设置线圈高亮（同行连续文字共用一个线圈），已选'
 
   const renderLine = (line: HighlightDisplayLine, lineIndex: number) => {
-    if (line.isParagraphBreak) {
-      return <div key={`break-${lineIndex}`} className="h-3" aria-hidden />
-    }
+    if (line.isParagraphBreak) return null
     if (!line.tokens.length) return null
 
     return (
@@ -369,7 +367,7 @@ export function GraphicHighlightEditor({
         {!hasContent ? (
           <p className="py-8 text-center text-sm text-neutral-400">暂无文字内容</p>
         ) : (
-          <div className="flex flex-col gap-3">{displayLines.map(renderLine)}</div>
+          <div className="flex flex-col">{displayLines.map(renderLine)}</div>
         )}
       </div>
     </div>
