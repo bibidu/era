@@ -162,10 +162,6 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   }
 
   const handleFontSizeBack = () => {
-    if (isFontSizeTarget(fontSizeNav)) {
-      setFontSizeNav('menu')
-      return
-    }
     setFontSizeNav(null)
   }
 
