@@ -25,6 +25,27 @@ function StripShell({ children }: { children: React.ReactNode }) {
   )
 }
 
+interface GraphicTopTextStripProps {
+  value: string
+  onChange: (value: string) => void
+}
+
+export function GraphicTopTextStrip({ value, onChange }: GraphicTopTextStripProps) {
+  return (
+    <StripShell>
+      <label className="graphic-toolbar-strip-top-text flex min-w-0 flex-1 items-center gap-2 text-sm">
+        <span className="shrink-0 text-neutral-600">顶部文案</span>
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="留空则显示「全文 xxx 字」"
+          className="h-9 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-neutral-50 px-2 text-sm outline-none focus:border-neutral-500"
+        />
+      </label>
+    </StripShell>
+  )
+}
+
 interface GraphicFontStripProps {
   selectedFontId: string
   onSelect: (font: FontOption) => void

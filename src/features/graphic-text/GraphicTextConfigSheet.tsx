@@ -109,7 +109,7 @@ export function GraphicTextConfigSheet({
     observer.observe(dialog)
 
     return () => observer.disconnect()
-  }, [isOpen, panel, highlightDraft, config.topText])
+  }, [isOpen, panel, highlightDraft])
 
   useEffect(() => {
     if (panel !== 'highlight') return
@@ -155,50 +155,31 @@ export function GraphicTextConfigSheet({
       />
     ) : null
 
-  const panelBody = (() => {
-    switch (panel) {
-      case 'highlight':
-        return (
-          <GraphicHighlightEditor
-            markdown={markdown}
-            config={config}
-            underlineHighlightColors={highlightDraft.underline}
-            quoteHighlightColors={highlightDraft.quote}
-            circleHighlightColors={highlightDraft.circle}
-            highlightPickerColor={highlightDraft.pickerColor}
-            hideHeader
-            onUnderlineChange={(colors) =>
-              setHighlightDraft((current) => ({ ...current, underline: colors }))
-            }
-            onQuoteChange={(colors) =>
-              setHighlightDraft((current) => ({ ...current, quote: colors }))
-            }
-            onCircleChange={(colors) =>
-              setHighlightDraft((current) => ({ ...current, circle: colors }))
-            }
-            onPickerColorChange={(pickerColor) =>
-              setHighlightDraft((current) => ({ ...current, pickerColor }))
-            }
-            onConfirm={handleClose}
-            onBack={handleClose}
-          />
-        )
-      case 'top-text':
-        return (
-          <label className="flex w-full items-center gap-2 px-4 text-sm">
-            <span className="w-[4.6rem] shrink-0 font-medium text-neutral-600">顶部文案</span>
-            <input
-              value={config.topText}
-              onChange={(event) => onUpdate({ topText: event.target.value })}
-              placeholder="留空则显示「全文 xxx 字」"
-              className="h-9 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-neutral-50 px-2 text-sm outline-none"
-            />
-          </label>
-        )
-      default:
-        return null
-    }
-  })()
+  const panelBody = (
+    <GraphicHighlightEditor
+      markdown={markdown}
+      config={config}
+      underlineHighlightColors={highlightDraft.underline}
+      quoteHighlightColors={highlightDraft.quote}
+      circleHighlightColors={highlightDraft.circle}
+      highlightPickerColor={highlightDraft.pickerColor}
+      hideHeader
+      onUnderlineChange={(colors) =>
+        setHighlightDraft((current) => ({ ...current, underline: colors }))
+      }
+      onQuoteChange={(colors) =>
+        setHighlightDraft((current) => ({ ...current, quote: colors }))
+      }
+      onCircleChange={(colors) =>
+        setHighlightDraft((current) => ({ ...current, circle: colors }))
+      }
+      onPickerColorChange={(pickerColor) =>
+        setHighlightDraft((current) => ({ ...current, pickerColor }))
+      }
+      onConfirm={handleClose}
+      onBack={handleClose}
+    />
+  )
 
   return (
     <Drawer state={state}>
@@ -227,13 +208,7 @@ export function GraphicTextConfigSheet({
         )}
         <Drawer.Content placement="bottom" className="graphic-config-drawer-content">
           <div ref={dialogRef} className="w-full">
-            <Drawer.Dialog
-              className={`graphic-config-drawer-dialog component-library ${
-                panel === 'highlight'
-                  ? 'graphic-config-drawer-dialog--highlight'
-                  : 'graphic-config-drawer-dialog--compact'
-              }`}
-            >
+            <Drawer.Dialog className="graphic-config-drawer-dialog graphic-config-drawer-dialog--highlight component-library">
             <button
               type="button"
               aria-label="关闭"
@@ -246,11 +221,7 @@ export function GraphicTextConfigSheet({
               <span className="graphic-config-sheet-handle-bar" />
             </div>
             <div className="graphic-config-sheet-body">
-              {panel === 'highlight' ? (
-                <div className="graphic-config-sheet-highlight">{panelBody}</div>
-              ) : (
-                <div className="graphic-config-sheet-compact">{panelBody}</div>
-              )}
+              <div className="graphic-config-sheet-highlight">{panelBody}</div>
             </div>
           </Drawer.Dialog>
           </div>
