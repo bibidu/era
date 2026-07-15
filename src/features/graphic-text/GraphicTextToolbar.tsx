@@ -1,4 +1,4 @@
-import { ArrowLeft, CaseSensitive, Check, Keyboard } from 'lucide-react'
+import { ArrowLeft, CaseSensitive, Download, Keyboard } from 'lucide-react'
 import {
   FONT_SIZE_TARGETS,
   GRAPHIC_HIGHLIGHT_PANEL,
@@ -323,12 +323,12 @@ export function GraphicTextToolbar({
 
         <button
           type="button"
-          aria-label="保存图片"
+          aria-label="下载图片"
           disabled={saveDisabled}
           className="graphic-text-toolbar-save"
           onClick={onSave}
         >
-          <Check size={18} strokeWidth={2.5} />
+          <Download size={18} strokeWidth={2.25} />
         </button>
       </div>
     </div>
