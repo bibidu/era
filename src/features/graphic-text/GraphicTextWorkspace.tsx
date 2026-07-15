@@ -2,8 +2,8 @@ import { Settings2, Type } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { MarkdownEditorDock } from '../../components/MarkdownEditorDock'
 import { GraphicPage } from './GraphicPage'
+import { GraphicSaveImagesSheet } from './GraphicSaveImagesSheet'
 import { GraphicTextConfigSheet } from './GraphicTextConfigSheet'
-import { exportGraphicPages, saveGraphicPages } from './exportGraphicPages'
 import { paginateMarkdown, getGraphicLayout } from './layout'
 import { computeWorkspacePagerPageSize } from './graphicPreviewLayout'
 import { getFontById } from '../../data/fonts'
@@ -25,10 +25,9 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     backgroundUrl: defaultBackgroundUrl,
   }))
   const [configOpen, setConfigOpen] = useState(false)
+  const [saveSheetOpen, setSaveSheetOpen] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
   const [activePage, setActivePage] = useState(0)
-  const [saving, setSaving] = useState(false)
-  const [saveProgress, setSaveProgress] = useState('')
   const [pasteError, setPasteError] = useState('')
   const pagerRef = useRef<HTMLDivElement>(null)
 
@@ -70,23 +69,13 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
 
   const handleBackgroundUpload = (file: File) => {
     if (!file.type.startsWith('image/')) {
-      setSaveProgress('请选择图片文件')
-      window.setTimeout(() => setSaveProgress(''), 2200)
       return
     }
 
     const reader = new FileReader()
-    reader.onerror = () => {
-      setSaveProgress('图片读取失败，请重试')
-      window.setTimeout(() => setSaveProgress(''), 2200)
-    }
     reader.onload = () => {
       const result = reader.result
-      if (typeof result !== 'string') {
-        setSaveProgress('图片读取失败，请重试')
-        window.setTimeout(() => setSaveProgress(''), 2200)
-        return
-      }
+      if (typeof result !== 'string') return
       setConfig((current) => ({
         ...current,
         backgroundType: 'reference',
@@ -102,23 +91,9 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     setActivePage(Math.round(pager.scrollLeft / pager.clientWidth))
   }
 
-  const handleSave = async () => {
-    if (!pages.length || saving) return
-    setSaving(true)
-    setSaveProgress(`正在生成 0/${pages.length}`)
-    try {
-      const blobs = await exportGraphicPages(pages, config, markdown, (current, total) => {
-        setSaveProgress(`正在生成 ${current}/${total}`)
-      })
-      setSaveProgress('请选择“存储到照片”')
-      await saveGraphicPages(blobs)
-      setSaveProgress('已完成')
-    } catch {
-      setSaveProgress('保存失败，请重试')
-    } finally {
-      setSaving(false)
-      window.setTimeout(() => setSaveProgress(''), 2500)
-    }
+  const handleRequestSave = () => {
+    setConfigOpen(false)
+    setSaveSheetOpen(true)
   }
 
   return (
@@ -192,12 +167,18 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
         config={config}
         markdown={markdown}
         pageCount={pages.length}
-        saving={saving}
-        saveProgress={saveProgress}
         onOpenChange={setConfigOpen}
         onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
         onBackgroundUpload={handleBackgroundUpload}
-        onSave={handleSave}
+        onRequestSave={handleRequestSave}
+      />
+
+      <GraphicSaveImagesSheet
+        isOpen={saveSheetOpen}
+        pages={pages}
+        config={config}
+        markdown={markdown}
+        onOpenChange={setSaveSheetOpen}
       />
     </div>
   )

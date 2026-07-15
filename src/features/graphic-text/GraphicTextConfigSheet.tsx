@@ -30,12 +30,10 @@ interface GraphicTextConfigSheetProps {
   config: GraphicTextConfig
   markdown: string
   pageCount: number
-  saving: boolean
-  saveProgress: string
   onOpenChange: (open: boolean) => void
   onUpdate: (updates: Partial<GraphicTextConfig>) => void
   onBackgroundUpload: (file: File) => void
-  onSave: () => void
+  onRequestSave: () => void
 }
 
 type ConfigSheetView = 'main' | 'highlight'
@@ -178,12 +176,10 @@ export function GraphicTextConfigSheet({
   config,
   markdown,
   pageCount,
-  saving,
-  saveProgress,
   onOpenChange,
   onUpdate,
   onBackgroundUpload,
-  onSave,
+  onRequestSave,
 }: GraphicTextConfigSheetProps) {
   const sheetRef = useRef<HTMLDivElement | null>(null)
   const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
@@ -662,16 +658,13 @@ export function GraphicTextConfigSheet({
       </div>
 
       <div className="shrink-0 border-t border-neutral-200 bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">
-        {saveProgress && (
-          <p className="mb-2 text-center text-xs text-neutral-500">{saveProgress}</p>
-        )}
         <button
           type="button"
-          disabled={saving || pageCount === 0}
+          disabled={pageCount === 0}
           className="h-12 w-full rounded-xl bg-black text-sm font-semibold text-white disabled:opacity-50"
-          onClick={onSave}
+          onClick={onRequestSave}
         >
-          {saving ? saveProgress || '生成中...' : `保存 ${pageCount} 张到本地`}
+          保存图片
         </button>
       </div>
     </div>
