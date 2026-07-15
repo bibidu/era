@@ -341,6 +341,7 @@ export function GraphicTextConfigSheet({
         {sheetView === 'highlight' ? (
           <GraphicHighlightEditor
             markdown={markdown}
+            config={config}
             themeColor={config.themeColor}
             underlineHighlightedCharKeys={highlightDraft.underline}
             quoteHighlightedCharKeys={highlightDraft.quote}

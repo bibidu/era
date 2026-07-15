@@ -2,10 +2,12 @@ import { ArrowLeft, Check } from 'lucide-react'
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { HAND_DRAWN_CIRCLE_PATH, HAND_DRAWN_CIRCLE_VIEWBOX } from './circleHighlight'
 import {
+  buildHighlightCharPageMap,
   buildHighlightDisplayLines,
   type HighlightCharToken,
   type HighlightDisplayLine,
 } from './highlightTokens'
+import type { GraphicTextConfig } from './types'
 
 export type HighlightStyleTab = 'underline' | 'quote' | 'circle'
 
@@ -77,6 +79,7 @@ function HighlightStyleTabLabel({
 
 interface GraphicHighlightEditorProps {
   markdown: string
+  config: GraphicTextConfig
   themeColor: string
   underlineHighlightedCharKeys: string[]
   quoteHighlightedCharKeys: string[]
@@ -120,14 +123,29 @@ function HighlightTokenButton({
   )
 }
 
+function HighlightRowPageIndicator({ page }: { page: number }) {
+  const isOdd = page % 2 === 1
+  return (
+    <span
+      className={`graphic-highlight-page-indicator mt-1 ${
+        isOdd ? 'graphic-highlight-page-indicator--odd' : 'graphic-highlight-page-indicator--even'
+      }`}
+      aria-label={`第 ${page} 页`}
+      title={`第 ${page} 页`}
+    />
+  )
+}
+
 function HighlightParagraphRows({
   tokens,
   highlightedSet,
+  charPageMap,
   onToggleToken,
   onToggleRow,
 }: {
   tokens: HighlightCharToken[]
   highlightedSet: Set<string>
+  charPageMap: Map<string, number>
   onToggleToken: (key: string) => void
   onToggleRow: (rowTokens: HighlightCharToken[]) => void
 }) {
@@ -180,7 +198,7 @@ function HighlightParagraphRows({
     <div className="relative">
       <div
         ref={measureRef}
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 flex flex-wrap gap-1.5 pl-7 opacity-0"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 flex flex-wrap gap-1.5 pl-7 pr-3 opacity-0"
         aria-hidden
       >
         {tokens.map((token) => (
@@ -192,6 +210,7 @@ function HighlightParagraphRows({
 
       {visualRows?.map((rowTokens, rowIndex) => {
         const allSelected = isRowFullySelected(rowTokens, highlightedSet)
+        const page = charPageMap.get(rowTokens[0]?.key ?? '') ?? 1
         return (
           <div key={`row-${rowIndex}`} className="mb-1.5 flex items-start gap-2 last:mb-0">
             <button
@@ -214,6 +233,7 @@ function HighlightParagraphRows({
                 />
               ))}
             </div>
+            <HighlightRowPageIndicator page={page} />
           </div>
         )
       })}
@@ -223,6 +243,7 @@ function HighlightParagraphRows({
 
 export function GraphicHighlightEditor({
   markdown,
+  config,
   themeColor,
   underlineHighlightedCharKeys,
   quoteHighlightedCharKeys,
@@ -235,6 +256,7 @@ export function GraphicHighlightEditor({
 }: GraphicHighlightEditorProps) {
   const [activeStyleTab, setActiveStyleTab] = useState<HighlightStyleTab>('underline')
   const displayLines = useMemo(() => buildHighlightDisplayLines(markdown), [markdown])
+  const charPageMap = useMemo(() => buildHighlightCharPageMap(markdown, config), [markdown, config])
 
   const activeKeys =
     activeStyleTab === 'underline'
@@ -280,7 +302,7 @@ export function GraphicHighlightEditor({
       ? '点击文字设置下划线高亮，已选'
       : activeStyleTab === 'quote'
         ? '点击文字设置引用高亮（所在行左侧显示竖杠），已选'
-        : '点击文字设置线圈高亮（连续文字手绘线圈），已选'
+        : '点击文字设置线圈高亮（同行连续文字共用一个线圈），已选'
 
   const renderLine = (line: HighlightDisplayLine, lineIndex: number) => {
     if (line.isParagraphBreak) {
@@ -293,6 +315,7 @@ export function GraphicHighlightEditor({
         key={`paragraph-${lineIndex}`}
         tokens={line.tokens}
         highlightedSet={highlightedSet}
+        charPageMap={charPageMap}
         onToggleToken={toggleToken}
         onToggleRow={toggleRow}
       />

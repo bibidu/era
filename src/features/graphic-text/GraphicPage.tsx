@@ -9,7 +9,11 @@ import {
 } from './codeBlock'
 import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
 import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
-import { HAND_DRAWN_CIRCLE_PATH, HAND_DRAWN_CIRCLE_VIEWBOX } from './circleHighlight'
+import {
+  buildCircleHighlightRuns,
+  HAND_DRAWN_CIRCLE_PATH,
+  HAND_DRAWN_CIRCLE_VIEWBOX,
+} from './circleHighlight'
 import { buildCharHighlightSegments, blockHasHighlightedChar, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
 import { resolveTopBarParts } from './topBar'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
@@ -221,36 +225,32 @@ function StyledHighlightedText({
   const blockId = block.sourceBlockId ?? block.id
   const charOffset = block.charOffset ?? 0
   const plain = stripHighlightMarkers(text)
+  const circleRuns = buildCircleHighlightRuns(plain, blockId, charOffset, circleKeys)
   const parts: ReactNode[] = []
   let index = 0
+  let runCursor = 0
 
   while (index < plain.length) {
-    const key = `${blockId}:${charOffset + index}`
-    if (circleKeys.has(key)) {
-      let end = index
-      while (end < plain.length && circleKeys.has(`${blockId}:${charOffset + end}`)) {
-        end += 1
-      }
-      const runText = plain.slice(index, end)
+    const run = circleRuns[runCursor]
+    if (run && index === run.start) {
       parts.push(
         <CircleHighlightWrap key={`circle-${index}`} themeColor={themeColor}>
           <UnderlineSegments
-            text={runText}
+            text={run.text}
             blockId={blockId}
-            charOffset={charOffset + index}
+            charOffset={charOffset + run.start}
             themeColor={themeColor}
             underlineKeys={underlineKeys}
           />
         </CircleHighlightWrap>,
       )
-      index = end
+      index = run.end
+      runCursor += 1
       continue
     }
 
-    let end = index
-    while (end < plain.length && !circleKeys.has(`${blockId}:${charOffset + end}`)) {
-      end += 1
-    }
+    const nextCircleStart = run?.start ?? plain.length
+    const end = Math.min(nextCircleStart, plain.length)
     parts.push(
       <UnderlineSegments
         key={`text-${index}`}
