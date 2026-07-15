@@ -1,21 +1,35 @@
 import { Check, Keyboard } from 'lucide-react'
-import { GRAPHIC_CONFIG_PANELS, type GraphicConfigPanel } from './graphicConfigPanels'
+import {
+  GRAPHIC_SHEET_PANELS,
+  GRAPHIC_TOOLBAR_STRIPS,
+  GRAPHIC_TOOLBAR_TOGGLES,
+  type GraphicConfigPanel,
+  type ToolbarStrip,
+} from './graphicConfigPanels'
 
 interface GraphicTextToolbarProps {
   activePanel: GraphicConfigPanel | null
+  activeStrip: ToolbarStrip | null
   editorOpen: boolean
+  safeAreaOpen: boolean
   saveDisabled: boolean
   onEdit: () => void
+  onSelectStrip: (strip: ToolbarStrip) => void
   onSelectPanel: (panel: GraphicConfigPanel) => void
+  onToggleSafeArea: () => void
   onSave: () => void
 }
 
 export function GraphicTextToolbar({
   activePanel,
+  activeStrip,
   editorOpen,
+  safeAreaOpen,
   saveDisabled,
   onEdit,
+  onSelectStrip,
   onSelectPanel,
+  onToggleSafeArea,
   onSave,
 }: GraphicTextToolbarProps) {
   return (
@@ -33,7 +47,25 @@ export function GraphicTextToolbar({
             <span>编辑</span>
           </button>
 
-          {GRAPHIC_CONFIG_PANELS.map((panel) => {
+          {GRAPHIC_TOOLBAR_STRIPS.map((item) => {
+            const Icon = item.icon
+            const active = activeStrip === item.id
+            return (
+              <button
+                key={item.id}
+                type="button"
+                aria-label={item.label}
+                aria-pressed={active}
+                className={`graphic-text-toolbar-item ${active ? 'graphic-text-toolbar-item--active' : ''}`}
+                onClick={() => onSelectStrip(item.id)}
+              >
+                <Icon size={22} strokeWidth={1.5} />
+                <span>{item.label}</span>
+              </button>
+            )
+          })}
+
+          {GRAPHIC_SHEET_PANELS.map((panel) => {
             const Icon = panel.icon
             const active = activePanel === panel.id
             return (
@@ -47,6 +79,23 @@ export function GraphicTextToolbar({
               >
                 <Icon size={22} strokeWidth={1.5} />
                 <span>{panel.label}</span>
+              </button>
+            )
+          })}
+
+          {GRAPHIC_TOOLBAR_TOGGLES.map((item) => {
+            const Icon = item.icon
+            return (
+              <button
+                key={item.id}
+                type="button"
+                aria-label={item.label}
+                aria-pressed={safeAreaOpen}
+                className={`graphic-text-toolbar-item ${safeAreaOpen ? 'graphic-text-toolbar-item--active' : ''}`}
+                onClick={onToggleSafeArea}
+              >
+                <Icon size={22} strokeWidth={1.5} />
+                <span>{item.label}</span>
               </button>
             )
           })}

@@ -178,6 +178,7 @@ body.is-dragging {
 }
 
 .graphic-config-drawer-dialog {
+  position: relative;
   display: flex;
   min-height: 300px;
   flex-direction: column;
@@ -187,6 +188,111 @@ body.is-dragging {
   color: #171717;
   padding: 0;
   box-shadow: 0 -4px 24px rgb(0 0 0 / 0.12);
+}
+
+.graphic-sheet-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 9999px;
+  background: rgb(245 245 245 / 0.92);
+  color: #525252;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.graphic-sheet-close:active {
+  background: #e5e5e5;
+  color: #171717;
+}
+
+.graphic-toolbar-strip {
+  margin: 0 12px 8px;
+  border-radius: 9999px;
+  background: #ffffff;
+  box-shadow: 0 4px 20px rgb(0 0 0 / 0.1);
+}
+
+.graphic-toolbar-strip-scroll {
+  min-height: 61px;
+  padding: 6px 12px;
+  align-items: center;
+}
+
+.graphic-toolbar-strip-chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  height: 49px;
+  padding: 0 14px;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #171717;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.graphic-toolbar-strip-chip--selected {
+  border: 2px solid #171717;
+  padding: 0 13px;
+}
+
+.graphic-toolbar-strip-ratio {
+  display: inline-flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #737373;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.graphic-toolbar-strip-ratio--selected {
+  color: #171717;
+}
+
+.graphic-toolbar-strip-ratio-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.graphic-toolbar-strip-ratio-frame--selected {
+  border: 2px solid #171717;
+}
+
+.graphic-toolbar-strip-ratio-inner {
+  border-radius: 2px;
+  background: #d4d4d4;
+}
+
+.graphic-toolbar-strip-ratio-inner--selected {
+  background: #171717;
+}
+
+.graphic-toolbar-strip-ratio-label {
+  font-size: 11px;
+  line-height: 1;
 }
 
 .graphic-config-sheet-handle {
@@ -588,26 +694,26 @@ body.is-dragging {
 .graphic-pixel-preview {
   position: relative;
   background-color: #f5f8fc;
-  background-image:
-  linear-gradient(rgb(163 163 163 / 0.45) 1px, transparent 1px),
-  linear-gradient(90deg, rgb(163 163 163 / 0.45) 1px, transparent 1px);
-  background-size: 10px 10px;
+  overflow: hidden;
 }
 
 .graphic-pixel-preview::before {
   content: '';
   position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 40%;
-  height: 40%;
+  inset: 0;
   background:
-    linear-gradient(rgb(59 130 246 / 0.35), rgb(59 130 246 / 0.35)) 0 100% / 35% 35% no-repeat,
-    linear-gradient(rgb(59 130 246 / 0.22), rgb(59 130 246 / 0.22)) 30% 70% / 28% 28% no-repeat,
-    linear-gradient(rgb(168 85 247 / 0.3), rgb(168 85 247 / 0.3)) 100% 100% / 38% 38% no-repeat,
-    linear-gradient(rgb(34 197 94 / 0.28), rgb(34 197 94 / 0.28)) 78% 82% / 24% 24% no-repeat,
-    linear-gradient(rgb(59 130 246 / 0.18), rgb(59 130 246 / 0.18)) 100% 18% / 18% 55% no-repeat,
-    linear-gradient(rgb(168 85 247 / 0.16), rgb(168 85 247 / 0.16)) 12% 0 / 42% 22% no-repeat;
+    rgb(59 130 246 / 0.35) 2px calc(100% - 7px) / 5px 5px no-repeat,
+    rgb(59 130 246 / 0.25) 7px calc(100% - 4px) / 4px 4px no-repeat,
+    rgb(59 130 246 / 0.4) 10px calc(100% - 2px) / 3px 3px no-repeat,
+    rgb(168 85 247 / 0.32) calc(100% - 7px) calc(100% - 7px) / 5px 5px no-repeat,
+    rgb(34 197 94 / 0.28) calc(100% - 4px) calc(100% - 4px) / 4px 4px no-repeat,
+    rgb(168 85 247 / 0.24) calc(100% - 2px) calc(100% - 2px) / 3px 3px no-repeat,
+    rgb(168 85 247 / 0.22) calc(100% - 3px) 5px / 3px 3px no-repeat,
+    rgb(59 130 246 / 0.2) calc(100% - 3px) 10px / 3px 3px no-repeat,
+    rgb(34 197 94 / 0.2) calc(100% - 3px) 15px / 3px 3px no-repeat,
+    rgb(59 130 246 / 0.16) 6px 2px / 4px 4px no-repeat,
+    rgb(168 85 247 / 0.18) 18px 2px / 3px 3px no-repeat,
+    rgb(34 197 94 / 0.2) 24px 3px / 3px 3px no-repeat;
   pointer-events: none;
 }
 
