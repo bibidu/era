@@ -414,22 +414,24 @@ export function GraphicHighlightEditor({
         </button>
       </div>
 
-      <div className="flex shrink-0 border-b border-neutral-200 px-2">
-        {HIGHLIGHT_STYLE_TABS.map((tab) => {
-          const selected = activeStyleTab === tab.id
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              className={`component-tab flex flex-1 flex-row items-center justify-center py-2.5 ${
-                selected ? 'component-tab--active' : 'text-neutral-500'
-              }`}
-              onClick={() => setActiveStyleTab(tab.id)}
-            >
-              <HighlightStyleTabLabel tab={tab.id} themeColor={themeColor} selected={selected} />
-            </button>
-          )
-        })}
+      <div className="shrink-0 px-4 py-2.5">
+        <div className="graphic-highlight-tab-group" role="tablist" aria-label="高亮样式">
+          {HIGHLIGHT_STYLE_TABS.map((tab) => {
+            const selected = activeStyleTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                className={`graphic-highlight-tab ${selected ? 'graphic-highlight-tab--active' : ''}`}
+                onClick={() => setActiveStyleTab(tab.id)}
+              >
+                <HighlightStyleTabLabel tab={tab.id} themeColor={themeColor} selected={selected} />
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
