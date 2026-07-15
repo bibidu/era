@@ -1,5 +1,6 @@
 export type GraphicBackgroundType = 'reference' | 'solid'
 export type GraphicAspectRatio = '3:4' | '9:16'
+export type GraphicPageOverlay = 'none' | 'grid' | 'pixel'
 
 export const GRAPHIC_ASPECT_RATIO_OPTIONS: { id: GraphicAspectRatio; label: string }[] = [
   { id: '9:16', label: '9:16' },
@@ -21,7 +22,7 @@ export interface GraphicTextConfig {
   paperColor: string
   aspectRatio: GraphicAspectRatio
   backgroundType: GraphicBackgroundType
-  showGrid: boolean
+  pageOverlay: GraphicPageOverlay
   topText: string
   backgroundUrl: string | null
   underlineHighlightColors: Record<string, string>
@@ -62,7 +63,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   paperColor: '#FBF7ED',
   aspectRatio: '9:16',
   backgroundType: 'solid',
-  showGrid: true,
+  pageOverlay: 'grid',
   topText: '',
   backgroundUrl: null,
   underlineHighlightColors: {},

@@ -24,6 +24,7 @@ import {
   resolveBlockHighlightColor,
 } from './highlightColors'
 import { resolvePageBackgroundStyle } from './pageBackground'
+import { PagePixelOverlay } from './PagePixelOverlay'
 import { resolveTopBarParts } from './topBar'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 
@@ -396,6 +397,8 @@ export function GraphicPage({
         } as CSSProperties
       }
     >
+      {config.pageOverlay === 'pixel' && <PagePixelOverlay />}
+
       <div
         className="absolute z-10 flex min-w-0 items-center gap-2 border-b border-neutral-300"
         style={{

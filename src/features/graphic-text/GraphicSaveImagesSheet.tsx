@@ -1,6 +1,6 @@
+import { Drawer, useOverlayState } from '@heroui/react'
 import { Check, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { GraphicPage } from './GraphicPage'
 import { exportGraphicPages, saveGraphicPages } from './exportGraphicPages'
 import { computeGraphicPageDisplaySize } from './graphicPreviewLayout'
@@ -24,6 +24,7 @@ export function GraphicSaveImagesSheet({
   markdown,
   onOpenChange,
 }: GraphicSaveImagesSheetProps) {
+  const state = useOverlayState({ isOpen, onOpenChange })
   const [selectedIndexes, setSelectedIndexes] = useState<Set<number>>(() => new Set())
   const [saving, setSaving] = useState(false)
   const [saveProgress, setSaveProgress] = useState('')
@@ -34,22 +35,17 @@ export function GraphicSaveImagesSheet({
   }, [config])
 
   useEffect(() => {
-    if (!isOpen) return
+    if (isOpen !== state.isOpen) {
+      state.setOpen(isOpen)
+    }
+  }, [isOpen, state])
+
+  useEffect(() => {
+    if (!state.isOpen) return
     setSelectedIndexes(new Set(pages.map((_, index) => index)))
     setSaving(false)
     setSaveProgress('')
-  }, [isOpen, pages])
-
-  useEffect(() => {
-    if (!isOpen) return
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = previousOverflow
-    }
-  }, [isOpen])
-
-  if (!isOpen) return null
+  }, [state.isOpen, pages])
 
   const allSelected = pages.length > 0 && selectedIndexes.size === pages.length
   const hasSelection = selectedIndexes.size > 0
@@ -93,97 +89,94 @@ export function GraphicSaveImagesSheet({
     }
   }
 
-  return createPortal(
-    <div className="graphic-save-root">
-      <button
-        type="button"
-        aria-label="关闭"
-        className="graphic-save-dismiss"
-        onClick={() => onOpenChange(false)}
-      />
-      <div className="graphic-save-sheet">
-        <div className="flex shrink-0 items-center justify-between px-4 py-3">
-          <div className="size-9" aria-hidden />
-          <p className="text-base font-semibold text-neutral-900">选择图片保存</p>
-          <button
-            type="button"
-            aria-label="关闭"
-            className="flex size-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-700 active:bg-neutral-200"
-            onClick={() => onOpenChange(false)}
-          >
-            <X size={18} />
-          </button>
-        </div>
+  return (
+    <Drawer state={state}>
+      <Drawer.Backdrop isDismissable>
+        <Drawer.Content placement="bottom">
+          <Drawer.Dialog className="graphic-save-drawer-dialog">
+            <div className="flex shrink-0 items-center justify-between px-4 py-3">
+              <div className="size-9" aria-hidden />
+              <p className="text-base font-semibold text-neutral-900">选择图片保存</p>
+              <button
+                type="button"
+                aria-label="关闭"
+                className="flex size-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-700 active:bg-neutral-200"
+                onClick={() => onOpenChange(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
 
-        <div className="graphic-save-gallery component-scroll-row min-h-0 flex-1 overflow-x-auto px-4 pb-4">
-          <div className="flex items-start gap-3">
-            {pages.map((page, index) => {
-              const selected = selectedIndexes.has(index)
-              return (
-                <button
-                  key={page.index}
-                  type="button"
-                  aria-label={`第 ${index + 1} 页`}
-                  aria-pressed={selected}
-                  className="graphic-save-thumb relative shrink-0 overflow-hidden rounded-2xl"
-                  style={
-                    thumbSize
-                      ? { width: thumbSize.width, height: thumbSize.height }
-                      : { width: THUMB_WIDTH_PX }
-                  }
-                  onClick={() => toggleIndex(index)}
+            <div className="graphic-save-gallery component-scroll-row min-h-0 flex-1 overflow-x-auto px-4 pb-4">
+              <div className="flex items-start gap-3">
+                {pages.map((page, index) => {
+                  const selected = selectedIndexes.has(index)
+                  return (
+                    <button
+                      key={page.index}
+                      type="button"
+                      aria-label={`第 ${index + 1} 页`}
+                      aria-pressed={selected}
+                      className="graphic-save-thumb relative shrink-0 overflow-hidden rounded-2xl"
+                      style={
+                        thumbSize
+                          ? { width: thumbSize.width, height: thumbSize.height }
+                          : { width: THUMB_WIDTH_PX }
+                      }
+                      onClick={() => toggleIndex(index)}
+                    >
+                      <GraphicPage
+                        page={page}
+                        config={config}
+                        markdown={markdown}
+                        displayWidth={thumbSize?.width ?? THUMB_WIDTH_PX}
+                        className="pointer-events-none size-full rounded-2xl"
+                      />
+                      <span
+                        className={`absolute right-2 top-2 flex size-6 items-center justify-center rounded-full border-2 ${
+                          selected
+                            ? 'border-white bg-neutral-900 text-white'
+                            : 'border-white bg-neutral-900/25'
+                        }`}
+                        aria-hidden
+                      >
+                        {selected ? <Check size={14} strokeWidth={2.5} /> : null}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="flex shrink-0 items-center justify-between gap-4 border-t border-neutral-200 px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">
+              <button
+                type="button"
+                className="flex items-center gap-2 text-sm font-medium text-neutral-900"
+                onClick={toggleAll}
+              >
+                <span
+                  className={`flex size-5 items-center justify-center rounded-full border-2 ${
+                    allSelected ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-300 bg-white'
+                  }`}
+                  aria-hidden
                 >
-                  <GraphicPage
-                    page={page}
-                    config={config}
-                    markdown={markdown}
-                    displayWidth={thumbSize?.width ?? THUMB_WIDTH_PX}
-                    className="pointer-events-none size-full rounded-2xl"
-                  />
-                  <span
-                    className={`absolute right-2 top-2 flex size-6 items-center justify-center rounded-full border-2 ${
-                      selected
-                        ? 'border-white bg-neutral-900 text-white'
-                        : 'border-white bg-neutral-900/25'
-                    }`}
-                    aria-hidden
-                  >
-                    {selected ? <Check size={14} strokeWidth={2.5} /> : null}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
+                  {allSelected ? <Check size={12} strokeWidth={2.5} /> : null}
+                </span>
+                全部
+              </button>
 
-        <div className="flex shrink-0 items-center justify-between gap-4 border-t border-neutral-200 px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">
-          <button
-            type="button"
-            className="flex items-center gap-2 text-sm font-medium text-neutral-900"
-            onClick={toggleAll}
-          >
-            <span
-              className={`flex size-5 items-center justify-center rounded-full border-2 ${
-                allSelected ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-300 bg-white'
-              }`}
-              aria-hidden
-            >
-              {allSelected ? <Check size={12} strokeWidth={2.5} /> : null}
-            </span>
-            全部
-          </button>
-
-          <button
-            type="button"
-            disabled={!hasSelection || saving}
-            className="h-11 min-w-[7.5rem] rounded-full bg-neutral-900 px-8 text-sm font-semibold text-white disabled:bg-neutral-300 disabled:text-neutral-500"
-            onClick={handleSave}
-          >
-            {saving ? saveProgress || '生成中...' : '保存'}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
+              <button
+                type="button"
+                disabled={!hasSelection || saving}
+                className="h-11 min-w-[7.5rem] rounded-full bg-neutral-900 px-8 text-sm font-semibold text-white disabled:bg-neutral-300 disabled:text-neutral-500"
+                onClick={handleSave}
+              >
+                {saving ? saveProgress || '生成中...' : '保存'}
+              </button>
+            </div>
+          </Drawer.Dialog>
+        </Drawer.Content>
+      </Drawer.Backdrop>
+    </Drawer>
   )
 }

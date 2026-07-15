@@ -16,7 +16,17 @@ export const DEFAULT_HIGHLIGHT_PICKER_COLORS: HighlightPickerColors = {
   circle: '#FACC15',
 }
 
-export const THEME_COLORS = ['#FACC15', '#FB923C', '#EF4444', '#22C55E', '#3B82F6', '#A855F7']
+export const THEME_COLORS = [
+  '#FACC15',
+  '#FB923C',
+  '#EF4444',
+  '#22C55E',
+  '#3B82F6',
+  '#A855F7',
+  '#525252',
+  '#9CA3AF',
+  '#D1D5DB',
+]
 
 export function keysFromHighlightMap(map: HighlightColorMap): Set<string> {
   return new Set(Object.keys(map))

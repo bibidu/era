@@ -18,6 +18,7 @@ import {
   drawPageGridOverlay,
   resolvePageBaseFillColor,
 } from './pageBackground'
+import { drawPagePixelOverlay } from './pagePixelOverlay'
 import { resolveTopBarParts } from './topBar'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -225,8 +226,12 @@ async function drawPage(
     ctx.fillRect(0, 0, width, height)
   }
 
-  if (config.showGrid) {
+  if (config.pageOverlay === 'grid') {
     drawPageGridOverlay(ctx, width, height)
+  }
+
+  if (config.pageOverlay === 'pixel') {
+    drawPagePixelOverlay(ctx, width, height)
   }
 
   const edgeX = safeX
