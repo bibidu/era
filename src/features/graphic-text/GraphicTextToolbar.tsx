@@ -1,13 +1,15 @@
 import { ArrowLeft, CaseSensitive, Check, Keyboard } from 'lucide-react'
 import {
   FONT_SIZE_TARGETS,
-  GRAPHIC_FONT_SIZE_MENU,
   GRAPHIC_SHEET_PANELS,
+  GRAPHIC_TEXT_ADJUST_MENU,
   GRAPHIC_TOOLBAR_STRIPS,
   GRAPHIC_TOOLBAR_TOGGLES,
+  TEXT_ADJUST_FIELDS,
   type FontSizeNav,
   type FontSizeTarget,
   type GraphicConfigPanel,
+  type TextAdjustField,
   type ToolbarStrip,
 } from './graphicConfigPanels'
 
@@ -15,81 +17,127 @@ interface GraphicTextToolbarProps {
   activePanel: GraphicConfigPanel | null
   activeStrip: ToolbarStrip | null
   fontSizeNav: FontSizeNav
+  textAdjustField: TextAdjustField | null
   editorOpen: boolean
   safeAreaOpen: boolean
   saveDisabled: boolean
   onEdit: () => void
   onSelectStrip: (strip: ToolbarStrip) => void
   onSelectPanel: (panel: GraphicConfigPanel) => void
-  onOpenFontSizeMenu: () => void
-  onFontSizeBack: () => void
-  onSelectFontSizeTarget: (target: FontSizeTarget) => void
+  onOpenTextAdjustMenu: () => void
+  onTextAdjustBack: () => void
+  onSelectTextAdjustTarget: (target: FontSizeTarget) => void
+  onSelectTextAdjustField: (field: TextAdjustField) => void
   onToggleSafeArea: () => void
   onSave: () => void
+}
+
+function isTextAdjustTarget(nav: FontSizeNav): nav is FontSizeTarget {
+  return nav === 'title' || nav === 'heading' || nav === 'body'
 }
 
 export function GraphicTextToolbar({
   activePanel,
   activeStrip,
   fontSizeNav,
+  textAdjustField,
   editorOpen,
   safeAreaOpen,
   saveDisabled,
   onEdit,
   onSelectStrip,
   onSelectPanel,
-  onOpenFontSizeMenu,
-  onFontSizeBack,
-  onSelectFontSizeTarget,
+  onOpenTextAdjustMenu,
+  onTextAdjustBack,
+  onSelectTextAdjustTarget,
+  onSelectTextAdjustField,
   onToggleSafeArea,
   onSave,
 }: GraphicTextToolbarProps) {
-  const inFontSizeMode = fontSizeNav !== null
-  const FontSizeIcon = GRAPHIC_FONT_SIZE_MENU.icon
+  const inTextAdjustMode = fontSizeNav !== null
+  const TextAdjustIcon = GRAPHIC_TEXT_ADJUST_MENU.icon
+  const selectedTarget = isTextAdjustTarget(fontSizeNav) ? fontSizeNav : null
+  const selectedTargetLabel = FONT_SIZE_TARGETS.find((item) => item.id === selectedTarget)?.label
 
   return (
     <div className="graphic-text-toolbar-wrap shrink-0 px-3 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2">
       <div className="graphic-text-toolbar">
-        <div className="graphic-text-toolbar-scroll component-scroll-row flex min-w-0 flex-1 items-stretch gap-1 overflow-x-auto">
-          {inFontSizeMode ? (
+        <div
+          className={`graphic-text-toolbar-scroll component-scroll-row flex min-w-0 flex-1 gap-1 overflow-x-auto ${
+            inTextAdjustMode ? 'items-center' : 'items-stretch'
+          }`}
+        >
+          {inTextAdjustMode ? (
             <>
               <button
                 type="button"
                 aria-label="返回"
                 className="graphic-text-toolbar-back"
-                onClick={onFontSizeBack}
+                onClick={onTextAdjustBack}
               >
                 <ArrowLeft size={20} strokeWidth={1.75} />
               </button>
 
               <button
                 type="button"
-                aria-label={GRAPHIC_FONT_SIZE_MENU.label}
+                aria-label={GRAPHIC_TEXT_ADJUST_MENU.label}
                 aria-pressed
                 className="graphic-text-toolbar-item graphic-text-toolbar-item--active"
-                onClick={onOpenFontSizeMenu}
+                onClick={onOpenTextAdjustMenu}
               >
-                <FontSizeIcon size={22} strokeWidth={1.5} />
-                <span>{GRAPHIC_FONT_SIZE_MENU.label}</span>
+                <TextAdjustIcon size={22} strokeWidth={1.5} />
+                <span>{GRAPHIC_TEXT_ADJUST_MENU.label}</span>
               </button>
 
               <span className="graphic-text-toolbar-divider" aria-hidden />
 
-              {FONT_SIZE_TARGETS.map((item) => {
-                const active = fontSizeNav === item.id
-                return (
+              {selectedTarget && selectedTargetLabel ? (
+                <>
                   <button
-                    key={item.id}
                     type="button"
-                    aria-label={item.label}
-                    aria-pressed={active}
-                    className={`graphic-text-toolbar-subitem ${active ? 'graphic-text-toolbar-subitem--active' : ''}`}
-                    onClick={() => onSelectFontSizeTarget(item.id)}
+                    aria-label={selectedTargetLabel}
+                    aria-pressed
+                    className="graphic-text-toolbar-subitem graphic-text-toolbar-subitem--active"
+                    onClick={() => onSelectTextAdjustTarget(selectedTarget)}
                   >
-                    {item.label}
+                    {selectedTargetLabel}
                   </button>
-                )
-              })}
+
+                  <span className="graphic-text-toolbar-divider" aria-hidden />
+
+                  {TEXT_ADJUST_FIELDS[selectedTarget].map((field) => {
+                    const active = textAdjustField === field.id
+                    return (
+                      <button
+                        key={field.id}
+                        type="button"
+                        aria-label={field.label}
+                        aria-pressed={active}
+                        className={`graphic-text-toolbar-subitem ${active ? 'graphic-text-toolbar-subitem--active' : ''}`}
+                        onClick={() => onSelectTextAdjustField(field.id)}
+                      >
+                        {field.label}
+                      </button>
+                    )
+                  })}
+                </>
+              ) : (
+                FONT_SIZE_TARGETS.map((item) => {
+                  const active = fontSizeNav === item.id
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      aria-label={item.label}
+                      aria-pressed={active}
+                      className={`graphic-text-toolbar-subitem ${active ? 'graphic-text-toolbar-subitem--active' : ''}`}
+                      onClick={() => onSelectTextAdjustTarget(item.id)}
+                    >
+                      {item.label}
+                    </button>
+                  )
+                })
+              )}
             </>
           ) : (
             <>
@@ -124,12 +172,12 @@ export function GraphicTextToolbar({
 
               <button
                 type="button"
-                aria-label={GRAPHIC_FONT_SIZE_MENU.label}
+                aria-label={GRAPHIC_TEXT_ADJUST_MENU.label}
                 className="graphic-text-toolbar-item"
-                onClick={onOpenFontSizeMenu}
+                onClick={onOpenTextAdjustMenu}
               >
                 <CaseSensitive size={22} strokeWidth={1.5} />
-                <span>{GRAPHIC_FONT_SIZE_MENU.label}</span>
+                <span>{GRAPHIC_TEXT_ADJUST_MENU.label}</span>
               </button>
 
               {GRAPHIC_SHEET_PANELS.map((panel) => {
