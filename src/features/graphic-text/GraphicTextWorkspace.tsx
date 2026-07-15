@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { FontOption } from '../../data/fonts'
+import { getFontById } from '../../data/fonts'
+import { ensureFontReady } from '../../utils/fontLoad'
 import { MarkdownEditorDock } from '../../components/MarkdownEditorDock'
 import { GraphicPage } from './GraphicPage'
 import { GraphicSaveImagesSheet } from './GraphicSaveImagesSheet'
 import { GraphicTextConfigSheet } from './GraphicTextConfigSheet'
 import { GraphicTextToolbar } from './GraphicTextToolbar'
-import type { GraphicConfigPanel } from './graphicConfigPanels'
+import { GraphicAspectStrip, GraphicFontStrip } from './GraphicToolbarStrips'
+import type { GraphicConfigPanel, ToolbarStrip } from './graphicConfigPanels'
 import { paginateMarkdown, getGraphicLayout } from './layout'
 import { computeWorkspacePagerPageSize } from './graphicPreviewLayout'
-import { getFontById } from '../../data/fonts'
-import { ensureFontReady } from '../../utils/fontLoad'
 import {
   DEFAULT_GRAPHIC_TEXT_CONFIG,
   DEFAULT_MARKDOWN,
+  type GraphicAspectRatio,
   type GraphicTextConfig,
 } from './types'
 
@@ -26,6 +29,8 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     backgroundUrl: defaultBackgroundUrl,
   }))
   const [configPanel, setConfigPanel] = useState<GraphicConfigPanel | null>(null)
+  const [toolbarStrip, setToolbarStrip] = useState<ToolbarStrip | null>(null)
+  const [showSafeArea, setShowSafeArea] = useState(false)
   const [saveSheetOpen, setSaveSheetOpen] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
   const [activePage, setActivePage] = useState(0)
@@ -92,62 +97,117 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     setActivePage(Math.round(pager.scrollLeft / pager.clientWidth))
   }
 
+  const closeToolbarStrip = () => {
+    setToolbarStrip(null)
+  }
+
+  const handleSelectStrip = (strip: ToolbarStrip) => {
+    setEditorOpen(false)
+    setConfigPanel(null)
+    setToolbarStrip((current) => (current === strip ? null : strip))
+  }
+
   const handleSelectPanel = (panel: GraphicConfigPanel) => {
     setEditorOpen(false)
+    setToolbarStrip(null)
     setConfigPanel((current) => (current === panel ? null : panel))
   }
 
   const handleEdit = () => {
     setConfigPanel(null)
+    setToolbarStrip(null)
     setEditorOpen((current) => !current)
+  }
+
+  const handleToggleSafeArea = () => {
+    setConfigPanel(null)
+    setToolbarStrip(null)
+    setShowSafeArea((current) => !current)
+  }
+
+  const handleFontSelect = (font: FontOption) => {
+    setConfig((current) => ({ ...current, fontId: font.id, fontFamily: font.fontFamily }))
+    if (font.source !== 'system') {
+      void ensureFontReady(font, markdown || font.sample)
+    }
+  }
+
+  const handleAspectSelect = (aspectRatio: GraphicAspectRatio) => {
+    setConfig((current) => ({ ...current, aspectRatio }))
   }
 
   const handleSave = () => {
     setConfigPanel(null)
+    setToolbarStrip(null)
     setEditorOpen(false)
     setSaveSheetOpen(true)
   }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-neutral-100">
-      <div className="flex h-12 shrink-0 items-center justify-center border-b border-neutral-200 bg-white px-3">
-        <div className="text-center">
-          <p className="text-sm font-medium">图文预览</p>
-          <p className="text-[11px] text-neutral-500">
-            {pages.length ? `${activePage + 1} / ${pages.length}` : '0 / 0'}
-          </p>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        {toolbarStrip && (
+          <button
+            type="button"
+            aria-label="关闭选项"
+            className="absolute inset-0 z-10"
+            onClick={closeToolbarStrip}
+          />
+        )}
+
+        <div className="flex h-12 shrink-0 items-center justify-center border-b border-neutral-200 bg-white px-3">
+          <div className="text-center">
+            <p className="text-sm font-medium">图文预览</p>
+            <p className="text-[11px] text-neutral-500">
+              {pages.length ? `${activePage + 1} / ${pages.length}` : '0 / 0'}
+            </p>
+          </div>
+        </div>
+
+        <div
+          ref={pagerRef}
+          className="graphic-pager relative z-0 flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden"
+          onScroll={handlePagerScroll}
+        >
+          {pages.map((page) => (
+            <div
+              key={page.index}
+              className="flex h-full w-full shrink-0 snap-center items-center justify-center p-4"
+            >
+              <GraphicPage
+                page={page}
+                config={config}
+                markdown={markdown}
+                displayWidth={pagerPageSize?.width}
+                showSafeArea={showSafeArea}
+                className="rounded-xl shadow-lg"
+              />
+            </div>
+          ))}
         </div>
       </div>
 
-      <div
-        ref={pagerRef}
-        className="graphic-pager flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden"
-        onScroll={handlePagerScroll}
-      >
-        {pages.map((page) => (
-          <div
-            key={page.index}
-            className="flex h-full w-full shrink-0 snap-center items-center justify-center p-4"
-          >
-            <GraphicPage
-              page={page}
-              config={config}
-              markdown={markdown}
-              displayWidth={pagerPageSize?.width}
-              className="rounded-xl shadow-lg"
-            />
-          </div>
-        ))}
-      </div>
+      <div className="relative z-20 shrink-0">
+        {toolbarStrip === 'font' && (
+          <GraphicFontStrip selectedFontId={config.fontId} onSelect={handleFontSelect} />
+        )}
+        {toolbarStrip === 'aspect' && (
+          <GraphicAspectStrip selected={config.aspectRatio} onSelect={handleAspectSelect} />
+        )}
 
-      <GraphicTextToolbar
-        activePanel={configPanel}
-        editorOpen={editorOpen}
-        saveDisabled={pages.length === 0}
-        onEdit={handleEdit}
-        onSelectPanel={handleSelectPanel}
-        onSave={handleSave}
-      />
+        <GraphicTextToolbar
+          activePanel={configPanel}
+          activeStrip={toolbarStrip}
+          editorOpen={editorOpen}
+          safeAreaOpen={showSafeArea}
+          saveDisabled={pages.length === 0}
+          onEdit={handleEdit}
+          onSelectStrip={handleSelectStrip}
+          onSelectPanel={handleSelectPanel}
+          onToggleSafeArea={handleToggleSafeArea}
+          onSave={handleSave}
+        />
+      </div>
 
       {editorOpen && (
         <MarkdownEditorDock
@@ -166,6 +226,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           panel={configPanel}
           config={config}
           markdown={markdown}
+          showSafeArea={showSafeArea}
           onOpenChange={(open) => {
             if (!open) setConfigPanel(null)
           }}

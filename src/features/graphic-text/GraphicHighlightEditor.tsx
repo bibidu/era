@@ -138,6 +138,7 @@ interface GraphicHighlightEditorProps {
   onPickerColorChange: (color: string) => void
   onConfirm: () => void
   onBack: () => void
+  hideHeader?: boolean
 }
 
 function isRowFullySelected(tokens: HighlightCharToken[], highlightedSet: Set<string>) {
@@ -419,6 +420,7 @@ export function GraphicHighlightEditor({
   onPickerColorChange,
   onConfirm,
   onBack,
+  hideHeader = false,
 }: GraphicHighlightEditorProps) {
   const [activeStyleTab, setActiveStyleTab] = useState<HighlightStyleTab>('underline')
   const activeTabIndex = HIGHLIGHT_STYLE_TABS.findIndex((tab) => tab.id === activeStyleTab)
@@ -512,25 +514,27 @@ export function GraphicHighlightEditor({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-2">
-        <button
-          type="button"
-          aria-label="返回"
-          className="flex size-9 items-center justify-center rounded-full active:bg-neutral-100"
-          onClick={onBack}
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <p className="text-sm font-semibold">高亮设置</p>
-        <button
-          type="button"
-          aria-label="确认"
-          className="component-done-btn"
-          onClick={onConfirm}
-        >
-          <Check size={15} />
-        </button>
-      </div>
+      {!hideHeader && (
+        <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-2">
+          <button
+            type="button"
+            aria-label="返回"
+            className="flex size-9 items-center justify-center rounded-full active:bg-neutral-100"
+            onClick={onBack}
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <p className="text-sm font-semibold">高亮设置</p>
+          <button
+            type="button"
+            aria-label="确认"
+            className="component-done-btn"
+            onClick={onConfirm}
+          >
+            <Check size={15} />
+          </button>
+        </div>
+      )}
 
       <HighlightThemePalette color={highlightPickerColor} onChange={onPickerColorChange} />
 

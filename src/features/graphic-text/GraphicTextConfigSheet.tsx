@@ -1,7 +1,6 @@
 import { Drawer, useOverlayState } from '@heroui/react'
-import { Check, ScanEye } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { FONT_OPTIONS } from '../../data/fonts'
 import { GraphicConfigPreview } from './GraphicConfigPreview'
 import { GraphicHighlightEditor } from './GraphicHighlightEditor'
 import {
@@ -14,10 +13,7 @@ import {
   TITLE_MARGIN_OPTIONS,
 } from './configSelectOptions'
 import { computeConfigPreviewLayout } from './graphicPreviewLayout'
-import {
-  GRAPHIC_CONFIG_PANEL_TITLES,
-  type GraphicConfigPanel,
-} from './graphicConfigPanels'
+import { type GraphicConfigPanel } from './graphicConfigPanels'
 import { getGraphicLayout, paginateMarkdown } from './layout'
 import {
   clampSheetHeight,
@@ -26,13 +22,13 @@ import {
   writeCachedSheetHeight,
 } from './topBar'
 import type { GraphicTextConfig } from './types'
-import { GRAPHIC_ASPECT_RATIO_OPTIONS } from './types'
 
 interface GraphicTextConfigSheetProps {
   isOpen: boolean
   panel: GraphicConfigPanel
   config: GraphicTextConfig
   markdown: string
+  showSafeArea: boolean
   onOpenChange: (open: boolean) => void
   onUpdate: (updates: Partial<GraphicTextConfig>) => void
   onBackgroundUpload: (file: File) => void
@@ -80,57 +76,9 @@ function templateOptionButtonClass(selected: boolean) {
   }`
 }
 
-function parseAspectNumbers(id: string) {
-  const [width, height] = id.split(':').map(Number)
-  return { width, height }
-}
-
-function aspectPreviewSize(id: string, maxDim = 30) {
-  const { width, height } = parseAspectNumbers(id)
-  const scale = maxDim / Math.max(width, height)
-  return { width: width * scale, height: height * scale }
-}
-
 function nearestOption(value: number, options: readonly number[]) {
   return options.reduce((closest, option) =>
     Math.abs(option - value) < Math.abs(closest - value) ? option : closest,
-  )
-}
-
-function AspectRatioOption({
-  id,
-  label,
-  selected,
-  onSelect,
-}: {
-  id: string
-  label: string
-  selected: boolean
-  onSelect: () => void
-}) {
-  const preview = aspectPreviewSize(id)
-  return (
-    <button
-      type="button"
-      aria-label={`图片比例 ${label}`}
-      className={`flex shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-2 ${
-        selected ? 'text-neutral-900' : 'text-neutral-600'
-      }`}
-      onClick={onSelect}
-    >
-      <div
-        className={`flex items-center justify-center rounded-md border bg-white ${
-          selected ? 'border-2 border-black' : 'border border-neutral-300'
-        }`}
-        style={{ width: preview.width + 12, height: preview.height + 12 }}
-      >
-        <div
-          className={`rounded-sm ${selected ? 'bg-neutral-900' : 'bg-neutral-300'}`}
-          style={{ width: preview.width, height: preview.height }}
-        />
-      </div>
-      <span className="text-[11px] leading-none">{label}</span>
-    </button>
   )
 }
 
@@ -176,18 +124,25 @@ export function GraphicTextConfigSheet({
   panel,
   config,
   markdown,
+  showSafeArea,
   onOpenChange,
   onUpdate,
   onBackgroundUpload,
 }: GraphicTextConfigSheetProps) {
-  const state = useOverlayState({ isOpen, onOpenChange })
+  const onCloseRef = useRef<() => void>(() => onOpenChange(false))
+  const state = useOverlayState({
+    isOpen,
+    onOpenChange: (open) => {
+      if (!open) onCloseRef.current()
+      else onOpenChange(true)
+    },
+  })
   const sheetRef = useRef<HTMLDivElement | null>(null)
   const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
   const referenceInputRef = useRef<HTMLInputElement | null>(null)
   const solidPickerRef = useRef<HTMLDivElement | null>(null)
   const [viewportHeight, setViewportHeight] = useState(getViewportHeight)
   const [sheetHeight, setSheetHeight] = useState(readCachedSheetHeight)
-  const [showSafeArea, setShowSafeArea] = useState(false)
   const [solidColorPickerOpen, setSolidColorPickerOpen] = useState(false)
   const [highlightDraft, setHighlightDraft] = useState({
     underline: config.underlineHighlightColors,
@@ -300,15 +255,19 @@ export function GraphicTextConfigSheet({
     }
   }
 
-  const handleHighlightConfirm = () => {
-    onUpdate({
-      underlineHighlightColors: highlightDraft.underline,
-      quoteHighlightColors: highlightDraft.quote,
-      circleHighlightColors: highlightDraft.circle,
-      highlightPickerColor: highlightDraft.pickerColor,
-    })
+  const handleClose = () => {
+    if (panel === 'highlight') {
+      onUpdate({
+        underlineHighlightColors: highlightDraft.underline,
+        quoteHighlightColors: highlightDraft.quote,
+        circleHighlightColors: highlightDraft.circle,
+        highlightPickerColor: highlightDraft.pickerColor,
+      })
+    }
     onOpenChange(false)
   }
+
+  onCloseRef.current = handleClose
 
   const previewNode =
     previewAreaHeight > 0 && previewLayout ? (
@@ -335,6 +294,7 @@ export function GraphicTextConfigSheet({
             quoteHighlightColors={highlightDraft.quote}
             circleHighlightColors={highlightDraft.circle}
             highlightPickerColor={highlightDraft.pickerColor}
+            hideHeader
             onUnderlineChange={(colors) =>
               setHighlightDraft((current) => ({ ...current, underline: colors }))
             }
@@ -347,26 +307,9 @@ export function GraphicTextConfigSheet({
             onPickerColorChange={(pickerColor) =>
               setHighlightDraft((current) => ({ ...current, pickerColor }))
             }
-            onConfirm={handleHighlightConfirm}
-            onBack={() => onOpenChange(false)}
+            onConfirm={handleClose}
+            onBack={handleClose}
           />
-        )
-      case 'font':
-        return (
-          <select
-            value={config.fontId}
-            onChange={(event) => {
-              const font = FONT_OPTIONS.find((item) => item.id === event.target.value)
-              if (font) onUpdate({ fontId: font.id, fontFamily: font.fontFamily })
-            }}
-            className="h-10 w-full rounded-xl border border-neutral-300 bg-neutral-50 px-3 text-sm outline-none focus:border-neutral-500"
-          >
-            {FONT_OPTIONS.map((font) => (
-              <option key={font.id} value={font.id}>
-                {font.label}
-              </option>
-            ))}
-          </select>
         )
       case 'font-size':
         return (
@@ -439,50 +382,6 @@ export function GraphicTextConfigSheet({
               />
             </div>
           </div>
-        )
-      case 'aspect':
-        return (
-          <>
-            <div className="flex items-center">
-              <p className="flex-1 text-center text-sm font-medium">图片比例</p>
-              <div className="h-4 w-px shrink-0 bg-neutral-200" aria-hidden />
-              <p className="flex-1 text-center text-sm font-medium">
-                <span className="inline-flex items-center justify-center gap-2">
-                  <ScanEye size={16} />
-                  文字安全区
-                </span>
-              </p>
-            </div>
-            <div className="mt-3 flex items-stretch">
-              <div className="flex min-w-0 flex-1 items-center justify-center">
-                <div className="component-scroll-row flex items-end gap-0.5 overflow-x-auto">
-                  {GRAPHIC_ASPECT_RATIO_OPTIONS.map((option) => (
-                    <AspectRatioOption
-                      key={option.id}
-                      id={option.id}
-                      label={option.label}
-                      selected={config.aspectRatio === option.id}
-                      onSelect={() => onUpdate({ aspectRatio: option.id })}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="mx-3 w-px shrink-0 self-stretch bg-neutral-200" aria-hidden />
-              <div className="flex min-w-0 flex-1 items-center justify-center">
-                <button
-                  type="button"
-                  className={`h-8 shrink-0 rounded-full border px-3 text-xs font-medium ${
-                    showSafeArea
-                      ? 'border-2 border-black bg-white text-neutral-900'
-                      : 'border border-neutral-300 bg-white text-neutral-600'
-                  }`}
-                  onClick={() => setShowSafeArea((current) => !current)}
-                >
-                  {showSafeArea ? '隐藏线框' : '查看线框'}
-                </button>
-              </div>
-            </div>
-          </>
         )
       case 'template':
         return (
@@ -628,24 +527,11 @@ export function GraphicTextConfigSheet({
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
         {panel === 'highlight' ? (
-          panelBody
+          <div className="flex min-h-0 flex-1 flex-col">{panelBody}</div>
         ) : (
-          <>
-            <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-2">
-              <p className="text-sm font-semibold">{GRAPHIC_CONFIG_PANEL_TITLES[panel]}</p>
-              <button
-                type="button"
-                aria-label="关闭"
-                className="component-done-btn"
-                onClick={() => onOpenChange(false)}
-              >
-                <Check size={15} />
-              </button>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-              <div className="flex flex-col gap-4 pb-2">{panelBody}</div>
-            </div>
-          </>
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-3 pt-10">
+            <div className="flex flex-col gap-4 pb-2">{panelBody}</div>
+          </div>
         )}
       </div>
     </div>
@@ -660,7 +546,7 @@ export function GraphicTextConfigSheet({
               type="button"
               aria-label="关闭配置"
               className="graphic-config-preview-dismiss graphic-config-preview-dismiss-left"
-              onClick={() => onOpenChange(false)}
+              onClick={handleClose}
             />
             <div
               className="graphic-config-preview-center"
@@ -672,7 +558,7 @@ export function GraphicTextConfigSheet({
               type="button"
               aria-label="关闭配置"
               className="graphic-config-preview-dismiss graphic-config-preview-dismiss-right"
-              onClick={() => onOpenChange(false)}
+              onClick={handleClose}
             />
           </div>
         )}
@@ -681,6 +567,14 @@ export function GraphicTextConfigSheet({
             className="graphic-config-drawer-dialog component-library"
             style={{ height: sheetHeight, maxHeight: sheetHeight }}
           >
+            <button
+              type="button"
+              aria-label="关闭"
+              className="graphic-sheet-close"
+              onClick={handleClose}
+            >
+              <X size={18} />
+            </button>
             {sheetContent}
           </Drawer.Dialog>
         </Drawer.Content>
