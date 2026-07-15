@@ -12,13 +12,15 @@ import {
   THEME_COLORS,
   type HighlightColorMap,
 } from './highlightColors'
+import { themeAlpha } from './inlineHighlight'
 
 const TAB_PREVIEW_COLOR = '#171717'
 
-export type HighlightStyleTab = 'underline' | 'quote' | 'circle'
+export type HighlightStyleTab = 'underline' | 'brush' | 'quote' | 'circle'
 
 const HIGHLIGHT_STYLE_TABS: { id: HighlightStyleTab; label: string }[] = [
   { id: 'underline', label: '下划线' },
+  { id: 'brush', label: '刷子' },
   { id: 'quote', label: '引用' },
   { id: 'circle', label: '线圈' },
 ]
@@ -41,6 +43,17 @@ function HighlightStyleTabLabel({
           style={{ backgroundColor: TAB_PREVIEW_COLOR }}
           aria-hidden
         />
+      </span>
+    )
+  }
+
+  if (tab === 'brush') {
+    return (
+      <span
+        className={`rounded px-1.5 py-0.5 text-xs font-medium ${textClass}`}
+        style={{ backgroundColor: themeAlpha(TAB_PREVIEW_COLOR, 0.28) }}
+      >
+        刷子
       </span>
     )
   }
@@ -81,44 +94,81 @@ function HighlightStyleTabLabel({
   )
 }
 
-function HighlightThemePalette({
+function HighlightColorPopover({
   color,
   onChange,
 }: {
   color: string
   onChange: (color: string) => void
 }) {
+  const [open, setOpen] = useState(false)
+  const anchorRef = useRef<HTMLDivElement>(null)
   const isCustomColor = !THEME_COLORS.includes(color)
 
+  useEffect(() => {
+    if (!open) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (anchorRef.current?.contains(event.target as Node)) return
+      setOpen(false)
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [open])
+
+  const handleSelect = (nextColor: string) => {
+    onChange(nextColor)
+    setOpen(false)
+  }
+
   return (
-    <div className="graphic-highlight-theme-palette flex shrink-0 items-center border-b border-neutral-200 py-2.5 pl-4 pr-14">
-      <div className="component-scroll-row flex min-w-0 flex-1 items-center justify-start gap-2 overflow-x-auto">
-        {THEME_COLORS.map((swatch) => (
-          <button
-            key={swatch}
-            type="button"
-            aria-label={`主题色 ${swatch}`}
-            className={`size-6 shrink-0 rounded-full border-2 ${
-              color === swatch ? 'border-black' : 'border-transparent'
-            }`}
-            style={{ backgroundColor: swatch }}
-            onClick={() => onChange(swatch)}
-          />
-        ))}
-        <label
-          className={`theme-color-palette-btn relative flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border ${
-            isCustomColor ? 'border-2 border-black' : 'border-neutral-300'
-          }`}
-        >
-          <input
-            type="color"
-            value={color}
-            onChange={(event) => onChange(event.target.value)}
-            className="absolute inset-[-8px] size-12 cursor-pointer opacity-0"
-            aria-label="自定义主题色"
-          />
-        </label>
-      </div>
+    <div ref={anchorRef} className="graphic-highlight-color-anchor">
+      <button
+        type="button"
+        aria-label="选择高亮颜色"
+        aria-expanded={open}
+        className="graphic-highlight-color-trigger"
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span
+          className="graphic-highlight-color-trigger-swatch"
+          style={{ backgroundColor: color }}
+          aria-hidden
+        />
+      </button>
+
+      {open && (
+        <div className="graphic-highlight-color-popover" role="dialog" aria-label="高亮颜色">
+          <div className="graphic-highlight-color-popover-row component-scroll-row">
+            {THEME_COLORS.map((swatch) => (
+              <button
+                key={swatch}
+                type="button"
+                aria-label={`主题色 ${swatch}`}
+                className={`graphic-highlight-color-swatch ${
+                  color === swatch ? 'graphic-highlight-color-swatch--selected' : ''
+                }`}
+                style={{ backgroundColor: swatch }}
+                onClick={() => handleSelect(swatch)}
+              />
+            ))}
+            <label
+              className={`theme-color-palette-btn graphic-highlight-color-swatch graphic-highlight-color-swatch--picker ${
+                isCustomColor ? 'graphic-highlight-color-swatch--selected' : ''
+              }`}
+            >
+              <input
+                type="color"
+                value={color}
+                onChange={(event) => handleSelect(event.target.value)}
+                className="absolute inset-[-8px] size-12 cursor-pointer opacity-0"
+                aria-label="自定义主题色"
+              />
+            </label>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -127,10 +177,12 @@ interface GraphicHighlightEditorProps {
   markdown: string
   config: GraphicTextConfig
   underlineHighlightColors: HighlightColorMap
+  brushHighlightColors: HighlightColorMap
   quoteHighlightColors: HighlightColorMap
   circleHighlightColors: HighlightColorMap
   highlightPickerColor: string
   onUnderlineChange: (colors: HighlightColorMap) => void
+  onBrushChange: (colors: HighlightColorMap) => void
   onQuoteChange: (colors: HighlightColorMap) => void
   onCircleChange: (colors: HighlightColorMap) => void
   onPickerColorChange: (color: string) => void
@@ -174,6 +226,13 @@ function HighlightTokenButton({
         <span
           className="absolute bottom-1.5 left-1.5 top-1.5 w-0.5 rounded-full"
           style={{ backgroundColor: previewColor }}
+          aria-hidden
+        />
+      )}
+      {selected && styleTab === 'brush' && (
+        <span
+          className="absolute inset-1 rounded-md"
+          style={{ backgroundColor: themeAlpha(previewColor, 0.28) }}
           aria-hidden
         />
       )}
@@ -409,10 +468,12 @@ export function GraphicHighlightEditor({
   markdown,
   config,
   underlineHighlightColors,
+  brushHighlightColors,
   quoteHighlightColors,
   circleHighlightColors,
   highlightPickerColor,
   onUnderlineChange,
+  onBrushChange,
   onQuoteChange,
   onCircleChange,
   onPickerColorChange,
@@ -451,15 +512,19 @@ export function GraphicHighlightEditor({
   const activeColorMap =
     activeStyleTab === 'underline'
       ? underlineHighlightColors
-      : activeStyleTab === 'quote'
-        ? quoteHighlightColors
-        : circleHighlightColors
+      : activeStyleTab === 'brush'
+        ? brushHighlightColors
+        : activeStyleTab === 'quote'
+          ? quoteHighlightColors
+          : circleHighlightColors
   const onActiveChange =
     activeStyleTab === 'underline'
       ? onUnderlineChange
-      : activeStyleTab === 'quote'
-        ? onQuoteChange
-        : onCircleChange
+      : activeStyleTab === 'brush'
+        ? onBrushChange
+        : activeStyleTab === 'quote'
+          ? onQuoteChange
+          : onCircleChange
   const activePickerColor = highlightPickerColor
 
   const highlightedSet = useMemo(() => new Set(Object.keys(activeColorMap)), [activeColorMap])
@@ -534,38 +599,40 @@ export function GraphicHighlightEditor({
         </div>
       )}
 
-      <HighlightThemePalette color={highlightPickerColor} onChange={onPickerColorChange} />
-
       <div className="shrink-0 px-4 py-2.5">
-        <div
-          ref={tabGroupRef}
-          className="graphic-highlight-tab-group"
-          role="tablist"
-          aria-label="高亮样式"
-        >
+        <div className="graphic-highlight-toolbar-row">
+          <HighlightColorPopover color={highlightPickerColor} onChange={onPickerColorChange} />
+
           <div
-            className="graphic-highlight-tab-indicator"
-            style={{ left: tabIndicator.left, width: tabIndicator.width }}
-            aria-hidden
-          />
-          {HIGHLIGHT_STYLE_TABS.map((tab, index) => {
-            const selected = activeStyleTab === tab.id
-            return (
-              <button
-                key={tab.id}
-                ref={(node) => {
-                  tabRefs.current[index] = node
-                }}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                className={`graphic-highlight-tab ${selected ? 'graphic-highlight-tab--active' : ''}`}
-                onClick={() => setActiveStyleTab(tab.id)}
-              >
-                <HighlightStyleTabLabel tab={tab.id} selected={selected} />
-              </button>
-            )
-          })}
+            ref={tabGroupRef}
+            className="graphic-highlight-tab-group min-w-0 flex-1"
+            role="tablist"
+            aria-label="高亮样式"
+          >
+            <div
+              className="graphic-highlight-tab-indicator"
+              style={{ left: tabIndicator.left, width: tabIndicator.width }}
+              aria-hidden
+            />
+            {HIGHLIGHT_STYLE_TABS.map((tab, index) => {
+              const selected = activeStyleTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  ref={(node) => {
+                    tabRefs.current[index] = node
+                  }}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  className={`graphic-highlight-tab ${selected ? 'graphic-highlight-tab--active' : ''}`}
+                  onClick={() => setActiveStyleTab(tab.id)}
+                >
+                  <HighlightStyleTabLabel tab={tab.id} selected={selected} />
+                </button>
+              )
+            })}
+          </div>
         </div>
       </div>
 

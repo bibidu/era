@@ -15,7 +15,7 @@ import {
   HAND_DRAWN_CIRCLE_VIEWBOX,
 } from './circleHighlight'
 import {
-  buildCharHighlightColorSegments,
+  buildMergedThemeHighlightSegments,
   stripHighlightMarkers,
   themeAlpha,
 } from './inlineHighlight'
@@ -154,33 +154,52 @@ function UnderlineSegments({
   text,
   blockId,
   charOffset,
+  brushColors,
   underlineColors,
 }: {
   text: string
   blockId: string
   charOffset: number
+  brushColors: Readonly<Record<string, string>>
   underlineColors: Readonly<Record<string, string>>
 }) {
-  const segments = buildCharHighlightColorSegments(text, blockId, underlineColors, charOffset)
+  const segments = buildMergedThemeHighlightSegments(
+    text,
+    blockId,
+    brushColors,
+    underlineColors,
+    charOffset,
+  )
 
   return (
     <>
-      {segments.map((segment, index) =>
-        segment.color ? (
+      {segments.map((segment, index) => {
+        if (!segment.brushColor && !segment.underlineColor) {
+          return <span key={`${index}-${segment.text}`}>{segment.text}</span>
+        }
+
+        return (
           <span
             key={`${index}-${segment.text}`}
-            className="graphic-theme-highlight"
+            className={[
+              segment.brushColor ? 'graphic-theme-brush' : '',
+              segment.underlineColor ? 'graphic-theme-underline' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
             style={{
-              backgroundColor: themeAlpha(segment.color, 0.28),
-              ['--graphic-highlight-underline' as string]: segment.color,
+              ...(segment.brushColor
+                ? { backgroundColor: themeAlpha(segment.brushColor, 0.28) }
+                : null),
+              ...(segment.underlineColor
+                ? { ['--graphic-highlight-underline' as string]: segment.underlineColor }
+                : null),
             }}
           >
             {segment.text}
           </span>
-        ) : (
-          <span key={`${index}-${segment.text}`}>{segment.text}</span>
-        ),
-      )}
+        )
+      })}
     </>
   )
 }
@@ -218,12 +237,14 @@ function CircleHighlightWrap({
 function StyledHighlightedText({
   text,
   block,
+  brushColors,
   underlineColors,
   circleColors,
   enableHighlight,
 }: {
   text: string
   block: MarkdownBlock
+  brushColors: Readonly<Record<string, string>>
   underlineColors: Readonly<Record<string, string>>
   circleColors: Readonly<Record<string, string>>
   enableHighlight: boolean
@@ -247,6 +268,7 @@ function StyledHighlightedText({
             text={run.text}
             blockId={blockId}
             charOffset={charOffset + run.start}
+            brushColors={brushColors}
             underlineColors={underlineColors}
           />
         </CircleHighlightWrap>,
@@ -264,6 +286,7 @@ function StyledHighlightedText({
         text={plain.slice(index, end)}
         blockId={blockId}
         charOffset={charOffset + index}
+        brushColors={brushColors}
         underlineColors={underlineColors}
       />,
     )
@@ -294,6 +317,7 @@ function QuoteHighlightBar({
 
 function renderBlockText(
   block: MarkdownBlock,
+  brushColors: Readonly<Record<string, string>>,
   underlineColors: Readonly<Record<string, string>>,
   quoteColors: Readonly<Record<string, string>>,
   circleColors: Readonly<Record<string, string>>,
@@ -305,6 +329,7 @@ function renderBlockText(
     <StyledHighlightedText
       text={block.text}
       block={block}
+      brushColors={brushColors}
       underlineColors={underlineColors}
       circleColors={circleColors}
       enableHighlight
@@ -378,6 +403,7 @@ export function GraphicPage({
   const layout = getGraphicLayout(config)
   const { percent, aspectRatio } = layout
   const topBar = resolveTopBarParts(config, markdown)
+  const brushColors = config.brushHighlightColors ?? {}
   const underlineColors = config.underlineHighlightColors
   const quoteColors = config.quoteHighlightColors
   const circleColors = config.circleHighlightColors
@@ -488,6 +514,7 @@ export function GraphicPage({
                           <StyledHighlightedText
                             text={block.text}
                             block={block}
+                            brushColors={brushColors}
                             underlineColors={underlineColors}
                             circleColors={circleColors}
                             enableHighlight
@@ -502,7 +529,7 @@ export function GraphicPage({
               const block = unit.block
               return (
               <div key={block.id} style={blockStyle(block, config)}>
-                {renderBlockText(block, underlineColors, quoteColors, circleColors)}
+                {renderBlockText(block, brushColors, underlineColors, quoteColors, circleColors)}
               </div>
               )
             })

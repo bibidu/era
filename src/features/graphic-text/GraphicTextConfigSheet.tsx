@@ -12,6 +12,7 @@ import type { GraphicTextConfig } from './types'
 
 export interface HighlightPreviewDraft {
   underlineHighlightColors: GraphicTextConfig['underlineHighlightColors']
+  brushHighlightColors: GraphicTextConfig['brushHighlightColors']
   quoteHighlightColors: GraphicTextConfig['quoteHighlightColors']
   circleHighlightColors: GraphicTextConfig['circleHighlightColors']
   highlightPickerColor: GraphicTextConfig['highlightPickerColor']
@@ -42,6 +43,7 @@ export function createHighlightPreviewDraft(
 ): HighlightPreviewDraft {
   return {
     underlineHighlightColors: config.underlineHighlightColors,
+    brushHighlightColors: config.brushHighlightColors ?? {},
     quoteHighlightColors: config.quoteHighlightColors,
     circleHighlightColors: config.circleHighlightColors,
     highlightPickerColor: config.highlightPickerColor,
@@ -165,6 +167,7 @@ export function GraphicTextConfigSheet({
     if (panel === 'highlight') {
       onUpdate({
         underlineHighlightColors: highlightDraft.underlineHighlightColors,
+        brushHighlightColors: highlightDraft.brushHighlightColors,
         quoteHighlightColors: highlightDraft.quoteHighlightColors,
         circleHighlightColors: highlightDraft.circleHighlightColors,
         highlightPickerColor: highlightDraft.highlightPickerColor,
@@ -180,12 +183,16 @@ export function GraphicTextConfigSheet({
       markdown={markdown}
       config={config}
       underlineHighlightColors={highlightDraft.underlineHighlightColors}
+      brushHighlightColors={highlightDraft.brushHighlightColors}
       quoteHighlightColors={highlightDraft.quoteHighlightColors}
       circleHighlightColors={highlightDraft.circleHighlightColors}
       highlightPickerColor={highlightDraft.highlightPickerColor}
       hideHeader
       onUnderlineChange={(colors) =>
         onHighlightDraftChange({ ...highlightDraft, underlineHighlightColors: colors })
+      }
+      onBrushChange={(colors) =>
+        onHighlightDraftChange({ ...highlightDraft, brushHighlightColors: colors })
       }
       onQuoteChange={(colors) =>
         onHighlightDraftChange({ ...highlightDraft, quoteHighlightColors: colors })

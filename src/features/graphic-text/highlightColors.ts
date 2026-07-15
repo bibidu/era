@@ -4,6 +4,7 @@ export type HighlightColorMap = Record<string, string>
 
 export interface HighlightPickerColors {
   underline: string
+  brush: string
   quote: string
   circle: string
 }
@@ -12,6 +13,7 @@ export type HighlightPickerColor = string
 
 export const DEFAULT_HIGHLIGHT_PICKER_COLORS: HighlightPickerColors = {
   underline: '#FACC15',
+  brush: '#FACC15',
   quote: '#FACC15',
   circle: '#FACC15',
 }
@@ -34,10 +36,16 @@ export function keysFromHighlightMap(map: HighlightColorMap): Set<string> {
 
 export function countHighlightSelections(
   underline: HighlightColorMap,
+  brush: HighlightColorMap,
   quote: HighlightColorMap,
   circle: HighlightColorMap,
 ) {
-  return Object.keys(underline).length + Object.keys(quote).length + Object.keys(circle).length
+  return (
+    Object.keys(underline).length +
+    Object.keys(brush).length +
+    Object.keys(quote).length +
+    Object.keys(circle).length
+  )
 }
 
 export function blockHasHighlightInMap(

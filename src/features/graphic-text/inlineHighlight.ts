@@ -117,3 +117,54 @@ export function themeAlpha(color: string, alpha: number) {
   const b = Number.parseInt(hex.slice(5, 7), 16)
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
+
+export interface ThemeHighlightSegment {
+  text: string
+  brushColor: string | null
+  underlineColor: string | null
+}
+
+export function buildMergedThemeHighlightSegments(
+  text: string,
+  blockId: string,
+  brushColors: Readonly<Record<string, string>>,
+  underlineColors: Readonly<Record<string, string>>,
+  charOffset = 0,
+): ThemeHighlightSegment[] {
+  const plain = stripHighlightMarkers(text)
+  const segments: ThemeHighlightSegment[] = []
+  let currentText = ''
+  let currentBrush: string | null = null
+  let currentUnderline: string | null = null
+
+  const flush = () => {
+    if (!currentText) return
+    segments.push({
+      text: currentText,
+      brushColor: currentBrush,
+      underlineColor: currentUnderline,
+    })
+    currentText = ''
+  }
+
+  for (let index = 0; index < plain.length; index += 1) {
+    const key = `${blockId}:${charOffset + index}`
+    const brushColor = brushColors[key] ?? null
+    const underlineColor = underlineColors[key] ?? null
+
+    if (brushColor === currentBrush && underlineColor === currentUnderline) {
+      currentText += plain[index]
+      continue
+    }
+
+    flush()
+    currentBrush = brushColor
+    currentUnderline = underlineColor
+    currentText = plain[index] ?? ''
+  }
+
+  flush()
+  return segments.length
+    ? segments
+    : [{ text: plain, brushColor: null, underlineColor: null }]
+}
