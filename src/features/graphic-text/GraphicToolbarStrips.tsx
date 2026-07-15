@@ -10,7 +10,7 @@ import {
   TITLE_LINE_HEIGHT_OPTIONS,
   TITLE_MARGIN_OPTIONS,
 } from './configSelectOptions'
-import type { FontSizeTarget } from './graphicConfigPanels'
+import type { FontSizeTarget, TextAdjustField } from './graphicConfigPanels'
 import { PAPER_COLORS, TemplatePreviewSquare } from './graphicTemplateOptions'
 import { PixelPreviewArt } from './PixelPreviewArt'
 import { GRAPHIC_ASPECT_RATIO_OPTIONS, type GraphicAspectRatio, type GraphicTextConfig } from './types'
@@ -207,108 +207,151 @@ export function GraphicTemplateStrip({
   )
 }
 
-interface GraphicFontSizeDetailStripProps {
+interface GraphicTextAdjustFieldStripProps {
   target: FontSizeTarget
+  field: TextAdjustField
   config: GraphicTextConfig
   onUpdate: (updates: Partial<GraphicTextConfig>) => void
 }
 
+function TextAdjustFieldControl({
+  target,
+  field,
+  config,
+  onUpdate,
+}: GraphicTextAdjustFieldStripProps) {
+  if (target === 'title') {
+    if (field === 'fontSize') {
+      return (
+        <GraphicConfigSelect
+          label="标题字号"
+          labelClassName="shrink-0"
+          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+          value={config.titleFontSize}
+          options={TITLE_FONT_SIZE_OPTIONS}
+          onChange={(value) => onUpdate({ titleFontSize: value })}
+          format={(value) => `${value}px`}
+        />
+      )
+    }
+    if (field === 'lineHeight') {
+      return (
+        <GraphicConfigSelect
+          label="标题行高"
+          labelClassName="shrink-0"
+          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+          value={config.titleLineHeight}
+          options={TITLE_LINE_HEIGHT_OPTIONS}
+          onChange={(value) => onUpdate({ titleLineHeight: value })}
+        />
+      )
+    }
+    if (field === 'marginTop') {
+      return (
+        <GraphicConfigSelect
+          label="上间距"
+          labelClassName="shrink-0"
+          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+          value={config.titleMarginTop}
+          options={TITLE_MARGIN_OPTIONS}
+          onChange={(value) => onUpdate({ titleMarginTop: value })}
+        />
+      )
+    }
+    return (
+      <GraphicConfigSelect
+        label="下间距"
+        labelClassName="shrink-0"
+        className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+        value={config.titleMarginBottom}
+        options={TITLE_MARGIN_OPTIONS}
+        onChange={(value) => onUpdate({ titleMarginBottom: value })}
+      />
+    )
+  }
+
+  if (target === 'heading') {
+    if (field === 'fontSize') {
+      return (
+        <GraphicConfigSelect
+          label="二级字号"
+          labelClassName="shrink-0"
+          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+          value={config.headingFontSize}
+          options={HEADING_FONT_SIZE_OPTIONS}
+          onChange={(value) => onUpdate({ headingFontSize: value })}
+          format={(value) => `${value}px`}
+        />
+      )
+    }
+    if (field === 'marginTop') {
+      return (
+        <GraphicConfigSelect
+          label="上间距"
+          labelClassName="shrink-0"
+          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+          value={config.headingMarginTop}
+          options={HEADING_MARGIN_OPTIONS}
+          onChange={(value) => onUpdate({ headingMarginTop: value })}
+        />
+      )
+    }
+    return (
+      <GraphicConfigSelect
+        label="下间距"
+        labelClassName="shrink-0"
+        className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+        value={config.headingMarginBottom}
+        options={HEADING_MARGIN_OPTIONS}
+        onChange={(value) => onUpdate({ headingMarginBottom: value })}
+      />
+    )
+  }
+
+  if (field === 'fontSize') {
+    return (
+      <GraphicConfigSelect
+        label="正文字号"
+        labelClassName="shrink-0"
+        className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+        value={config.bodyFontSize}
+        options={BODY_FONT_SIZE_OPTIONS}
+        onChange={(value) => onUpdate({ bodyFontSize: value })}
+        format={(value) => `${value}px`}
+      />
+    )
+  }
+
+  return (
+    <GraphicConfigSelect
+      label="正文行高"
+      labelClassName="shrink-0"
+      className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+      value={config.bodyLineHeight}
+      options={BODY_LINE_HEIGHT_OPTIONS}
+      onChange={(value) => onUpdate({ bodyLineHeight: value })}
+    />
+  )
+}
+
+export function GraphicTextAdjustFieldStrip(props: GraphicTextAdjustFieldStripProps) {
+  return (
+    <StripShell>
+      <TextAdjustFieldControl {...props} />
+    </StripShell>
+  )
+}
+
+/** @deprecated use GraphicTextAdjustFieldStrip */
 export function GraphicFontSizeDetailStrip({
   target,
   config,
   onUpdate,
-}: GraphicFontSizeDetailStripProps) {
-  return (
-    <StripShell>
-      {target === 'title' && (
-        <>
-          <GraphicConfigSelect
-            label="标题字号"
-            labelClassName="shrink-0"
-            className="graphic-toolbar-strip-select"
-            value={config.titleFontSize}
-            options={TITLE_FONT_SIZE_OPTIONS}
-            onChange={(value) => onUpdate({ titleFontSize: value })}
-            format={(value) => `${value}px`}
-          />
-          <GraphicConfigSelect
-            label="标题行高"
-            labelClassName="shrink-0"
-            className="graphic-toolbar-strip-select"
-            value={config.titleLineHeight}
-            options={TITLE_LINE_HEIGHT_OPTIONS}
-            onChange={(value) => onUpdate({ titleLineHeight: value })}
-          />
-          <GraphicConfigSelect
-            label="上间距"
-            labelClassName="shrink-0"
-            className="graphic-toolbar-strip-select"
-            value={config.titleMarginTop}
-            options={TITLE_MARGIN_OPTIONS}
-            onChange={(value) => onUpdate({ titleMarginTop: value })}
-          />
-          <GraphicConfigSelect
-            label="下间距"
-            labelClassName="shrink-0"
-            className="graphic-toolbar-strip-select"
-            value={config.titleMarginBottom}
-            options={TITLE_MARGIN_OPTIONS}
-            onChange={(value) => onUpdate({ titleMarginBottom: value })}
-          />
-        </>
-      )}
-
-      {target === 'heading' && (
-        <>
-          <GraphicConfigSelect
-            label="二级字号"
-            labelClassName="shrink-0"
-            className="graphic-toolbar-strip-select"
-            value={config.headingFontSize}
-            options={HEADING_FONT_SIZE_OPTIONS}
-            onChange={(value) => onUpdate({ headingFontSize: value })}
-            format={(value) => `${value}px`}
-          />
-          <GraphicConfigSelect
-            label="上间距"
-            labelClassName="shrink-0"
-            className="graphic-toolbar-strip-select"
-            value={config.headingMarginTop}
-            options={HEADING_MARGIN_OPTIONS}
-            onChange={(value) => onUpdate({ headingMarginTop: value })}
-          />
-          <GraphicConfigSelect
-            label="下间距"
-            labelClassName="shrink-0"
-            className="graphic-toolbar-strip-select"
-            value={config.headingMarginBottom}
-            options={HEADING_MARGIN_OPTIONS}
-            onChange={(value) => onUpdate({ headingMarginBottom: value })}
-          />
-        </>
-      )}
-
-      {target === 'body' && (
-        <>
-          <GraphicConfigSelect
-            label="正文字号"
-            labelClassName="shrink-0"
-            className="graphic-toolbar-strip-select"
-            value={config.bodyFontSize}
-            options={BODY_FONT_SIZE_OPTIONS}
-            onChange={(value) => onUpdate({ bodyFontSize: value })}
-            format={(value) => `${value}px`}
-          />
-          <GraphicConfigSelect
-            label="正文行高"
-            labelClassName="shrink-0"
-            className="graphic-toolbar-strip-select"
-            value={config.bodyLineHeight}
-            options={BODY_LINE_HEIGHT_OPTIONS}
-            onChange={(value) => onUpdate({ bodyLineHeight: value })}
-          />
-        </>
-      )}
-    </StripShell>
-  )
+}: {
+  target: FontSizeTarget
+  config: GraphicTextConfig
+  onUpdate: (updates: Partial<GraphicTextConfig>) => void
+}) {
+  const field = target === 'body' ? 'fontSize' : 'fontSize'
+  return <GraphicTextAdjustFieldStrip target={target} field={field} config={config} onUpdate={onUpdate} />
 }

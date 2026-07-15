@@ -91,8 +91,8 @@ function HighlightThemePalette({
   const isCustomColor = !THEME_COLORS.includes(color)
 
   return (
-    <div className="flex shrink-0 items-center border-b border-neutral-200 px-4 py-2.5">
-      <div className="component-scroll-row flex min-w-0 items-center justify-start gap-2 overflow-x-auto">
+    <div className="graphic-highlight-theme-palette flex shrink-0 items-center border-b border-neutral-200 py-2.5 pl-4 pr-14">
+      <div className="component-scroll-row flex min-w-0 flex-1 items-center justify-start gap-2 overflow-x-auto">
         {THEME_COLORS.map((swatch) => (
           <button
             key={swatch}

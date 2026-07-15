@@ -9,11 +9,17 @@ import { GraphicTextConfigSheet } from './GraphicTextConfigSheet'
 import { GraphicTextToolbar } from './GraphicTextToolbar'
 import {
   GraphicAspectStrip,
-  GraphicFontSizeDetailStrip,
   GraphicFontStrip,
   GraphicTemplateStrip,
+  GraphicTextAdjustFieldStrip,
 } from './GraphicToolbarStrips'
-import type { FontSizeNav, FontSizeTarget, GraphicConfigPanel, ToolbarStrip } from './graphicConfigPanels'
+import type {
+  FontSizeNav,
+  FontSizeTarget,
+  GraphicConfigPanel,
+  TextAdjustField,
+  ToolbarStrip,
+} from './graphicConfigPanels'
 import { paginateMarkdown, getGraphicLayout } from './layout'
 import { computeGraphicPageDisplaySize } from './graphicPreviewLayout'
 import {
@@ -29,7 +35,7 @@ interface GraphicTextWorkspaceProps {
   defaultBackgroundUrl: string | null
 }
 
-function isFontSizeTarget(nav: FontSizeNav): nav is FontSizeTarget {
+function isTextAdjustTarget(nav: FontSizeNav): nav is FontSizeTarget {
   return nav === 'title' || nav === 'heading' || nav === 'body'
 }
 
@@ -42,6 +48,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   const [configPanel, setConfigPanel] = useState<GraphicConfigPanel | null>(null)
   const [toolbarStrip, setToolbarStrip] = useState<ToolbarStrip | null>(null)
   const [fontSizeNav, setFontSizeNav] = useState<FontSizeNav>(null)
+  const [textAdjustField, setTextAdjustField] = useState<TextAdjustField | null>(null)
   const [showSafeArea, setShowSafeArea] = useState(false)
   const [saveSheetOpen, setSaveSheetOpen] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
@@ -102,6 +109,11 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     )
   }, [config, pagerSize])
 
+  const resetTextAdjust = () => {
+    setFontSizeNav(null)
+    setTextAdjustField(null)
+  }
+
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText()
@@ -131,29 +143,25 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     reader.readAsDataURL(file)
   }
 
-  const closeOverlays = () => {
-    setToolbarStrip(null)
-    setFontSizeNav(null)
-  }
-
   const handleSelectStrip = (strip: ToolbarStrip) => {
     setEditorOpen(false)
     setConfigPanel(null)
-    setFontSizeNav(null)
+    resetTextAdjust()
     setToolbarStrip((current) => (current === strip ? null : strip))
   }
 
   const handleSelectPanel = (panel: GraphicConfigPanel) => {
     setEditorOpen(false)
     setToolbarStrip(null)
-    setFontSizeNav(null)
+    resetTextAdjust()
     setConfigPanel((current) => (current === panel ? null : panel))
   }
 
-  const handleOpenFontSizeMenu = () => {
+  const handleOpenTextAdjustMenu = () => {
     setEditorOpen(false)
     setConfigPanel(null)
     setToolbarStrip(null)
+    setTextAdjustField(null)
     setFontSizeNav((current) => {
       if (current === null) return 'menu'
       if (current === 'menu') return null
@@ -161,25 +169,38 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     })
   }
 
-  const handleFontSizeBack = () => {
-    setFontSizeNav(null)
+  const handleTextAdjustBack = () => {
+    if (textAdjustField) {
+      setTextAdjustField(null)
+      return
+    }
+    if (isTextAdjustTarget(fontSizeNav)) {
+      setFontSizeNav('menu')
+      return
+    }
+    resetTextAdjust()
   }
 
-  const handleSelectFontSizeTarget = (target: FontSizeTarget) => {
+  const handleSelectTextAdjustTarget = (target: FontSizeTarget) => {
+    setTextAdjustField(null)
     setFontSizeNav((current) => (current === target ? 'menu' : target))
+  }
+
+  const handleSelectTextAdjustField = (field: TextAdjustField) => {
+    setTextAdjustField((current) => (current === field ? null : field))
   }
 
   const handleEdit = () => {
     setConfigPanel(null)
     setToolbarStrip(null)
-    setFontSizeNav(null)
+    resetTextAdjust()
     setEditorOpen((current) => !current)
   }
 
   const handleToggleSafeArea = () => {
     setConfigPanel(null)
     setToolbarStrip(null)
-    setFontSizeNav(null)
+    resetTextAdjust()
     setShowSafeArea((current) => !current)
   }
 
@@ -197,25 +218,17 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   const handleSave = () => {
     setConfigPanel(null)
     setToolbarStrip(null)
-    setFontSizeNav(null)
+    resetTextAdjust()
     setEditorOpen(false)
     setSaveSheetOpen(true)
   }
 
-  const showStripBackdrop = toolbarStrip !== null || isFontSizeTarget(fontSizeNav)
+  const showTextAdjustStrip =
+    textAdjustField !== null && isTextAdjustTarget(fontSizeNav)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-neutral-100">
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-        {showStripBackdrop && (
-          <button
-            type="button"
-            aria-label="关闭选项"
-            className="absolute inset-0 z-10"
-            onClick={closeOverlays}
-          />
-        )}
-
         <div
           ref={pagerRef}
           className="graphic-pager relative z-0 flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden"
@@ -252,9 +265,10 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
             onBackgroundUpload={handleBackgroundUpload}
           />
         )}
-        {isFontSizeTarget(fontSizeNav) && (
-          <GraphicFontSizeDetailStrip
+        {showTextAdjustStrip && (
+          <GraphicTextAdjustFieldStrip
             target={fontSizeNav}
+            field={textAdjustField}
             config={config}
             onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
           />
@@ -264,15 +278,17 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           activePanel={configPanel}
           activeStrip={toolbarStrip}
           fontSizeNav={fontSizeNav}
+          textAdjustField={textAdjustField}
           editorOpen={editorOpen}
           safeAreaOpen={showSafeArea}
           saveDisabled={pages.length === 0}
           onEdit={handleEdit}
           onSelectStrip={handleSelectStrip}
           onSelectPanel={handleSelectPanel}
-          onOpenFontSizeMenu={handleOpenFontSizeMenu}
-          onFontSizeBack={handleFontSizeBack}
-          onSelectFontSizeTarget={handleSelectFontSizeTarget}
+          onOpenTextAdjustMenu={handleOpenTextAdjustMenu}
+          onTextAdjustBack={handleTextAdjustBack}
+          onSelectTextAdjustTarget={handleSelectTextAdjustTarget}
+          onSelectTextAdjustField={handleSelectTextAdjustField}
           onToggleSafeArea={handleToggleSafeArea}
           onSave={handleSave}
         />

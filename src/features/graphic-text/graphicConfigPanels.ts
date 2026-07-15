@@ -15,6 +15,8 @@ export type ToolbarStrip = 'font' | 'aspect' | 'template'
 
 export type FontSizeTarget = 'title' | 'heading' | 'body'
 
+export type TextAdjustField = 'fontSize' | 'lineHeight' | 'marginTop' | 'marginBottom'
+
 export type FontSizeNav = null | 'menu' | FontSizeTarget
 
 export const GRAPHIC_SHEET_PANELS: {
@@ -26,17 +28,41 @@ export const GRAPHIC_SHEET_PANELS: {
   { id: 'top-text', label: '顶部', icon: TextCursorInput },
 ]
 
-export const GRAPHIC_FONT_SIZE_MENU = {
-  id: 'font-size' as const,
-  label: '字体大小',
+export const GRAPHIC_TEXT_ADJUST_MENU = {
+  id: 'text-adjust' as const,
+  label: '文字调节',
   icon: CaseSensitive,
 }
+
+/** @deprecated use GRAPHIC_TEXT_ADJUST_MENU */
+export const GRAPHIC_FONT_SIZE_MENU = GRAPHIC_TEXT_ADJUST_MENU
 
 export const FONT_SIZE_TARGETS: { id: FontSizeTarget; label: string }[] = [
   { id: 'title', label: '标题' },
   { id: 'heading', label: '二级标题' },
   { id: 'body', label: '正文' },
 ]
+
+export const TEXT_ADJUST_FIELDS: Record<
+  FontSizeTarget,
+  { id: TextAdjustField; label: string }[]
+> = {
+  title: [
+    { id: 'fontSize', label: '字号' },
+    { id: 'lineHeight', label: '行高' },
+    { id: 'marginTop', label: '上间距' },
+    { id: 'marginBottom', label: '下间距' },
+  ],
+  heading: [
+    { id: 'fontSize', label: '字号' },
+    { id: 'marginTop', label: '上间距' },
+    { id: 'marginBottom', label: '下间距' },
+  ],
+  body: [
+    { id: 'fontSize', label: '字号' },
+    { id: 'lineHeight', label: '行高' },
+  ],
+}
 
 export const GRAPHIC_TOOLBAR_STRIPS: {
   id: ToolbarStrip

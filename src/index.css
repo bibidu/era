@@ -141,6 +141,7 @@ body.is-dragging {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
+  align-self: center;
   justify-content: center;
   height: 2rem;
   padding: 0 12px;
@@ -236,6 +237,12 @@ body.is-dragging {
   background: transparent;
 }
 
+.graphic-config-drawer-content {
+  width: 100%;
+  max-width: none;
+  inset-inline: 0;
+}
+
 .graphic-config-drawer-dialog {
   position: relative;
   display: flex;
@@ -264,15 +271,21 @@ body.is-dragging {
 }
 
 .graphic-config-sheet-compact {
-  padding: 2.5rem 1rem 1rem;
+  width: 100%;
+  padding: 2.5rem 0 1rem;
 }
 
 .graphic-config-sheet-highlight {
   display: flex;
+  width: 100%;
   min-height: 0;
   max-height: min(56vh, 500px);
   flex: 1;
   flex-direction: column;
+}
+
+.graphic-highlight-theme-palette {
+  width: 100%;
 }
 
 .graphic-sheet-close {
@@ -302,6 +315,7 @@ body.is-dragging {
 .graphic-toolbar-strip {
   margin: 0 12px 8px;
   height: 52px;
+  padding: 0 12px;
   overflow: hidden;
   border-radius: 9999px;
   background: #ffffff;
@@ -310,7 +324,6 @@ body.is-dragging {
 
 .graphic-toolbar-strip-scroll {
   height: 100%;
-  padding: 0 12px;
   align-items: center;
   overflow-x: auto;
   overflow-y: hidden;
@@ -433,6 +446,12 @@ body.is-dragging {
 
 .graphic-toolbar-strip-select select {
   min-width: 4.5rem;
+}
+
+.graphic-toolbar-strip-select--solo {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
 }
 
 .graphic-config-sheet-handle {

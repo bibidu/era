@@ -185,7 +185,7 @@ export function GraphicTextConfigSheet({
         )
       case 'top-text':
         return (
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex w-full items-center gap-2 px-4 text-sm">
             <span className="w-[4.6rem] shrink-0 font-medium text-neutral-600">顶部文案</span>
             <input
               value={config.topText}
@@ -225,8 +225,8 @@ export function GraphicTextConfigSheet({
             />
           </div>
         )}
-        <Drawer.Content placement="bottom">
-          <div ref={dialogRef}>
+        <Drawer.Content placement="bottom" className="graphic-config-drawer-content">
+          <div ref={dialogRef} className="w-full">
             <Drawer.Dialog
               className={`graphic-config-drawer-dialog component-library ${
                 panel === 'highlight'
