@@ -1,12 +1,9 @@
 export type GraphicBackgroundType = 'reference' | 'solid'
-export type GraphicAspectRatio = '3:4' | '1:1' | '4:3' | '9:16' | '16:9'
+export type GraphicAspectRatio = '3:4' | '9:16'
 
 export const GRAPHIC_ASPECT_RATIO_OPTIONS: { id: GraphicAspectRatio; label: string }[] = [
   { id: '9:16', label: '9:16' },
   { id: '3:4', label: '3:4' },
-  { id: '1:1', label: '1:1' },
-  { id: '4:3', label: '4:3' },
-  { id: '16:9', label: '16:9' },
 ]
 
 export interface GraphicTextConfig {

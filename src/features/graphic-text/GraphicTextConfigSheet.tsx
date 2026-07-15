@@ -21,7 +21,7 @@ import {
   readCachedSheetHeight,
   writeCachedSheetHeight,
 } from './topBar'
-import type { GraphicAspectRatio, GraphicTextConfig } from './types'
+import type { GraphicTextConfig } from './types'
 import { GRAPHIC_ASPECT_RATIO_OPTIONS } from './types'
 
 interface GraphicTextConfigSheetProps {
@@ -48,8 +48,6 @@ const PAPER_COLORS = [
   '#FAF5FF',
   '#F5F5F4',
 ]
-
-const ENABLED_ASPECT_RATIOS = new Set<GraphicAspectRatio>(['9:16', '3:4'])
 
 const selectClassName =
   'h-9 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-neutral-50 px-2 text-sm outline-none focus:border-neutral-500'
@@ -99,13 +97,11 @@ function AspectRatioOption({
   id,
   label,
   selected,
-  disabled = false,
   onSelect,
 }: {
   id: string
   label: string
   selected: boolean
-  disabled?: boolean
   onSelect: () => void
 }) {
   const preview = aspectPreviewSize(id)
@@ -113,32 +109,19 @@ function AspectRatioOption({
     <button
       type="button"
       aria-label={`图片比例 ${label}`}
-      disabled={disabled}
       className={`flex shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-2 ${
-        disabled
-          ? 'cursor-not-allowed text-neutral-300'
-          : selected
-            ? 'text-neutral-900'
-            : 'text-neutral-600'
+        selected ? 'text-neutral-900' : 'text-neutral-600'
       }`}
-      onClick={() => {
-        if (!disabled) onSelect()
-      }}
+      onClick={onSelect}
     >
       <div
         className={`flex items-center justify-center rounded-md border bg-white ${
-          disabled
-            ? 'border border-neutral-200 opacity-50'
-            : selected
-              ? 'border-2 border-black'
-              : 'border border-neutral-300'
+          selected ? 'border-2 border-black' : 'border border-neutral-300'
         }`}
         style={{ width: preview.width + 12, height: preview.height + 12 }}
       >
         <div
-          className={`rounded-sm ${
-            disabled ? 'bg-neutral-200' : selected ? 'bg-neutral-900' : 'bg-neutral-300'
-          }`}
+          className={`rounded-sm ${selected ? 'bg-neutral-900' : 'bg-neutral-300'}`}
           style={{ width: preview.width, height: preview.height }}
         />
       </div>
@@ -547,38 +530,38 @@ export function GraphicTextConfigSheet({
                         </section>
 
                         <section>
-                          <p className="mb-2 text-sm font-medium">图片比例</p>
-                          <div className="component-scroll-row flex items-end gap-0.5 overflow-x-auto py-1">
-                            {GRAPHIC_ASPECT_RATIO_OPTIONS.map((option) => (
-                              <AspectRatioOption
-                                key={option.id}
-                                id={option.id}
-                                label={option.label}
-                                selected={config.aspectRatio === option.id}
-                                disabled={!ENABLED_ASPECT_RATIOS.has(option.id)}
-                                onSelect={() => onUpdate({ aspectRatio: option.id })}
-                              />
-                            ))}
-                          </div>
-                        </section>
-
-                        <section>
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2 text-sm font-medium">
-                              <ScanEye size={16} />
-                              文字安全区
+                          <div className="flex items-end justify-between gap-4">
+                            <div className="min-w-0 flex-1">
+                              <p className="mb-2 text-sm font-medium">图片比例</p>
+                              <div className="component-scroll-row flex items-end gap-0.5 overflow-x-auto py-1">
+                                {GRAPHIC_ASPECT_RATIO_OPTIONS.map((option) => (
+                                  <AspectRatioOption
+                                    key={option.id}
+                                    id={option.id}
+                                    label={option.label}
+                                    selected={config.aspectRatio === option.id}
+                                    onSelect={() => onUpdate({ aspectRatio: option.id })}
+                                  />
+                                ))}
+                              </div>
                             </div>
-                            <button
-                              type="button"
-                              className={`h-8 shrink-0 rounded-full border px-3 text-xs font-medium ${
-                                showSafeArea
-                                  ? 'border-2 border-black bg-white text-neutral-900'
-                                  : 'border border-neutral-300 bg-white text-neutral-600'
-                              }`}
-                              onClick={() => setShowSafeArea((current) => !current)}
-                            >
-                              {showSafeArea ? '隐藏线框' : '查看线框'}
-                            </button>
+                            <div className="flex shrink-0 flex-col items-end gap-2 pb-1">
+                              <div className="flex items-center gap-2 text-sm font-medium">
+                                <ScanEye size={16} />
+                                文字安全区
+                              </div>
+                              <button
+                                type="button"
+                                className={`h-8 shrink-0 rounded-full border px-3 text-xs font-medium ${
+                                  showSafeArea
+                                    ? 'border-2 border-black bg-white text-neutral-900'
+                                    : 'border border-neutral-300 bg-white text-neutral-600'
+                                }`}
+                                onClick={() => setShowSafeArea((current) => !current)}
+                              >
+                                {showSafeArea ? '隐藏线框' : '查看线框'}
+                              </button>
+                            </div>
                           </div>
                         </section>
 
