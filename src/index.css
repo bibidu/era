@@ -445,12 +445,12 @@ body.is-dragging {
   position: absolute;
   top: 3px;
   bottom: 3px;
-  left: 3px;
-  width: calc((100% - 6px) / 3);
   border-radius: 9px;
   background: #ffffff;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    left 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
 }
 
@@ -476,12 +476,20 @@ body.is-dragging {
   color: rgb(23 23 23);
 }
 
+.graphic-grid-preview {
+  background-color: #fbf7ed;
+  background-image:
+    linear-gradient(rgb(23 23 23 / 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(23 23 23 / 0.055) 1px, transparent 1px);
+  background-size: 8px 8px;
+}
+
 .graphic-circle-highlight-svg {
   position: absolute;
-  left: -0.44em;
-  top: -0.34em;
-  width: calc(100% + 0.88em);
-  height: calc(100% + 0.68em);
+  left: -0.58em;
+  top: -0.46em;
+  width: calc(100% + 1.16em);
+  height: calc(100% + 0.92em);
   overflow: visible;
   pointer-events: none;
   z-index: 2;
