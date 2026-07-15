@@ -11,6 +11,7 @@ import {
 } from './configSelectOptions'
 import type { FontSizeTarget, TextAdjustField } from './graphicConfigPanels'
 import { PAPER_COLORS, TemplatePreviewSquare } from './graphicTemplateOptions'
+import { GradientPreviewArt } from './GradientPreviewArt'
 import { PaperPreviewArt } from './PaperPreviewArt'
 import { PixelPreviewArt } from './PixelPreviewArt'
 import { TextAdjustNumericControl } from './TextAdjustNumericControl'
@@ -246,6 +247,23 @@ export function GraphicTemplateStrip({
           <PaperPreviewArt />
         </TemplatePreviewSquare>
         <span>纸张</span>
+      </button>
+
+      <button
+        type="button"
+        aria-label="柔和渐变"
+        aria-pressed={config.pageOverlay === 'gradient'}
+        className="graphic-toolbar-strip-template-btn"
+        onClick={() =>
+          onUpdate({
+            pageOverlay: selectPageOverlay(config.pageOverlay, 'gradient'),
+          })
+        }
+      >
+        <TemplatePreviewSquare selected={config.pageOverlay === 'gradient'}>
+          <GradientPreviewArt />
+        </TemplatePreviewSquare>
+        <span>渐变</span>
       </button>
     </StripShell>
   )

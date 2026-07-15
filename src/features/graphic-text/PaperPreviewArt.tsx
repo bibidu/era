@@ -1,4 +1,4 @@
-import { PAPER_SCRATCHES, PAPER_SPECKLES, PAPER_WARM_IVORY } from './pagePaperOverlay'
+import { PAPER_FIBER_LINES, PAPER_SCRATCHES, PAPER_SPECKLES, PAPER_WARM_IVORY, paperFiberPath, paperFiberStroke } from './pagePaperOverlay'
 
 export function PaperPreviewArt() {
   return (
@@ -19,7 +19,18 @@ export function PaperPreviewArt() {
       <rect width="1" height="1" fill={PAPER_WARM_IVORY} />
       <rect width="1" height="1" fill="url(#paper-preview-wash)" opacity="0.9" />
       <rect width="1" height="1" filter="url(#paper-preview-grain)" opacity="0.5" style={{ mixBlendMode: 'multiply' }} />
-      {PAPER_SPECKLES.slice(0, 16).map((speckle, index) => (
+      {PAPER_FIBER_LINES.slice(0, 12).map((line, index) => (
+        <path
+          key={`fiber-${index}`}
+          d={paperFiberPath(line)}
+          fill="none"
+          stroke={paperFiberStroke(line)}
+          strokeWidth={line.width * 0.0022}
+          vectorEffect="non-scaling-stroke"
+          strokeLinecap="round"
+        />
+      ))}
+      {PAPER_SPECKLES.slice(0, 12).map((speckle, index) => (
         <circle
           key={index}
           cx={speckle.x}
@@ -28,14 +39,14 @@ export function PaperPreviewArt() {
           fill={`rgba(118, 98, 72, ${speckle.alpha + 0.04})`}
         />
       ))}
-      {PAPER_SCRATCHES.slice(0, 3).map((scratch, index) => (
+      {PAPER_SCRATCHES.slice(0, 5).map((scratch, index) => (
         <line
           key={index}
           x1={scratch.x1}
           y1={scratch.y1}
           x2={scratch.x2}
           y2={scratch.y2}
-          stroke={`rgba(142, 124, 98, ${scratch.alpha + 0.03})`}
+          stroke={`rgba(132, 126, 116, ${scratch.alpha + 0.03})`}
           strokeWidth={0.002}
           vectorEffect="non-scaling-stroke"
           strokeLinecap="round"

@@ -1,26 +1,23 @@
+import { useId } from 'react'
 import {
-  PIXEL_DASHED_DIVISIONS,
-  PIXEL_DASHED_LINE_COLOR,
+  PIXEL_CANVAS_COLOR,
+  PIXEL_GLASS_SHAPES,
+  PIXEL_GRID_DIVISIONS,
+  PIXEL_GRID_ACCENT_COLOR,
+  PIXEL_GRID_LINE_COLOR,
   PIXEL_HEADER_LINE_COLOR,
   PIXEL_HEADER_LINE_Y,
-  PIXEL_OVERLAY_RECTS,
 } from './pagePixelOverlay'
 
-function hexToRgba(hex: string, alpha: number) {
-  const normalized = hex.trim()
-  if (!/^#[0-9a-fA-F]{6}$/.test(normalized)) return `rgba(59, 130, 246, ${alpha})`
-  const r = Number.parseInt(normalized.slice(1, 3), 16)
-  const g = Number.parseInt(normalized.slice(3, 5), 16)
-  const b = Number.parseInt(normalized.slice(5, 7), 16)
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`
-}
-
 export function PagePixelOverlay() {
-  const dashedLines: { x1: number; y1: number; x2: number; y2: number }[] = []
-  for (let index = 1; index < PIXEL_DASHED_DIVISIONS; index += 1) {
-    const ratio = index / PIXEL_DASHED_DIVISIONS
-    dashedLines.push({ x1: ratio, y1: 0, x2: ratio, y2: 1 })
-    dashedLines.push({ x1: 0, y1: ratio, x2: 1, y2: ratio })
+  const id = useId().replace(/:/g, '')
+  const gridLines: { x1: number; y1: number; x2: number; y2: number; major: boolean }[] = []
+
+  for (let index = 1; index < PIXEL_GRID_DIVISIONS; index += 1) {
+    const ratio = index / PIXEL_GRID_DIVISIONS
+    const major = index % 4 === 0
+    gridLines.push({ x1: ratio, y1: 0, x2: ratio, y2: 1, major })
+    gridLines.push({ x1: 0, y1: ratio, x2: 1, y2: ratio, major })
   }
 
   return (
@@ -30,16 +27,35 @@ export function PagePixelOverlay() {
       preserveAspectRatio="none"
       aria-hidden
     >
-      {PIXEL_OVERLAY_RECTS.map((rect, index) => (
-        <rect
-          key={index}
-          x={rect.x}
-          y={rect.y}
-          width={rect.size}
-          height={rect.size}
-          fill={hexToRgba(rect.color, rect.alpha)}
+      <defs>
+        <radialGradient id={`${id}-blue-glow`} cx="82%" cy="14%" r="55%">
+          <stop offset="0%" stopColor="rgba(59, 130, 246, 0.16)" />
+          <stop offset="45%" stopColor="rgba(34, 211, 238, 0.07)" />
+          <stop offset="100%" stopColor="rgba(250, 251, 252, 0)" />
+        </radialGradient>
+        <radialGradient id={`${id}-violet-glow`} cx="12%" cy="88%" r="38%">
+          <stop offset="0%" stopColor="rgba(167, 139, 250, 0.12)" />
+          <stop offset="100%" stopColor="rgba(250, 251, 252, 0)" />
+        </radialGradient>
+      </defs>
+
+      <rect width="1" height="1" fill={PIXEL_CANVAS_COLOR} />
+      <rect width="1" height="1" fill={`url(#${id}-blue-glow)`} />
+      <rect width="1" height="1" fill={`url(#${id}-violet-glow)`} />
+
+      {gridLines.map((line, index) => (
+        <line
+          key={`grid-${index}`}
+          x1={line.x1}
+          y1={line.y1}
+          x2={line.x2}
+          y2={line.y2}
+          stroke={line.major ? PIXEL_GRID_ACCENT_COLOR : PIXEL_GRID_LINE_COLOR}
+          strokeWidth={0.0012}
+          vectorEffect="non-scaling-stroke"
         />
       ))}
+
       {PIXEL_HEADER_LINE_Y.map((y, index) => (
         <line
           key={`header-${index}`}
@@ -48,20 +64,23 @@ export function PagePixelOverlay() {
           x2={1}
           y2={y}
           stroke={PIXEL_HEADER_LINE_COLOR}
-          strokeWidth={0.0015}
+          strokeWidth={0.0012}
           vectorEffect="non-scaling-stroke"
         />
       ))}
-      {dashedLines.map((line, index) => (
-        <line
-          key={`dash-${index}`}
-          x1={line.x1}
-          y1={line.y1}
-          x2={line.x2}
-          y2={line.y2}
-          stroke={PIXEL_DASHED_LINE_COLOR}
-          strokeWidth={0.0015}
-          strokeDasharray="0.012 0.012"
+
+      {PIXEL_GLASS_SHAPES.map((shape, index) => (
+        <rect
+          key={`glass-${index}`}
+          x={shape.x}
+          y={shape.y}
+          width={shape.width}
+          height={shape.height}
+          rx={shape.radius}
+          ry={shape.radius}
+          fill={shape.fill}
+          stroke={shape.stroke}
+          strokeWidth={0.0014}
           vectorEffect="non-scaling-stroke"
         />
       ))}
