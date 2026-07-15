@@ -11,9 +11,10 @@ import {
 } from './configSelectOptions'
 import type { FontSizeTarget, TextAdjustField } from './graphicConfigPanels'
 import { PAPER_COLORS, TemplatePreviewSquare } from './graphicTemplateOptions'
+import { PaperPreviewArt } from './PaperPreviewArt'
 import { PixelPreviewArt } from './PixelPreviewArt'
 import { TextAdjustNumericControl } from './TextAdjustNumericControl'
-import { GRAPHIC_ASPECT_RATIO_OPTIONS, type GraphicAspectRatio, type GraphicTextConfig } from './types'
+import { GRAPHIC_ASPECT_RATIO_OPTIONS, type GraphicAspectRatio, type GraphicPageOverlay, type GraphicTextConfig } from './types'
 
 function StripShell({ children }: { children: React.ReactNode }) {
   return (
@@ -117,6 +118,13 @@ export function GraphicAspectStrip({ selected, onSelect }: GraphicAspectStripPro
   )
 }
 
+function selectPageOverlay(
+  current: GraphicPageOverlay,
+  next: Exclude<GraphicPageOverlay, 'none'>,
+): GraphicPageOverlay {
+  return current === next ? 'none' : next
+}
+
 interface GraphicTemplateStripProps {
   config: GraphicTextConfig
   onUpdate: (updates: Partial<GraphicTextConfig>) => void
@@ -195,7 +203,7 @@ export function GraphicTemplateStrip({
         className="graphic-toolbar-strip-template-btn"
         onClick={() =>
           onUpdate({
-            pageOverlay: config.pageOverlay === 'grid' ? 'none' : 'grid',
+            pageOverlay: selectPageOverlay(config.pageOverlay, 'grid'),
           })
         }
       >
@@ -213,7 +221,7 @@ export function GraphicTemplateStrip({
         className="graphic-toolbar-strip-template-btn"
         onClick={() =>
           onUpdate({
-            pageOverlay: config.pageOverlay === 'pixel' ? 'none' : 'pixel',
+            pageOverlay: selectPageOverlay(config.pageOverlay, 'pixel'),
           })
         }
       >
@@ -221,6 +229,23 @@ export function GraphicTemplateStrip({
           <PixelPreviewArt />
         </TemplatePreviewSquare>
         <span>像素</span>
+      </button>
+
+      <button
+        type="button"
+        aria-label="纸张纹理"
+        aria-pressed={config.pageOverlay === 'paper'}
+        className="graphic-toolbar-strip-template-btn"
+        onClick={() =>
+          onUpdate({
+            pageOverlay: selectPageOverlay(config.pageOverlay, 'paper'),
+          })
+        }
+      >
+        <TemplatePreviewSquare selected={config.pageOverlay === 'paper'}>
+          <PaperPreviewArt />
+        </TemplatePreviewSquare>
+        <span>纸张</span>
       </button>
     </StripShell>
   )
