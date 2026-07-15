@@ -296,9 +296,14 @@ body.is-dragging {
   max-height: min(62vh, 560px);
 }
 
+.graphic-config-sheet-layer {
+  position: relative;
+  z-index: 50;
+}
+
 .graphic-config-sheet-inline {
   position: relative;
-  z-index: 30;
+  z-index: 50;
   width: 100%;
   flex-shrink: 0;
   border-radius: 16px 16px 0 0;
@@ -371,6 +376,8 @@ body.is-dragging {
 }
 
 .graphic-toolbar-strip {
+  position: relative;
+  z-index: 10;
   margin: 0 12px 8px;
   height: 52px;
   padding: 0 20px;
@@ -479,6 +486,68 @@ body.is-dragging {
 
 .graphic-toolbar-strip-template-btn:active {
   background: #f5f5f5;
+}
+
+.graphic-toolbar-strip-texture-row {
+  min-width: max-content;
+}
+
+.graphic-toolbar-strip-divider {
+  flex-shrink: 0;
+  width: 1px;
+  height: 1.75rem;
+  background: #e5e5e5;
+}
+
+.graphic-toolbar-strip-stack-toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #525252;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.graphic-toolbar-strip-stack-toggle--active {
+  border: 2px solid #171717;
+  padding: 0 11px;
+  color: #171717;
+  font-weight: 600;
+}
+
+.graphic-toolbar-strip-stack-radio {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #a3a3a3;
+  border-radius: 9999px;
+  background: #ffffff;
+}
+
+.graphic-toolbar-strip-stack-toggle--active .graphic-toolbar-strip-stack-radio {
+  border-color: #171717;
+  background: #171717;
+  box-shadow: inset 0 0 0 2px #ffffff;
+}
+
+.graphic-text-toolbar-template .graphic-text-toolbar-item {
+  min-width: 3.5rem;
+}
+
+.graphic-text-toolbar-template .graphic-text-toolbar-item--label {
+  pointer-events: none;
+}
+
+.graphic-page-overlay {
+  pointer-events: none;
 }
 
 .graphic-toolbar-strip-color {

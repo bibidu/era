@@ -24,8 +24,10 @@ import {
   resolveBlockHighlightColor,
 } from './highlightColors'
 import { resolvePageBackgroundStyle } from './pageBackground'
+import { PageGradientOverlay } from './PageGradientOverlay'
 import { PagePaperOverlay } from './PagePaperOverlay'
 import { PagePixelOverlay } from './PagePixelOverlay'
+import { shouldDrawPageOverlay } from './pageLayering'
 import { resolveTopBarParts } from './topBar'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 
@@ -398,8 +400,13 @@ export function GraphicPage({
         } as CSSProperties
       }
     >
-      {config.pageOverlay === 'pixel' && <PagePixelOverlay />}
-      {config.pageOverlay === 'paper' && <PagePaperOverlay />}
+      {shouldDrawPageOverlay(config) && config.pageOverlay === 'pixel' && (
+        <PagePixelOverlay stacked={config.overlayStacked} />
+      )}
+      {shouldDrawPageOverlay(config) && config.pageOverlay === 'paper' && <PagePaperOverlay />}
+      {shouldDrawPageOverlay(config) &&
+        config.pageOverlay === 'gradient' &&
+        config.overlayStacked && <PageGradientOverlay />}
 
       <div
         className="absolute z-10 flex min-w-0 items-center gap-2 border-b border-neutral-300"
@@ -441,7 +448,7 @@ export function GraphicPage({
       </div>
 
       <div
-        className="absolute overflow-hidden"
+        className="absolute z-10 overflow-hidden"
         style={{
           left: `${percent.safeX}%`,
           right: `${percent.safeX}%`,

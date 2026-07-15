@@ -144,9 +144,12 @@ export function drawPagePixelOverlay(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
+  stacked = false,
 ) {
-  ctx.fillStyle = PIXEL_CANVAS_COLOR
-  ctx.fillRect(0, 0, width, height)
+  if (!stacked) {
+    ctx.fillStyle = PIXEL_CANVAS_COLOR
+    ctx.fillRect(0, 0, width, height)
+  }
 
   const glow = ctx.createRadialGradient(
     width * 0.82,

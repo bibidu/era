@@ -1,28 +1,11 @@
-export const PAPER_WARM_IVORY = '#F7F2E8'
-export const PAPER_WARM_WASH = 'rgba(232, 214, 188, 0.14)'
-export const PAPER_VIGNETTE = 'rgba(198, 176, 142, 0.1)'
+export const PAPER_NOISE_OPACITY = 0.16
 
-interface PaperSpeckle {
-  x: number
-  y: number
-  radius: number
-  alpha: number
-}
-
-interface PaperScratch {
-  x1: number
-  y1: number
-  x2: number
-  y2: number
-  alpha: number
-  width: number
-}
-
-export interface PaperFiberLine {
+interface PaperDashSegment {
   points: { x: number; y: number }[]
   alpha: number
   width: number
-  tone: 'gray' | 'warm'
+  dash: string
+  gap: string
 }
 
 function paperHash(seed: number) {
@@ -31,71 +14,39 @@ function paperHash(seed: number) {
 }
 
 function clamp01(value: number) {
-  return Math.max(0.015, Math.min(0.985, value))
+  return Math.max(0.02, Math.min(0.98, value))
 }
 
-function buildPaperSpeckles(count = 48): PaperSpeckle[] {
+function buildPaperDashSegments(count = 46): PaperDashSegment[] {
   return Array.from({ length: count }, (_, index) => {
     const seed = index + 1
-    return {
-      x: paperHash(seed * 1.7),
-      y: paperHash(seed * 2.3),
-      radius: 0.0008 + paperHash(seed * 3.1) * 0.0018,
-      alpha: 0.04 + paperHash(seed * 4.9) * 0.1,
-    }
-  })
-}
-
-function buildPaperScratches(count = 16): PaperScratch[] {
-  return Array.from({ length: count }, (_, index) => {
-    const seed = index + 11
-    const x1 = paperHash(seed * 5.2)
-    const y1 = paperHash(seed * 6.4)
-    const angle = paperHash(seed * 7.8) * Math.PI * 2
-    const length = 0.05 + paperHash(seed * 8.2) * 0.16
-    return {
-      x1,
-      y1,
-      x2: clamp01(x1 + Math.cos(angle) * length),
-      y2: clamp01(y1 + Math.sin(angle) * length),
-      alpha: 0.05 + paperHash(seed * 9.1) * 0.1,
-      width: 0.3 + paperHash(seed * 10.4) * 0.55,
-    }
-  })
-}
-
-function buildPaperFiberLines(count = 34): PaperFiberLine[] {
-  return Array.from({ length: count }, (_, index) => {
-    const seed = index + 61
-    const pointCount = 3 + Math.floor(paperHash(seed * 1.3) * 5)
+    const pointCount = 2 + Math.floor(paperHash(seed * 1.9) * 4)
     const points: { x: number; y: number }[] = []
-    let x = paperHash(seed * 2.1)
-    let y = paperHash(seed * 3.4)
+    let x = paperHash(seed * 2.4)
+    let y = paperHash(seed * 3.1)
 
     for (let pointIndex = 0; pointIndex < pointCount; pointIndex += 1) {
+      if (pointIndex > 0 && paperHash(seed * 4.8 + pointIndex) > 0.72) {
+        points.push({ x: NaN, y: NaN })
+      }
       points.push({ x: clamp01(x), y: clamp01(y) })
-      x += (paperHash(seed * 4.2 + pointIndex) - 0.5) * 0.18
-      y += (paperHash(seed * 5.6 + pointIndex) - 0.5) * 0.12
+      const step = 0.12 + paperHash(seed * 5.2 + pointIndex) * 0.42
+      const angle = paperHash(seed * 6.7 + pointIndex) * Math.PI * 2
+      x += Math.cos(angle) * step
+      y += Math.sin(angle) * step
     }
 
     return {
       points,
-      alpha: 0.07 + paperHash(seed * 6.8) * 0.14,
-      width: 0.28 + paperHash(seed * 7.9) * 0.42,
-      tone: paperHash(seed * 8.7) > 0.28 ? 'gray' : 'warm',
+      alpha: 0.08 + paperHash(seed * 7.4) * 0.14,
+      width: 0.32 + paperHash(seed * 8.1) * 0.5,
+      dash: `${0.012 + paperHash(seed * 9.2) * 0.02}`,
+      gap: `${0.01 + paperHash(seed * 10.3) * 0.025}`,
     }
   })
 }
 
-export const PAPER_SPECKLES = buildPaperSpeckles()
-export const PAPER_SCRATCHES = buildPaperScratches()
-export const PAPER_FIBER_LINES = buildPaperFiberLines()
-
-function fiberStroke(tone: PaperFiberLine['tone'], alpha: number) {
-  return tone === 'gray'
-    ? `rgba(126, 124, 118, ${alpha})`
-    : `rgba(142, 124, 98, ${alpha})`
-}
+export const PAPER_DASH_SEGMENTS = buildPaperDashSegments()
 
 function fillPaperGrain(
   ctx: CanvasRenderingContext2D,
@@ -111,13 +62,11 @@ function fillPaperGrain(
 
   for (let index = 0; index < data.length; index += 4) {
     const pixel = index / 4
-    const x = pixel % grainWidth
-    const y = Math.floor(pixel / grainWidth)
-    const noise = paperHash(pixel * 0.17 + x * 0.31 + y * 0.53)
-    const warm = 236 + (noise - 0.5) * 18
-    data[index] = warm + 6
-    data[index + 1] = warm + 1
-    data[index + 2] = warm - 10
+    const noise = paperHash(pixel * 0.17)
+    const tone = 126 + (noise - 0.5) * 22
+    data[index] = tone
+    data[index + 1] = tone
+    data[index + 2] = tone
     data[index + 3] = Math.round(alpha * 255)
   }
 
@@ -132,33 +81,41 @@ function fillPaperGrain(
   ctx.drawImage(grainCanvas, 0, 0, width, height)
 }
 
-function drawFiberLine(
+function drawDashSegment(
   ctx: CanvasRenderingContext2D,
-  line: PaperFiberLine,
+  segment: PaperDashSegment,
   width: number,
   height: number,
 ) {
-  if (line.points.length < 2) return
+  ctx.strokeStyle = `rgba(126, 124, 118, ${segment.alpha})`
+  ctx.lineWidth = segment.width
+  ctx.setLineDash([
+    Number.parseFloat(segment.dash) * width,
+    Number.parseFloat(segment.gap) * width,
+  ])
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
 
-  ctx.strokeStyle = fiberStroke(line.tone, line.alpha)
-  ctx.lineWidth = line.width
+  let drawing = false
   ctx.beginPath()
-  ctx.moveTo(line.points[0].x * width, line.points[0].y * height)
-
-  for (let index = 1; index < line.points.length; index += 1) {
-    const previous = line.points[index - 1]
-    const current = line.points[index]
-    const controlX = ((previous.x + current.x) / 2) * width
-    const controlY = ((previous.y + current.y) / 2) * height
-    ctx.quadraticCurveTo(
-      controlX,
-      controlY,
-      current.x * width,
-      current.y * height,
-    )
+  for (const point of segment.points) {
+    if (Number.isNaN(point.x) || Number.isNaN(point.y)) {
+      if (drawing) ctx.stroke()
+      ctx.beginPath()
+      drawing = false
+      continue
+    }
+    const px = point.x * width
+    const py = point.y * height
+    if (!drawing) {
+      ctx.moveTo(px, py)
+      drawing = true
+    } else {
+      ctx.lineTo(px, py)
+    }
   }
-
-  ctx.stroke()
+  if (drawing) ctx.stroke()
+  ctx.setLineDash([])
 }
 
 export function drawPagePaperOverlay(
@@ -166,66 +123,44 @@ export function drawPagePaperOverlay(
   width: number,
   height: number,
 ) {
-  const centerX = width / 2
-  const centerY = height / 2
-  const radius = Math.max(width, height) * 0.78
-
-  const wash = ctx.createRadialGradient(centerX, centerY, radius * 0.12, centerX, centerY, radius)
-  wash.addColorStop(0, 'rgba(255, 248, 236, 0)')
-  wash.addColorStop(0.72, PAPER_WARM_WASH)
-  wash.addColorStop(1, PAPER_VIGNETTE)
-  ctx.fillStyle = wash
-  ctx.fillRect(0, 0, width, height)
-
   ctx.save()
   ctx.globalCompositeOperation = 'multiply'
-  fillPaperGrain(ctx, width, height, 0.2)
+  fillPaperGrain(ctx, width, height, PAPER_NOISE_OPACITY)
   ctx.restore()
 
-  ctx.save()
-  ctx.globalCompositeOperation = 'soft-light'
-  fillPaperGrain(ctx, width, height, 0.12)
-  ctx.restore()
-
-  ctx.lineCap = 'round'
-  ctx.lineJoin = 'round'
-
-  for (const line of PAPER_FIBER_LINES) {
-    drawFiberLine(ctx, line, width, height)
-  }
-
-  for (const speckle of PAPER_SPECKLES) {
-    ctx.fillStyle = `rgba(118, 98, 72, ${speckle.alpha})`
-    ctx.beginPath()
-    ctx.arc(speckle.x * width, speckle.y * height, speckle.radius * width, 0, Math.PI * 2)
-    ctx.fill()
-  }
-
-  for (const scratch of PAPER_SCRATCHES) {
-    ctx.strokeStyle = `rgba(132, 126, 116, ${scratch.alpha})`
-    ctx.lineWidth = scratch.width
-    ctx.beginPath()
-    ctx.moveTo(scratch.x1 * width, scratch.y1 * height)
-    ctx.lineTo(scratch.x2 * width, scratch.y2 * height)
-    ctx.stroke()
+  for (const segment of PAPER_DASH_SEGMENTS) {
+    drawDashSegment(ctx, segment, width, height)
   }
 }
 
-function fiberPointsToPath(points: PaperFiberLine['points']) {
-  if (points.length < 2) return ''
-  let path = `M ${points[0].x} ${points[0].y}`
-  for (let index = 1; index < points.length; index += 1) {
-    const previous = points[index - 1]
-    const current = points[index]
-    path += ` Q ${(previous.x + current.x) / 2} ${(previous.y + current.y) / 2} ${current.x} ${current.y}`
+function segmentPath(segment: PaperDashSegment) {
+  let path = ''
+  let open = false
+  for (const point of segment.points) {
+    if (Number.isNaN(point.x) || Number.isNaN(point.y)) {
+      open = false
+      continue
+    }
+    if (!open) {
+      path += `M ${point.x} ${point.y} `
+      open = true
+    } else {
+      path += `L ${point.x} ${point.y} `
+    }
   }
-  return path
+  return path.trim()
 }
 
-export function paperFiberPath(line: PaperFiberLine) {
-  return fiberPointsToPath(line.points)
+export function paperDashPath(segment: PaperDashSegment) {
+  return segmentPath(segment)
 }
 
-export function paperFiberStroke(line: PaperFiberLine) {
-  return fiberStroke(line.tone, line.alpha)
+export function paperDashStroke(segment: PaperDashSegment) {
+  return `rgba(126, 124, 118, ${segment.alpha})`
 }
+
+export function paperDashDashArray(segment: PaperDashSegment) {
+  return `${segment.dash} ${segment.gap}`
+}
+
+export const PAPER_PREVIEW_DASHES = PAPER_DASH_SEGMENTS.slice(0, 14)

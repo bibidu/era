@@ -23,6 +23,7 @@ export interface GraphicTextConfig {
   aspectRatio: GraphicAspectRatio
   backgroundType: GraphicBackgroundType
   pageOverlay: GraphicPageOverlay
+  overlayStacked: boolean
   topText: string
   backgroundUrl: string | null
   underlineHighlightColors: Record<string, string>
@@ -64,6 +65,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   aspectRatio: '9:16',
   backgroundType: 'solid',
   pageOverlay: 'grid',
+  overlayStacked: false,
   topText: '',
   backgroundUrl: null,
   underlineHighlightColors: {},

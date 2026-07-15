@@ -9,7 +9,11 @@ import {
   PIXEL_HEADER_LINE_Y,
 } from './pagePixelOverlay'
 
-export function PagePixelOverlay() {
+interface PagePixelOverlayProps {
+  stacked?: boolean
+}
+
+export function PagePixelOverlay({ stacked = false }: PagePixelOverlayProps) {
   const id = useId().replace(/:/g, '')
   const gridLines: { x1: number; y1: number; x2: number; y2: number; major: boolean }[] = []
 
@@ -22,7 +26,7 @@ export function PagePixelOverlay() {
 
   return (
     <svg
-      className="pointer-events-none absolute inset-0 z-[1] size-full"
+      className="graphic-page-overlay pointer-events-none absolute inset-0 z-0 size-full"
       viewBox="0 0 1 1"
       preserveAspectRatio="none"
       aria-hidden
@@ -39,7 +43,7 @@ export function PagePixelOverlay() {
         </radialGradient>
       </defs>
 
-      <rect width="1" height="1" fill={PIXEL_CANVAS_COLOR} />
+      {!stacked && <rect width="1" height="1" fill={PIXEL_CANVAS_COLOR} />}
       <rect width="1" height="1" fill={`url(#${id}-blue-glow)`} />
       <rect width="1" height="1" fill={`url(#${id}-violet-glow)`} />
 
