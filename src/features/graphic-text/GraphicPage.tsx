@@ -9,7 +9,8 @@ import {
 } from './codeBlock'
 import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
 import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
-import { buildCharHighlightSegments, blockHasHighlightedChar, themeAlpha } from './inlineHighlight'
+import { HAND_DRAWN_CIRCLE_PATH, HAND_DRAWN_CIRCLE_VIEWBOX } from './circleHighlight'
+import { buildCharHighlightSegments, blockHasHighlightedChar, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
 import { resolveTopBarParts } from './topBar'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 
@@ -133,24 +134,20 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
   }
 }
 
-function HighlightedText({
+function UnderlineSegments({
   text,
-  block,
+  blockId,
+  charOffset,
   themeColor,
-  highlightedKeys,
-  enableHighlight,
+  underlineKeys,
 }: {
   text: string
-  block: MarkdownBlock
+  blockId: string
+  charOffset: number
   themeColor: string
-  highlightedKeys: ReadonlySet<string>
-  enableHighlight: boolean
+  underlineKeys: ReadonlySet<string>
 }) {
-  if (!enableHighlight) return <>{text}</>
-
-  const blockId = block.sourceBlockId ?? block.id
-  const charOffset = block.charOffset ?? 0
-  const segments = buildCharHighlightSegments(text, blockId, highlightedKeys, charOffset)
+  const segments = buildCharHighlightSegments(text, blockId, underlineKeys, charOffset)
 
   return (
     <>
@@ -161,7 +158,7 @@ function HighlightedText({
             className="graphic-theme-highlight"
             style={{
               backgroundColor: themeAlpha(themeColor, 0.28),
-              textDecorationColor: themeColor,
+              ['--graphic-highlight-underline' as string]: themeColor,
             }}
           >
             {segment.text}
@@ -172,6 +169,102 @@ function HighlightedText({
       )}
     </>
   )
+}
+
+function CircleHighlightWrap({
+  themeColor,
+  children,
+}: {
+  themeColor: string
+  children: ReactNode
+}) {
+  return (
+    <span className="graphic-circle-highlight">
+      <span className="graphic-circle-highlight-text">{children}</span>
+      <svg
+        className="graphic-circle-highlight-svg"
+        viewBox={HAND_DRAWN_CIRCLE_VIEWBOX}
+        preserveAspectRatio="none"
+        aria-hidden
+      >
+        <path
+          d={HAND_DRAWN_CIRCLE_PATH}
+          fill="none"
+          stroke={themeColor}
+          strokeWidth={4}
+          vectorEffect="non-scaling-stroke"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  )
+}
+
+function StyledHighlightedText({
+  text,
+  block,
+  themeColor,
+  underlineKeys,
+  circleKeys,
+  enableHighlight,
+}: {
+  text: string
+  block: MarkdownBlock
+  themeColor: string
+  underlineKeys: ReadonlySet<string>
+  circleKeys: ReadonlySet<string>
+  enableHighlight: boolean
+}) {
+  if (!enableHighlight) return <>{text}</>
+
+  const blockId = block.sourceBlockId ?? block.id
+  const charOffset = block.charOffset ?? 0
+  const plain = stripHighlightMarkers(text)
+  const parts: ReactNode[] = []
+  let index = 0
+
+  while (index < plain.length) {
+    const key = `${blockId}:${charOffset + index}`
+    if (circleKeys.has(key)) {
+      let end = index
+      while (end < plain.length && circleKeys.has(`${blockId}:${charOffset + end}`)) {
+        end += 1
+      }
+      const runText = plain.slice(index, end)
+      parts.push(
+        <CircleHighlightWrap key={`circle-${index}`} themeColor={themeColor}>
+          <UnderlineSegments
+            text={runText}
+            blockId={blockId}
+            charOffset={charOffset + index}
+            themeColor={themeColor}
+            underlineKeys={underlineKeys}
+          />
+        </CircleHighlightWrap>,
+      )
+      index = end
+      continue
+    }
+
+    let end = index
+    while (end < plain.length && !circleKeys.has(`${blockId}:${charOffset + end}`)) {
+      end += 1
+    }
+    parts.push(
+      <UnderlineSegments
+        key={`text-${index}`}
+        text={plain.slice(index, end)}
+        blockId={blockId}
+        charOffset={charOffset + index}
+        themeColor={themeColor}
+        underlineKeys={underlineKeys}
+      />,
+    )
+    index = end
+  }
+
+  return <>{parts}</>
 }
 
 function QuoteHighlightBar({
@@ -198,15 +291,17 @@ function renderBlockText(
   config: GraphicTextConfig,
   underlineKeys: ReadonlySet<string>,
   quoteKeys: ReadonlySet<string>,
+  circleKeys: ReadonlySet<string>,
 ) {
   const showQuoteBar = blockHasHighlightedChar(block, quoteKeys)
 
   const textNode = (
-    <HighlightedText
+    <StyledHighlightedText
       text={block.text}
       block={block}
       themeColor={config.themeColor}
-      highlightedKeys={underlineKeys}
+      underlineKeys={underlineKeys}
+      circleKeys={circleKeys}
       enableHighlight
     />
   )
@@ -285,6 +380,10 @@ export function GraphicPage({
   const quoteKeys = useMemo(
     () => new Set(config.quoteHighlightedCharKeys),
     [config.quoteHighlightedCharKeys],
+  )
+  const circleKeys = useMemo(
+    () => new Set(config.circleHighlightedCharKeys),
+    [config.circleHighlightedCharKeys],
   )
 
   const backgroundStyle: CSSProperties =
@@ -398,11 +497,12 @@ export function GraphicPage({
                     >
                       {unit.blocks.map((block) => (
                         <div key={block.id} className="whitespace-pre">
-                          <HighlightedText
+                          <StyledHighlightedText
                             text={block.text}
                             block={block}
                             themeColor={config.themeColor}
-                            highlightedKeys={underlineKeys}
+                            underlineKeys={underlineKeys}
+                            circleKeys={circleKeys}
                             enableHighlight
                           />
                         </div>
@@ -415,7 +515,7 @@ export function GraphicPage({
               const block = unit.block
               return (
               <div key={block.id} style={blockStyle(block, config)}>
-                {renderBlockText(block, config, underlineKeys, quoteKeys)}
+                {renderBlockText(block, config, underlineKeys, quoteKeys, circleKeys)}
               </div>
               )
             })

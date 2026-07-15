@@ -6,6 +6,7 @@ import {
   CODE_TEXT_COLOR,
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
+import { drawHandDrawnCircleAroundTextBounds } from './circleHighlight'
 import { getGraphicLayout } from './layout'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { getFontById } from '../../data/fonts'
@@ -108,26 +109,35 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
   }
 }
 
-function drawHighlightedLine(
+function drawStyledLine(
   ctx: CanvasRenderingContext2D,
+  text: string,
+  blockId: string,
+  charOffset: number,
   segments: LineSegment[],
+  circleKeys: ReadonlySet<string>,
   x: number,
   yTop: number,
   fontSize: number,
   themeColor: string,
   enableHighlight: boolean,
-  textColor = '#171717',
+  textColor: string,
+  circleLineWidth: number,
 ) {
   const paddingX = 4
+  const plainText = stripHighlightMarkers(text)
   ctx.textBaseline = 'alphabetic'
+  const textMetrics = ctx.measureText(plainText || '文')
+  const ascent = textMetrics.actualBoundingBoxAscent ?? fontSize * 0.88
+  const descent = textMetrics.actualBoundingBoxDescent ?? fontSize * 0.12
+  const baselineY = yTop + ascent
+  const underlineY = baselineY + fontSize * 0.1
 
   if (enableHighlight) {
     let bgX = x
     for (const segment of segments) {
       if (!segment.text) continue
       const metrics = ctx.measureText(segment.text)
-      const ascent = metrics.actualBoundingBoxAscent ?? fontSize * 0.88
-      const descent = metrics.actualBoundingBoxDescent ?? fontSize * 0.12
       if (segment.highlighted) {
         ctx.fillStyle = themeAlpha(themeColor, 0.28)
         ctx.fillRect(bgX - paddingX, yTop, metrics.width + paddingX * 2, ascent + descent + 4)
@@ -136,25 +146,53 @@ function drawHighlightedLine(
     }
   }
 
-  let cursorX = x
-  for (const segment of segments) {
-    if (!segment.text) continue
-    const metrics = ctx.measureText(segment.text)
-    const ascent = metrics.actualBoundingBoxAscent ?? fontSize * 0.88
-    const descent = metrics.actualBoundingBoxDescent ?? fontSize * 0.12
-    const baselineY = yTop + ascent
-    ctx.fillStyle = textColor
-    ctx.fillText(segment.text, cursorX, baselineY)
-    if (enableHighlight && segment.highlighted) {
-      const underlineY = baselineY + descent + Math.max(2, fontSize * 0.05)
-      ctx.strokeStyle = themeColor
-      ctx.lineWidth = Math.max(2, fontSize * 0.06)
-      ctx.beginPath()
-      ctx.moveTo(cursorX, underlineY)
-      ctx.lineTo(cursorX + metrics.width, underlineY)
-      ctx.stroke()
+  ctx.fillStyle = textColor
+  ctx.fillText(plainText, x, baselineY)
+
+  if (enableHighlight) {
+    let index = 0
+    while (index < plainText.length) {
+      const key = `${blockId}:${charOffset + index}`
+      if (circleKeys.has(key)) {
+        let end = index
+        while (end < plainText.length && circleKeys.has(`${blockId}:${charOffset + end}`)) {
+          end += 1
+        }
+        const runText = plainText.slice(index, end)
+        const prefix = plainText.slice(0, index)
+        const runX = x + ctx.measureText(prefix).width
+        const runWidth = ctx.measureText(runText).width
+        drawHandDrawnCircleAroundTextBounds(
+          ctx,
+          runX,
+          yTop,
+          runWidth,
+          ascent,
+          descent,
+          themeColor,
+          Math.max(4, circleLineWidth),
+        )
+        index = end
+      } else {
+        index += 1
+      }
     }
-    cursorX += metrics.width
+
+    let underlineX = x
+    for (const segment of segments) {
+      if (!segment.text) continue
+      const metrics = ctx.measureText(segment.text)
+      if (segment.highlighted) {
+        ctx.strokeStyle = themeColor
+        ctx.lineWidth = Math.max(2, fontSize * 0.06)
+        ctx.lineCap = 'round'
+        ctx.beginPath()
+        ctx.moveTo(underlineX, underlineY)
+        ctx.lineTo(underlineX + metrics.width, underlineY)
+        ctx.stroke()
+      }
+      underlineX += metrics.width
+    }
   }
 }
 
@@ -175,6 +213,7 @@ async function drawPage(
   } = layout
   const underlineKeys = new Set(config.underlineHighlightedCharKeys)
   const quoteKeys = new Set(config.quoteHighlightedCharKeys)
+  const circleKeys = new Set(config.circleHighlightedCharKeys)
   const topBar = resolveTopBarParts(config, markdown)
   const canvas = document.createElement('canvas')
   canvas.width = width
@@ -257,6 +296,8 @@ async function drawPage(
   const blockGap = width * 0.011
   let codeBlockSourceId: string | null = null
 
+  const circleLineWidth = Math.max(4, 4 * exportScale)
+
   for (const block of page.blocks) {
     const spec = blockSpec(block, config, exportScale)
     const styleType = resolveStyleType(block)
@@ -312,15 +353,20 @@ async function drawPage(
       ctx.fillRect(safeX, y, barWidth, lineHeight)
     }
 
-    drawHighlightedLine(
+    drawStyledLine(
       ctx,
+      block.text,
+      blockId,
+      charOffset,
       segments,
+      circleKeys,
       safeX + inset,
       y,
       spec.size,
       config.themeColor,
       enableHighlight,
       styleType === 'code' ? CODE_TEXT_COLOR : '#171717',
+      circleLineWidth,
     )
     y += lineHeight
 

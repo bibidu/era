@@ -1,16 +1,18 @@
 import { ArrowLeft, Check } from 'lucide-react'
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { HAND_DRAWN_CIRCLE_PATH, HAND_DRAWN_CIRCLE_VIEWBOX } from './circleHighlight'
 import {
   buildHighlightDisplayLines,
   type HighlightCharToken,
   type HighlightDisplayLine,
 } from './highlightTokens'
 
-export type HighlightStyleTab = 'underline' | 'quote'
+export type HighlightStyleTab = 'underline' | 'quote' | 'circle'
 
 const HIGHLIGHT_STYLE_TABS: { id: HighlightStyleTab; label: string }[] = [
   { id: 'underline', label: '下划线' },
   { id: 'quote', label: '引用' },
+  { id: 'circle', label: '线圈' },
 ]
 
 function HighlightStyleTabLabel({
@@ -26,28 +28,49 @@ function HighlightStyleTabLabel({
 
   if (tab === 'underline') {
     return (
-      <span
-        className={`text-xs font-medium ${textClass}`}
-        style={{
-          textDecoration: 'underline',
-          textDecorationColor: themeColor,
-          textDecorationThickness: '2px',
-          textUnderlineOffset: '3px',
-        }}
-      >
-        下划线
+      <span className={`relative text-xs font-medium ${textClass}`}>
+        <span>下划线</span>
+        <span
+          className="absolute -bottom-0.5 left-0 right-0 h-0.5 rounded-full"
+          style={{ backgroundColor: themeColor }}
+          aria-hidden
+        />
+      </span>
+    )
+  }
+
+  if (tab === 'quote') {
+    return (
+      <span className={`flex items-center gap-1.5 text-xs font-medium ${textClass}`}>
+        <span
+          className="h-3.5 w-0.5 shrink-0 rounded-full"
+          style={{ backgroundColor: themeColor }}
+          aria-hidden
+        />
+        引用
       </span>
     )
   }
 
   return (
-    <span className={`flex items-center gap-1.5 text-xs font-medium ${textClass}`}>
-      <span
-        className="h-3.5 w-0.5 shrink-0 rounded-full"
-        style={{ backgroundColor: themeColor }}
+    <span className={`relative inline-flex items-center px-1.5 py-0.5 text-xs font-medium ${textClass}`}>
+      <span className="relative z-[1]">线圈</span>
+      <svg
+        className="pointer-events-none absolute -inset-x-1 -inset-y-1 h-[calc(100%+8px)] w-[calc(100%+8px)]"
+        viewBox={HAND_DRAWN_CIRCLE_VIEWBOX}
+        preserveAspectRatio="none"
         aria-hidden
-      />
-      引用
+      >
+        <path
+          d={HAND_DRAWN_CIRCLE_PATH}
+          fill="none"
+          stroke={themeColor}
+          strokeWidth={3}
+          vectorEffect="non-scaling-stroke"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
     </span>
   )
 }
@@ -57,8 +80,10 @@ interface GraphicHighlightEditorProps {
   themeColor: string
   underlineHighlightedCharKeys: string[]
   quoteHighlightedCharKeys: string[]
+  circleHighlightedCharKeys: string[]
   onUnderlineChange: (keys: string[]) => void
   onQuoteChange: (keys: string[]) => void
+  onCircleChange: (keys: string[]) => void
   onConfirm: () => void
   onBack: () => void
 }
@@ -201,8 +226,10 @@ export function GraphicHighlightEditor({
   themeColor,
   underlineHighlightedCharKeys,
   quoteHighlightedCharKeys,
+  circleHighlightedCharKeys,
   onUnderlineChange,
   onQuoteChange,
+  onCircleChange,
   onConfirm,
   onBack,
 }: GraphicHighlightEditorProps) {
@@ -210,9 +237,17 @@ export function GraphicHighlightEditor({
   const displayLines = useMemo(() => buildHighlightDisplayLines(markdown), [markdown])
 
   const activeKeys =
-    activeStyleTab === 'underline' ? underlineHighlightedCharKeys : quoteHighlightedCharKeys
+    activeStyleTab === 'underline'
+      ? underlineHighlightedCharKeys
+      : activeStyleTab === 'quote'
+        ? quoteHighlightedCharKeys
+        : circleHighlightedCharKeys
   const onActiveChange =
-    activeStyleTab === 'underline' ? onUnderlineChange : onQuoteChange
+    activeStyleTab === 'underline'
+      ? onUnderlineChange
+      : activeStyleTab === 'quote'
+        ? onQuoteChange
+        : onCircleChange
 
   const highlightedSet = useMemo(() => new Set(activeKeys), [activeKeys])
 
@@ -239,6 +274,13 @@ export function GraphicHighlightEditor({
   }
 
   const hasContent = displayLines.some((line) => line.tokens.length > 0)
+
+  const hintText =
+    activeStyleTab === 'underline'
+      ? '点击文字设置下划线高亮，已选'
+      : activeStyleTab === 'quote'
+        ? '点击文字设置引用高亮（所在行左侧显示竖杠），已选'
+        : '点击文字设置线圈高亮（连续文字手绘线圈），已选'
 
   const renderLine = (line: HighlightDisplayLine, lineIndex: number) => {
     if (line.isParagraphBreak) {
@@ -299,10 +341,7 @@ export function GraphicHighlightEditor({
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
         <p className="mb-3 text-xs text-neutral-500">
-          {activeStyleTab === 'underline'
-            ? '点击文字设置下划线高亮，已选'
-            : '点击文字设置引用高亮（所在行左侧显示竖杠），已选'}{' '}
-          {activeKeys.length} 个字符
+          {hintText} {activeKeys.length} 个字符
         </p>
         {!hasContent ? (
           <p className="py-8 text-center text-sm text-neutral-400">暂无文字内容</p>
