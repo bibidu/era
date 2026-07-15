@@ -61,11 +61,13 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   const [editorOpen, setEditorOpen] = useState(false)
   const [pasteError, setPasteError] = useState('')
   const pagerRef = useRef<HTMLDivElement>(null)
+  const toolbarDockRef = useRef<HTMLDivElement>(null)
   const templateRefInputRef = useRef<HTMLInputElement>(null)
   const configRef = useRef(config)
   configRef.current = config
   const [pagerSize, setPagerSize] = useState({ width: 0, height: 0 })
   const [sheetHeight, setSheetHeight] = useState(0)
+  const [toolbarDockHeight, setToolbarDockHeight] = useState(0)
   const [highlightPreview, setHighlightPreview] = useState(() => createHighlightPreviewDraft(config))
 
   useEffect(() => {
@@ -101,7 +103,21 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
       window.removeEventListener('resize', updateSize)
       window.visualViewport?.removeEventListener('resize', updateSize)
     }
-  }, [configPanel, sheetHeight])
+  }, [configPanel, sheetHeight, toolbarDockHeight])
+
+  useEffect(() => {
+    const dock = toolbarDockRef.current
+    if (!dock) return
+
+    const updateDockHeight = () => {
+      setToolbarDockHeight(dock.offsetHeight)
+    }
+
+    updateDockHeight()
+    const observer = new ResizeObserver(updateDockHeight)
+    observer.observe(dock)
+    return () => observer.disconnect()
+  }, [configPanel, toolbarStrip, templateNav, fontSizeNav, textAdjustField])
 
   useEffect(() => {
     if (!configPanel) {
@@ -328,25 +344,24 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
       </div>
 
       {configPanel && (
-        <div className="graphic-config-sheet-layer relative z-50 shrink-0">
-          <GraphicTextConfigSheet
-            isOpen={configPanel !== null}
-            panel={configPanel}
-            config={config}
-            markdown={markdown}
-            sheetHeight={sheetHeight}
-            highlightDraft={highlightPreview}
-            onOpenChange={(open) => {
-              if (!open) setConfigPanel(null)
-            }}
-            onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
-            onHeightChange={setSheetHeight}
-            onHighlightDraftChange={setHighlightPreview}
-          />
-        </div>
+        <GraphicTextConfigSheet
+          isOpen={configPanel !== null}
+          panel={configPanel}
+          config={config}
+          markdown={markdown}
+          sheetHeight={sheetHeight}
+          toolbarDockHeight={toolbarDockHeight}
+          highlightDraft={highlightPreview}
+          onOpenChange={(open) => {
+            if (!open) setConfigPanel(null)
+          }}
+          onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
+          onHeightChange={setSheetHeight}
+          onHighlightDraftChange={setHighlightPreview}
+        />
       )}
 
-      <div className="relative z-20 shrink-0">
+      <div ref={toolbarDockRef} className="relative z-20 shrink-0">
         <input
           ref={templateRefInputRef}
           type="file"

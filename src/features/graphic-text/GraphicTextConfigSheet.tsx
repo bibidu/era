@@ -23,6 +23,7 @@ interface GraphicTextConfigSheetProps {
   config: GraphicTextConfig
   markdown: string
   sheetHeight: number
+  toolbarDockHeight: number
   highlightDraft: HighlightPreviewDraft
   onOpenChange: (open: boolean) => void
   onUpdate: (updates: Partial<GraphicTextConfig>) => void
@@ -53,6 +54,7 @@ export function GraphicTextConfigSheet({
   config,
   markdown,
   sheetHeight,
+  toolbarDockHeight,
   highlightDraft,
   onOpenChange,
   onUpdate,
@@ -202,8 +204,12 @@ export function GraphicTextConfigSheet({
   return (
     <div
       ref={panelRef}
-      className="graphic-config-sheet-inline graphic-config-drawer-dialog graphic-config-drawer-dialog--highlight component-library shrink-0"
-      style={{ height: sheetHeight, maxHeight: sheetHeight }}
+      className="graphic-config-sheet-fixed graphic-config-sheet-inline graphic-config-drawer-dialog graphic-config-drawer-dialog--highlight component-library"
+      style={{
+        height: sheetHeight,
+        maxHeight: sheetHeight,
+        bottom: toolbarDockHeight,
+      }}
     >
       <button
         type="button"

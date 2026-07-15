@@ -297,9 +297,13 @@ body.is-dragging {
   max-height: min(62vh, 560px);
 }
 
-.graphic-config-sheet-layer {
-  position: relative;
-  z-index: 50;
+.graphic-config-sheet-fixed {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 32rem;
+  z-index: 100;
 }
 
 .graphic-config-sheet-inline {
@@ -328,6 +332,11 @@ body.is-dragging {
   flex: 1;
   min-height: 0;
   overflow: auto;
+}
+
+.graphic-config-sheet-fixed.graphic-config-sheet-inline {
+  position: fixed;
+  flex-shrink: unset;
 }
 
 .graphic-config-sheet-body {
@@ -509,6 +518,29 @@ body.is-dragging {
 
 .graphic-toolbar-strip-texture-row {
   min-width: max-content;
+}
+
+.graphic-toolbar-strip:has(.graphic-toolbar-strip-texture) {
+  padding-left: 0;
+}
+
+.graphic-toolbar-strip-texture {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  align-items: center;
+}
+
+.graphic-toolbar-strip-stack-pin {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  align-items: center;
+  height: 100%;
+  padding: 0 8px 0 16px;
+  background: #ffffff;
+  box-shadow: 8px 0 12px -6px #ffffff;
 }
 
 .graphic-toolbar-strip-divider {
