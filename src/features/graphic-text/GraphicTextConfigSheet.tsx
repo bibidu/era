@@ -30,7 +30,6 @@ interface GraphicTextConfigSheetProps {
   markdown: string
   onOpenChange: (open: boolean) => void
   onUpdate: (updates: Partial<GraphicTextConfig>) => void
-  onGenerate: () => void
   onBackgroundUpload: (file: File) => void
 }
 
@@ -173,7 +172,6 @@ export function GraphicTextConfigSheet({
   markdown,
   onOpenChange,
   onUpdate,
-  onGenerate,
   onBackgroundUpload,
 }: GraphicTextConfigSheetProps) {
   const sheetRef = useRef<HTMLDivElement | null>(null)
@@ -295,10 +293,6 @@ export function GraphicTextConfigSheet({
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
-  }
-
-  const handleGenerate = () => {
-    onGenerate()
   }
 
   const handleHighlightConfirm = () => {
@@ -673,16 +667,6 @@ export function GraphicTextConfigSheet({
                           </label>
                         </section>
                       </div>
-            </div>
-
-            <div className="shrink-0 border-t border-neutral-200 bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">
-              <button
-                type="button"
-                className="h-12 w-full rounded-xl bg-black text-sm font-semibold text-white active:bg-neutral-800"
-                onClick={handleGenerate}
-              >
-                生成图文
-              </button>
             </div>
           </>
         )}
