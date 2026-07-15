@@ -1,6 +1,10 @@
 import type { CSSProperties } from 'react'
 import { GRADIENT_OVERLAY_CSS, GRADIENT_OVERLAY_FALLBACK } from './pageGradientOverlay'
-import { shouldDrawBaseBackground } from './pageLayering'
+import {
+  shouldDrawReferenceBackground,
+  usesConfiguredBaseBackground,
+  usesOverlayAsBackground,
+} from './pageLayering'
 import { PIXEL_CANVAS_COLOR } from './pagePixelOverlay'
 import type { GraphicTextConfig } from './types'
 
@@ -15,18 +19,18 @@ export const GRID_BACKGROUND_IMAGE = `linear-gradient(${GRID_LINE_COLOR} 1px, tr
 export function resolvePageBackgroundStyle(config: GraphicTextConfig): CSSProperties {
   const style: CSSProperties = {}
 
-  if (!shouldDrawBaseBackground(config)) {
+  if (usesOverlayAsBackground(config)) {
     if (config.pageOverlay === 'gradient') {
       style.backgroundColor = GRADIENT_OVERLAY_FALLBACK
       style.backgroundImage = GRADIENT_OVERLAY_CSS
     } else if (config.pageOverlay === 'pixel') {
       style.backgroundColor = PIXEL_CANVAS_COLOR
     }
-  } else if (config.backgroundType === 'reference' && config.backgroundUrl) {
+  } else if (shouldDrawReferenceBackground(config)) {
     style.backgroundImage = `linear-gradient(rgba(255,255,255,.82), rgba(255,255,255,.82)), url("${config.backgroundUrl}")`
     style.backgroundSize = 'cover'
     style.backgroundPosition = 'center'
-  } else if (config.backgroundType === 'solid') {
+  } else if (usesConfiguredBaseBackground(config) && config.backgroundType === 'solid') {
     style.backgroundColor = config.paperColor
   } else {
     style.backgroundColor = DEFAULT_PAGE_BASE_COLOR
@@ -47,11 +51,13 @@ export function resolvePageBackgroundStyle(config: GraphicTextConfig): CSSProper
 }
 
 export function resolvePageBaseFillColor(config: GraphicTextConfig) {
-  if (!shouldDrawBaseBackground(config)) {
+  if (usesOverlayAsBackground(config)) {
     if (config.pageOverlay === 'gradient') return GRADIENT_OVERLAY_FALLBACK
     if (config.pageOverlay === 'pixel') return PIXEL_CANVAS_COLOR
   }
-  if (config.backgroundType === 'solid') return config.paperColor
+  if (usesConfiguredBaseBackground(config) && config.backgroundType === 'solid') {
+    return config.paperColor
+  }
   return DEFAULT_PAGE_BASE_COLOR
 }
 
