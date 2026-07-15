@@ -407,30 +407,32 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           />
         )}
 
-        <GraphicTextToolbar
-          activePanel={configPanel}
-          activeStrip={toolbarStrip}
-          fontSizeNav={fontSizeNav}
-          textAdjustField={textAdjustField}
-          templateNav={templateNav}
-          config={config}
-          editorOpen={editorOpen}
-          safeAreaOpen={showSafeArea}
-          saveDisabled={pages.length === 0}
-          onEdit={handleEdit}
-          onSelectStrip={handleSelectStrip}
-          onSelectPanel={handleSelectPanel}
-          onOpenTextAdjustMenu={handleOpenTextAdjustMenu}
-          onTextAdjustBack={handleTextAdjustBack}
-          onSelectTextAdjustTarget={handleSelectTextAdjustTarget}
-          onSelectTextAdjustField={handleSelectTextAdjustField}
-          onTemplateBack={handleTemplateBack}
-          onPickReferenceImage={handlePickReferenceImage}
-          onSelectTemplateSolid={handleSelectTemplateSolid}
-          onSelectTemplateTexture={handleSelectTemplateTexture}
-          onToggleSafeArea={handleToggleSafeArea}
-          onSave={handleSave}
-        />
+        {!configPanel && (
+          <GraphicTextToolbar
+            activePanel={configPanel}
+            activeStrip={toolbarStrip}
+            fontSizeNav={fontSizeNav}
+            textAdjustField={textAdjustField}
+            templateNav={templateNav}
+            config={config}
+            editorOpen={editorOpen}
+            safeAreaOpen={showSafeArea}
+            saveDisabled={pages.length === 0}
+            onEdit={handleEdit}
+            onSelectStrip={handleSelectStrip}
+            onSelectPanel={handleSelectPanel}
+            onOpenTextAdjustMenu={handleOpenTextAdjustMenu}
+            onTextAdjustBack={handleTextAdjustBack}
+            onSelectTextAdjustTarget={handleSelectTextAdjustTarget}
+            onSelectTextAdjustField={handleSelectTextAdjustField}
+            onTemplateBack={handleTemplateBack}
+            onPickReferenceImage={handlePickReferenceImage}
+            onSelectTemplateSolid={handleSelectTemplateSolid}
+            onSelectTemplateTexture={handleSelectTemplateTexture}
+            onToggleSafeArea={handleToggleSafeArea}
+            onSave={handleSave}
+          />
+        )}
       </div>
 
       {editorOpen && (

@@ -337,6 +337,7 @@ body.is-dragging {
 .graphic-config-sheet-fixed.graphic-config-sheet-inline {
   position: fixed;
   flex-shrink: unset;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .graphic-config-sheet-body {
