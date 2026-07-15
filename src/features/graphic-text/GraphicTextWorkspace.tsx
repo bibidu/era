@@ -36,6 +36,7 @@ import {
 } from './types'
 
 const PAGER_PAGE_PADDING = 32
+const PAGER_SHEET_PADDING = PAGER_PAGE_PADDING / 2
 
 interface GraphicTextWorkspaceProps {
   defaultBackgroundUrl: string | null
@@ -144,22 +145,25 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
 
   const pages = useMemo(() => paginateMarkdown(markdown, previewConfig), [markdown, previewConfig])
 
+  const sheetOpen = configPanel !== null && sheetHeight > 0
+  const pagerPagePadding = sheetOpen ? PAGER_SHEET_PADDING : PAGER_PAGE_PADDING
+
   const pagerPageSize = useMemo(() => {
     const layout = getGraphicLayout(config)
     if (pagerSize.width > 0 && pagerSize.height > 0) {
       return computeGraphicPageDisplaySize(
         layout.aspectRatio,
-        pagerSize.width - PAGER_PAGE_PADDING,
-        pagerSize.height - PAGER_PAGE_PADDING,
+        pagerSize.width - pagerPagePadding,
+        pagerSize.height - pagerPagePadding,
       )
     }
     return computeGraphicPageDisplaySize(
       layout.aspectRatio,
-      window.innerWidth - PAGER_PAGE_PADDING,
+      window.innerWidth - pagerPagePadding,
       getViewportHeight() -
-        (configPanel && sheetHeight > 0 ? sheetHeight : toolbarDockHeight || 200),
+        (sheetOpen ? sheetHeight : toolbarDockHeight || 200),
     )
-  }, [config, pagerSize, configPanel, sheetHeight])
+  }, [config, pagerSize, sheetOpen, sheetHeight, toolbarDockHeight, pagerPagePadding])
 
   const resetTextAdjust = () => {
     setFontSizeNav(null)
@@ -321,8 +325,6 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   const showTextAdjustStrip =
     textAdjustField !== null && isTextAdjustTarget(fontSizeNav)
 
-  const sheetOpen = configPanel !== null && sheetHeight > 0
-
   return (
     <div
       className="flex min-h-0 flex-1 flex-col bg-neutral-100"
@@ -341,7 +343,11 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
         {pages.map((page) => (
           <div
             key={page.index}
-            className="flex h-full w-full shrink-0 snap-center items-center justify-center p-4"
+            className={
+              sheetOpen
+                ? 'flex h-full w-full shrink-0 snap-center items-end justify-center px-4 pt-4 pb-2'
+                : 'flex h-full w-full shrink-0 snap-center items-center justify-center p-4'
+            }
           >
             <GraphicPage
               page={page}
