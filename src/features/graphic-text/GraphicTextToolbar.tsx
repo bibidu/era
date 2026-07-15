@@ -58,7 +58,7 @@ export function GraphicTextToolbar({
   const inTextAdjustMode = fontSizeNav !== null
   const TextAdjustIcon = GRAPHIC_TEXT_ADJUST_MENU.icon
   const selectedTarget = isTextAdjustTarget(fontSizeNav) ? fontSizeNav : null
-  const selectedTargetLabel = FONT_SIZE_TARGETS.find((item) => item.id === selectedTarget)?.label
+  const selectedTargetItem = FONT_SIZE_TARGETS.find((item) => item.id === selectedTarget)
   const TopTextIcon = GRAPHIC_TOP_TEXT_PANEL.icon
   const HighlightIcon = GRAPHIC_HIGHLIGHT_PANEL.icon
 
@@ -76,16 +76,17 @@ export function GraphicTextToolbar({
               <ArrowLeft size={20} strokeWidth={1.75} />
             </button>
 
-            <div className="graphic-text-toolbar-scroll component-scroll-row flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
-              {selectedTarget && selectedTargetLabel ? (
+            <div className="graphic-text-toolbar-scroll component-scroll-row flex min-w-0 flex-1 items-stretch gap-1 overflow-x-auto">
+              {selectedTargetItem ? (
                 <>
-                  <span className="graphic-text-toolbar-subitem graphic-text-toolbar-subitem--label">
-                    {selectedTargetLabel}
+                  <span className="graphic-text-toolbar-item graphic-text-toolbar-item--label">
+                    <selectedTargetItem.icon size={22} strokeWidth={1.5} />
+                    <span>{selectedTargetItem.label}</span>
                   </span>
 
-                  <span className="graphic-text-toolbar-divider" aria-hidden />
+                  <span className="graphic-text-toolbar-divider graphic-text-toolbar-divider--centered" aria-hidden />
 
-                  {TEXT_ADJUST_FIELDS[selectedTarget].map((field) => {
+                  {TEXT_ADJUST_FIELDS[selectedTargetItem.id].map((field) => {
                     const active = textAdjustField === field.id
                     return (
                       <button
@@ -114,19 +115,23 @@ export function GraphicTextToolbar({
                     <span>{GRAPHIC_TEXT_ADJUST_MENU.label}</span>
                   </button>
 
-                  <span className="graphic-text-toolbar-divider" aria-hidden />
+                  <span className="graphic-text-toolbar-divider graphic-text-toolbar-divider--centered" aria-hidden />
 
-                  {FONT_SIZE_TARGETS.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      aria-label={item.label}
-                      className="graphic-text-toolbar-subitem"
-                      onClick={() => onSelectTextAdjustTarget(item.id)}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
+                  {FONT_SIZE_TARGETS.map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        aria-label={item.label}
+                        className="graphic-text-toolbar-item"
+                        onClick={() => onSelectTextAdjustTarget(item.id)}
+                      >
+                        <Icon size={22} strokeWidth={1.5} />
+                        <span>{item.label}</span>
+                      </button>
+                    )
+                  })}
                 </>
               )}
             </div>

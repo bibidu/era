@@ -175,6 +175,17 @@ body.is-dragging {
   font-weight: 600;
 }
 
+.graphic-text-toolbar-item--label {
+  color: #171717;
+  font-weight: 600;
+  cursor: default;
+  pointer-events: none;
+}
+
+.graphic-text-toolbar-divider--centered {
+  align-self: center;
+}
+
 .graphic-text-toolbar-subitem--label {
   color: #171717;
   font-weight: 600;
@@ -334,7 +345,7 @@ body.is-dragging {
 .graphic-toolbar-strip {
   margin: 0 12px 8px;
   height: 52px;
-  padding: 0 12px;
+  padding: 0 80px;
   overflow: hidden;
   border-radius: 9999px;
   background: #ffffff;
@@ -471,6 +482,7 @@ body.is-dragging {
   width: 100%;
   min-width: 0;
   max-width: none;
+  flex: 1;
 }
 
 .graphic-toolbar-strip-top-text {
@@ -482,6 +494,7 @@ body.is-dragging {
   display: flex;
   flex-shrink: 0;
   touch-action: none;
+  cursor: row-resize;
   justify-content: center;
   padding: 10px 0 6px;
 }
