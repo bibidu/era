@@ -164,9 +164,6 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
     } else if (/^\d+\.\s/.test(line)) {
       flushParagraph()
       blocks.push(createBlock('list', line.replace(/^\d+\.\s+/, ''), blocks.length))
-    } else if (line.startsWith('> ')) {
-      flushParagraph()
-      blocks.push(createBlock('quote', line.slice(2).trim(), blocks.length))
     } else {
       paragraph.push(line)
     }

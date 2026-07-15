@@ -255,7 +255,6 @@ async function drawPage(
   const quoteInset = (size: number) => size * 0.55
   const codeInset = (size: number) => size * CODE_HORIZONTAL_PADDING_SCALE
   const blockGap = width * 0.011
-  let quoteBarStart: number | null = null
   let codeBlockSourceId: string | null = null
 
   for (const block of page.blocks) {
@@ -269,17 +268,14 @@ async function drawPage(
     const plainText = stripHighlightMarkers(block.text)
     const blockId = block.sourceBlockId ?? block.id
     const charOffset = block.charOffset ?? 0
-    const hasQuoteHighlightBar =
-      styleType !== 'quote' && blockHasHighlightedChar(block, quoteKeys)
+    const hasQuoteHighlightBar = blockHasHighlightedChar(block, quoteKeys)
     const quoteBarInset = hasQuoteHighlightBar ? quoteInset(spec.size) : 0
     const inset =
       block.type === 'list'
         ? listInset(spec.size) + quoteBarInset
-        : block.type === 'quote' || styleType === 'quote'
-          ? quoteInset(spec.size)
-          : block.type === 'code' || styleType === 'code'
-            ? codeInset(spec.size)
-            : quoteBarInset
+        : block.type === 'code' || styleType === 'code'
+          ? codeInset(spec.size)
+          : quoteBarInset
     const enableHighlight = true
     const segments = enableHighlight
       ? buildCharHighlightSegments(block.text, blockId, underlineKeys, charOffset)
@@ -287,10 +283,6 @@ async function drawPage(
     const lineHeight = spec.size * spec.lineHeight
     const textMetrics = ctx.measureText(plainText || '文')
     const ascent = textMetrics.actualBoundingBoxAscent ?? spec.size * 0.88
-
-    if (block.type === 'quote') {
-      quoteBarStart = y
-    }
 
     if (styleType === 'code') {
       if (codeBlockSourceId !== blockId) {
@@ -331,13 +323,6 @@ async function drawPage(
       styleType === 'code' ? CODE_TEXT_COLOR : '#171717',
     )
     y += lineHeight
-
-    if (styleType === 'quote' && block.isBlockEnd && quoteBarStart !== null) {
-      const barWidth = Math.max(4, spec.size * 0.18)
-      ctx.fillStyle = config.themeColor
-      ctx.fillRect(safeX, quoteBarStart, barWidth, y - quoteBarStart)
-      quoteBarStart = null
-    }
 
     if (styleType === 'code' && block.isBlockEnd) {
       codeBlockSourceId = null

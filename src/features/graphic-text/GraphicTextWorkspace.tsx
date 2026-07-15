@@ -274,6 +274,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           value={markdown}
           onChange={setMarkdown}
           onCommit={() => setEditorOpen(false)}
+          onDismiss={() => setEditorOpen(false)}
         />
       )}
 

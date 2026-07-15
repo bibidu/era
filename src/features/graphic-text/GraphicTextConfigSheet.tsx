@@ -332,6 +332,7 @@ export function GraphicTextConfigSheet({
         {sheetView === 'highlight' ? (
           <GraphicHighlightEditor
             markdown={markdown}
+            themeColor={config.themeColor}
             underlineHighlightedCharKeys={highlightDraft.underline}
             quoteHighlightedCharKeys={highlightDraft.quote}
             onUnderlineChange={(keys) =>
