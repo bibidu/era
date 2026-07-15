@@ -232,6 +232,49 @@ body.is-dragging {
   overflow: hidden;
 }
 
+.graphic-highlight-paragraph {
+  position: relative;
+}
+
+.graphic-highlight-row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 6px;
+  column-gap: 8px;
+  align-items: start;
+  margin: 0;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.graphic-highlight-row--paragraph-end {
+  padding-bottom: 12px;
+}
+
+.graphic-highlight-row-tokens {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: flex-start;
+  gap: 6px;
+}
+
+.graphic-highlight-row-measure {
+  position: absolute;
+  top: 0;
+  right: 14px;
+  bottom: 0;
+  left: 28px;
+  z-index: -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: flex-start;
+  gap: 6px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .graphic-highlight-row-radio {
   display: flex;
   width: 20px;
@@ -371,9 +414,8 @@ body.is-dragging {
 
 .graphic-highlight-page-indicator {
   width: 6px;
-  flex-shrink: 0;
   align-self: stretch;
-  border-radius: 9999px;
+  border-radius: 0;
 }
 
 .graphic-highlight-page-indicator--odd {
