@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties, type ReactNode } from 'react'
+import { type CSSProperties, type ReactNode } from 'react'
 import {
   CODE_BACKGROUND,
   CODE_FONT_FAMILY,
@@ -10,11 +10,19 @@ import {
 import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
 import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
 import {
-  buildCircleHighlightRuns,
+  buildCircleHighlightColorRuns,
   HAND_DRAWN_CIRCLE_PATH,
   HAND_DRAWN_CIRCLE_VIEWBOX,
 } from './circleHighlight'
-import { buildCharHighlightSegments, blockHasHighlightedChar, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
+import {
+  buildCharHighlightColorSegments,
+  stripHighlightMarkers,
+  themeAlpha,
+} from './inlineHighlight'
+import {
+  blockHasHighlightInMap,
+  resolveBlockHighlightColor,
+} from './highlightColors'
 import { resolvePageBackgroundStyle } from './pageBackground'
 import { resolveTopBarParts } from './topBar'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
@@ -143,27 +151,25 @@ function UnderlineSegments({
   text,
   blockId,
   charOffset,
-  themeColor,
-  underlineKeys,
+  underlineColors,
 }: {
   text: string
   blockId: string
   charOffset: number
-  themeColor: string
-  underlineKeys: ReadonlySet<string>
+  underlineColors: Readonly<Record<string, string>>
 }) {
-  const segments = buildCharHighlightSegments(text, blockId, underlineKeys, charOffset)
+  const segments = buildCharHighlightColorSegments(text, blockId, underlineColors, charOffset)
 
   return (
     <>
       {segments.map((segment, index) =>
-        segment.highlighted ? (
+        segment.color ? (
           <span
             key={`${index}-${segment.text}`}
             className="graphic-theme-highlight"
             style={{
-              backgroundColor: themeAlpha(themeColor, 0.28),
-              ['--graphic-highlight-underline' as string]: themeColor,
+              backgroundColor: themeAlpha(segment.color, 0.28),
+              ['--graphic-highlight-underline' as string]: segment.color,
             }}
           >
             {segment.text}
@@ -209,16 +215,14 @@ function CircleHighlightWrap({
 function StyledHighlightedText({
   text,
   block,
-  themeColor,
-  underlineKeys,
-  circleKeys,
+  underlineColors,
+  circleColors,
   enableHighlight,
 }: {
   text: string
   block: MarkdownBlock
-  themeColor: string
-  underlineKeys: ReadonlySet<string>
-  circleKeys: ReadonlySet<string>
+  underlineColors: Readonly<Record<string, string>>
+  circleColors: Readonly<Record<string, string>>
   enableHighlight: boolean
 }) {
   if (!enableHighlight) return <>{text}</>
@@ -226,7 +230,7 @@ function StyledHighlightedText({
   const blockId = block.sourceBlockId ?? block.id
   const charOffset = block.charOffset ?? 0
   const plain = stripHighlightMarkers(text)
-  const circleRuns = buildCircleHighlightRuns(plain, blockId, charOffset, circleKeys)
+  const circleRuns = buildCircleHighlightColorRuns(plain, blockId, charOffset, circleColors)
   const parts: ReactNode[] = []
   let index = 0
   let runCursor = 0
@@ -235,13 +239,12 @@ function StyledHighlightedText({
     const run = circleRuns[runCursor]
     if (run && index === run.start) {
       parts.push(
-        <CircleHighlightWrap key={`circle-${index}`} themeColor={themeColor}>
+        <CircleHighlightWrap key={`circle-${index}`} themeColor={run.color}>
           <UnderlineSegments
             text={run.text}
             blockId={blockId}
             charOffset={charOffset + run.start}
-            themeColor={themeColor}
-            underlineKeys={underlineKeys}
+            underlineColors={underlineColors}
           />
         </CircleHighlightWrap>,
       )
@@ -258,8 +261,7 @@ function StyledHighlightedText({
         text={plain.slice(index, end)}
         blockId={blockId}
         charOffset={charOffset + index}
-        themeColor={themeColor}
-        underlineKeys={underlineKeys}
+        underlineColors={underlineColors}
       />,
     )
     index = end
@@ -289,20 +291,19 @@ function QuoteHighlightBar({
 
 function renderBlockText(
   block: MarkdownBlock,
-  config: GraphicTextConfig,
-  underlineKeys: ReadonlySet<string>,
-  quoteKeys: ReadonlySet<string>,
-  circleKeys: ReadonlySet<string>,
+  underlineColors: Readonly<Record<string, string>>,
+  quoteColors: Readonly<Record<string, string>>,
+  circleColors: Readonly<Record<string, string>>,
 ) {
-  const showQuoteBar = blockHasHighlightedChar(block, quoteKeys)
+  const showQuoteBar = blockHasHighlightInMap(block, quoteColors)
+  const quoteColor = resolveBlockHighlightColor(block, quoteColors)
 
   const textNode = (
     <StyledHighlightedText
       text={block.text}
       block={block}
-      themeColor={config.themeColor}
-      underlineKeys={underlineKeys}
-      circleKeys={circleKeys}
+      underlineColors={underlineColors}
+      circleColors={circleColors}
       enableHighlight
     />
   )
@@ -319,15 +320,15 @@ function renderBlockText(
         <span className="min-w-0 flex-1">{textNode}</span>
       </div>
     )
-    return showQuoteBar ? (
-      <QuoteHighlightBar themeColor={config.themeColor}>{listContent}</QuoteHighlightBar>
+    return showQuoteBar && quoteColor ? (
+      <QuoteHighlightBar themeColor={quoteColor}>{listContent}</QuoteHighlightBar>
     ) : (
       listContent
     )
   }
 
-  return showQuoteBar ? (
-    <QuoteHighlightBar themeColor={config.themeColor}>{textNode}</QuoteHighlightBar>
+  return showQuoteBar && quoteColor ? (
+    <QuoteHighlightBar themeColor={quoteColor}>{textNode}</QuoteHighlightBar>
   ) : (
     textNode
   )
@@ -374,18 +375,10 @@ export function GraphicPage({
   const layout = getGraphicLayout(config)
   const { percent, aspectRatio } = layout
   const topBar = resolveTopBarParts(config, markdown)
-  const underlineKeys = useMemo(
-    () => new Set(config.underlineHighlightedCharKeys),
-    [config.underlineHighlightedCharKeys],
-  )
-  const quoteKeys = useMemo(
-    () => new Set(config.quoteHighlightedCharKeys),
-    [config.quoteHighlightedCharKeys],
-  )
-  const circleKeys = useMemo(
-    () => new Set(config.circleHighlightedCharKeys),
-    [config.circleHighlightedCharKeys],
-  )
+  const underlineColors = config.underlineHighlightColors
+  const quoteColors = config.quoteHighlightColors
+  const circleColors = config.circleHighlightColors
+  const accentColor = config.highlightPickerColors.underline
 
   const backgroundStyle: CSSProperties = resolvePageBackgroundStyle(config)
 
@@ -397,7 +390,7 @@ export function GraphicPage({
           ...backgroundStyle,
           width: displayWidth ? `${displayWidth}px` : '100%',
           aspectRatio: `${aspectRatio.width} / ${aspectRatio.height}`,
-          '--graphic-theme': config.themeColor,
+          '--graphic-theme': accentColor,
           fontFamily: config.fontFamily,
           containerType: 'inline-size',
         } as CSSProperties
@@ -485,9 +478,8 @@ export function GraphicPage({
                           <StyledHighlightedText
                             text={block.text}
                             block={block}
-                            themeColor={config.themeColor}
-                            underlineKeys={underlineKeys}
-                            circleKeys={circleKeys}
+                            underlineColors={underlineColors}
+                            circleColors={circleColors}
                             enableHighlight
                           />
                         </div>
@@ -500,7 +492,7 @@ export function GraphicPage({
               const block = unit.block
               return (
               <div key={block.id} style={blockStyle(block, config)}>
-                {renderBlockText(block, config, underlineKeys, quoteKeys, circleKeys)}
+                {renderBlockText(block, underlineColors, quoteColors, circleColors)}
               </div>
               )
             })

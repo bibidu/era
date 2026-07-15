@@ -1,4 +1,4 @@
-import { Check, Highlighter, Palette, ScanEye, Type } from 'lucide-react'
+import { Check, Highlighter, ScanEye, Type } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { FONT_OPTIONS } from '../../data/fonts'
@@ -23,6 +23,7 @@ import {
 } from './topBar'
 import type { GraphicTextConfig } from './types'
 import { GRAPHIC_ASPECT_RATIO_OPTIONS } from './types'
+import { countHighlightSelections } from './highlightColors'
 
 interface GraphicTextConfigSheetProps {
   isOpen: boolean
@@ -38,8 +39,6 @@ interface GraphicTextConfigSheetProps {
 }
 
 type ConfigSheetView = 'main' | 'highlight'
-
-const THEME_COLORS = ['#FACC15', '#FB923C', '#EF4444', '#22C55E', '#3B82F6', '#A855F7']
 
 const PAPER_COLORS = [
   '#FBF7ED',
@@ -189,14 +188,17 @@ export function GraphicTextConfigSheet({
   const sheetRef = useRef<HTMLDivElement | null>(null)
   const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
   const referenceInputRef = useRef<HTMLInputElement | null>(null)
+  const solidPickerRef = useRef<HTMLDivElement | null>(null)
   const [viewportHeight, setViewportHeight] = useState(getViewportHeight)
   const [sheetHeight, setSheetHeight] = useState(readCachedSheetHeight)
   const [showSafeArea, setShowSafeArea] = useState(false)
   const [sheetView, setSheetView] = useState<ConfigSheetView>('main')
+  const [solidColorPickerOpen, setSolidColorPickerOpen] = useState(false)
   const [highlightDraft, setHighlightDraft] = useState({
-    underline: config.underlineHighlightedCharKeys,
-    quote: config.quoteHighlightedCharKeys,
-    circle: config.circleHighlightedCharKeys,
+    underline: config.underlineHighlightColors,
+    quote: config.quoteHighlightColors,
+    circle: config.circleHighlightColors,
+    pickerColors: config.highlightPickerColors,
   })
 
   const previewAreaHeight = Math.max(0, viewportHeight - sheetHeight)
@@ -207,9 +209,10 @@ export function GraphicTextConfigSheet({
       sheetView === 'highlight'
         ? {
             ...config,
-            underlineHighlightedCharKeys: highlightDraft.underline,
-            quoteHighlightedCharKeys: highlightDraft.quote,
-            circleHighlightedCharKeys: highlightDraft.circle,
+            underlineHighlightColors: highlightDraft.underline,
+            quoteHighlightColors: highlightDraft.quote,
+            circleHighlightColors: highlightDraft.circle,
+            highlightPickerColors: highlightDraft.pickerColors,
           }
         : config,
     [config, sheetView, highlightDraft],
@@ -221,6 +224,19 @@ export function GraphicTextConfigSheet({
       previewAreaHeight,
     )
   }, [config, previewAreaHeight])
+
+  useEffect(() => {
+    if (!solidColorPickerOpen) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!solidPickerRef.current?.contains(event.target as Node)) {
+        setSolidColorPickerOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [solidColorPickerOpen])
 
   useEffect(() => {
     if (!isOpen) return
@@ -257,16 +273,18 @@ export function GraphicTextConfigSheet({
   useEffect(() => {
     if (sheetView === 'highlight') {
       setHighlightDraft({
-        underline: config.underlineHighlightedCharKeys,
-        quote: config.quoteHighlightedCharKeys,
-        circle: config.circleHighlightedCharKeys,
+        underline: config.underlineHighlightColors,
+        quote: config.quoteHighlightColors,
+        circle: config.circleHighlightColors,
+        pickerColors: config.highlightPickerColors,
       })
     }
   }, [
     sheetView,
-    config.underlineHighlightedCharKeys,
-    config.quoteHighlightedCharKeys,
-    config.circleHighlightedCharKeys,
+    config.underlineHighlightColors,
+    config.quoteHighlightColors,
+    config.circleHighlightColors,
+    config.highlightPickerColors,
   ])
 
   const handleResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -294,9 +312,10 @@ export function GraphicTextConfigSheet({
 
   const handleHighlightConfirm = () => {
     onUpdate({
-      underlineHighlightedCharKeys: highlightDraft.underline,
-      quoteHighlightedCharKeys: highlightDraft.quote,
-      circleHighlightedCharKeys: highlightDraft.circle,
+      underlineHighlightColors: highlightDraft.underline,
+      quoteHighlightColors: highlightDraft.quote,
+      circleHighlightColors: highlightDraft.circle,
+      highlightPickerColors: highlightDraft.pickerColors,
     })
     setSheetView('main')
   }
@@ -316,8 +335,6 @@ export function GraphicTextConfigSheet({
     ) : null
 
   if (!isOpen) return null
-
-  const isCustomThemeColor = !THEME_COLORS.includes(config.themeColor)
 
   const sheetContent = (
     <div
@@ -342,18 +359,21 @@ export function GraphicTextConfigSheet({
           <GraphicHighlightEditor
             markdown={markdown}
             config={config}
-            themeColor={config.themeColor}
-            underlineHighlightedCharKeys={highlightDraft.underline}
-            quoteHighlightedCharKeys={highlightDraft.quote}
-            circleHighlightedCharKeys={highlightDraft.circle}
-            onUnderlineChange={(keys) =>
-              setHighlightDraft((current) => ({ ...current, underline: keys }))
+            underlineHighlightColors={highlightDraft.underline}
+            quoteHighlightColors={highlightDraft.quote}
+            circleHighlightColors={highlightDraft.circle}
+            highlightPickerColors={highlightDraft.pickerColors}
+            onUnderlineChange={(colors) =>
+              setHighlightDraft((current) => ({ ...current, underline: colors }))
             }
-            onQuoteChange={(keys) =>
-              setHighlightDraft((current) => ({ ...current, quote: keys }))
+            onQuoteChange={(colors) =>
+              setHighlightDraft((current) => ({ ...current, quote: colors }))
             }
-            onCircleChange={(keys) =>
-              setHighlightDraft((current) => ({ ...current, circle: keys }))
+            onCircleChange={(colors) =>
+              setHighlightDraft((current) => ({ ...current, circle: colors }))
+            }
+            onPickerColorsChange={(pickerColors) =>
+              setHighlightDraft((current) => ({ ...current, pickerColors }))
             }
             onConfirm={handleHighlightConfirm}
             onBack={() => setSheetView('main')}
@@ -375,40 +395,6 @@ export function GraphicTextConfigSheet({
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
                       <div className="flex flex-col gap-4 pb-2">
                         <section>
-                          <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-                            <Palette size={16} />
-                            主题色
-                          </div>
-                          <div className="flex items-center gap-3 overflow-x-auto py-1">
-                            {THEME_COLORS.map((color) => (
-                              <button
-                                key={color}
-                                type="button"
-                                aria-label={`主题色 ${color}`}
-                                className={`size-9 shrink-0 rounded-full border-2 ${
-                                  config.themeColor === color ? 'border-black' : 'border-transparent'
-                                }`}
-                                style={{ backgroundColor: color }}
-                                onClick={() => onUpdate({ themeColor: color })}
-                              />
-                            ))}
-                            <label
-                              className={`theme-color-palette-btn relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border ${
-                                isCustomThemeColor ? 'border-2 border-black' : 'border-neutral-300'
-                              }`}
-                            >
-                              <input
-                                type="color"
-                                value={config.themeColor}
-                                onChange={(event) => onUpdate({ themeColor: event.target.value })}
-                                className="absolute inset-[-8px] size-14 cursor-pointer opacity-0"
-                                aria-label="自定义主题色"
-                              />
-                            </label>
-                          </div>
-                        </section>
-
-                        <section>
                           <button
                             type="button"
                             className="flex h-11 w-full items-center justify-between rounded-xl border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900"
@@ -420,9 +406,11 @@ export function GraphicTextConfigSheet({
                             </span>
                             <span className="text-xs text-neutral-500">
                               已选{' '}
-                              {config.underlineHighlightedCharKeys.length +
-                                config.quoteHighlightedCharKeys.length +
-                                config.circleHighlightedCharKeys.length}{' '}
+                              {countHighlightSelections(
+                                config.underlineHighlightColors,
+                                config.quoteHighlightColors,
+                                config.circleHighlightColors,
+                              )}{' '}
                               字
                             </span>
                           </button>
@@ -596,32 +584,40 @@ export function GraphicTextConfigSheet({
                               </TemplatePreviewSquare>
                             </button>
 
-                            <div className="flex shrink-0 flex-col items-start gap-1.5">
-                              <div className="component-scroll-row flex items-center gap-2 overflow-x-auto py-0.5">
-                                {PAPER_COLORS.map((color) => (
-                                  <button
-                                    key={color}
-                                    type="button"
-                                    aria-label={`纸张色 ${color}`}
-                                    className={`size-7 shrink-0 rounded-full border-2 ${
-                                      config.paperColor === color
-                                        ? 'border-black'
-                                        : 'border-transparent'
-                                    }`}
-                                    style={{ backgroundColor: color }}
-                                    onClick={() => {
-                                      onUpdate({
-                                        backgroundType: 'solid',
-                                        paperColor: color,
-                                      })
-                                    }}
-                                  />
-                                ))}
-                              </div>
+                            <div ref={solidPickerRef} className="relative shrink-0">
+                              {solidColorPickerOpen && (
+                                <div className="absolute bottom-[calc(100%+8px)] left-0 z-20 rounded-xl border border-neutral-200 bg-white p-2 shadow-lg">
+                                  <div className="component-scroll-row flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+                                    {PAPER_COLORS.map((color) => (
+                                      <button
+                                        key={color}
+                                        type="button"
+                                        aria-label={`纸张色 ${color}`}
+                                        className={`size-7 shrink-0 rounded-full border-2 ${
+                                          config.paperColor === color
+                                            ? 'border-black'
+                                            : 'border-transparent'
+                                        }`}
+                                        style={{ backgroundColor: color }}
+                                        onClick={() => {
+                                          onUpdate({
+                                            backgroundType: 'solid',
+                                            paperColor: color,
+                                          })
+                                          setSolidColorPickerOpen(false)
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                               <button
                                 type="button"
                                 className={templateOptionButtonClass(config.backgroundType === 'solid')}
-                                onClick={() => onUpdate({ backgroundType: 'solid' })}
+                                onClick={() => {
+                                  onUpdate({ backgroundType: 'solid' })
+                                  setSolidColorPickerOpen((current) => !current)
+                                }}
                               >
                                 <span>纯色纸张</span>
                                 <TemplatePreviewSquare compact>
@@ -636,10 +632,13 @@ export function GraphicTextConfigSheet({
 
                             <button
                               type="button"
-                              className={templateOptionButtonClass(config.showGrid)}
+                              aria-label="网格纸"
+                              aria-pressed={config.showGrid}
+                              className={`inline-flex shrink-0 rounded-xl p-0.5 ${
+                                config.showGrid ? 'border-2 border-black' : 'border border-neutral-300'
+                              }`}
                               onClick={() => onUpdate({ showGrid: !config.showGrid })}
                             >
-                              <span>网格纸</span>
                               <TemplatePreviewSquare compact className="graphic-grid-preview" />
                             </button>
                           </div>

@@ -29,6 +29,42 @@ export function stripHighlightMarkers(text: string) {
   return text.replace(/\[\[([^\]]+)\]\]/g, '$1').replace(/\*\*([^*]+)\*\*/g, '$1')
 }
 
+export interface CharColorSegment {
+  text: string
+  color: string | null
+}
+
+export function buildCharHighlightColorSegments(
+  text: string,
+  blockId: string,
+  colorMap: Readonly<Record<string, string>>,
+  charOffset = 0,
+): CharColorSegment[] {
+  const plain = stripHighlightMarkers(text)
+  const segments: CharColorSegment[] = []
+  let current = ''
+  let currentColor: string | null = colorMap[`${blockId}:${charOffset}`] ?? null
+
+  ;[...plain].forEach((char, index) => {
+    const color = colorMap[`${blockId}:${charOffset + index}`] ?? null
+    if (!segments.length && index === 0) {
+      current = char
+      currentColor = color
+      return
+    }
+    if (color === currentColor) {
+      current += char
+    } else {
+      if (current) segments.push({ text: current, color: currentColor })
+      current = char
+      currentColor = color
+    }
+  })
+
+  if (current) segments.push({ text: current, color: currentColor })
+  return segments.length ? segments : [{ text: plain, color: null }]
+}
+
 export function buildCharHighlightSegments(
   text: string,
   blockId: string,
