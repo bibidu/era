@@ -1,26 +1,12 @@
 import { Drawer, useOverlayState } from '@heroui/react'
 import { X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { GraphicConfigPreview } from './GraphicConfigPreview'
 import { GraphicHighlightEditor } from './GraphicHighlightEditor'
-import {
-  BODY_FONT_SIZE_OPTIONS,
-  BODY_LINE_HEIGHT_OPTIONS,
-  HEADING_FONT_SIZE_OPTIONS,
-  HEADING_MARGIN_OPTIONS,
-  TITLE_FONT_SIZE_OPTIONS,
-  TITLE_LINE_HEIGHT_OPTIONS,
-  TITLE_MARGIN_OPTIONS,
-} from './configSelectOptions'
 import { computeConfigPreviewLayout } from './graphicPreviewLayout'
 import { type GraphicConfigPanel } from './graphicConfigPanels'
 import { getGraphicLayout, paginateMarkdown } from './layout'
-import {
-  clampSheetHeight,
-  getViewportHeight,
-  readCachedSheetHeight,
-  writeCachedSheetHeight,
-} from './topBar'
+import { getViewportHeight } from './topBar'
 import type { GraphicTextConfig } from './types'
 
 interface GraphicTextConfigSheetProps {
@@ -31,52 +17,6 @@ interface GraphicTextConfigSheetProps {
   showSafeArea: boolean
   onOpenChange: (open: boolean) => void
   onUpdate: (updates: Partial<GraphicTextConfig>) => void
-}
-
-const selectClassName =
-  'h-9 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-neutral-50 px-2 text-sm outline-none focus:border-neutral-500'
-
-function nearestOption(value: number, options: readonly number[]) {
-  return options.reduce((closest, option) =>
-    Math.abs(option - value) < Math.abs(closest - value) ? option : closest,
-  )
-}
-
-interface ConfigSelectProps {
-  label: string
-  value: number
-  options: readonly number[]
-  onChange: (value: number) => void
-  format?: (value: number) => string
-  labelClassName?: string
-}
-
-function ConfigSelect({
-  label,
-  value,
-  options,
-  onChange,
-  format,
-  labelClassName = 'w-[4.6rem]',
-}: ConfigSelectProps) {
-  const displayValue = nearestOption(value, options)
-  return (
-    <label className="flex min-w-0 flex-1 items-center gap-2 text-sm">
-      <span className={`${labelClassName} shrink-0 text-neutral-600`}>{label}</span>
-      <select
-        value={displayValue}
-        onChange={(event) => onChange(Number(event.target.value))}
-        className={selectClassName}
-        aria-label={label}
-      >
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {format ? format(option) : option}
-          </option>
-        ))}
-      </select>
-    </label>
-  )
 }
 
 export function GraphicTextConfigSheet({
@@ -96,10 +36,9 @@ export function GraphicTextConfigSheet({
       else onOpenChange(true)
     },
   })
-  const sheetRef = useRef<HTMLDivElement | null>(null)
-  const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
+  const dialogRef = useRef<HTMLDivElement | null>(null)
   const [viewportHeight, setViewportHeight] = useState(getViewportHeight)
-  const [sheetHeight, setSheetHeight] = useState(readCachedSheetHeight)
+  const [sheetHeight, setSheetHeight] = useState(0)
   const [highlightDraft, setHighlightDraft] = useState({
     underline: config.underlineHighlightColors,
     quote: config.quoteHighlightColors,
@@ -138,18 +77,11 @@ export function GraphicTextConfigSheet({
   }, [isOpen, state])
 
   useEffect(() => {
-    if (!isOpen) {
-      return
-    }
+    if (!isOpen) return
 
-    const syncViewport = () => {
-      const nextViewport = getViewportHeight()
-      setViewportHeight(nextViewport)
-      setSheetHeight((current) => clampSheetHeight(current, nextViewport))
-    }
+    const syncViewport = () => setViewportHeight(getViewportHeight())
 
     syncViewport()
-    setSheetHeight(readCachedSheetHeight(getViewportHeight()))
     window.addEventListener('resize', syncViewport)
     window.visualViewport?.addEventListener('resize', syncViewport)
 
@@ -158,6 +90,26 @@ export function GraphicTextConfigSheet({
       window.visualViewport?.removeEventListener('resize', syncViewport)
     }
   }, [isOpen])
+
+  useLayoutEffect(() => {
+    if (!isOpen) {
+      setSheetHeight(0)
+      return
+    }
+
+    const dialog = dialogRef.current
+    if (!dialog) return
+
+    const updateHeight = () => {
+      setSheetHeight(dialog.getBoundingClientRect().height)
+    }
+
+    updateHeight()
+    const observer = new ResizeObserver(updateHeight)
+    observer.observe(dialog)
+
+    return () => observer.disconnect()
+  }, [isOpen, panel, highlightDraft, config.topText])
 
   useEffect(() => {
     if (panel !== 'highlight') return
@@ -174,29 +126,6 @@ export function GraphicTextConfigSheet({
     config.circleHighlightColors,
     config.highlightPickerColor,
   ])
-
-  const handleResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    resizeRef.current = { startY: event.clientY, startHeight: sheetHeight }
-    event.currentTarget.setPointerCapture(event.pointerId)
-  }
-
-  const handleResizeMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!resizeRef.current) return
-    const delta = resizeRef.current.startY - event.clientY
-    const nextViewport = getViewportHeight()
-    const nextHeight = clampSheetHeight(resizeRef.current.startHeight + delta, nextViewport)
-    setViewportHeight(nextViewport)
-    setSheetHeight(nextHeight)
-    writeCachedSheetHeight(nextHeight)
-  }
-
-  const handleResizeEnd = (event: React.PointerEvent<HTMLDivElement>) => {
-    resizeRef.current = null
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId)
-    }
-  }
 
   const handleClose = () => {
     if (panel === 'highlight') {
@@ -254,78 +183,6 @@ export function GraphicTextConfigSheet({
             onBack={handleClose}
           />
         )
-      case 'font-size':
-        return (
-          <div className="flex flex-col gap-2">
-            <ConfigSelect
-              label="标题"
-              labelClassName="w-9"
-              value={config.titleFontSize}
-              options={TITLE_FONT_SIZE_OPTIONS}
-              onChange={(value) => onUpdate({ titleFontSize: value })}
-              format={(value) => `${value}px`}
-            />
-            <ConfigSelect
-              label="二级"
-              labelClassName="w-9"
-              value={config.headingFontSize}
-              options={HEADING_FONT_SIZE_OPTIONS}
-              onChange={(value) => onUpdate({ headingFontSize: value })}
-              format={(value) => `${value}px`}
-            />
-            <ConfigSelect
-              label="正文"
-              labelClassName="w-9"
-              value={config.bodyFontSize}
-              options={BODY_FONT_SIZE_OPTIONS}
-              onChange={(value) => onUpdate({ bodyFontSize: value })}
-              format={(value) => `${value}px`}
-            />
-          </div>
-        )
-      case 'text-style':
-        return (
-          <div className="flex flex-col gap-2">
-            <ConfigSelect
-              label="标题行高"
-              value={config.titleLineHeight}
-              options={TITLE_LINE_HEIGHT_OPTIONS}
-              onChange={(value) => onUpdate({ titleLineHeight: value })}
-            />
-            <ConfigSelect
-              label="正文行高"
-              value={config.bodyLineHeight}
-              options={BODY_LINE_HEIGHT_OPTIONS}
-              onChange={(value) => onUpdate({ bodyLineHeight: value })}
-            />
-            <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-              <ConfigSelect
-                label="一级上间距"
-                value={config.titleMarginTop}
-                options={TITLE_MARGIN_OPTIONS}
-                onChange={(value) => onUpdate({ titleMarginTop: value })}
-              />
-              <ConfigSelect
-                label="一级下间距"
-                value={config.titleMarginBottom}
-                options={TITLE_MARGIN_OPTIONS}
-                onChange={(value) => onUpdate({ titleMarginBottom: value })}
-              />
-              <ConfigSelect
-                label="二级上间距"
-                value={config.headingMarginTop}
-                options={HEADING_MARGIN_OPTIONS}
-                onChange={(value) => onUpdate({ headingMarginTop: value })}
-              />
-              <ConfigSelect
-                label="二级下间距"
-                value={config.headingMarginBottom}
-                options={HEADING_MARGIN_OPTIONS}
-                onChange={(value) => onUpdate({ headingMarginBottom: value })}
-              />
-            </div>
-          </div>
-        )
       case 'top-text':
         return (
           <label className="flex items-center gap-2 text-sm">
@@ -342,32 +199,6 @@ export function GraphicTextConfigSheet({
         return null
     }
   })()
-
-  const sheetContent = (
-    <div ref={sheetRef} className="flex min-h-0 flex-1 flex-col">
-      <div
-        className="graphic-config-sheet-handle"
-        role="separator"
-        aria-orientation="horizontal"
-        aria-label="调节面板高度"
-        onPointerDown={handleResizeStart}
-        onPointerMove={handleResizeMove}
-        onPointerUp={handleResizeEnd}
-        onPointerCancel={handleResizeEnd}
-      >
-        <span className="graphic-config-sheet-handle-bar" />
-      </div>
-      <div className="flex min-h-0 flex-1 flex-col">
-        {panel === 'highlight' ? (
-          <div className="flex min-h-0 flex-1 flex-col">{panelBody}</div>
-        ) : (
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-3 pt-10">
-            <div className="flex flex-col gap-4 pb-2">{panelBody}</div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
 
   return (
     <Drawer state={state}>
@@ -395,10 +226,14 @@ export function GraphicTextConfigSheet({
           </div>
         )}
         <Drawer.Content placement="bottom">
-          <Drawer.Dialog
-            className="graphic-config-drawer-dialog component-library"
-            style={{ height: sheetHeight, maxHeight: sheetHeight }}
-          >
+          <div ref={dialogRef}>
+            <Drawer.Dialog
+              className={`graphic-config-drawer-dialog component-library ${
+                panel === 'highlight'
+                  ? 'graphic-config-drawer-dialog--highlight'
+                  : 'graphic-config-drawer-dialog--compact'
+              }`}
+            >
             <button
               type="button"
               aria-label="关闭"
@@ -407,8 +242,18 @@ export function GraphicTextConfigSheet({
             >
               <X size={18} />
             </button>
-            {sheetContent}
+            <div className="graphic-config-sheet-handle" aria-hidden>
+              <span className="graphic-config-sheet-handle-bar" />
+            </div>
+            <div className="graphic-config-sheet-body">
+              {panel === 'highlight' ? (
+                <div className="graphic-config-sheet-highlight">{panelBody}</div>
+              ) : (
+                <div className="graphic-config-sheet-compact">{panelBody}</div>
+              )}
+            </div>
           </Drawer.Dialog>
+          </div>
         </Drawer.Content>
       </Drawer.Backdrop>
     </Drawer>

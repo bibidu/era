@@ -4,25 +4,38 @@ import {
   Highlighter,
   LayoutTemplate,
   Ratio,
-  Rows3,
   ScanEye,
   TextCursorInput,
   Type,
 } from 'lucide-react'
 
-export type GraphicConfigPanel = 'font-size' | 'text-style' | 'highlight' | 'top-text'
+export type GraphicConfigPanel = 'highlight' | 'top-text'
 
 export type ToolbarStrip = 'font' | 'aspect' | 'template'
+
+export type FontSizeTarget = 'title' | 'heading' | 'body'
+
+export type FontSizeNav = null | 'menu' | FontSizeTarget
 
 export const GRAPHIC_SHEET_PANELS: {
   id: GraphicConfigPanel
   label: string
   icon: LucideIcon
 }[] = [
-  { id: 'font-size', label: '字体大小', icon: CaseSensitive },
-  { id: 'text-style', label: '文字样式', icon: Rows3 },
   { id: 'highlight', label: '高亮', icon: Highlighter },
   { id: 'top-text', label: '顶部', icon: TextCursorInput },
+]
+
+export const GRAPHIC_FONT_SIZE_MENU = {
+  id: 'font-size' as const,
+  label: '字体大小',
+  icon: CaseSensitive,
+}
+
+export const FONT_SIZE_TARGETS: { id: FontSizeTarget; label: string }[] = [
+  { id: 'title', label: '标题' },
+  { id: 'heading', label: '二级标题' },
+  { id: 'body', label: '正文' },
 ]
 
 export const GRAPHIC_TOOLBAR_STRIPS: {
