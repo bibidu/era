@@ -28,9 +28,13 @@ interface GraphicTextConfigSheetProps {
   isOpen: boolean
   config: GraphicTextConfig
   markdown: string
+  pageCount: number
+  saving: boolean
+  saveProgress: string
   onOpenChange: (open: boolean) => void
   onUpdate: (updates: Partial<GraphicTextConfig>) => void
   onBackgroundUpload: (file: File) => void
+  onSave: () => void
 }
 
 type ConfigSheetView = 'main' | 'highlight'
@@ -174,19 +178,21 @@ export function GraphicTextConfigSheet({
   isOpen,
   config,
   markdown,
+  pageCount,
+  saving,
+  saveProgress,
   onOpenChange,
   onUpdate,
   onBackgroundUpload,
+  onSave,
 }: GraphicTextConfigSheetProps) {
   const sheetRef = useRef<HTMLDivElement | null>(null)
   const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
   const referenceInputRef = useRef<HTMLInputElement | null>(null)
-  const solidPickerRef = useRef<HTMLDivElement | null>(null)
   const [viewportHeight, setViewportHeight] = useState(getViewportHeight)
   const [sheetHeight, setSheetHeight] = useState(readCachedSheetHeight)
   const [showSafeArea, setShowSafeArea] = useState(false)
   const [sheetView, setSheetView] = useState<ConfigSheetView>('main')
-  const [solidColorPickerOpen, setSolidColorPickerOpen] = useState(false)
   const [highlightDraft, setHighlightDraft] = useState({
     underline: config.underlineHighlightedCharKeys,
     quote: config.quoteHighlightedCharKeys,
@@ -215,19 +221,6 @@ export function GraphicTextConfigSheet({
       previewAreaHeight,
     )
   }, [config, previewAreaHeight])
-
-  useEffect(() => {
-    if (!solidColorPickerOpen) return
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (!solidPickerRef.current?.contains(event.target as Node)) {
-        setSolidColorPickerOpen(false)
-      }
-    }
-
-    document.addEventListener('pointerdown', handlePointerDown)
-    return () => document.removeEventListener('pointerdown', handlePointerDown)
-  }, [solidColorPickerOpen])
 
   useEffect(() => {
     if (!isOpen) return
@@ -528,7 +521,7 @@ export function GraphicTextConfigSheet({
                         </section>
 
                         <section>
-                          <div className="mb-2 flex items-center">
+                          <div className="flex items-center">
                             <p className="flex-1 text-center text-sm font-medium">图片比例</p>
                             <div className="h-4 w-px shrink-0 bg-neutral-200" aria-hidden />
                             <p className="flex-1 text-center text-sm font-medium">
@@ -539,7 +532,7 @@ export function GraphicTextConfigSheet({
                             </p>
                           </div>
                           <div className="flex items-stretch">
-                            <div className="flex min-w-0 flex-1 items-center justify-center py-1">
+                            <div className="flex min-w-0 flex-1 items-center justify-center">
                               <div className="component-scroll-row flex items-end gap-0.5 overflow-x-auto">
                                 {GRAPHIC_ASPECT_RATIO_OPTIONS.map((option) => (
                                   <AspectRatioOption
@@ -553,7 +546,7 @@ export function GraphicTextConfigSheet({
                               </div>
                             </div>
                             <div className="mx-3 w-px shrink-0 self-stretch bg-neutral-200" aria-hidden />
-                            <div className="flex min-w-0 flex-1 items-center justify-center py-1">
+                            <div className="flex min-w-0 flex-1 items-center justify-center">
                               <button
                                 type="button"
                                 className={`h-8 shrink-0 rounded-full border px-3 text-xs font-medium ${
@@ -603,11 +596,32 @@ export function GraphicTextConfigSheet({
                               </TemplatePreviewSquare>
                             </button>
 
-                            <div ref={solidPickerRef} className="relative">
+                            <div className="flex shrink-0 flex-col items-start gap-1.5">
+                              <div className="component-scroll-row flex items-center gap-2 overflow-x-auto py-0.5">
+                                {PAPER_COLORS.map((color) => (
+                                  <button
+                                    key={color}
+                                    type="button"
+                                    aria-label={`纸张色 ${color}`}
+                                    className={`size-7 shrink-0 rounded-full border-2 ${
+                                      config.paperColor === color
+                                        ? 'border-black'
+                                        : 'border-transparent'
+                                    }`}
+                                    style={{ backgroundColor: color }}
+                                    onClick={() => {
+                                      onUpdate({
+                                        backgroundType: 'solid',
+                                        paperColor: color,
+                                      })
+                                    }}
+                                  />
+                                ))}
+                              </div>
                               <button
                                 type="button"
                                 className={templateOptionButtonClass(config.backgroundType === 'solid')}
-                                onClick={() => setSolidColorPickerOpen((current) => !current)}
+                                onClick={() => onUpdate({ backgroundType: 'solid' })}
                               >
                                 <span>纯色纸张</span>
                                 <TemplatePreviewSquare compact>
@@ -618,32 +632,6 @@ export function GraphicTextConfigSheet({
                                   />
                                 </TemplatePreviewSquare>
                               </button>
-                              {solidColorPickerOpen && (
-                                <div className="absolute left-0 top-[calc(100%+8px)] z-20 w-[min(100vw-2rem,240px)] rounded-xl border border-neutral-200 bg-white p-3 shadow-lg">
-                                  <div className="flex flex-wrap gap-2">
-                                    {PAPER_COLORS.map((color) => (
-                                      <button
-                                        key={color}
-                                        type="button"
-                                        aria-label={`纸张色 ${color}`}
-                                        className={`size-9 rounded-full border-2 ${
-                                          config.paperColor === color
-                                            ? 'border-black'
-                                            : 'border-transparent'
-                                        }`}
-                                        style={{ backgroundColor: color }}
-                                        onClick={() => {
-                                          onUpdate({
-                                            backgroundType: 'solid',
-                                            paperColor: color,
-                                          })
-                                          setSolidColorPickerOpen(false)
-                                        }}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
                             </div>
 
                             <button
@@ -672,6 +660,20 @@ export function GraphicTextConfigSheet({
             </div>
           </>
         )}
+      </div>
+
+      <div className="shrink-0 border-t border-neutral-200 bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">
+        {saveProgress && (
+          <p className="mb-2 text-center text-xs text-neutral-500">{saveProgress}</p>
+        )}
+        <button
+          type="button"
+          disabled={saving || pageCount === 0}
+          className="h-12 w-full rounded-xl bg-black text-sm font-semibold text-white disabled:opacity-50"
+          onClick={onSave}
+        >
+          {saving ? saveProgress || '生成中...' : `保存 ${pageCount} 张到本地`}
+        </button>
       </div>
     </div>
   )

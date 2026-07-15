@@ -38,12 +38,12 @@ export function getViewportHeight() {
 export function computeDefaultSheetHeight(viewportHeight = getViewportHeight()) {
   return Math.max(
     300,
-    Math.min(Math.round(viewportHeight * 0.52), viewportHeight - 140),
+    Math.min(Math.round(viewportHeight * 0.46), viewportHeight - 200),
   )
 }
 
 export function clampSheetHeight(height: number, viewportHeight = getViewportHeight()) {
-  return Math.max(300, Math.min(height, viewportHeight - 140))
+  return Math.max(300, Math.min(height, viewportHeight - 200))
 }
 
 const SHEET_HEIGHT_STORAGE_KEY = 'era-graphic-config-sheet-height'

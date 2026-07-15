@@ -392,13 +392,6 @@ export function GraphicHighlightEditor({
 
   const hasContent = displayLines.some((line) => line.tokens.length > 0)
 
-  const hintText =
-    activeStyleTab === 'underline'
-      ? '点击文字设置下划线高亮，已选'
-      : activeStyleTab === 'quote'
-        ? '点击文字设置引用高亮（所在行左侧显示竖杠），已选'
-        : '点击文字设置线圈高亮（同行连续文字共用一个线圈），已选'
-
   const renderLine = (line: HighlightDisplayLine, lineIndex: number) => {
     if (line.isParagraphBreak) return null
     if (!line.tokens.length) return null
@@ -471,9 +464,6 @@ export function GraphicHighlightEditor({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-        <p className="mb-3 text-xs text-neutral-500">
-          {hintText} {activeKeys.length} 个字符
-        </p>
         {!hasContent ? (
           <p className="py-8 text-center text-sm text-neutral-400">暂无文字内容</p>
         ) : (
