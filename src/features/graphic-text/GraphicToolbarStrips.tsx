@@ -1,4 +1,3 @@
-import { useRef } from 'react'
 import { FONT_OPTIONS, type FontOption } from '../../data/fonts'
 import {
   BODY_FONT_SIZE_OPTIONS,
@@ -10,12 +9,8 @@ import {
   TITLE_MARGIN_OPTIONS,
 } from './configSelectOptions'
 import type { FontSizeTarget, TextAdjustField } from './graphicConfigPanels'
-import { PAPER_COLORS, TemplatePreviewSquare } from './graphicTemplateOptions'
-import { GradientPreviewArt } from './GradientPreviewArt'
-import { PaperPreviewArt } from './PaperPreviewArt'
-import { PixelPreviewArt } from './PixelPreviewArt'
 import { TextAdjustNumericControl } from './TextAdjustNumericControl'
-import { GRAPHIC_ASPECT_RATIO_OPTIONS, type GraphicAspectRatio, type GraphicPageOverlay, type GraphicTextConfig } from './types'
+import { GRAPHIC_ASPECT_RATIO_OPTIONS, type GraphicAspectRatio, type GraphicTextConfig } from './types'
 
 function StripShell({ children }: { children: React.ReactNode }) {
   return (
@@ -115,156 +110,6 @@ export function GraphicAspectStrip({ selected, onSelect }: GraphicAspectStripPro
           </button>
         )
       })}
-    </StripShell>
-  )
-}
-
-function selectPageOverlay(
-  current: GraphicPageOverlay,
-  next: Exclude<GraphicPageOverlay, 'none'>,
-): GraphicPageOverlay {
-  return current === next ? 'none' : next
-}
-
-interface GraphicTemplateStripProps {
-  config: GraphicTextConfig
-  onUpdate: (updates: Partial<GraphicTextConfig>) => void
-  onBackgroundUpload: (file: File) => void
-}
-
-export function GraphicTemplateStrip({
-  config,
-  onUpdate,
-  onBackgroundUpload,
-}: GraphicTemplateStripProps) {
-  const referenceInputRef = useRef<HTMLInputElement | null>(null)
-
-  return (
-    <StripShell>
-      <input
-        ref={referenceInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(event) => {
-          const file = event.target.files?.[0]
-          if (file) onBackgroundUpload(file)
-          event.target.value = ''
-        }}
-      />
-
-      <button
-        type="button"
-        aria-label="参考图"
-        className="graphic-toolbar-strip-template-btn"
-        onClick={() => {
-          onUpdate({ backgroundType: 'reference' })
-          referenceInputRef.current?.click()
-        }}
-      >
-        <TemplatePreviewSquare selected={config.backgroundType === 'reference'}>
-          {config.backgroundUrl ? (
-            <img src={config.backgroundUrl} alt="" className="size-full object-cover" />
-          ) : null}
-        </TemplatePreviewSquare>
-        <span>参考图</span>
-      </button>
-
-      <button
-        type="button"
-        aria-label="纯色纸张"
-        className="graphic-toolbar-strip-template-btn"
-        onClick={() => onUpdate({ backgroundType: 'solid' })}
-      >
-        <TemplatePreviewSquare selected={config.backgroundType === 'solid'}>
-          <span className="size-full" style={{ backgroundColor: config.paperColor }} aria-hidden />
-        </TemplatePreviewSquare>
-        <span>纯色</span>
-      </button>
-
-      {PAPER_COLORS.map((color) => (
-        <button
-          key={color}
-          type="button"
-          aria-label={`纸张色 ${color}`}
-          className={`graphic-toolbar-strip-color ${
-            config.backgroundType === 'solid' && config.paperColor === color
-              ? 'graphic-toolbar-strip-color--selected'
-              : ''
-          }`}
-          style={{ backgroundColor: color }}
-          onClick={() => onUpdate({ backgroundType: 'solid', paperColor: color })}
-        />
-      ))}
-
-      <button
-        type="button"
-        aria-label="方格块"
-        aria-pressed={config.pageOverlay === 'grid'}
-        className="graphic-toolbar-strip-template-btn"
-        onClick={() =>
-          onUpdate({
-            pageOverlay: selectPageOverlay(config.pageOverlay, 'grid'),
-          })
-        }
-      >
-        <TemplatePreviewSquare
-          className="graphic-grid-preview"
-          selected={config.pageOverlay === 'grid'}
-        />
-        <span>方格</span>
-      </button>
-
-      <button
-        type="button"
-        aria-label="像素边框"
-        aria-pressed={config.pageOverlay === 'pixel'}
-        className="graphic-toolbar-strip-template-btn"
-        onClick={() =>
-          onUpdate({
-            pageOverlay: selectPageOverlay(config.pageOverlay, 'pixel'),
-          })
-        }
-      >
-        <TemplatePreviewSquare selected={config.pageOverlay === 'pixel'}>
-          <PixelPreviewArt />
-        </TemplatePreviewSquare>
-        <span>像素</span>
-      </button>
-
-      <button
-        type="button"
-        aria-label="纸张纹理"
-        aria-pressed={config.pageOverlay === 'paper'}
-        className="graphic-toolbar-strip-template-btn"
-        onClick={() =>
-          onUpdate({
-            pageOverlay: selectPageOverlay(config.pageOverlay, 'paper'),
-          })
-        }
-      >
-        <TemplatePreviewSquare selected={config.pageOverlay === 'paper'}>
-          <PaperPreviewArt />
-        </TemplatePreviewSquare>
-        <span>纸张</span>
-      </button>
-
-      <button
-        type="button"
-        aria-label="柔和渐变"
-        aria-pressed={config.pageOverlay === 'gradient'}
-        className="graphic-toolbar-strip-template-btn"
-        onClick={() =>
-          onUpdate({
-            pageOverlay: selectPageOverlay(config.pageOverlay, 'gradient'),
-          })
-        }
-      >
-        <TemplatePreviewSquare selected={config.pageOverlay === 'gradient'}>
-          <GradientPreviewArt />
-        </TemplatePreviewSquare>
-        <span>渐变</span>
-      </button>
     </StripShell>
   )
 }

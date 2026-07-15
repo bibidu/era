@@ -21,6 +21,7 @@ import {
 import { drawPageGradientBackground } from './pageGradientOverlay'
 import { drawPagePaperOverlay } from './pagePaperOverlay'
 import { drawPagePixelOverlay } from './pagePixelOverlay'
+import { shouldDrawBaseBackground, shouldDrawPageOverlay } from './pageLayering'
 import { resolveTopBarParts } from './topBar'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -218,9 +219,7 @@ async function drawPage(
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas 不可用')
 
-  if (config.pageOverlay === 'gradient') {
-    drawPageGradientBackground(ctx, width, height)
-  } else {
+  if (shouldDrawBaseBackground(config)) {
     ctx.fillStyle = resolvePageBaseFillColor(config)
     ctx.fillRect(0, 0, width, height)
 
@@ -230,18 +229,26 @@ async function drawPage(
       ctx.fillStyle = 'rgba(255,255,255,.82)'
       ctx.fillRect(0, 0, width, height)
     }
+  } else if (config.pageOverlay === 'gradient') {
+    drawPageGradientBackground(ctx, width, height)
+  } else if (config.pageOverlay === 'pixel') {
+    drawPagePixelOverlay(ctx, width, height, false)
   }
 
-  if (config.pageOverlay === 'grid') {
+  if (shouldDrawPageOverlay(config) && config.pageOverlay === 'grid') {
     drawPageGridOverlay(ctx, width, height)
   }
 
-  if (config.pageOverlay === 'pixel') {
-    drawPagePixelOverlay(ctx, width, height)
+  if (shouldDrawPageOverlay(config) && config.pageOverlay === 'pixel' && config.overlayStacked) {
+    drawPagePixelOverlay(ctx, width, height, true)
   }
 
-  if (config.pageOverlay === 'paper') {
+  if (shouldDrawPageOverlay(config) && config.pageOverlay === 'paper') {
     drawPagePaperOverlay(ctx, width, height)
+  }
+
+  if (shouldDrawPageOverlay(config) && config.pageOverlay === 'gradient' && config.overlayStacked) {
+    drawPageGradientBackground(ctx, width, height)
   }
 
   const edgeX = safeX

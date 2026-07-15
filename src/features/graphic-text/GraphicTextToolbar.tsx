@@ -10,15 +10,20 @@ import {
   type FontSizeNav,
   type FontSizeTarget,
   type GraphicConfigPanel,
+  type TemplateNav,
   type TextAdjustField,
   type ToolbarStrip,
 } from './graphicConfigPanels'
+import { TemplatePreviewSquare } from './graphicTemplateOptions'
+import type { GraphicTextConfig } from './types'
 
 interface GraphicTextToolbarProps {
   activePanel: GraphicConfigPanel | null
   activeStrip: ToolbarStrip | null
   fontSizeNav: FontSizeNav
   textAdjustField: TextAdjustField | null
+  templateNav: TemplateNav
+  config: GraphicTextConfig
   editorOpen: boolean
   safeAreaOpen: boolean
   saveDisabled: boolean
@@ -29,6 +34,10 @@ interface GraphicTextToolbarProps {
   onTextAdjustBack: () => void
   onSelectTextAdjustTarget: (target: FontSizeTarget) => void
   onSelectTextAdjustField: (field: TextAdjustField) => void
+  onTemplateBack: () => void
+  onPickReferenceImage: () => void
+  onSelectTemplateSolid: () => void
+  onSelectTemplateTexture: () => void
   onToggleSafeArea: () => void
   onSave: () => void
 }
@@ -42,6 +51,8 @@ export function GraphicTextToolbar({
   activeStrip,
   fontSizeNav,
   textAdjustField,
+  templateNav,
+  config,
   editorOpen,
   safeAreaOpen,
   saveDisabled,
@@ -52,15 +63,21 @@ export function GraphicTextToolbar({
   onTextAdjustBack,
   onSelectTextAdjustTarget,
   onSelectTextAdjustField,
+  onTemplateBack,
+  onPickReferenceImage,
+  onSelectTemplateSolid,
+  onSelectTemplateTexture,
   onToggleSafeArea,
   onSave,
 }: GraphicTextToolbarProps) {
   const inTextAdjustMode = fontSizeNav !== null
+  const inTemplateMode = activeStrip === 'template'
   const TextAdjustIcon = GRAPHIC_TEXT_ADJUST_MENU.icon
   const selectedTarget = isTextAdjustTarget(fontSizeNav) ? fontSizeNav : null
   const selectedTargetItem = FONT_SIZE_TARGETS.find((item) => item.id === selectedTarget)
   const TopTextIcon = GRAPHIC_TOP_TEXT_PANEL.icon
   const HighlightIcon = GRAPHIC_HIGHLIGHT_PANEL.icon
+  const TemplateIcon = GRAPHIC_TOOLBAR_STRIPS.find((item) => item.id === 'template')?.icon
 
   return (
     <div className="graphic-text-toolbar-wrap shrink-0 px-3 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2">
@@ -134,6 +151,78 @@ export function GraphicTextToolbar({
                   })}
                 </>
               )}
+            </div>
+          </div>
+        ) : inTemplateMode ? (
+          <div className="graphic-text-toolbar-template flex min-w-0 flex-1 items-center">
+            <button
+              type="button"
+              aria-label="返回"
+              className="graphic-text-toolbar-back graphic-text-toolbar-back--pinned"
+              onClick={onTemplateBack}
+            >
+              <ArrowLeft size={20} strokeWidth={1.75} />
+            </button>
+
+            <div className="graphic-text-toolbar-scroll component-scroll-row flex min-w-0 flex-1 items-stretch gap-1 overflow-x-auto">
+              {TemplateIcon && (
+                <span className="graphic-text-toolbar-item graphic-text-toolbar-item--label">
+                  <TemplateIcon size={22} strokeWidth={1.5} />
+                  <span>模板</span>
+                </span>
+              )}
+
+              <span className="graphic-text-toolbar-divider graphic-text-toolbar-divider--centered" aria-hidden />
+
+              <button
+                type="button"
+                aria-label="参考图"
+                aria-pressed={config.backgroundType === 'reference'}
+                className={`graphic-text-toolbar-item ${config.backgroundType === 'reference' ? 'graphic-text-toolbar-item--active' : ''}`}
+                onClick={onPickReferenceImage}
+              >
+                <TemplatePreviewSquare selected={config.backgroundType === 'reference'}>
+                  {config.backgroundUrl ? (
+                    <img src={config.backgroundUrl} alt="" className="size-full object-cover" />
+                  ) : null}
+                </TemplatePreviewSquare>
+                <span>参考图</span>
+              </button>
+
+              <button
+                type="button"
+                aria-label="纯色"
+                aria-pressed={templateNav === 'solid'}
+                className={`graphic-text-toolbar-item ${templateNav === 'solid' ? 'graphic-text-toolbar-item--active' : ''}`}
+                onClick={onSelectTemplateSolid}
+              >
+                <TemplatePreviewSquare selected={config.backgroundType === 'solid'}>
+                  <span
+                    className="size-full"
+                    style={{ backgroundColor: config.paperColor }}
+                    aria-hidden
+                  />
+                </TemplatePreviewSquare>
+                <span>纯色</span>
+              </button>
+
+              <button
+                type="button"
+                aria-label="特殊质感"
+                aria-pressed={templateNav === 'texture'}
+                className={`graphic-text-toolbar-item ${templateNav === 'texture' ? 'graphic-text-toolbar-item--active' : ''}`}
+                onClick={onSelectTemplateTexture}
+              >
+                <TemplatePreviewSquare
+                  selected={
+                    templateNav === 'texture' ||
+                    (config.pageOverlay !== 'none' && config.pageOverlay !== 'grid')
+                  }
+                >
+                  <span className="size-full bg-neutral-100" aria-hidden />
+                </TemplatePreviewSquare>
+                <span>特殊质感</span>
+              </button>
             </div>
           </div>
         ) : (

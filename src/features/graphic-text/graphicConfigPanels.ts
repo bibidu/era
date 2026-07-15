@@ -16,6 +16,8 @@ export type GraphicConfigPanel = 'highlight'
 
 export type ToolbarStrip = 'font' | 'aspect' | 'template' | 'top-text'
 
+export type TemplateNav = null | 'solid' | 'texture'
+
 export type FontSizeTarget = 'title' | 'heading' | 'body'
 
 export type TextAdjustField = 'fontSize' | 'lineHeight' | 'marginTop' | 'marginBottom'

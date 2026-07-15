@@ -10,14 +10,18 @@ import { GraphicTextToolbar } from './GraphicTextToolbar'
 import {
   GraphicAspectStrip,
   GraphicFontStrip,
-  GraphicTemplateStrip,
   GraphicTextAdjustFieldStrip,
   GraphicTopTextStrip,
 } from './GraphicToolbarStrips'
+import {
+  GraphicTemplateSolidStrip,
+  GraphicTemplateTextureStrip,
+} from './GraphicTemplateStrips'
 import type {
   FontSizeNav,
   FontSizeTarget,
   GraphicConfigPanel,
+  TemplateNav,
   TextAdjustField,
   ToolbarStrip,
 } from './graphicConfigPanels'
@@ -49,6 +53,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   }))
   const [configPanel, setConfigPanel] = useState<GraphicConfigPanel | null>(null)
   const [toolbarStrip, setToolbarStrip] = useState<ToolbarStrip | null>(null)
+  const [templateNav, setTemplateNav] = useState<TemplateNav>(null)
   const [fontSizeNav, setFontSizeNav] = useState<FontSizeNav>(null)
   const [textAdjustField, setTextAdjustField] = useState<TextAdjustField | null>(null)
   const [showSafeArea, setShowSafeArea] = useState(false)
@@ -56,6 +61,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   const [editorOpen, setEditorOpen] = useState(false)
   const [pasteError, setPasteError] = useState('')
   const pagerRef = useRef<HTMLDivElement>(null)
+  const templateRefInputRef = useRef<HTMLInputElement>(null)
   const configRef = useRef(config)
   configRef.current = config
   const [pagerSize, setPagerSize] = useState({ width: 0, height: 0 })
@@ -143,6 +149,10 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     setTextAdjustField(null)
   }
 
+  const resetTemplateNav = () => {
+    setTemplateNav(null)
+  }
+
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText()
@@ -176,12 +186,25 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     setEditorOpen(false)
     setConfigPanel(null)
     resetTextAdjust()
+    if (strip === 'template') {
+      setToolbarStrip((current) => {
+        if (current === 'template') {
+          resetTemplateNav()
+          return null
+        }
+        resetTemplateNav()
+        return 'template'
+      })
+      return
+    }
+    resetTemplateNav()
     setToolbarStrip((current) => (current === strip ? null : strip))
   }
 
   const handleSelectPanel = (panel: GraphicConfigPanel) => {
     setEditorOpen(false)
     setToolbarStrip(null)
+    resetTemplateNav()
     resetTextAdjust()
     setConfigPanel((current) => (current === panel ? null : panel))
   }
@@ -190,6 +213,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     setEditorOpen(false)
     setConfigPanel(null)
     setToolbarStrip(null)
+    resetTemplateNav()
     setTextAdjustField(null)
     setFontSizeNav((current) => {
       if (current === null) return 'menu'
@@ -210,6 +234,28 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     resetTextAdjust()
   }
 
+  const handleTemplateBack = () => {
+    if (templateNav) {
+      setTemplateNav(null)
+      return
+    }
+    setToolbarStrip(null)
+  }
+
+  const handlePickReferenceImage = () => {
+    setConfig((current) => ({ ...current, backgroundType: 'reference' }))
+    templateRefInputRef.current?.click()
+  }
+
+  const handleSelectTemplateSolid = () => {
+    setConfig((current) => ({ ...current, backgroundType: 'solid' }))
+    setTemplateNav((current) => (current === 'solid' ? null : 'solid'))
+  }
+
+  const handleSelectTemplateTexture = () => {
+    setTemplateNav((current) => (current === 'texture' ? null : 'texture'))
+  }
+
   const handleSelectTextAdjustTarget = (target: FontSizeTarget) => {
     setTextAdjustField(null)
     setFontSizeNav((current) => (current === target ? 'menu' : target))
@@ -222,6 +268,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   const handleEdit = () => {
     setConfigPanel(null)
     setToolbarStrip(null)
+    resetTemplateNav()
     resetTextAdjust()
     setEditorOpen((current) => !current)
   }
@@ -229,6 +276,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   const handleToggleSafeArea = () => {
     setConfigPanel(null)
     setToolbarStrip(null)
+    resetTemplateNav()
     resetTextAdjust()
     setShowSafeArea((current) => !current)
   }
@@ -247,6 +295,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   const handleSave = () => {
     setConfigPanel(null)
     setToolbarStrip(null)
+    resetTemplateNav()
     resetTextAdjust()
     setEditorOpen(false)
     setSaveSheetOpen(true)
@@ -279,43 +328,62 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
       </div>
 
       {configPanel && (
-        <GraphicTextConfigSheet
-          isOpen={configPanel !== null}
-          panel={configPanel}
-          config={config}
-          markdown={markdown}
-          sheetHeight={sheetHeight}
-          highlightDraft={highlightPreview}
-          onOpenChange={(open) => {
-            if (!open) setConfigPanel(null)
-          }}
-          onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
-          onHeightChange={setSheetHeight}
-          onHighlightDraftChange={setHighlightPreview}
-        />
+        <div className="graphic-config-sheet-layer relative z-50 shrink-0">
+          <GraphicTextConfigSheet
+            isOpen={configPanel !== null}
+            panel={configPanel}
+            config={config}
+            markdown={markdown}
+            sheetHeight={sheetHeight}
+            highlightDraft={highlightPreview}
+            onOpenChange={(open) => {
+              if (!open) setConfigPanel(null)
+            }}
+            onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
+            onHeightChange={setSheetHeight}
+            onHighlightDraftChange={setHighlightPreview}
+          />
+        </div>
       )}
 
       <div className="relative z-20 shrink-0">
-        {toolbarStrip === 'font' && (
+        <input
+          ref={templateRefInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(event) => {
+            const file = event.target.files?.[0]
+            if (file) handleBackgroundUpload(file)
+            event.target.value = ''
+          }}
+        />
+
+        {!configPanel && toolbarStrip === 'font' && (
           <GraphicFontStrip selectedFontId={config.fontId} onSelect={handleFontSelect} />
         )}
-        {toolbarStrip === 'aspect' && (
+        {!configPanel && toolbarStrip === 'aspect' && (
           <GraphicAspectStrip selected={config.aspectRatio} onSelect={handleAspectSelect} />
         )}
-        {toolbarStrip === 'template' && (
-          <GraphicTemplateStrip
+        {!configPanel && toolbarStrip === 'template' && templateNav === 'solid' && (
+          <GraphicTemplateSolidStrip
             config={config}
             onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
-            onBackgroundUpload={handleBackgroundUpload}
           />
         )}
-        {toolbarStrip === 'top-text' && (
+        {!configPanel && toolbarStrip === 'template' && templateNav === 'texture' && (
+          <GraphicTemplateTextureStrip
+            config={config}
+            onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
+          />
+        )}
+        {!configPanel && toolbarStrip === 'top-text' && (
           <GraphicTopTextStrip
             value={config.topText}
             onChange={(topText) => setConfig((current) => ({ ...current, topText }))}
           />
         )}
-        {showTextAdjustStrip && (
+        {!configPanel && showTextAdjustStrip && (
           <GraphicTextAdjustFieldStrip
             target={fontSizeNav}
             field={textAdjustField}
@@ -329,6 +397,8 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           activeStrip={toolbarStrip}
           fontSizeNav={fontSizeNav}
           textAdjustField={textAdjustField}
+          templateNav={templateNav}
+          config={config}
           editorOpen={editorOpen}
           safeAreaOpen={showSafeArea}
           saveDisabled={pages.length === 0}
@@ -339,6 +409,10 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           onTextAdjustBack={handleTextAdjustBack}
           onSelectTextAdjustTarget={handleSelectTextAdjustTarget}
           onSelectTextAdjustField={handleSelectTextAdjustField}
+          onTemplateBack={handleTemplateBack}
+          onPickReferenceImage={handlePickReferenceImage}
+          onSelectTemplateSolid={handleSelectTemplateSolid}
+          onSelectTemplateTexture={handleSelectTemplateTexture}
           onToggleSafeArea={handleToggleSafeArea}
           onSave={handleSave}
         />
