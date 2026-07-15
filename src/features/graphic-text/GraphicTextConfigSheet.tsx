@@ -1,5 +1,5 @@
-import { Check, Highlighter, ImagePlus, Palette, ScanEye, Type } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Check, Highlighter, Palette, ScanEye, Type } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { GraphicConfigPreview } from './GraphicConfigPreview'
@@ -21,7 +21,7 @@ import {
   readCachedSheetHeight,
   writeCachedSheetHeight,
 } from './topBar'
-import type { GraphicAspectRatio, GraphicTemplate, GraphicTextConfig } from './types'
+import type { GraphicAspectRatio, GraphicTextConfig } from './types'
 import { GRAPHIC_ASPECT_RATIO_OPTIONS } from './types'
 
 interface GraphicTextConfigSheetProps {
@@ -35,12 +35,6 @@ interface GraphicTextConfigSheetProps {
 }
 
 type ConfigSheetView = 'main' | 'highlight'
-
-const TEMPLATE_OPTIONS: { id: GraphicTemplate; label: string }[] = [
-  { id: 'reference', label: '参考图' },
-  { id: 'solid', label: '纯色纸张' },
-  { id: 'grid', label: '网格纸' },
-]
 
 const THEME_COLORS = ['#FACC15', '#FB923C', '#EF4444', '#22C55E', '#3B82F6', '#A855F7']
 
@@ -59,6 +53,22 @@ const ENABLED_ASPECT_RATIOS = new Set<GraphicAspectRatio>(['9:16', '3:4'])
 
 const selectClassName =
   'h-9 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-neutral-50 px-2 text-sm outline-none focus:border-neutral-500'
+
+function TemplatePreviewSquare({
+  children,
+  className = '',
+}: {
+  children?: ReactNode
+  className?: string
+}) {
+  return (
+    <div
+      className={`flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50 ${className}`}
+    >
+      {children}
+    </div>
+  )
+}
 
 function optionButtonClass(selected: boolean, heightClass = 'h-10') {
   return `${heightClass} rounded-xl border text-sm ${
@@ -185,10 +195,13 @@ export function GraphicTextConfigSheet({
 }: GraphicTextConfigSheetProps) {
   const sheetRef = useRef<HTMLDivElement | null>(null)
   const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
+  const referenceInputRef = useRef<HTMLInputElement | null>(null)
+  const solidPickerRef = useRef<HTMLDivElement | null>(null)
   const [viewportHeight, setViewportHeight] = useState(getViewportHeight)
   const [sheetHeight, setSheetHeight] = useState(readCachedSheetHeight)
   const [showSafeArea, setShowSafeArea] = useState(false)
   const [sheetView, setSheetView] = useState<ConfigSheetView>('main')
+  const [solidColorPickerOpen, setSolidColorPickerOpen] = useState(false)
   const [highlightDraft, setHighlightDraft] = useState({
     underline: config.underlineHighlightedCharKeys,
     quote: config.quoteHighlightedCharKeys,
@@ -217,6 +230,19 @@ export function GraphicTextConfigSheet({
       previewAreaHeight,
     )
   }, [config, previewAreaHeight])
+
+  useEffect(() => {
+    if (!solidColorPickerOpen) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!solidPickerRef.current?.contains(event.target as Node)) {
+        setSolidColorPickerOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [solidColorPickerOpen])
 
   useEffect(() => {
     if (!isOpen) return
@@ -558,72 +584,99 @@ export function GraphicTextConfigSheet({
 
                         <section>
                           <p className="mb-2 text-sm font-medium">页面模板</p>
-                          <div className="grid grid-cols-3 gap-2">
-                            {TEMPLATE_OPTIONS.map((option) => (
-                              <button
-                                key={option.id}
-                                type="button"
-                                className={optionButtonClass(config.template === option.id, 'h-11')}
-                                onClick={() => onUpdate({ template: option.id })}
-                              >
-                                {option.label}
-                              </button>
-                            ))}
+
+                          <div className="mb-3">
+                            <p className="mb-2 text-xs font-medium text-neutral-500">背景</p>
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-3">
+                                <input
+                                  ref={referenceInputRef}
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(event) => {
+                                    const file = event.target.files?.[0]
+                                    if (file) onBackgroundUpload(file)
+                                    event.target.value = ''
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  className={`${optionButtonClass(config.backgroundType === 'reference', 'h-11')} min-w-0 flex-1 px-3`}
+                                  onClick={() => {
+                                    onUpdate({ backgroundType: 'reference' })
+                                    referenceInputRef.current?.click()
+                                  }}
+                                >
+                                  参考图
+                                </button>
+                                <TemplatePreviewSquare>
+                                  {config.backgroundUrl ? (
+                                    <img
+                                      src={config.backgroundUrl}
+                                      alt="参考图预览"
+                                      className="size-full object-cover"
+                                    />
+                                  ) : null}
+                                </TemplatePreviewSquare>
+                              </div>
+
+                              <div ref={solidPickerRef} className="relative flex items-center gap-3">
+                                <button
+                                  type="button"
+                                  className={`${optionButtonClass(config.backgroundType === 'solid', 'h-11')} min-w-0 flex-1 px-3`}
+                                  onClick={() => setSolidColorPickerOpen((current) => !current)}
+                                >
+                                  纯色纸张
+                                </button>
+                                <TemplatePreviewSquare>
+                                  <span
+                                    className="size-full"
+                                    style={{ backgroundColor: config.paperColor }}
+                                    aria-hidden
+                                  />
+                                </TemplatePreviewSquare>
+                                {solidColorPickerOpen && (
+                                  <div className="absolute left-0 top-[calc(100%+8px)] z-20 w-[min(100%,240px)] rounded-xl border border-neutral-200 bg-white p-3 shadow-lg">
+                                    <div className="flex flex-wrap gap-2">
+                                      {PAPER_COLORS.map((color) => (
+                                        <button
+                                          key={color}
+                                          type="button"
+                                          aria-label={`纸张色 ${color}`}
+                                          className={`size-9 rounded-full border-2 ${
+                                            config.paperColor === color
+                                              ? 'border-black'
+                                              : 'border-transparent'
+                                          }`}
+                                          style={{ backgroundColor: color }}
+                                          onClick={() => {
+                                            onUpdate({
+                                              backgroundType: 'solid',
+                                              paperColor: color,
+                                            })
+                                            setSolidColorPickerOpen(false)
+                                          }}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className="mb-2 text-xs font-medium text-neutral-500">参数</p>
+                            <button
+                              type="button"
+                              className={`${optionButtonClass(config.showGrid, 'h-11')} w-full px-3`}
+                              onClick={() => onUpdate({ showGrid: !config.showGrid })}
+                            >
+                              网格纸
+                            </button>
                           </div>
                         </section>
-
-                        {config.template === 'solid' && (
-                          <section>
-                            <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-                              <Palette size={16} />
-                              纸张主题色
-                            </div>
-                            <div className="flex items-center gap-3 overflow-x-auto py-1">
-                              {PAPER_COLORS.map((color) => (
-                                <button
-                                  key={color}
-                                  type="button"
-                                  aria-label={`纸张色 ${color}`}
-                                  className={`size-9 shrink-0 rounded-full border-2 ${
-                                    config.paperColor === color ? 'border-black' : 'border-transparent'
-                                  }`}
-                                  style={{ backgroundColor: color }}
-                                  onClick={() => onUpdate({ paperColor: color })}
-                                />
-                              ))}
-                            </div>
-                          </section>
-                        )}
-
-                        {config.template === 'reference' && (
-                          <section>
-                            <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-                              <ImagePlus size={16} />
-                              参考图背景
-                            </div>
-                            <label className="flex min-h-24 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed border-neutral-300 bg-neutral-50">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(event) => {
-                                  const file = event.target.files?.[0]
-                                  if (file) onBackgroundUpload(file)
-                                  event.target.value = ''
-                                }}
-                              />
-                              {config.backgroundUrl ? (
-                                <img
-                                  src={config.backgroundUrl}
-                                  alt="参考图"
-                                  className="h-32 w-full object-cover"
-                                />
-                              ) : (
-                                <span className="text-sm text-neutral-500">上传参考图</span>
-                              )}
-                            </label>
-                          </section>
-                        )}
 
                         <section>
                           <label className="flex items-center gap-2 text-sm">

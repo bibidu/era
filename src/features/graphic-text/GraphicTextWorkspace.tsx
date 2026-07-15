@@ -39,7 +39,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   useEffect(() => {
     if (!defaultBackgroundUrl) return
     setConfig((current) => {
-      if (current.template !== 'reference') return current
+      if (current.backgroundType !== 'reference') return current
       return { ...current, backgroundUrl: defaultBackgroundUrl }
     })
   }, [defaultBackgroundUrl])
@@ -99,7 +99,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
       }
       setConfig((current) => ({
         ...current,
-        template: 'reference',
+        backgroundType: 'reference',
         backgroundUrl: result,
       }))
     }

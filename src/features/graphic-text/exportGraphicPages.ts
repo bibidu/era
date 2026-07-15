@@ -13,6 +13,10 @@ import { getFontById } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
 import { buildCharHighlightSegments, blockHasHighlightedChar, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
 import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
+import {
+  drawPageGridOverlay,
+  resolvePageBaseFillColor,
+} from './pageBackground'
 import { resolveTopBarParts } from './topBar'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -210,29 +214,18 @@ async function drawPage(
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas 不可用')
 
-  ctx.fillStyle = config.template === 'solid' ? config.paperColor : '#FBF7ED'
+  ctx.fillStyle = resolvePageBaseFillColor(config)
   ctx.fillRect(0, 0, width, height)
 
-  if (config.template === 'reference' && config.backgroundUrl) {
+  if (config.backgroundType === 'reference' && config.backgroundUrl) {
     const image = await loadImage(config.backgroundUrl)
     drawCoverImage(ctx, image, width, height)
     ctx.fillStyle = 'rgba(255,255,255,.82)'
     ctx.fillRect(0, 0, width, height)
-  } else if (config.template === 'grid') {
-    ctx.strokeStyle = 'rgba(23,23,23,.055)'
-    ctx.lineWidth = 1
-    for (let x = 0; x <= width; x += 35) {
-      ctx.beginPath()
-      ctx.moveTo(x, 0)
-      ctx.lineTo(x, height)
-      ctx.stroke()
-    }
-    for (let y = 0; y <= height; y += 35) {
-      ctx.beginPath()
-      ctx.moveTo(0, y)
-      ctx.lineTo(width, y)
-      ctx.stroke()
-    }
+  }
+
+  if (config.showGrid) {
+    drawPageGridOverlay(ctx, width, height)
   }
 
   const edgeX = safeX

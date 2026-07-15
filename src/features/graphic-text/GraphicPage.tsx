@@ -15,6 +15,7 @@ import {
   HAND_DRAWN_CIRCLE_VIEWBOX,
 } from './circleHighlight'
 import { buildCharHighlightSegments, blockHasHighlightedChar, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
+import { resolvePageBackgroundStyle } from './pageBackground'
 import { resolveTopBarParts } from './topBar'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 
@@ -386,23 +387,7 @@ export function GraphicPage({
     [config.circleHighlightedCharKeys],
   )
 
-  const backgroundStyle: CSSProperties =
-    config.template === 'reference' && config.backgroundUrl
-      ? {
-          backgroundImage: `linear-gradient(rgba(255,255,255,.82), rgba(255,255,255,.82)), url("${config.backgroundUrl}")`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }
-      : config.template === 'solid'
-        ? { backgroundColor: config.paperColor }
-        : config.template === 'grid'
-        ? {
-            backgroundColor: '#FBF7ED',
-            backgroundImage:
-              'linear-gradient(rgba(23,23,23,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(23,23,23,.055) 1px, transparent 1px)',
-            backgroundSize: '3.2cqw 3.2cqw',
-          }
-        : { backgroundColor: '#FBF7ED' }
+  const backgroundStyle: CSSProperties = resolvePageBackgroundStyle(config)
 
   return (
     <article
