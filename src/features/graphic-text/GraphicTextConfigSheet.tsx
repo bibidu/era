@@ -1,5 +1,5 @@
 import { X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { GraphicHighlightEditor } from './GraphicHighlightEditor'
 import { type GraphicConfigPanel } from './graphicConfigPanels'
 import {
@@ -10,13 +10,24 @@ import {
 } from './topBar'
 import type { GraphicTextConfig } from './types'
 
+export interface HighlightPreviewDraft {
+  underlineHighlightColors: GraphicTextConfig['underlineHighlightColors']
+  quoteHighlightColors: GraphicTextConfig['quoteHighlightColors']
+  circleHighlightColors: GraphicTextConfig['circleHighlightColors']
+  highlightPickerColor: GraphicTextConfig['highlightPickerColor']
+}
+
 interface GraphicTextConfigSheetProps {
   isOpen: boolean
   panel: GraphicConfigPanel
   config: GraphicTextConfig
   markdown: string
+  sheetHeight: number
+  highlightDraft: HighlightPreviewDraft
   onOpenChange: (open: boolean) => void
   onUpdate: (updates: Partial<GraphicTextConfig>) => void
+  onHeightChange: (height: number) => void
+  onHighlightDraftChange: (draft: HighlightPreviewDraft) => void
 }
 
 function applySheetHeight(panelEl: HTMLElement | null, sheetHeight: number) {
@@ -25,45 +36,45 @@ function applySheetHeight(panelEl: HTMLElement | null, sheetHeight: number) {
   panelEl.style.maxHeight = `${sheetHeight}px`
 }
 
+export function createHighlightPreviewDraft(
+  config: GraphicTextConfig,
+): HighlightPreviewDraft {
+  return {
+    underlineHighlightColors: config.underlineHighlightColors,
+    quoteHighlightColors: config.quoteHighlightColors,
+    circleHighlightColors: config.circleHighlightColors,
+    highlightPickerColor: config.highlightPickerColor,
+  }
+}
+
 export function GraphicTextConfigSheet({
   isOpen,
   panel,
   config,
   markdown,
+  sheetHeight,
+  highlightDraft,
   onOpenChange,
   onUpdate,
+  onHeightChange,
+  onHighlightDraftChange,
 }: GraphicTextConfigSheetProps) {
   const panelRef = useRef<HTMLDivElement | null>(null)
   const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
   const isDraggingRef = useRef(false)
   const rafRef = useRef<number | null>(null)
-  const pendingHeightRef = useRef(0)
-  const [sheetHeight, setSheetHeight] = useState(0)
-  const [highlightDraft, setHighlightDraft] = useState({
-    underline: config.underlineHighlightColors,
-    quote: config.quoteHighlightColors,
-    circle: config.circleHighlightColors,
-    pickerColor: config.highlightPickerColor,
-  })
+  const pendingHeightRef = useRef(sheetHeight)
 
   useEffect(() => {
-    if (!isOpen) {
-      setSheetHeight(0)
-      return
-    }
+    if (!isOpen) return
 
     const syncViewport = () => {
-      if (!isDraggingRef.current) {
-        setSheetHeight((current) =>
-          current > 0 ? clampSheetHeight(current, getViewportHeight()) : current,
-        )
+      if (isDraggingRef.current) return
+      const nextHeight = clampSheetHeight(sheetHeight, getViewportHeight())
+      if (nextHeight !== sheetHeight) {
+        onHeightChange(nextHeight)
       }
     }
-
-    const initialHeight = readCachedSheetHeight(getViewportHeight())
-    pendingHeightRef.current = initialHeight
-    setSheetHeight(initialHeight)
-    applySheetHeight(panelRef.current, initialHeight)
 
     window.addEventListener('resize', syncViewport)
     window.visualViewport?.addEventListener('resize', syncViewport)
@@ -72,38 +83,22 @@ export function GraphicTextConfigSheet({
       window.removeEventListener('resize', syncViewport)
       window.visualViewport?.removeEventListener('resize', syncViewport)
     }
-  }, [isOpen])
+  }, [isOpen, onHeightChange, sheetHeight])
 
   useEffect(() => {
     if (!isOpen || sheetHeight <= 0) return
     applySheetHeight(panelRef.current, sheetHeight)
   }, [isOpen, sheetHeight])
 
-  useEffect(() => {
-    if (panel !== 'highlight') return
-    setHighlightDraft({
-      underline: config.underlineHighlightColors,
-      quote: config.quoteHighlightColors,
-      circle: config.circleHighlightColors,
-      pickerColor: config.highlightPickerColor,
-    })
-  }, [
-    panel,
-    config.underlineHighlightColors,
-    config.quoteHighlightColors,
-    config.circleHighlightColors,
-    config.highlightPickerColor,
-  ])
-
   const handlePointerMoveRef = useRef<(event: PointerEvent) => void>(() => {})
   const handlePointerEndRef = useRef<() => void>(() => {})
 
-  const scheduleHeightState = (nextHeight: number) => {
+  const scheduleHeightChange = (nextHeight: number) => {
     pendingHeightRef.current = nextHeight
     if (rafRef.current !== null) return
     rafRef.current = requestAnimationFrame(() => {
       rafRef.current = null
-      setSheetHeight(pendingHeightRef.current)
+      onHeightChange(pendingHeightRef.current)
     })
   }
 
@@ -123,7 +118,7 @@ export function GraphicTextConfigSheet({
       getViewportHeight(),
     )
     applySheetHeight(panelRef.current, nextHeight)
-    scheduleHeightState(nextHeight)
+    scheduleHeightChange(nextHeight)
   }
 
   handlePointerEndRef.current = () => {
@@ -137,7 +132,7 @@ export function GraphicTextConfigSheet({
     const finalHeight = pendingHeightRef.current
     if (finalHeight > 0) {
       writeCachedSheetHeight(finalHeight)
-      setSheetHeight(finalHeight)
+      onHeightChange(finalHeight)
     }
   }
 
@@ -167,10 +162,10 @@ export function GraphicTextConfigSheet({
   const handleClose = () => {
     if (panel === 'highlight') {
       onUpdate({
-        underlineHighlightColors: highlightDraft.underline,
-        quoteHighlightColors: highlightDraft.quote,
-        circleHighlightColors: highlightDraft.circle,
-        highlightPickerColor: highlightDraft.pickerColor,
+        underlineHighlightColors: highlightDraft.underlineHighlightColors,
+        quoteHighlightColors: highlightDraft.quoteHighlightColors,
+        circleHighlightColors: highlightDraft.circleHighlightColors,
+        highlightPickerColor: highlightDraft.highlightPickerColor,
       })
     }
     onOpenChange(false)
@@ -182,22 +177,22 @@ export function GraphicTextConfigSheet({
     <GraphicHighlightEditor
       markdown={markdown}
       config={config}
-      underlineHighlightColors={highlightDraft.underline}
-      quoteHighlightColors={highlightDraft.quote}
-      circleHighlightColors={highlightDraft.circle}
-      highlightPickerColor={highlightDraft.pickerColor}
+      underlineHighlightColors={highlightDraft.underlineHighlightColors}
+      quoteHighlightColors={highlightDraft.quoteHighlightColors}
+      circleHighlightColors={highlightDraft.circleHighlightColors}
+      highlightPickerColor={highlightDraft.highlightPickerColor}
       hideHeader
       onUnderlineChange={(colors) =>
-        setHighlightDraft((current) => ({ ...current, underline: colors }))
+        onHighlightDraftChange({ ...highlightDraft, underlineHighlightColors: colors })
       }
       onQuoteChange={(colors) =>
-        setHighlightDraft((current) => ({ ...current, quote: colors }))
+        onHighlightDraftChange({ ...highlightDraft, quoteHighlightColors: colors })
       }
       onCircleChange={(colors) =>
-        setHighlightDraft((current) => ({ ...current, circle: colors }))
+        onHighlightDraftChange({ ...highlightDraft, circleHighlightColors: colors })
       }
-      onPickerColorChange={(pickerColor) =>
-        setHighlightDraft((current) => ({ ...current, pickerColor }))
+      onPickerColorChange={(highlightPickerColor) =>
+        onHighlightDraftChange({ ...highlightDraft, highlightPickerColor })
       }
       onConfirm={handleClose}
       onBack={handleClose}
@@ -208,11 +203,7 @@ export function GraphicTextConfigSheet({
     <div
       ref={panelRef}
       className="graphic-config-sheet-inline graphic-config-drawer-dialog graphic-config-drawer-dialog--highlight component-library shrink-0"
-      style={
-        sheetHeight > 0
-          ? { height: sheetHeight, maxHeight: sheetHeight }
-          : undefined
-      }
+      style={{ height: sheetHeight, maxHeight: sheetHeight }}
     >
       <button
         type="button"
