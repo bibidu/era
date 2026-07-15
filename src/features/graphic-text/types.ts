@@ -1,4 +1,4 @@
-export type GraphicTemplate = 'reference' | 'solid' | 'grid'
+export type GraphicBackgroundType = 'reference' | 'solid'
 export type GraphicAspectRatio = '3:4' | '1:1' | '4:3' | '9:16' | '16:9'
 
 export const GRAPHIC_ASPECT_RATIO_OPTIONS: { id: GraphicAspectRatio; label: string }[] = [
@@ -24,7 +24,8 @@ export interface GraphicTextConfig {
   themeColor: string
   paperColor: string
   aspectRatio: GraphicAspectRatio
-  template: GraphicTemplate
+  backgroundType: GraphicBackgroundType
+  showGrid: boolean
   topText: string
   backgroundUrl: string | null
   underlineHighlightedCharKeys: string[]
@@ -64,7 +65,8 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   themeColor: '#FACC15',
   paperColor: '#FBF7ED',
   aspectRatio: '9:16',
-  template: 'grid',
+  backgroundType: 'solid',
+  showGrid: true,
   topText: '',
   backgroundUrl: null,
   underlineHighlightedCharKeys: [],
