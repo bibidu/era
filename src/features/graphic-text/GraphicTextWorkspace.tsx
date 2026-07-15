@@ -1,9 +1,10 @@
-import { Settings2, Type } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { MarkdownEditorDock } from '../../components/MarkdownEditorDock'
 import { GraphicPage } from './GraphicPage'
 import { GraphicSaveImagesSheet } from './GraphicSaveImagesSheet'
 import { GraphicTextConfigSheet } from './GraphicTextConfigSheet'
+import { GraphicTextToolbar } from './GraphicTextToolbar'
+import type { GraphicConfigPanel } from './graphicConfigPanels'
 import { paginateMarkdown, getGraphicLayout } from './layout'
 import { computeWorkspacePagerPageSize } from './graphicPreviewLayout'
 import { getFontById } from '../../data/fonts'
@@ -24,7 +25,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     ...DEFAULT_GRAPHIC_TEXT_CONFIG,
     backgroundUrl: defaultBackgroundUrl,
   }))
-  const [configOpen, setConfigOpen] = useState(false)
+  const [configPanel, setConfigPanel] = useState<GraphicConfigPanel | null>(null)
   const [saveSheetOpen, setSaveSheetOpen] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
   const [activePage, setActivePage] = useState(0)
@@ -91,8 +92,19 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     setActivePage(Math.round(pager.scrollLeft / pager.clientWidth))
   }
 
-  const handleRequestSave = () => {
-    setConfigOpen(false)
+  const handleSelectPanel = (panel: GraphicConfigPanel) => {
+    setEditorOpen(false)
+    setConfigPanel((current) => (current === panel ? null : panel))
+  }
+
+  const handleEdit = () => {
+    setConfigPanel(null)
+    setEditorOpen((current) => !current)
+  }
+
+  const handleSave = () => {
+    setConfigPanel(null)
+    setEditorOpen(false)
     setSaveSheetOpen(true)
   }
 
@@ -128,28 +140,14 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
         ))}
       </div>
 
-      <div className="shrink-0 border-t border-neutral-200 bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">
-        <div className="flex gap-3">
-          <button
-            type="button"
-            aria-label="文字配置"
-            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white text-sm font-medium active:bg-neutral-100"
-            onClick={() => setEditorOpen(true)}
-          >
-            <Type size={18} />
-            文字
-          </button>
-          <button
-            type="button"
-            aria-label="生成配置"
-            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white text-sm font-medium active:bg-neutral-100"
-            onClick={() => setConfigOpen(true)}
-          >
-            <Settings2 size={18} />
-            配置
-          </button>
-        </div>
-      </div>
+      <GraphicTextToolbar
+        activePanel={configPanel}
+        editorOpen={editorOpen}
+        saveDisabled={pages.length === 0}
+        onEdit={handleEdit}
+        onSelectPanel={handleSelectPanel}
+        onSave={handleSave}
+      />
 
       {editorOpen && (
         <MarkdownEditorDock
@@ -162,16 +160,19 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
         />
       )}
 
-      <GraphicTextConfigSheet
-        isOpen={configOpen}
-        config={config}
-        markdown={markdown}
-        pageCount={pages.length}
-        onOpenChange={setConfigOpen}
-        onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
-        onBackgroundUpload={handleBackgroundUpload}
-        onRequestSave={handleRequestSave}
-      />
+      {configPanel && (
+        <GraphicTextConfigSheet
+          isOpen={configPanel !== null}
+          panel={configPanel}
+          config={config}
+          markdown={markdown}
+          onOpenChange={(open) => {
+            if (!open) setConfigPanel(null)
+          }}
+          onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
+          onBackgroundUpload={handleBackgroundUpload}
+        />
+      )}
 
       <GraphicSaveImagesSheet
         isOpen={saveSheetOpen}
