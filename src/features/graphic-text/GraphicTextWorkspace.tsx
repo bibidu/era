@@ -7,10 +7,15 @@ import { GraphicPage } from './GraphicPage'
 import { GraphicSaveImagesSheet } from './GraphicSaveImagesSheet'
 import { GraphicTextConfigSheet } from './GraphicTextConfigSheet'
 import { GraphicTextToolbar } from './GraphicTextToolbar'
-import { GraphicAspectStrip, GraphicFontStrip, GraphicTemplateStrip } from './GraphicToolbarStrips'
-import type { GraphicConfigPanel, ToolbarStrip } from './graphicConfigPanels'
+import {
+  GraphicAspectStrip,
+  GraphicFontSizeDetailStrip,
+  GraphicFontStrip,
+  GraphicTemplateStrip,
+} from './GraphicToolbarStrips'
+import type { FontSizeNav, FontSizeTarget, GraphicConfigPanel, ToolbarStrip } from './graphicConfigPanels'
 import { paginateMarkdown, getGraphicLayout } from './layout'
-import { computeWorkspacePagerPageSize } from './graphicPreviewLayout'
+import { computeGraphicPageDisplaySize } from './graphicPreviewLayout'
 import {
   DEFAULT_GRAPHIC_TEXT_CONFIG,
   DEFAULT_MARKDOWN,
@@ -18,8 +23,14 @@ import {
   type GraphicTextConfig,
 } from './types'
 
+const PAGER_PAGE_PADDING = 32
+
 interface GraphicTextWorkspaceProps {
   defaultBackgroundUrl: string | null
+}
+
+function isFontSizeTarget(nav: FontSizeNav): nav is FontSizeTarget {
+  return nav === 'title' || nav === 'heading' || nav === 'body'
 }
 
 export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorkspaceProps) {
@@ -30,11 +41,13 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   }))
   const [configPanel, setConfigPanel] = useState<GraphicConfigPanel | null>(null)
   const [toolbarStrip, setToolbarStrip] = useState<ToolbarStrip | null>(null)
+  const [fontSizeNav, setFontSizeNav] = useState<FontSizeNav>(null)
   const [showSafeArea, setShowSafeArea] = useState(false)
   const [saveSheetOpen, setSaveSheetOpen] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
   const [pasteError, setPasteError] = useState('')
   const pagerRef = useRef<HTMLDivElement>(null)
+  const [pagerSize, setPagerSize] = useState({ width: 0, height: 0 })
 
   useEffect(() => {
     if (!defaultBackgroundUrl) return
@@ -50,12 +63,44 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     void ensureFontReady(font, markdown || font.sample)
   }, [config.fontId, markdown])
 
+  useEffect(() => {
+    const pager = pagerRef.current
+    if (!pager) return
+
+    const updateSize = () => {
+      setPagerSize({ width: pager.clientWidth, height: pager.clientHeight })
+    }
+
+    updateSize()
+    const observer = new ResizeObserver(updateSize)
+    observer.observe(pager)
+    window.addEventListener('resize', updateSize)
+    window.visualViewport?.addEventListener('resize', updateSize)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', updateSize)
+      window.visualViewport?.removeEventListener('resize', updateSize)
+    }
+  }, [])
+
   const pages = useMemo(() => paginateMarkdown(markdown, config), [markdown, config])
 
   const pagerPageSize = useMemo(() => {
     const layout = getGraphicLayout(config)
-    return computeWorkspacePagerPageSize(layout.aspectRatio)
-  }, [config])
+    if (pagerSize.width > 0 && pagerSize.height > 0) {
+      return computeGraphicPageDisplaySize(
+        layout.aspectRatio,
+        pagerSize.width - PAGER_PAGE_PADDING,
+        pagerSize.height - PAGER_PAGE_PADDING,
+      )
+    }
+    return computeGraphicPageDisplaySize(
+      layout.aspectRatio,
+      window.innerWidth - PAGER_PAGE_PADDING,
+      window.innerHeight - 200,
+    )
+  }, [config, pagerSize])
 
   const handlePaste = async () => {
     try {
@@ -86,31 +131,59 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     reader.readAsDataURL(file)
   }
 
-  const closeToolbarStrip = () => {
+  const closeOverlays = () => {
     setToolbarStrip(null)
+    setFontSizeNav(null)
   }
 
   const handleSelectStrip = (strip: ToolbarStrip) => {
     setEditorOpen(false)
     setConfigPanel(null)
+    setFontSizeNav(null)
     setToolbarStrip((current) => (current === strip ? null : strip))
   }
 
   const handleSelectPanel = (panel: GraphicConfigPanel) => {
     setEditorOpen(false)
     setToolbarStrip(null)
+    setFontSizeNav(null)
     setConfigPanel((current) => (current === panel ? null : panel))
+  }
+
+  const handleOpenFontSizeMenu = () => {
+    setEditorOpen(false)
+    setConfigPanel(null)
+    setToolbarStrip(null)
+    setFontSizeNav((current) => {
+      if (current === null) return 'menu'
+      if (current === 'menu') return null
+      return current
+    })
+  }
+
+  const handleFontSizeBack = () => {
+    if (isFontSizeTarget(fontSizeNav)) {
+      setFontSizeNav('menu')
+      return
+    }
+    setFontSizeNav(null)
+  }
+
+  const handleSelectFontSizeTarget = (target: FontSizeTarget) => {
+    setFontSizeNav((current) => (current === target ? 'menu' : target))
   }
 
   const handleEdit = () => {
     setConfigPanel(null)
     setToolbarStrip(null)
+    setFontSizeNav(null)
     setEditorOpen((current) => !current)
   }
 
   const handleToggleSafeArea = () => {
     setConfigPanel(null)
     setToolbarStrip(null)
+    setFontSizeNav(null)
     setShowSafeArea((current) => !current)
   }
 
@@ -128,19 +201,22 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   const handleSave = () => {
     setConfigPanel(null)
     setToolbarStrip(null)
+    setFontSizeNav(null)
     setEditorOpen(false)
     setSaveSheetOpen(true)
   }
 
+  const showStripBackdrop = toolbarStrip !== null || isFontSizeTarget(fontSizeNav)
+
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-neutral-100">
-      <div className="relative flex min-h-0 flex-1 flex-col">
-        {toolbarStrip && (
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        {showStripBackdrop && (
           <button
             type="button"
             aria-label="关闭选项"
             className="absolute inset-0 z-10"
-            onClick={closeToolbarStrip}
+            onClick={closeOverlays}
           />
         )}
 
@@ -180,16 +256,27 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
             onBackgroundUpload={handleBackgroundUpload}
           />
         )}
+        {isFontSizeTarget(fontSizeNav) && (
+          <GraphicFontSizeDetailStrip
+            target={fontSizeNav}
+            config={config}
+            onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
+          />
+        )}
 
         <GraphicTextToolbar
           activePanel={configPanel}
           activeStrip={toolbarStrip}
+          fontSizeNav={fontSizeNav}
           editorOpen={editorOpen}
           safeAreaOpen={showSafeArea}
           saveDisabled={pages.length === 0}
           onEdit={handleEdit}
           onSelectStrip={handleSelectStrip}
           onSelectPanel={handleSelectPanel}
+          onOpenFontSizeMenu={handleOpenFontSizeMenu}
+          onFontSizeBack={handleFontSizeBack}
+          onSelectFontSizeTarget={handleSelectFontSizeTarget}
           onToggleSafeArea={handleToggleSafeArea}
           onSave={handleSave}
         />
