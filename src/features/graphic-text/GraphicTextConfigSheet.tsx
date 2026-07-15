@@ -1,5 +1,5 @@
 import { Drawer, useOverlayState } from '@heroui/react'
-import { Check, Highlighter, ScanEye, Type } from 'lucide-react'
+import { Check, ScanEye } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { GraphicConfigPreview } from './GraphicConfigPreview'
@@ -14,6 +14,10 @@ import {
   TITLE_MARGIN_OPTIONS,
 } from './configSelectOptions'
 import { computeConfigPreviewLayout } from './graphicPreviewLayout'
+import {
+  GRAPHIC_CONFIG_PANEL_TITLES,
+  type GraphicConfigPanel,
+} from './graphicConfigPanels'
 import { getGraphicLayout, paginateMarkdown } from './layout'
 import {
   clampSheetHeight,
@@ -23,20 +27,16 @@ import {
 } from './topBar'
 import type { GraphicTextConfig } from './types'
 import { GRAPHIC_ASPECT_RATIO_OPTIONS } from './types'
-import { countHighlightSelections } from './highlightColors'
 
 interface GraphicTextConfigSheetProps {
   isOpen: boolean
+  panel: GraphicConfigPanel
   config: GraphicTextConfig
   markdown: string
-  pageCount: number
   onOpenChange: (open: boolean) => void
   onUpdate: (updates: Partial<GraphicTextConfig>) => void
   onBackgroundUpload: (file: File) => void
-  onRequestSave: () => void
 }
-
-type ConfigSheetView = 'main' | 'highlight'
 
 const PAPER_COLORS = [
   '#FBF7ED',
@@ -173,13 +173,12 @@ function ConfigSelect({
 
 export function GraphicTextConfigSheet({
   isOpen,
+  panel,
   config,
   markdown,
-  pageCount,
   onOpenChange,
   onUpdate,
   onBackgroundUpload,
-  onRequestSave,
 }: GraphicTextConfigSheetProps) {
   const state = useOverlayState({ isOpen, onOpenChange })
   const sheetRef = useRef<HTMLDivElement | null>(null)
@@ -189,7 +188,6 @@ export function GraphicTextConfigSheet({
   const [viewportHeight, setViewportHeight] = useState(getViewportHeight)
   const [sheetHeight, setSheetHeight] = useState(readCachedSheetHeight)
   const [showSafeArea, setShowSafeArea] = useState(false)
-  const [sheetView, setSheetView] = useState<ConfigSheetView>('main')
   const [solidColorPickerOpen, setSolidColorPickerOpen] = useState(false)
   const [highlightDraft, setHighlightDraft] = useState({
     underline: config.underlineHighlightColors,
@@ -203,7 +201,7 @@ export function GraphicTextConfigSheet({
   const previewPages = useMemo(() => paginateMarkdown(markdown, config), [markdown, config])
   const previewConfig = useMemo(
     () =>
-      sheetView === 'highlight'
+      panel === 'highlight'
         ? {
             ...config,
             underlineHighlightColors: highlightDraft.underline,
@@ -212,7 +210,7 @@ export function GraphicTextConfigSheet({
             highlightPickerColor: highlightDraft.pickerColor,
           }
         : config,
-    [config, sheetView, highlightDraft],
+    [config, panel, highlightDraft],
   )
   const previewLayout = useMemo(() => {
     if (!previewAreaHeight) return null
@@ -243,7 +241,6 @@ export function GraphicTextConfigSheet({
 
   useEffect(() => {
     if (!isOpen) {
-      setSheetView('main')
       return
     }
 
@@ -265,16 +262,15 @@ export function GraphicTextConfigSheet({
   }, [isOpen])
 
   useEffect(() => {
-    if (sheetView === 'highlight') {
-      setHighlightDraft({
-        underline: config.underlineHighlightColors,
-        quote: config.quoteHighlightColors,
-        circle: config.circleHighlightColors,
-        pickerColor: config.highlightPickerColor,
-      })
-    }
+    if (panel !== 'highlight') return
+    setHighlightDraft({
+      underline: config.underlineHighlightColors,
+      quote: config.quoteHighlightColors,
+      circle: config.circleHighlightColors,
+      pickerColor: config.highlightPickerColor,
+    })
   }, [
-    sheetView,
+    panel,
     config.underlineHighlightColors,
     config.quoteHighlightColors,
     config.circleHighlightColors,
@@ -311,7 +307,7 @@ export function GraphicTextConfigSheet({
       circleHighlightColors: highlightDraft.circle,
       highlightPickerColor: highlightDraft.pickerColor,
     })
-    setSheetView('main')
+    onOpenChange(false)
   }
 
   const previewNode =
@@ -328,22 +324,10 @@ export function GraphicTextConfigSheet({
       />
     ) : null
 
-  const sheetContent = (
-    <div ref={sheetRef} className="flex min-h-0 flex-1 flex-col">
-      <div
-        className="graphic-config-sheet-handle"
-        role="separator"
-        aria-orientation="horizontal"
-        aria-label="调节面板高度"
-        onPointerDown={handleResizeStart}
-        onPointerMove={handleResizeMove}
-        onPointerUp={handleResizeEnd}
-        onPointerCancel={handleResizeEnd}
-      >
-        <span className="graphic-config-sheet-handle-bar" />
-      </div>
-      <div className="flex min-h-0 flex-1 flex-col">
-        {sheetView === 'highlight' ? (
+  const panelBody = (() => {
+    switch (panel) {
+      case 'highlight':
+        return (
           <GraphicHighlightEditor
             markdown={markdown}
             config={config}
@@ -364,12 +348,291 @@ export function GraphicTextConfigSheet({
               setHighlightDraft((current) => ({ ...current, pickerColor }))
             }
             onConfirm={handleHighlightConfirm}
-            onBack={() => setSheetView('main')}
+            onBack={() => onOpenChange(false)}
           />
+        )
+      case 'font':
+        return (
+          <select
+            value={config.fontId}
+            onChange={(event) => {
+              const font = FONT_OPTIONS.find((item) => item.id === event.target.value)
+              if (font) onUpdate({ fontId: font.id, fontFamily: font.fontFamily })
+            }}
+            className="h-10 w-full rounded-xl border border-neutral-300 bg-neutral-50 px-3 text-sm outline-none focus:border-neutral-500"
+          >
+            {FONT_OPTIONS.map((font) => (
+              <option key={font.id} value={font.id}>
+                {font.label}
+              </option>
+            ))}
+          </select>
+        )
+      case 'font-size':
+        return (
+          <div className="flex flex-col gap-2">
+            <ConfigSelect
+              label="标题"
+              labelClassName="w-9"
+              value={config.titleFontSize}
+              options={TITLE_FONT_SIZE_OPTIONS}
+              onChange={(value) => onUpdate({ titleFontSize: value })}
+              format={(value) => `${value}px`}
+            />
+            <ConfigSelect
+              label="二级"
+              labelClassName="w-9"
+              value={config.headingFontSize}
+              options={HEADING_FONT_SIZE_OPTIONS}
+              onChange={(value) => onUpdate({ headingFontSize: value })}
+              format={(value) => `${value}px`}
+            />
+            <ConfigSelect
+              label="正文"
+              labelClassName="w-9"
+              value={config.bodyFontSize}
+              options={BODY_FONT_SIZE_OPTIONS}
+              onChange={(value) => onUpdate({ bodyFontSize: value })}
+              format={(value) => `${value}px`}
+            />
+          </div>
+        )
+      case 'text-style':
+        return (
+          <div className="flex flex-col gap-2">
+            <ConfigSelect
+              label="标题行高"
+              value={config.titleLineHeight}
+              options={TITLE_LINE_HEIGHT_OPTIONS}
+              onChange={(value) => onUpdate({ titleLineHeight: value })}
+            />
+            <ConfigSelect
+              label="正文行高"
+              value={config.bodyLineHeight}
+              options={BODY_LINE_HEIGHT_OPTIONS}
+              onChange={(value) => onUpdate({ bodyLineHeight: value })}
+            />
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+              <ConfigSelect
+                label="一级上间距"
+                value={config.titleMarginTop}
+                options={TITLE_MARGIN_OPTIONS}
+                onChange={(value) => onUpdate({ titleMarginTop: value })}
+              />
+              <ConfigSelect
+                label="一级下间距"
+                value={config.titleMarginBottom}
+                options={TITLE_MARGIN_OPTIONS}
+                onChange={(value) => onUpdate({ titleMarginBottom: value })}
+              />
+              <ConfigSelect
+                label="二级上间距"
+                value={config.headingMarginTop}
+                options={HEADING_MARGIN_OPTIONS}
+                onChange={(value) => onUpdate({ headingMarginTop: value })}
+              />
+              <ConfigSelect
+                label="二级下间距"
+                value={config.headingMarginBottom}
+                options={HEADING_MARGIN_OPTIONS}
+                onChange={(value) => onUpdate({ headingMarginBottom: value })}
+              />
+            </div>
+          </div>
+        )
+      case 'aspect':
+        return (
+          <>
+            <div className="flex items-center">
+              <p className="flex-1 text-center text-sm font-medium">图片比例</p>
+              <div className="h-4 w-px shrink-0 bg-neutral-200" aria-hidden />
+              <p className="flex-1 text-center text-sm font-medium">
+                <span className="inline-flex items-center justify-center gap-2">
+                  <ScanEye size={16} />
+                  文字安全区
+                </span>
+              </p>
+            </div>
+            <div className="mt-3 flex items-stretch">
+              <div className="flex min-w-0 flex-1 items-center justify-center">
+                <div className="component-scroll-row flex items-end gap-0.5 overflow-x-auto">
+                  {GRAPHIC_ASPECT_RATIO_OPTIONS.map((option) => (
+                    <AspectRatioOption
+                      key={option.id}
+                      id={option.id}
+                      label={option.label}
+                      selected={config.aspectRatio === option.id}
+                      onSelect={() => onUpdate({ aspectRatio: option.id })}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="mx-3 w-px shrink-0 self-stretch bg-neutral-200" aria-hidden />
+              <div className="flex min-w-0 flex-1 items-center justify-center">
+                <button
+                  type="button"
+                  className={`h-8 shrink-0 rounded-full border px-3 text-xs font-medium ${
+                    showSafeArea
+                      ? 'border-2 border-black bg-white text-neutral-900'
+                      : 'border border-neutral-300 bg-white text-neutral-600'
+                  }`}
+                  onClick={() => setShowSafeArea((current) => !current)}
+                >
+                  {showSafeArea ? '隐藏线框' : '查看线框'}
+                </button>
+              </div>
+            </div>
+          </>
+        )
+      case 'template':
+        return (
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              ref={referenceInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                if (file) onBackgroundUpload(file)
+                event.target.value = ''
+              }}
+            />
+            <button
+              type="button"
+              className={templateOptionButtonClass(config.backgroundType === 'reference')}
+              onClick={() => {
+                onUpdate({ backgroundType: 'reference' })
+                referenceInputRef.current?.click()
+              }}
+            >
+              <span>参考图</span>
+              <TemplatePreviewSquare compact>
+                {config.backgroundUrl ? (
+                  <img
+                    src={config.backgroundUrl}
+                    alt="参考图预览"
+                    className="size-full object-cover"
+                  />
+                ) : null}
+              </TemplatePreviewSquare>
+            </button>
+
+            <div ref={solidPickerRef} className="relative shrink-0">
+              {solidColorPickerOpen && (
+                <div className="absolute bottom-[calc(100%+8px)] left-0 z-20 rounded-xl border border-neutral-200 bg-white p-2 shadow-lg">
+                  <div className="component-scroll-row flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+                    {PAPER_COLORS.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        aria-label={`纸张色 ${color}`}
+                        className={`size-7 shrink-0 rounded-full border-2 ${
+                          config.paperColor === color ? 'border-black' : 'border-transparent'
+                        }`}
+                        style={{ backgroundColor: color }}
+                        onClick={() => {
+                          onUpdate({
+                            backgroundType: 'solid',
+                            paperColor: color,
+                          })
+                          setSolidColorPickerOpen(false)
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              <button
+                type="button"
+                className={templateOptionButtonClass(config.backgroundType === 'solid')}
+                onClick={() => {
+                  onUpdate({ backgroundType: 'solid' })
+                  setSolidColorPickerOpen((current) => !current)
+                }}
+              >
+                <span>纯色纸张</span>
+                <TemplatePreviewSquare compact>
+                  <span
+                    className="size-full"
+                    style={{ backgroundColor: config.paperColor }}
+                    aria-hidden
+                  />
+                </TemplatePreviewSquare>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              aria-label="方格块"
+              aria-pressed={config.pageOverlay === 'grid'}
+              className={`inline-flex shrink-0 rounded-xl p-0.5 ${
+                config.pageOverlay === 'grid' ? 'border-2 border-black' : 'border border-neutral-300'
+              }`}
+              onClick={() =>
+                onUpdate({
+                  pageOverlay: config.pageOverlay === 'grid' ? 'none' : 'grid',
+                })
+              }
+            >
+              <TemplatePreviewSquare compact className="graphic-grid-preview" />
+            </button>
+
+            <button
+              type="button"
+              aria-label="像素边框"
+              aria-pressed={config.pageOverlay === 'pixel'}
+              className={`inline-flex shrink-0 rounded-xl p-0.5 ${
+                config.pageOverlay === 'pixel' ? 'border-2 border-black' : 'border border-neutral-300'
+              }`}
+              onClick={() =>
+                onUpdate({
+                  pageOverlay: config.pageOverlay === 'pixel' ? 'none' : 'pixel',
+                })
+              }
+            >
+              <TemplatePreviewSquare compact className="graphic-pixel-preview" />
+            </button>
+          </div>
+        )
+      case 'top-text':
+        return (
+          <label className="flex items-center gap-2 text-sm">
+            <span className="w-[4.6rem] shrink-0 font-medium text-neutral-600">顶部文案</span>
+            <input
+              value={config.topText}
+              onChange={(event) => onUpdate({ topText: event.target.value })}
+              placeholder="留空则显示「全文 xxx 字」"
+              className="h-9 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-neutral-50 px-2 text-sm outline-none"
+            />
+          </label>
+        )
+      default:
+        return null
+    }
+  })()
+
+  const sheetContent = (
+    <div ref={sheetRef} className="flex min-h-0 flex-1 flex-col">
+      <div
+        className="graphic-config-sheet-handle"
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="调节面板高度"
+        onPointerDown={handleResizeStart}
+        onPointerMove={handleResizeMove}
+        onPointerUp={handleResizeEnd}
+        onPointerCancel={handleResizeEnd}
+      >
+        <span className="graphic-config-sheet-handle-bar" />
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col">
+        {panel === 'highlight' ? (
+          panelBody
         ) : (
           <>
             <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-2">
-              <p className="text-sm font-semibold">生成配置</p>
+              <p className="text-sm font-semibold">{GRAPHIC_CONFIG_PANEL_TITLES[panel]}</p>
               <button
                 type="button"
                 aria-label="关闭"
@@ -379,309 +642,11 @@ export function GraphicTextConfigSheet({
                 <Check size={15} />
               </button>
             </div>
-
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-                      <div className="flex flex-col gap-4 pb-2">
-                        <section>
-                          <button
-                            type="button"
-                            className="flex h-11 w-full items-center justify-between rounded-xl border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900"
-                            onClick={() => setSheetView('highlight')}
-                          >
-                            <span className="flex items-center gap-2">
-                              <Highlighter size={16} />
-                              高亮设置
-                            </span>
-                            <span className="text-xs text-neutral-500">
-                              已选{' '}
-                              {countHighlightSelections(
-                                config.underlineHighlightColors,
-                                config.quoteHighlightColors,
-                                config.circleHighlightColors,
-                              )}{' '}
-                              字
-                            </span>
-                          </button>
-                        </section>
-
-                        <section>
-                          <div className="mb-2 flex items-center gap-2 text-sm font-medium">
-                            <Type size={16} />
-                            字体
-                          </div>
-                          <select
-                            value={config.fontId}
-                            onChange={(event) => {
-                              const font = FONT_OPTIONS.find((item) => item.id === event.target.value)
-                              if (font) onUpdate({ fontId: font.id, fontFamily: font.fontFamily })
-                            }}
-                            className="h-10 w-full rounded-xl border border-neutral-300 bg-neutral-50 px-3 text-sm outline-none focus:border-neutral-500"
-                          >
-                            {FONT_OPTIONS.map((font) => (
-                              <option key={font.id} value={font.id}>
-                                {font.label}
-                              </option>
-                            ))}
-                          </select>
-                        </section>
-
-                        <section className="flex flex-col gap-2">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <ConfigSelect
-                              label="标题"
-                              labelClassName="w-9"
-                              value={config.titleFontSize}
-                              options={TITLE_FONT_SIZE_OPTIONS}
-                              onChange={(value) => onUpdate({ titleFontSize: value })}
-                              format={(value) => `${value}px`}
-                            />
-                            <ConfigSelect
-                              label="标题行高"
-                              value={config.titleLineHeight}
-                              options={TITLE_LINE_HEIGHT_OPTIONS}
-                              onChange={(value) => onUpdate({ titleLineHeight: value })}
-                            />
-                          </div>
-                          <div className="flex min-w-0 items-center gap-2">
-                            <ConfigSelect
-                              label="二级"
-                              labelClassName="w-9"
-                              value={config.headingFontSize}
-                              options={HEADING_FONT_SIZE_OPTIONS}
-                              onChange={(value) => onUpdate({ headingFontSize: value })}
-                              format={(value) => `${value}px`}
-                            />
-                          </div>
-                          <div className="flex min-w-0 items-center gap-2">
-                            <ConfigSelect
-                              label="正文"
-                              labelClassName="w-9"
-                              value={config.bodyFontSize}
-                              options={BODY_FONT_SIZE_OPTIONS}
-                              onChange={(value) => onUpdate({ bodyFontSize: value })}
-                              format={(value) => `${value}px`}
-                            />
-                            <ConfigSelect
-                              label="正文行高"
-                              value={config.bodyLineHeight}
-                              options={BODY_LINE_HEIGHT_OPTIONS}
-                              onChange={(value) => onUpdate({ bodyLineHeight: value })}
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-                            <ConfigSelect
-                              label="一级上间距"
-                              value={config.titleMarginTop}
-                              options={TITLE_MARGIN_OPTIONS}
-                              onChange={(value) => onUpdate({ titleMarginTop: value })}
-                            />
-                            <ConfigSelect
-                              label="一级下间距"
-                              value={config.titleMarginBottom}
-                              options={TITLE_MARGIN_OPTIONS}
-                              onChange={(value) => onUpdate({ titleMarginBottom: value })}
-                            />
-                            <ConfigSelect
-                              label="二级上间距"
-                              value={config.headingMarginTop}
-                              options={HEADING_MARGIN_OPTIONS}
-                              onChange={(value) => onUpdate({ headingMarginTop: value })}
-                            />
-                            <ConfigSelect
-                              label="二级下间距"
-                              value={config.headingMarginBottom}
-                              options={HEADING_MARGIN_OPTIONS}
-                              onChange={(value) => onUpdate({ headingMarginBottom: value })}
-                            />
-                          </div>
-                        </section>
-
-                        <section>
-                          <div className="flex items-center">
-                            <p className="flex-1 text-center text-sm font-medium">图片比例</p>
-                            <div className="h-4 w-px shrink-0 bg-neutral-200" aria-hidden />
-                            <p className="flex-1 text-center text-sm font-medium">
-                              <span className="inline-flex items-center justify-center gap-2">
-                                <ScanEye size={16} />
-                                文字安全区
-                              </span>
-                            </p>
-                          </div>
-                          <div className="flex items-stretch">
-                            <div className="flex min-w-0 flex-1 items-center justify-center">
-                              <div className="component-scroll-row flex items-end gap-0.5 overflow-x-auto">
-                                {GRAPHIC_ASPECT_RATIO_OPTIONS.map((option) => (
-                                  <AspectRatioOption
-                                    key={option.id}
-                                    id={option.id}
-                                    label={option.label}
-                                    selected={config.aspectRatio === option.id}
-                                    onSelect={() => onUpdate({ aspectRatio: option.id })}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                            <div className="mx-3 w-px shrink-0 self-stretch bg-neutral-200" aria-hidden />
-                            <div className="flex min-w-0 flex-1 items-center justify-center">
-                              <button
-                                type="button"
-                                className={`h-8 shrink-0 rounded-full border px-3 text-xs font-medium ${
-                                  showSafeArea
-                                    ? 'border-2 border-black bg-white text-neutral-900'
-                                    : 'border border-neutral-300 bg-white text-neutral-600'
-                                }`}
-                                onClick={() => setShowSafeArea((current) => !current)}
-                              >
-                                {showSafeArea ? '隐藏线框' : '查看线框'}
-                              </button>
-                            </div>
-                          </div>
-                        </section>
-
-                        <section>
-                          <p className="mb-2 text-sm font-medium">页面模板</p>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <input
-                              ref={referenceInputRef}
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(event) => {
-                                const file = event.target.files?.[0]
-                                if (file) onBackgroundUpload(file)
-                                event.target.value = ''
-                              }}
-                            />
-                            <button
-                              type="button"
-                              className={templateOptionButtonClass(config.backgroundType === 'reference')}
-                              onClick={() => {
-                                onUpdate({ backgroundType: 'reference' })
-                                referenceInputRef.current?.click()
-                              }}
-                            >
-                              <span>参考图</span>
-                              <TemplatePreviewSquare compact>
-                                {config.backgroundUrl ? (
-                                  <img
-                                    src={config.backgroundUrl}
-                                    alt="参考图预览"
-                                    className="size-full object-cover"
-                                  />
-                                ) : null}
-                              </TemplatePreviewSquare>
-                            </button>
-
-                            <div ref={solidPickerRef} className="relative shrink-0">
-                              {solidColorPickerOpen && (
-                                <div className="absolute bottom-[calc(100%+8px)] left-0 z-20 rounded-xl border border-neutral-200 bg-white p-2 shadow-lg">
-                                  <div className="component-scroll-row flex items-center gap-2 overflow-x-auto whitespace-nowrap">
-                                    {PAPER_COLORS.map((color) => (
-                                      <button
-                                        key={color}
-                                        type="button"
-                                        aria-label={`纸张色 ${color}`}
-                                        className={`size-7 shrink-0 rounded-full border-2 ${
-                                          config.paperColor === color
-                                            ? 'border-black'
-                                            : 'border-transparent'
-                                        }`}
-                                        style={{ backgroundColor: color }}
-                                        onClick={() => {
-                                          onUpdate({
-                                            backgroundType: 'solid',
-                                            paperColor: color,
-                                          })
-                                          setSolidColorPickerOpen(false)
-                                        }}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              <button
-                                type="button"
-                                className={templateOptionButtonClass(config.backgroundType === 'solid')}
-                                onClick={() => {
-                                  onUpdate({ backgroundType: 'solid' })
-                                  setSolidColorPickerOpen((current) => !current)
-                                }}
-                              >
-                                <span>纯色纸张</span>
-                                <TemplatePreviewSquare compact>
-                                  <span
-                                    className="size-full"
-                                    style={{ backgroundColor: config.paperColor }}
-                                    aria-hidden
-                                  />
-                                </TemplatePreviewSquare>
-                              </button>
-                            </div>
-
-                            <button
-                              type="button"
-                              aria-label="方格块"
-                              aria-pressed={config.pageOverlay === 'grid'}
-                              className={`inline-flex shrink-0 rounded-xl p-0.5 ${
-                                config.pageOverlay === 'grid'
-                                  ? 'border-2 border-black'
-                                  : 'border border-neutral-300'
-                              }`}
-                              onClick={() =>
-                                onUpdate({
-                                  pageOverlay: config.pageOverlay === 'grid' ? 'none' : 'grid',
-                                })
-                              }
-                            >
-                              <TemplatePreviewSquare compact className="graphic-grid-preview" />
-                            </button>
-
-                            <button
-                              type="button"
-                              aria-label="像素边框"
-                              aria-pressed={config.pageOverlay === 'pixel'}
-                              className={`inline-flex shrink-0 rounded-xl p-0.5 ${
-                                config.pageOverlay === 'pixel'
-                                  ? 'border-2 border-black'
-                                  : 'border border-neutral-300'
-                              }`}
-                              onClick={() =>
-                                onUpdate({
-                                  pageOverlay: config.pageOverlay === 'pixel' ? 'none' : 'pixel',
-                                })
-                              }
-                            >
-                              <TemplatePreviewSquare compact className="graphic-pixel-preview" />
-                            </button>
-                          </div>
-                        </section>
-
-                        <section>
-                          <label className="flex items-center gap-2 text-sm">
-                            <span className="w-[4.6rem] shrink-0 font-medium text-neutral-600">顶部文案</span>
-                            <input
-                              value={config.topText}
-                              onChange={(event) => onUpdate({ topText: event.target.value })}
-                              placeholder="留空则显示「全文 xxx 字」"
-                              className="h-9 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-neutral-50 px-2 text-sm outline-none"
-                            />
-                          </label>
-                        </section>
-                      </div>
+              <div className="flex flex-col gap-4 pb-2">{panelBody}</div>
             </div>
           </>
         )}
-      </div>
-
-      <div className="shrink-0 border-t border-neutral-200 bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">
-        <button
-          type="button"
-          disabled={pageCount === 0}
-          className="h-12 w-full rounded-xl bg-black text-sm font-semibold text-white disabled:opacity-50"
-          onClick={onRequestSave}
-        >
-          保存图片
-        </button>
       </div>
     </div>
   )
