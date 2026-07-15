@@ -1,6 +1,6 @@
+import { Drawer, useOverlayState } from '@heroui/react'
 import { Check, Highlighter, ScanEye, Type } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
 import { FONT_OPTIONS } from '../../data/fonts'
 import { GraphicConfigPreview } from './GraphicConfigPreview'
 import { GraphicHighlightEditor } from './GraphicHighlightEditor'
@@ -181,6 +181,7 @@ export function GraphicTextConfigSheet({
   onBackgroundUpload,
   onRequestSave,
 }: GraphicTextConfigSheetProps) {
+  const state = useOverlayState({ isOpen, onOpenChange })
   const sheetRef = useRef<HTMLDivElement | null>(null)
   const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
   const referenceInputRef = useRef<HTMLInputElement | null>(null)
@@ -235,13 +236,10 @@ export function GraphicTextConfigSheet({
   }, [solidColorPickerOpen])
 
   useEffect(() => {
-    if (!isOpen) return
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = previousOverflow
+    if (isOpen !== state.isOpen) {
+      state.setOpen(isOpen)
     }
-  }, [isOpen])
+  }, [isOpen, state])
 
   useEffect(() => {
     if (!isOpen) {
@@ -330,14 +328,8 @@ export function GraphicTextConfigSheet({
       />
     ) : null
 
-  if (!isOpen) return null
-
   const sheetContent = (
-    <div
-      ref={sheetRef}
-      className="graphic-config-sheet-panel component-library"
-      style={{ height: sheetHeight }}
-    >
+    <div ref={sheetRef} className="flex min-h-0 flex-1 flex-col">
       <div
         className="graphic-config-sheet-handle"
         role="separator"
@@ -694,32 +686,40 @@ export function GraphicTextConfigSheet({
     </div>
   )
 
-  return createPortal(
-    <div className="graphic-config-root">
-      {previewNode && previewLayout && (
-        <div className="graphic-config-preview-layer" style={{ height: previewAreaHeight }}>
-          <button
-            type="button"
-            aria-label="关闭配置"
-            className="graphic-config-preview-dismiss graphic-config-preview-dismiss-left"
-            onClick={() => onOpenChange(false)}
-          />
-          <div
-            className="graphic-config-preview-center"
-            style={{ width: previewLayout.width }}
-          >
-            {previewNode}
+  return (
+    <Drawer state={state}>
+      <Drawer.Backdrop isDismissable className="graphic-config-drawer-backdrop">
+        {previewNode && previewLayout && (
+          <div className="graphic-config-preview-layer" style={{ height: previewAreaHeight }}>
+            <button
+              type="button"
+              aria-label="关闭配置"
+              className="graphic-config-preview-dismiss graphic-config-preview-dismiss-left"
+              onClick={() => onOpenChange(false)}
+            />
+            <div
+              className="graphic-config-preview-center"
+              style={{ width: previewLayout.width }}
+            >
+              {previewNode}
+            </div>
+            <button
+              type="button"
+              aria-label="关闭配置"
+              className="graphic-config-preview-dismiss graphic-config-preview-dismiss-right"
+              onClick={() => onOpenChange(false)}
+            />
           </div>
-          <button
-            type="button"
-            aria-label="关闭配置"
-            className="graphic-config-preview-dismiss graphic-config-preview-dismiss-right"
-            onClick={() => onOpenChange(false)}
-          />
-        </div>
-      )}
-      {sheetContent}
-    </div>,
-    document.body,
+        )}
+        <Drawer.Content placement="bottom">
+          <Drawer.Dialog
+            className="graphic-config-drawer-dialog component-library"
+            style={{ height: sheetHeight, maxHeight: sheetHeight }}
+          >
+            {sheetContent}
+          </Drawer.Dialog>
+        </Drawer.Content>
+      </Drawer.Backdrop>
+    </Drawer>
   )
 }
