@@ -1,5 +1,5 @@
 import { ArrowLeft, Check } from 'lucide-react'
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { HAND_DRAWN_CIRCLE_PATH, HAND_DRAWN_CIRCLE_VIEWBOX } from './circleHighlight'
 import {
   buildHighlightCharPageMap,
@@ -328,6 +328,28 @@ export function GraphicHighlightEditor({
 }: GraphicHighlightEditorProps) {
   const [activeStyleTab, setActiveStyleTab] = useState<HighlightStyleTab>('underline')
   const activeTabIndex = HIGHLIGHT_STYLE_TABS.findIndex((tab) => tab.id === activeStyleTab)
+  const tabGroupRef = useRef<HTMLDivElement>(null)
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
+  const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 })
+
+  const updateTabIndicator = useCallback(() => {
+    const tab = tabRefs.current[activeTabIndex]
+    if (!tab) return
+    setTabIndicator({ left: tab.offsetLeft, width: tab.offsetWidth })
+  }, [activeTabIndex])
+
+  useLayoutEffect(() => {
+    updateTabIndicator()
+  }, [updateTabIndicator])
+
+  useEffect(() => {
+    const group = tabGroupRef.current
+    if (!group) return
+
+    const observer = new ResizeObserver(() => updateTabIndicator())
+    observer.observe(group)
+    return () => observer.disconnect()
+  }, [updateTabIndicator])
   const displayLines = useMemo(() => buildHighlightDisplayLines(markdown), [markdown])
   const charPageMap = useMemo(() => buildHighlightCharPageMap(markdown, config), [markdown, config])
 
@@ -416,17 +438,25 @@ export function GraphicHighlightEditor({
       </div>
 
       <div className="shrink-0 px-4 py-2.5">
-        <div className="graphic-highlight-tab-group" role="tablist" aria-label="高亮样式">
+        <div
+          ref={tabGroupRef}
+          className="graphic-highlight-tab-group"
+          role="tablist"
+          aria-label="高亮样式"
+        >
           <div
             className="graphic-highlight-tab-indicator"
-            style={{ transform: `translateX(${Math.max(0, activeTabIndex) * 100}%)` }}
+            style={{ left: tabIndicator.left, width: tabIndicator.width }}
             aria-hidden
           />
-          {HIGHLIGHT_STYLE_TABS.map((tab) => {
+          {HIGHLIGHT_STYLE_TABS.map((tab, index) => {
             const selected = activeStyleTab === tab.id
             return (
               <button
                 key={tab.id}
+                ref={(node) => {
+                  tabRefs.current[index] = node
+                }}
                 type="button"
                 role="tab"
                 aria-selected={selected}

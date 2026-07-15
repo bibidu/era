@@ -58,9 +58,9 @@ export function drawHandDrawnCircleAroundTextBounds(
   color: string,
   lineWidth = 4,
 ) {
-  const padX = Math.max(6, width * 0.16)
-  const padTop = Math.max(5, ascent * 0.32)
-  const padBottom = Math.max(5, descent * 0.45)
+  const padX = Math.max(8, width * 0.22)
+  const padTop = Math.max(7, ascent * 0.42)
+  const padBottom = Math.max(7, descent * 0.55)
   const left = x - padX
   const top = yTop - padTop
   const boxWidth = width + padX * 2
