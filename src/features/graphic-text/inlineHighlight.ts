@@ -60,6 +60,19 @@ export function buildCharHighlightSegments(
   return segments.length ? segments : [{ text: plain, highlighted: false }]
 }
 
+export function blockHasHighlightedChar(
+  block: { sourceBlockId?: string; id: string; text: string; charOffset?: number },
+  highlightedKeys: ReadonlySet<string>,
+) {
+  const blockId = block.sourceBlockId ?? block.id
+  const charOffset = block.charOffset ?? 0
+  const plain = stripHighlightMarkers(block.text)
+  for (let index = 0; index < plain.length; index += 1) {
+    if (highlightedKeys.has(`${blockId}:${charOffset + index}`)) return true
+  }
+  return false
+}
+
 export function themeAlpha(color: string, alpha: number) {
   const hex = color.trim()
   if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return `rgba(250, 204, 21, ${alpha})`

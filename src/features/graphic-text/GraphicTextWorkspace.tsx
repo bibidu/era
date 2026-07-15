@@ -232,7 +232,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
         <button
           type="button"
           onClick={() => setEditorOpen(true)}
-          className="h-[50vh] w-full rounded-2xl border border-neutral-300 bg-neutral-50 p-4 text-left font-mono text-base leading-7 text-neutral-900 outline-none active:border-neutral-500"
+          className="h-[50vh] w-full overflow-hidden rounded-2xl border border-neutral-300 bg-neutral-50 p-4 text-left font-mono text-base leading-7 text-neutral-900 outline-none active:border-neutral-500"
           style={{ fontSize: '16px', WebkitUserSelect: 'none', userSelect: 'none' }}
         >
           {markdown ? (

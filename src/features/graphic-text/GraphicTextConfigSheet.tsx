@@ -189,7 +189,10 @@ export function GraphicTextConfigSheet({
   const [sheetHeight, setSheetHeight] = useState(readCachedSheetHeight)
   const [showSafeArea, setShowSafeArea] = useState(false)
   const [sheetView, setSheetView] = useState<ConfigSheetView>('main')
-  const [highlightDraft, setHighlightDraft] = useState<string[]>(config.highlightedCharKeys)
+  const [highlightDraft, setHighlightDraft] = useState({
+    underline: config.underlineHighlightedCharKeys,
+    quote: config.quoteHighlightedCharKeys,
+  })
 
   const previewAreaHeight = Math.max(0, viewportHeight - sheetHeight)
 
@@ -197,7 +200,11 @@ export function GraphicTextConfigSheet({
   const previewConfig = useMemo(
     () =>
       sheetView === 'highlight'
-        ? { ...config, highlightedCharKeys: highlightDraft }
+        ? {
+            ...config,
+            underlineHighlightedCharKeys: highlightDraft.underline,
+            quoteHighlightedCharKeys: highlightDraft.quote,
+          }
         : config,
     [config, sheetView, highlightDraft],
   )
@@ -243,9 +250,12 @@ export function GraphicTextConfigSheet({
 
   useEffect(() => {
     if (sheetView === 'highlight') {
-      setHighlightDraft(config.highlightedCharKeys)
+      setHighlightDraft({
+        underline: config.underlineHighlightedCharKeys,
+        quote: config.quoteHighlightedCharKeys,
+      })
     }
-  }, [sheetView, config.highlightedCharKeys])
+  }, [sheetView, config.underlineHighlightedCharKeys, config.quoteHighlightedCharKeys])
 
   const handleResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
     event.preventDefault()
@@ -275,7 +285,10 @@ export function GraphicTextConfigSheet({
   }
 
   const handleHighlightConfirm = () => {
-    onUpdate({ highlightedCharKeys: highlightDraft })
+    onUpdate({
+      underlineHighlightedCharKeys: highlightDraft.underline,
+      quoteHighlightedCharKeys: highlightDraft.quote,
+    })
     setSheetView('main')
   }
 
@@ -319,8 +332,14 @@ export function GraphicTextConfigSheet({
         {sheetView === 'highlight' ? (
           <GraphicHighlightEditor
             markdown={markdown}
-            highlightedCharKeys={highlightDraft}
-            onChange={setHighlightDraft}
+            underlineHighlightedCharKeys={highlightDraft.underline}
+            quoteHighlightedCharKeys={highlightDraft.quote}
+            onUnderlineChange={(keys) =>
+              setHighlightDraft((current) => ({ ...current, underline: keys }))
+            }
+            onQuoteChange={(keys) =>
+              setHighlightDraft((current) => ({ ...current, quote: keys }))
+            }
             onConfirm={handleHighlightConfirm}
             onBack={() => setSheetView('main')}
           />
@@ -351,7 +370,10 @@ export function GraphicTextConfigSheet({
                               高亮设置
                             </span>
                             <span className="text-xs text-neutral-500">
-                              已选 {config.highlightedCharKeys.length} 字
+                              已选{' '}
+                              {config.underlineHighlightedCharKeys.length +
+                                config.quoteHighlightedCharKeys.length}{' '}
+                              字
                             </span>
                           </button>
                         </section>

@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from 'react'
+import { useMemo, type CSSProperties, type ReactNode } from 'react'
 import {
   CODE_BACKGROUND,
   CODE_FONT_FAMILY,
@@ -9,7 +9,7 @@ import {
 } from './codeBlock'
 import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
 import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
-import { buildCharHighlightSegments, themeAlpha } from './inlineHighlight'
+import { buildCharHighlightSegments, blockHasHighlightedChar, themeAlpha } from './inlineHighlight'
 import { resolveTopBarParts } from './topBar'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 
@@ -188,6 +188,71 @@ function HighlightedText({
   )
 }
 
+function QuoteHighlightBar({
+  themeColor,
+  children,
+}: {
+  themeColor: string
+  children: ReactNode
+}) {
+  return (
+    <div className="flex gap-[1.5cqw]">
+      <span
+        className="w-[0.9cqw] shrink-0 self-stretch rounded-full"
+        style={{ backgroundColor: themeColor }}
+        aria-hidden
+      />
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  )
+}
+
+function renderBlockText(
+  block: MarkdownBlock,
+  config: GraphicTextConfig,
+  underlineKeys: ReadonlySet<string>,
+  quoteKeys: ReadonlySet<string>,
+) {
+  const styleType = resolveStyleType(block)
+  const showQuoteBar =
+    styleType !== 'quote' && blockHasHighlightedChar(block, quoteKeys)
+
+  const textNode = (
+    <HighlightedText
+      text={block.text}
+      block={block}
+      themeColor={config.themeColor}
+      highlightedKeys={underlineKeys}
+      enableHighlight
+    />
+  )
+
+  if (block.type === 'list') {
+    const listContent = (
+      <div className="flex gap-[1.5cqw]">
+        <span
+          className="flex h-[1lh] w-[0.7em] shrink-0 items-center justify-center"
+          aria-hidden
+        >
+          <span className="size-[0.32em] rounded-full bg-neutral-800" />
+        </span>
+        <span className="min-w-0 flex-1">{textNode}</span>
+      </div>
+    )
+    return showQuoteBar ? (
+      <QuoteHighlightBar themeColor={config.themeColor}>{listContent}</QuoteHighlightBar>
+    ) : (
+      listContent
+    )
+  }
+
+  return showQuoteBar ? (
+    <QuoteHighlightBar themeColor={config.themeColor}>{textNode}</QuoteHighlightBar>
+  ) : (
+    textNode
+  )
+}
+
 function SafeAreaGuide({
   layout,
 }: {
@@ -229,9 +294,13 @@ export function GraphicPage({
   const layout = getGraphicLayout(config)
   const { percent, aspectRatio } = layout
   const topBar = resolveTopBarParts(config, markdown)
-  const highlightedKeys = useMemo(
-    () => new Set(config.highlightedCharKeys),
-    [config.highlightedCharKeys],
+  const underlineKeys = useMemo(
+    () => new Set(config.underlineHighlightedCharKeys),
+    [config.underlineHighlightedCharKeys],
+  )
+  const quoteKeys = useMemo(
+    () => new Set(config.quoteHighlightedCharKeys),
+    [config.quoteHighlightedCharKeys],
   )
 
   const backgroundStyle: CSSProperties =
@@ -345,7 +414,7 @@ export function GraphicPage({
                               text={block.text}
                               block={block}
                               themeColor={config.themeColor}
-                              highlightedKeys={highlightedKeys}
+                              highlightedKeys={underlineKeys}
                               enableHighlight
                             />
                           </div>
@@ -384,7 +453,7 @@ export function GraphicPage({
                             text={block.text}
                             block={block}
                             themeColor={config.themeColor}
-                            highlightedKeys={highlightedKeys}
+                            highlightedKeys={underlineKeys}
                             enableHighlight
                           />
                         </div>
@@ -397,33 +466,7 @@ export function GraphicPage({
               const block = unit.block
               return (
               <div key={block.id} style={blockStyle(block, config)}>
-                {block.type === 'list' ? (
-                  <div className="flex gap-[1.5cqw]">
-                    <span
-                      className="flex h-[1lh] w-[0.7em] shrink-0 items-center justify-center"
-                      aria-hidden
-                    >
-                      <span className="size-[0.32em] rounded-full bg-neutral-800" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <HighlightedText
-                        text={block.text}
-                        block={block}
-                        themeColor={config.themeColor}
-                        highlightedKeys={highlightedKeys}
-                        enableHighlight
-                      />
-                    </span>
-                  </div>
-                ) : (
-                  <HighlightedText
-                    text={block.text}
-                    block={block}
-                    themeColor={config.themeColor}
-                    highlightedKeys={highlightedKeys}
-                    enableHighlight
-                  />
-                )}
+                {renderBlockText(block, config, underlineKeys, quoteKeys)}
               </div>
               )
             })
