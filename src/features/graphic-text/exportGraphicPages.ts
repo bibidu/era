@@ -19,7 +19,6 @@ import {
   resolvePageBaseFillColor,
 } from './pageBackground'
 import { drawPageGradientBackground } from './pageGradientOverlay'
-import { drawPagePaperOverlay } from './pagePaperOverlay'
 import { drawPagePixelOverlay } from './pagePixelOverlay'
 import {
   shouldDrawBaseBackground,
@@ -245,10 +244,6 @@ async function drawPage(
 
   if (shouldDrawPageOverlay(config) && config.pageOverlay === 'pixel' && config.overlayStacked) {
     drawPagePixelOverlay(ctx, width, height, true)
-  }
-
-  if (shouldDrawPageOverlay(config) && config.pageOverlay === 'paper') {
-    drawPagePaperOverlay(ctx, width, height)
   }
 
   if (shouldDrawPageOverlay(config) && config.pageOverlay === 'gradient' && config.overlayStacked) {
