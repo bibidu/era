@@ -296,6 +296,34 @@ body.is-dragging {
   max-height: min(62vh, 560px);
 }
 
+.graphic-config-sheet-inline {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  flex-shrink: 0;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 24px rgb(0 0 0 / 0.12);
+}
+
+.graphic-config-sheet-inline.graphic-config-drawer-dialog--highlight {
+  height: auto;
+  max-height: none;
+}
+
+.graphic-config-sheet-inline .graphic-config-sheet-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.graphic-config-sheet-inline .graphic-config-sheet-highlight {
+  max-height: none;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
 .graphic-config-sheet-body {
   min-height: 0;
 }
