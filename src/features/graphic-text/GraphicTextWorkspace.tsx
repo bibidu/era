@@ -123,31 +123,12 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-neutral-100">
-      <div className="flex h-12 shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-3">
-        <div className="size-9" aria-hidden />
+      <div className="flex h-12 shrink-0 items-center justify-center border-b border-neutral-200 bg-white px-3">
         <div className="text-center">
           <p className="text-sm font-medium">图文预览</p>
           <p className="text-[11px] text-neutral-500">
             {pages.length ? `${activePage + 1} / ${pages.length}` : '0 / 0'}
           </p>
-        </div>
-        <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            aria-label="文字配置"
-            className="flex size-9 items-center justify-center rounded-full active:bg-neutral-100"
-            onClick={() => setEditorOpen(true)}
-          >
-            <Type size={18} />
-          </button>
-          <button
-            type="button"
-            aria-label="生成配置"
-            className="flex size-9 items-center justify-center rounded-full active:bg-neutral-100"
-            onClick={() => setConfigOpen(true)}
-          >
-            <Settings2 size={18} />
-          </button>
         </div>
       </div>
 
@@ -173,17 +154,26 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
       </div>
 
       <div className="shrink-0 border-t border-neutral-200 bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">
-        {saveProgress && (
-          <p className="mb-2 text-center text-xs text-neutral-500">{saveProgress}</p>
-        )}
-        <button
-          type="button"
-          disabled={saving || !pages.length}
-          className="h-12 w-full rounded-xl bg-black text-sm font-semibold text-white disabled:opacity-50"
-          onClick={handleSave}
-        >
-          {saving ? saveProgress || '生成中...' : `保存 ${pages.length} 张到本地`}
-        </button>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            aria-label="文字配置"
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white text-sm font-medium active:bg-neutral-100"
+            onClick={() => setEditorOpen(true)}
+          >
+            <Type size={18} />
+            文字
+          </button>
+          <button
+            type="button"
+            aria-label="生成配置"
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white text-sm font-medium active:bg-neutral-100"
+            onClick={() => setConfigOpen(true)}
+          >
+            <Settings2 size={18} />
+            配置
+          </button>
+        </div>
       </div>
 
       {editorOpen && (
@@ -201,9 +191,13 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
         isOpen={configOpen}
         config={config}
         markdown={markdown}
+        pageCount={pages.length}
+        saving={saving}
+        saveProgress={saveProgress}
         onOpenChange={setConfigOpen}
         onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
         onBackgroundUpload={handleBackgroundUpload}
+        onSave={handleSave}
       />
     </div>
   )
