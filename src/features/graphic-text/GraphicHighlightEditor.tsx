@@ -327,6 +327,7 @@ export function GraphicHighlightEditor({
   onBack,
 }: GraphicHighlightEditorProps) {
   const [activeStyleTab, setActiveStyleTab] = useState<HighlightStyleTab>('underline')
+  const activeTabIndex = HIGHLIGHT_STYLE_TABS.findIndex((tab) => tab.id === activeStyleTab)
   const displayLines = useMemo(() => buildHighlightDisplayLines(markdown), [markdown])
   const charPageMap = useMemo(() => buildHighlightCharPageMap(markdown, config), [markdown, config])
 
@@ -416,6 +417,11 @@ export function GraphicHighlightEditor({
 
       <div className="shrink-0 px-4 py-2.5">
         <div className="graphic-highlight-tab-group" role="tablist" aria-label="高亮样式">
+          <div
+            className="graphic-highlight-tab-indicator"
+            style={{ transform: `translateX(${Math.max(0, activeTabIndex) * 100}%)` }}
+            aria-hidden
+          />
           {HIGHLIGHT_STYLE_TABS.map((tab) => {
             const selected = activeStyleTab === tab.id
             return (

@@ -1,15 +1,24 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Check } from 'lucide-react'
+import { Check, ClipboardPaste } from 'lucide-react'
 
 interface MarkdownEditorDockProps {
   value: string
   onChange: (value: string) => void
+  onPaste: () => void
+  pasteError?: string
   onCommit: () => void
   onDismiss: () => void
 }
 
-export function MarkdownEditorDock({ value, onChange, onCommit, onDismiss }: MarkdownEditorDockProps) {
+export function MarkdownEditorDock({
+  value,
+  onChange,
+  onPaste,
+  pasteError,
+  onCommit,
+  onDismiss,
+}: MarkdownEditorDockProps) {
   const dockRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -106,6 +115,20 @@ export function MarkdownEditorDock({ value, onChange, onCommit, onDismiss }: Mar
             userSelect: 'text',
           }}
         />
+      </div>
+
+      <div className="shrink-0 border-t border-neutral-200 px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">
+        {pasteError && (
+          <p className="mb-2 text-center text-xs text-red-500">{pasteError}</p>
+        )}
+        <button
+          type="button"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white text-sm font-medium active:bg-neutral-100"
+          onClick={onPaste}
+        >
+          <ClipboardPaste size={18} />
+          粘贴
+        </button>
       </div>
       </div>
     </div>,
