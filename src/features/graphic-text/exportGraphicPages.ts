@@ -6,7 +6,7 @@ import {
   CODE_TEXT_COLOR,
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
-import { drawHandDrawnCircleAroundTextBounds } from './circleHighlight'
+import { buildCircleHighlightRuns, drawHandDrawnCircleAroundTextBounds } from './circleHighlight'
 import { getGraphicLayout } from './layout'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { getFontById } from '../../data/fonts'
@@ -150,32 +150,21 @@ function drawStyledLine(
   ctx.fillText(plainText, x, baselineY)
 
   if (enableHighlight) {
-    let index = 0
-    while (index < plainText.length) {
-      const key = `${blockId}:${charOffset + index}`
-      if (circleKeys.has(key)) {
-        let end = index
-        while (end < plainText.length && circleKeys.has(`${blockId}:${charOffset + end}`)) {
-          end += 1
-        }
-        const runText = plainText.slice(index, end)
-        const prefix = plainText.slice(0, index)
-        const runX = x + ctx.measureText(prefix).width
-        const runWidth = ctx.measureText(runText).width
-        drawHandDrawnCircleAroundTextBounds(
-          ctx,
-          runX,
-          yTop,
-          runWidth,
-          ascent,
-          descent,
-          themeColor,
-          Math.max(4, circleLineWidth),
-        )
-        index = end
-      } else {
-        index += 1
-      }
+    const circleRuns = buildCircleHighlightRuns(plainText, blockId, charOffset, circleKeys)
+    for (const run of circleRuns) {
+      const prefix = plainText.slice(0, run.start)
+      const runX = x + ctx.measureText(prefix).width
+      const runWidth = ctx.measureText(run.text).width
+      drawHandDrawnCircleAroundTextBounds(
+        ctx,
+        runX,
+        yTop,
+        runWidth,
+        ascent,
+        descent,
+        themeColor,
+        Math.max(4, circleLineWidth),
+      )
     }
 
     let underlineX = x

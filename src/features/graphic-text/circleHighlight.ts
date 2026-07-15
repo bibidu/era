@@ -75,3 +75,41 @@ export function drawHandDrawnCircleAroundTextBounds(
     lineWidth,
   )
 }
+
+export interface CircleHighlightRun {
+  start: number
+  end: number
+  text: string
+}
+
+/** 在同一渲染行内，将连续线圈高亮字符合并为单个线圈范围 */
+export function buildCircleHighlightRuns(
+  plain: string,
+  blockId: string,
+  charOffset: number,
+  circleKeys: ReadonlySet<string>,
+): CircleHighlightRun[] {
+  const runs: CircleHighlightRun[] = []
+  let index = 0
+
+  while (index < plain.length) {
+    if (!circleKeys.has(`${blockId}:${charOffset + index}`)) {
+      index += 1
+      continue
+    }
+
+    let end = index
+    while (end < plain.length && circleKeys.has(`${blockId}:${charOffset + end}`)) {
+      end += 1
+    }
+
+    runs.push({
+      start: index,
+      end,
+      text: plain.slice(index, end),
+    })
+    index = end
+  }
+
+  return runs
+}

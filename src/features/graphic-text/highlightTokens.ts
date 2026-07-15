@@ -1,5 +1,6 @@
-import { parseMarkdown } from './layout'
+import { paginateMarkdown, parseMarkdown } from './layout'
 import { stripHighlightMarkers } from './inlineHighlight'
+import type { GraphicTextConfig } from './types'
 
 export interface HighlightCharToken {
   key: string
@@ -46,4 +47,23 @@ export function buildHighlightCharTokens(markdown: string): HighlightCharToken[]
 
 export function charHighlightKey(blockId: string, charIndex: number) {
   return `${blockId}:${charIndex}`
+}
+
+export function buildHighlightCharPageMap(markdown: string, config: GraphicTextConfig) {
+  const pages = paginateMarkdown(markdown, config)
+  const map = new Map<string, number>()
+
+  pages.forEach((page, pageIndex) => {
+    const pageNumber = pageIndex + 1
+    for (const block of page.blocks) {
+      const sourceId = block.sourceBlockId ?? block.id
+      const offset = block.charOffset ?? 0
+      const plain = stripHighlightMarkers(block.text)
+      for (let index = 0; index < plain.length; index += 1) {
+        map.set(charHighlightKey(sourceId, offset + index), pageNumber)
+      }
+    }
+  })
+
+  return map
 }
