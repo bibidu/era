@@ -1,6 +1,5 @@
 import { useRef } from 'react'
 import { FONT_OPTIONS, type FontOption } from '../../data/fonts'
-import { GraphicConfigSelect } from './GraphicConfigSelect'
 import {
   BODY_FONT_SIZE_OPTIONS,
   BODY_LINE_HEIGHT_OPTIONS,
@@ -13,6 +12,7 @@ import {
 import type { FontSizeTarget, TextAdjustField } from './graphicConfigPanels'
 import { PAPER_COLORS, TemplatePreviewSquare } from './graphicTemplateOptions'
 import { PixelPreviewArt } from './PixelPreviewArt'
+import { TextAdjustNumericControl } from './TextAdjustNumericControl'
 import { GRAPHIC_ASPECT_RATIO_OPTIONS, type GraphicAspectRatio, type GraphicTextConfig } from './types'
 
 function StripShell({ children }: { children: React.ReactNode }) {
@@ -33,15 +33,13 @@ interface GraphicTopTextStripProps {
 export function GraphicTopTextStrip({ value, onChange }: GraphicTopTextStripProps) {
   return (
     <StripShell>
-      <label className="graphic-toolbar-strip-top-text flex min-w-0 flex-1 items-center gap-2 text-sm">
-        <span className="shrink-0 text-neutral-600">顶部文案</span>
-        <input
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder="留空则显示「全文 xxx 字」"
-          className="h-9 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-neutral-50 px-2 text-sm outline-none focus:border-neutral-500"
-        />
-      </label>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="留空则显示「全文 xxx 字」"
+        aria-label="顶部文案"
+        className="graphic-toolbar-strip-top-text h-9 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-neutral-50 px-2 text-sm outline-none focus:border-neutral-500"
+      />
     </StripShell>
   )
 }
@@ -244,10 +242,8 @@ function TextAdjustFieldControl({
   if (target === 'title') {
     if (field === 'fontSize') {
       return (
-        <GraphicConfigSelect
-          label="标题字号"
-          hideLabel
-          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo"
+        <TextAdjustNumericControl
+          aria-label="标题字号"
           value={config.titleFontSize}
           options={TITLE_FONT_SIZE_OPTIONS}
           onChange={(value) => onUpdate({ titleFontSize: value })}
@@ -257,10 +253,8 @@ function TextAdjustFieldControl({
     }
     if (field === 'lineHeight') {
       return (
-        <GraphicConfigSelect
-          label="标题行高"
-          hideLabel
-          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo w-full"
+        <TextAdjustNumericControl
+          aria-label="标题行高"
           value={config.titleLineHeight}
           options={TITLE_LINE_HEIGHT_OPTIONS}
           onChange={(value) => onUpdate({ titleLineHeight: value })}
@@ -269,10 +263,8 @@ function TextAdjustFieldControl({
     }
     if (field === 'marginTop') {
       return (
-        <GraphicConfigSelect
-          label="上间距"
-          hideLabel
-          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo w-full"
+        <TextAdjustNumericControl
+          aria-label="上间距"
           value={config.titleMarginTop}
           options={TITLE_MARGIN_OPTIONS}
           onChange={(value) => onUpdate({ titleMarginTop: value })}
@@ -280,10 +272,8 @@ function TextAdjustFieldControl({
       )
     }
     return (
-      <GraphicConfigSelect
-        label="下间距"
-        hideLabel
-        className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo w-full"
+      <TextAdjustNumericControl
+        aria-label="下间距"
         value={config.titleMarginBottom}
         options={TITLE_MARGIN_OPTIONS}
         onChange={(value) => onUpdate({ titleMarginBottom: value })}
@@ -294,10 +284,8 @@ function TextAdjustFieldControl({
   if (target === 'heading') {
     if (field === 'fontSize') {
       return (
-        <GraphicConfigSelect
-          label="二级字号"
-          hideLabel
-          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo w-full"
+        <TextAdjustNumericControl
+          aria-label="二级字号"
           value={config.headingFontSize}
           options={HEADING_FONT_SIZE_OPTIONS}
           onChange={(value) => onUpdate({ headingFontSize: value })}
@@ -307,10 +295,8 @@ function TextAdjustFieldControl({
     }
     if (field === 'marginTop') {
       return (
-        <GraphicConfigSelect
-          label="上间距"
-          hideLabel
-          className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo w-full"
+        <TextAdjustNumericControl
+          aria-label="上间距"
           value={config.headingMarginTop}
           options={HEADING_MARGIN_OPTIONS}
           onChange={(value) => onUpdate({ headingMarginTop: value })}
@@ -318,10 +304,8 @@ function TextAdjustFieldControl({
       )
     }
     return (
-      <GraphicConfigSelect
-        label="下间距"
-        hideLabel
-        className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo w-full"
+      <TextAdjustNumericControl
+        aria-label="下间距"
         value={config.headingMarginBottom}
         options={HEADING_MARGIN_OPTIONS}
         onChange={(value) => onUpdate({ headingMarginBottom: value })}
@@ -331,10 +315,8 @@ function TextAdjustFieldControl({
 
   if (field === 'fontSize') {
     return (
-      <GraphicConfigSelect
-        label="正文字号"
-        hideLabel
-        className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo w-full"
+      <TextAdjustNumericControl
+        aria-label="正文字号"
         value={config.bodyFontSize}
         options={BODY_FONT_SIZE_OPTIONS}
         onChange={(value) => onUpdate({ bodyFontSize: value })}
@@ -344,10 +326,8 @@ function TextAdjustFieldControl({
   }
 
   return (
-    <GraphicConfigSelect
-      label="正文行高"
-      hideLabel
-      className="graphic-toolbar-strip-select graphic-toolbar-strip-select--solo w-full"
+    <TextAdjustNumericControl
+      aria-label="正文行高"
       value={config.bodyLineHeight}
       options={BODY_LINE_HEIGHT_OPTIONS}
       onChange={(value) => onUpdate({ bodyLineHeight: value })}
