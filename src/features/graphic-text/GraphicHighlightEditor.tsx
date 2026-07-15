@@ -123,17 +123,53 @@ function HighlightTokenButton({
   )
 }
 
-function HighlightRowPageIndicator({ page }: { page: number }) {
-  const isOdd = page % 2 === 1
+function HighlightPageRail({ segments }: { segments: Array<{ page: number; top: number; height: number }> }) {
+  if (!segments.length) return null
+
   return (
-    <span
-      className={`graphic-highlight-page-indicator ${
-        isOdd ? 'graphic-highlight-page-indicator--odd' : 'graphic-highlight-page-indicator--even'
-      }`}
-      aria-label={`第 ${page} 页`}
-      title={`第 ${page} 页`}
-    />
+    <div className="graphic-highlight-page-rail" aria-hidden>
+      {segments.map((segment, index) => (
+        <span
+          key={`${segment.page}-${segment.top}-${index}`}
+          className={`graphic-highlight-page-rail-segment ${
+            segment.page % 2 === 1
+              ? 'graphic-highlight-page-rail-segment--odd'
+              : 'graphic-highlight-page-rail-segment--even'
+          }`}
+          style={{ top: segment.top, height: segment.height }}
+          title={`第 ${segment.page} 页`}
+        />
+      ))}
+    </div>
   )
+}
+
+function buildPageBarSegments(
+  rowElements: Array<HTMLElement | null>,
+  visualRows: HighlightCharToken[][],
+  charPageMap: Map<string, number>,
+) {
+  const segments: Array<{ page: number; top: number; height: number }> = []
+
+  visualRows.forEach((rowTokens, index) => {
+    const element = rowElements[index]
+    if (!element) return
+
+    const page = charPageMap.get(rowTokens[0]?.key ?? '') ?? 1
+    const top = element.offsetTop
+    const height = element.offsetHeight
+    const previous = segments[segments.length - 1]
+
+    if (previous && previous.page === page) {
+      const bottom = Math.max(previous.top + previous.height, top + height)
+      previous.height = bottom - previous.top
+      return
+    }
+
+    segments.push({ page, top, height })
+  })
+
+  return segments
 }
 
 function HighlightParagraphRows({
@@ -149,8 +185,13 @@ function HighlightParagraphRows({
   onToggleToken: (key: string) => void
   onToggleRow: (rowTokens: HighlightCharToken[]) => void
 }) {
+  const paragraphRef = useRef<HTMLDivElement>(null)
   const measureRef = useRef<HTMLDivElement>(null)
+  const rowRefs = useRef<Array<HTMLDivElement | null>>([])
   const [visualRows, setVisualRows] = useState<HighlightCharToken[][] | null>(null)
+  const [pageBarSegments, setPageBarSegments] = useState<
+    Array<{ page: number; top: number; height: number }>
+  >([])
 
   const computeRows = useCallback(() => {
     const el = measureRef.current
@@ -181,6 +222,14 @@ function HighlightParagraphRows({
     )
   }, [tokens])
 
+  const updatePageBarSegments = useCallback(() => {
+    if (!visualRows?.length) {
+      setPageBarSegments([])
+      return
+    }
+    setPageBarSegments(buildPageBarSegments(rowRefs.current, visualRows, charPageMap))
+  }, [charPageMap, visualRows])
+
   useLayoutEffect(() => {
     computeRows()
     const el = measureRef.current
@@ -191,11 +240,25 @@ function HighlightParagraphRows({
     return () => observer.disconnect()
   }, [computeRows])
 
+  useLayoutEffect(() => {
+    rowRefs.current = rowRefs.current.slice(0, visualRows?.length ?? 0)
+  }, [visualRows])
+
+  useLayoutEffect(() => {
+    updatePageBarSegments()
+    const paragraph = paragraphRef.current
+    if (!paragraph) return
+
+    const observer = new ResizeObserver(() => updatePageBarSegments())
+    observer.observe(paragraph)
+    return () => observer.disconnect()
+  }, [updatePageBarSegments])
+
   const measureTokenClassName =
     'inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-transparent px-2 text-sm'
 
   return (
-    <div className="graphic-highlight-paragraph">
+    <div ref={paragraphRef} className="graphic-highlight-paragraph">
       <div ref={measureRef} className="graphic-highlight-row-measure" aria-hidden>
         {tokens.map((token) => (
           <span key={token.key} data-highlight-token={token.key} className={measureTokenClassName}>
@@ -206,37 +269,46 @@ function HighlightParagraphRows({
 
       {visualRows?.map((rowTokens, rowIndex) => {
         const allSelected = isRowFullySelected(rowTokens, highlightedSet)
-        const page = charPageMap.get(rowTokens[0]?.key ?? '') ?? 1
         const isParagraphEnd = rowIndex === visualRows.length - 1
         return (
           <div
             key={`row-${rowIndex}`}
-            className={`graphic-highlight-row${isParagraphEnd ? ' graphic-highlight-row--paragraph-end' : ''}`}
+            ref={(element) => {
+              rowRefs.current[rowIndex] = element
+            }}
+            className="graphic-highlight-row"
           >
-            <button
-              type="button"
-              aria-label={allSelected ? '取消全选本行' : '全选本行'}
-              aria-checked={allSelected}
-              role="radio"
-              className="graphic-highlight-row-radio shrink-0"
-              onClick={() => onToggleRow(rowTokens)}
+            <div
+              className={`graphic-highlight-row-body${
+                isParagraphEnd ? ' graphic-highlight-row-body--paragraph-end' : ''
+              }`}
             >
-              <span className="graphic-highlight-row-radio-dot" />
-            </button>
-            <div className="graphic-highlight-row-tokens">
-              {rowTokens.map((token) => (
-                <HighlightTokenButton
-                  key={token.key}
-                  token={token}
-                  selected={highlightedSet.has(token.key)}
-                  onToggle={onToggleToken}
-                />
-              ))}
+              <button
+                type="button"
+                aria-label={allSelected ? '取消全选本行' : '全选本行'}
+                aria-checked={allSelected}
+                role="radio"
+                className="graphic-highlight-row-radio shrink-0"
+                onClick={() => onToggleRow(rowTokens)}
+              >
+                <span className="graphic-highlight-row-radio-dot" />
+              </button>
+              <div className="graphic-highlight-row-tokens">
+                {rowTokens.map((token) => (
+                  <HighlightTokenButton
+                    key={token.key}
+                    token={token}
+                    selected={highlightedSet.has(token.key)}
+                    onToggle={onToggleToken}
+                  />
+                ))}
+              </div>
             </div>
-            <HighlightRowPageIndicator page={page} />
           </div>
         )
       })}
+
+      <HighlightPageRail segments={pageBarSegments} />
     </div>
   )
 }
