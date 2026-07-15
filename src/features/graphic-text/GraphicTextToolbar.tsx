@@ -1,10 +1,11 @@
 import { ArrowLeft, CaseSensitive, Check, Keyboard } from 'lucide-react'
 import {
   FONT_SIZE_TARGETS,
-  GRAPHIC_SHEET_PANELS,
+  GRAPHIC_HIGHLIGHT_PANEL,
   GRAPHIC_TEXT_ADJUST_MENU,
   GRAPHIC_TOOLBAR_STRIPS,
   GRAPHIC_TOOLBAR_TOGGLES,
+  GRAPHIC_TOP_TEXT_PANEL,
   TEXT_ADJUST_FIELDS,
   type FontSizeNav,
   type FontSizeTarget,
@@ -58,50 +59,29 @@ export function GraphicTextToolbar({
   const TextAdjustIcon = GRAPHIC_TEXT_ADJUST_MENU.icon
   const selectedTarget = isTextAdjustTarget(fontSizeNav) ? fontSizeNav : null
   const selectedTargetLabel = FONT_SIZE_TARGETS.find((item) => item.id === selectedTarget)?.label
+  const TopTextIcon = GRAPHIC_TOP_TEXT_PANEL.icon
+  const HighlightIcon = GRAPHIC_HIGHLIGHT_PANEL.icon
 
   return (
     <div className="graphic-text-toolbar-wrap shrink-0 px-3 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2">
       <div className="graphic-text-toolbar">
-        <div
-          className={`graphic-text-toolbar-scroll component-scroll-row flex min-w-0 flex-1 gap-1 overflow-x-auto ${
-            inTextAdjustMode ? 'items-center' : 'items-stretch'
-          }`}
-        >
-          {inTextAdjustMode ? (
-            <>
-              <button
-                type="button"
-                aria-label="返回"
-                className="graphic-text-toolbar-back"
-                onClick={onTextAdjustBack}
-              >
-                <ArrowLeft size={20} strokeWidth={1.75} />
-              </button>
+        {inTextAdjustMode ? (
+          <div className="graphic-text-toolbar-text-adjust flex min-w-0 flex-1 items-center">
+            <button
+              type="button"
+              aria-label="返回"
+              className="graphic-text-toolbar-back graphic-text-toolbar-back--pinned"
+              onClick={onTextAdjustBack}
+            >
+              <ArrowLeft size={20} strokeWidth={1.75} />
+            </button>
 
-              <button
-                type="button"
-                aria-label={GRAPHIC_TEXT_ADJUST_MENU.label}
-                aria-pressed
-                className="graphic-text-toolbar-item graphic-text-toolbar-item--active"
-                onClick={onOpenTextAdjustMenu}
-              >
-                <TextAdjustIcon size={22} strokeWidth={1.5} />
-                <span>{GRAPHIC_TEXT_ADJUST_MENU.label}</span>
-              </button>
-
-              <span className="graphic-text-toolbar-divider" aria-hidden />
-
+            <div className="graphic-text-toolbar-scroll component-scroll-row flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
               {selectedTarget && selectedTargetLabel ? (
                 <>
-                  <button
-                    type="button"
-                    aria-label={selectedTargetLabel}
-                    aria-pressed
-                    className="graphic-text-toolbar-subitem graphic-text-toolbar-subitem--active"
-                    onClick={() => onSelectTextAdjustTarget(selectedTarget)}
-                  >
+                  <span className="graphic-text-toolbar-subitem graphic-text-toolbar-subitem--label">
                     {selectedTargetLabel}
-                  </button>
+                  </span>
 
                   <span className="graphic-text-toolbar-divider" aria-hidden />
 
@@ -122,101 +102,116 @@ export function GraphicTextToolbar({
                   })}
                 </>
               ) : (
-                FONT_SIZE_TARGETS.map((item) => {
-                  const active = fontSizeNav === item.id
-                  return (
+                <>
+                  <button
+                    type="button"
+                    aria-label={GRAPHIC_TEXT_ADJUST_MENU.label}
+                    aria-pressed
+                    className="graphic-text-toolbar-item graphic-text-toolbar-item--active"
+                    onClick={onOpenTextAdjustMenu}
+                  >
+                    <TextAdjustIcon size={22} strokeWidth={1.5} />
+                    <span>{GRAPHIC_TEXT_ADJUST_MENU.label}</span>
+                  </button>
+
+                  <span className="graphic-text-toolbar-divider" aria-hidden />
+
+                  {FONT_SIZE_TARGETS.map((item) => (
                     <button
                       key={item.id}
                       type="button"
                       aria-label={item.label}
-                      aria-pressed={active}
-                      className={`graphic-text-toolbar-subitem ${active ? 'graphic-text-toolbar-subitem--active' : ''}`}
+                      className="graphic-text-toolbar-subitem"
                       onClick={() => onSelectTextAdjustTarget(item.id)}
                     >
                       {item.label}
                     </button>
-                  )
-                })
+                  ))}
+                </>
               )}
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                aria-label="编辑"
-                aria-pressed={editorOpen}
-                className={`graphic-text-toolbar-item ${editorOpen ? 'graphic-text-toolbar-item--active' : ''}`}
-                onClick={onEdit}
-              >
-                <Keyboard size={22} strokeWidth={1.5} />
-                <span>编辑</span>
-              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="graphic-text-toolbar-scroll component-scroll-row flex min-w-0 flex-1 items-stretch gap-1 overflow-x-auto">
+            <button
+              type="button"
+              aria-label="编辑"
+              aria-pressed={editorOpen}
+              className={`graphic-text-toolbar-item ${editorOpen ? 'graphic-text-toolbar-item--active' : ''}`}
+              onClick={onEdit}
+            >
+              <Keyboard size={22} strokeWidth={1.5} />
+              <span>编辑</span>
+            </button>
 
-              {GRAPHIC_TOOLBAR_STRIPS.map((item) => {
-                const Icon = item.icon
-                const active = activeStrip === item.id
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    aria-label={item.label}
-                    aria-pressed={active}
-                    className={`graphic-text-toolbar-item ${active ? 'graphic-text-toolbar-item--active' : ''}`}
-                    onClick={() => onSelectStrip(item.id)}
-                  >
-                    <Icon size={22} strokeWidth={1.5} />
-                    <span>{item.label}</span>
-                  </button>
-                )
-              })}
+            {GRAPHIC_TOOLBAR_STRIPS.map((item) => {
+              const Icon = item.icon
+              const active = activeStrip === item.id
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-label={item.label}
+                  aria-pressed={active}
+                  className={`graphic-text-toolbar-item ${active ? 'graphic-text-toolbar-item--active' : ''}`}
+                  onClick={() => onSelectStrip(item.id)}
+                >
+                  <Icon size={22} strokeWidth={1.5} />
+                  <span>{item.label}</span>
+                </button>
+              )
+            })}
 
-              <button
-                type="button"
-                aria-label={GRAPHIC_TEXT_ADJUST_MENU.label}
-                className="graphic-text-toolbar-item"
-                onClick={onOpenTextAdjustMenu}
-              >
-                <CaseSensitive size={22} strokeWidth={1.5} />
-                <span>{GRAPHIC_TEXT_ADJUST_MENU.label}</span>
-              </button>
+            <button
+              type="button"
+              aria-label={GRAPHIC_TEXT_ADJUST_MENU.label}
+              className="graphic-text-toolbar-item"
+              onClick={onOpenTextAdjustMenu}
+            >
+              <CaseSensitive size={22} strokeWidth={1.5} />
+              <span>{GRAPHIC_TEXT_ADJUST_MENU.label}</span>
+            </button>
 
-              {GRAPHIC_SHEET_PANELS.map((panel) => {
-                const Icon = panel.icon
-                const active = activePanel === panel.id
-                return (
-                  <button
-                    key={panel.id}
-                    type="button"
-                    aria-label={panel.label}
-                    aria-pressed={active}
-                    className={`graphic-text-toolbar-item ${active ? 'graphic-text-toolbar-item--active' : ''}`}
-                    onClick={() => onSelectPanel(panel.id)}
-                  >
-                    <Icon size={22} strokeWidth={1.5} />
-                    <span>{panel.label}</span>
-                  </button>
-                )
-              })}
+            <button
+              type="button"
+              aria-label={GRAPHIC_HIGHLIGHT_PANEL.label}
+              aria-pressed={activePanel === GRAPHIC_HIGHLIGHT_PANEL.id}
+              className={`graphic-text-toolbar-item ${activePanel === GRAPHIC_HIGHLIGHT_PANEL.id ? 'graphic-text-toolbar-item--active' : ''}`}
+              onClick={() => onSelectPanel(GRAPHIC_HIGHLIGHT_PANEL.id)}
+            >
+              <HighlightIcon size={22} strokeWidth={1.5} />
+              <span>{GRAPHIC_HIGHLIGHT_PANEL.label}</span>
+            </button>
 
-              {GRAPHIC_TOOLBAR_TOGGLES.map((item) => {
-                const Icon = item.icon
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    aria-label={item.label}
-                    aria-pressed={safeAreaOpen}
-                    className={`graphic-text-toolbar-item ${safeAreaOpen ? 'graphic-text-toolbar-item--active' : ''}`}
-                    onClick={onToggleSafeArea}
-                  >
-                    <Icon size={22} strokeWidth={1.5} />
-                    <span>{item.label}</span>
-                  </button>
-                )
-              })}
-            </>
-          )}
-        </div>
+            <button
+              type="button"
+              aria-label={GRAPHIC_TOP_TEXT_PANEL.label}
+              aria-pressed={activeStrip === GRAPHIC_TOP_TEXT_PANEL.id}
+              className={`graphic-text-toolbar-item ${activeStrip === GRAPHIC_TOP_TEXT_PANEL.id ? 'graphic-text-toolbar-item--active' : ''}`}
+              onClick={() => onSelectStrip(GRAPHIC_TOP_TEXT_PANEL.id)}
+            >
+              <TopTextIcon size={22} strokeWidth={1.5} />
+              <span>{GRAPHIC_TOP_TEXT_PANEL.label}</span>
+            </button>
+
+            {GRAPHIC_TOOLBAR_TOGGLES.map((item) => {
+              const Icon = item.icon
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-label={item.label}
+                  aria-pressed={safeAreaOpen}
+                  className={`graphic-text-toolbar-item ${safeAreaOpen ? 'graphic-text-toolbar-item--active' : ''}`}
+                  onClick={onToggleSafeArea}
+                >
+                  <Icon size={22} strokeWidth={1.5} />
+                  <span>{item.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
 
         <div className="graphic-text-toolbar-fade" aria-hidden />
 

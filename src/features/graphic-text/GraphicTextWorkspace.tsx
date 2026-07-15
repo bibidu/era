@@ -12,6 +12,7 @@ import {
   GraphicFontStrip,
   GraphicTemplateStrip,
   GraphicTextAdjustFieldStrip,
+  GraphicTopTextStrip,
 } from './GraphicToolbarStrips'
 import type {
   FontSizeNav,
@@ -263,6 +264,12 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
             config={config}
             onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
             onBackgroundUpload={handleBackgroundUpload}
+          />
+        )}
+        {toolbarStrip === 'top-text' && (
+          <GraphicTopTextStrip
+            value={config.topText}
+            onChange={(topText) => setConfig((current) => ({ ...current, topText }))}
           />
         )}
         {showTextAdjustStrip && (

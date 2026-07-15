@@ -9,9 +9,9 @@ import {
   Type,
 } from 'lucide-react'
 
-export type GraphicConfigPanel = 'highlight' | 'top-text'
+export type GraphicConfigPanel = 'highlight'
 
-export type ToolbarStrip = 'font' | 'aspect' | 'template'
+export type ToolbarStrip = 'font' | 'aspect' | 'template' | 'top-text'
 
 export type FontSizeTarget = 'title' | 'heading' | 'body'
 
@@ -19,14 +19,17 @@ export type TextAdjustField = 'fontSize' | 'lineHeight' | 'marginTop' | 'marginB
 
 export type FontSizeNav = null | 'menu' | FontSizeTarget
 
-export const GRAPHIC_SHEET_PANELS: {
-  id: GraphicConfigPanel
-  label: string
-  icon: LucideIcon
-}[] = [
-  { id: 'highlight', label: '高亮', icon: Highlighter },
-  { id: 'top-text', label: '顶部', icon: TextCursorInput },
-]
+export const GRAPHIC_HIGHLIGHT_PANEL = {
+  id: 'highlight' as const,
+  label: '高亮',
+  icon: Highlighter,
+}
+
+export const GRAPHIC_TOP_TEXT_PANEL = {
+  id: 'top-text' as const,
+  label: '顶部',
+  icon: TextCursorInput,
+}
 
 export const GRAPHIC_TEXT_ADJUST_MENU = {
   id: 'text-adjust' as const,
@@ -65,7 +68,7 @@ export const TEXT_ADJUST_FIELDS: Record<
 }
 
 export const GRAPHIC_TOOLBAR_STRIPS: {
-  id: ToolbarStrip
+  id: Exclude<ToolbarStrip, 'top-text'>
   label: string
   icon: LucideIcon
 }[] = [

@@ -129,6 +129,19 @@ body.is-dragging {
   background: #f5f5f5;
 }
 
+.graphic-text-toolbar-text-adjust {
+  min-width: 0;
+  flex: 1;
+}
+
+.graphic-text-toolbar-back--pinned {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  background: #ffffff;
+  box-shadow: 8px 0 12px -6px #ffffff;
+}
+
 .graphic-text-toolbar-divider {
   flex-shrink: 0;
   width: 1px;
@@ -160,6 +173,12 @@ body.is-dragging {
   background: #f5f5f5;
   color: #171717;
   font-weight: 600;
+}
+
+.graphic-text-toolbar-subitem--label {
+  color: #171717;
+  font-weight: 600;
+  cursor: default;
 }
 
 .graphic-text-toolbar-fade {
@@ -452,6 +471,11 @@ body.is-dragging {
   width: 100%;
   min-width: 0;
   max-width: none;
+}
+
+.graphic-toolbar-strip-top-text {
+  width: 100%;
+  min-width: 0;
 }
 
 .graphic-config-sheet-handle {
