@@ -1,4 +1,4 @@
-import { ArrowLeft, Check } from 'lucide-react'
+import { ArrowLeft, Check, Palette } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { HAND_DRAWN_CIRCLE_PATH, HAND_DRAWN_CIRCLE_VIEWBOX } from './circleHighlight'
 import {
@@ -8,6 +8,11 @@ import {
   type HighlightDisplayLine,
 } from './highlightTokens'
 import type { GraphicTextConfig } from './types'
+import {
+  THEME_COLORS,
+  type HighlightColorMap,
+  type HighlightPickerColors,
+} from './highlightColors'
 
 export type HighlightStyleTab = 'underline' | 'quote' | 'circle'
 
@@ -77,16 +82,63 @@ function HighlightStyleTabLabel({
   )
 }
 
+function HighlightThemePalette({
+  color,
+  onChange,
+}: {
+  color: string
+  onChange: (color: string) => void
+}) {
+  const isCustomColor = !THEME_COLORS.includes(color)
+
+  return (
+    <div className="shrink-0 border-b border-neutral-200 px-4 py-3">
+      <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+        <Palette size={16} />
+        主题色
+      </div>
+      <div className="flex items-center gap-3 overflow-x-auto py-1">
+        {THEME_COLORS.map((swatch) => (
+          <button
+            key={swatch}
+            type="button"
+            aria-label={`主题色 ${swatch}`}
+            className={`size-9 shrink-0 rounded-full border-2 ${
+              color === swatch ? 'border-black' : 'border-transparent'
+            }`}
+            style={{ backgroundColor: swatch }}
+            onClick={() => onChange(swatch)}
+          />
+        ))}
+        <label
+          className={`theme-color-palette-btn relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full border ${
+            isCustomColor ? 'border-2 border-black' : 'border-neutral-300'
+          }`}
+        >
+          <input
+            type="color"
+            value={color}
+            onChange={(event) => onChange(event.target.value)}
+            className="absolute inset-[-8px] size-14 cursor-pointer opacity-0"
+            aria-label="自定义主题色"
+          />
+        </label>
+      </div>
+    </div>
+  )
+}
+
 interface GraphicHighlightEditorProps {
   markdown: string
   config: GraphicTextConfig
-  themeColor: string
-  underlineHighlightedCharKeys: string[]
-  quoteHighlightedCharKeys: string[]
-  circleHighlightedCharKeys: string[]
-  onUnderlineChange: (keys: string[]) => void
-  onQuoteChange: (keys: string[]) => void
-  onCircleChange: (keys: string[]) => void
+  underlineHighlightColors: HighlightColorMap
+  quoteHighlightColors: HighlightColorMap
+  circleHighlightColors: HighlightColorMap
+  highlightPickerColors: HighlightPickerColors
+  onUnderlineChange: (colors: HighlightColorMap) => void
+  onQuoteChange: (colors: HighlightColorMap) => void
+  onCircleChange: (colors: HighlightColorMap) => void
+  onPickerColorsChange: (colors: HighlightPickerColors) => void
   onConfirm: () => void
   onBack: () => void
 }
@@ -316,13 +368,14 @@ function HighlightParagraphRows({
 export function GraphicHighlightEditor({
   markdown,
   config,
-  themeColor,
-  underlineHighlightedCharKeys,
-  quoteHighlightedCharKeys,
-  circleHighlightedCharKeys,
+  underlineHighlightColors,
+  quoteHighlightColors,
+  circleHighlightColors,
+  highlightPickerColors,
   onUnderlineChange,
   onQuoteChange,
   onCircleChange,
+  onPickerColorsChange,
   onConfirm,
   onBack,
 }: GraphicHighlightEditorProps) {
@@ -350,44 +403,50 @@ export function GraphicHighlightEditor({
     observer.observe(group)
     return () => observer.disconnect()
   }, [updateTabIndicator])
+
   const displayLines = useMemo(() => buildHighlightDisplayLines(markdown), [markdown])
   const charPageMap = useMemo(() => buildHighlightCharPageMap(markdown, config), [markdown, config])
 
-  const activeKeys =
+  const activeColorMap =
     activeStyleTab === 'underline'
-      ? underlineHighlightedCharKeys
+      ? underlineHighlightColors
       : activeStyleTab === 'quote'
-        ? quoteHighlightedCharKeys
-        : circleHighlightedCharKeys
+        ? quoteHighlightColors
+        : circleHighlightColors
   const onActiveChange =
     activeStyleTab === 'underline'
       ? onUnderlineChange
       : activeStyleTab === 'quote'
         ? onQuoteChange
         : onCircleChange
+  const activePickerColor = highlightPickerColors[activeStyleTab]
 
-  const highlightedSet = useMemo(() => new Set(activeKeys), [activeKeys])
+  const highlightedSet = useMemo(() => new Set(Object.keys(activeColorMap)), [activeColorMap])
 
   const toggleToken = (key: string) => {
-    const next = new Set(activeKeys)
-    if (next.has(key)) next.delete(key)
-    else next.add(key)
-    onActiveChange([...next])
+    const next = { ...activeColorMap }
+    if (next[key]) delete next[key]
+    else next[key] = activePickerColor
+    onActiveChange(next)
   }
 
   const toggleRow = (rowTokens: HighlightCharToken[]) => {
     if (!rowTokens.length) return
 
     const allSelected = isRowFullySelected(rowTokens, highlightedSet)
-    const next = new Set(activeKeys)
+    const next = { ...activeColorMap }
 
     if (allSelected) {
-      rowTokens.forEach((token) => next.delete(token.key))
+      rowTokens.forEach((token) => {
+        delete next[token.key]
+      })
     } else {
-      rowTokens.forEach((token) => next.add(token.key))
+      rowTokens.forEach((token) => {
+        next[token.key] = activePickerColor
+      })
     }
 
-    onActiveChange([...next])
+    onActiveChange(next)
   }
 
   const hasContent = displayLines.some((line) => line.tokens.length > 0)
@@ -430,6 +489,16 @@ export function GraphicHighlightEditor({
         </button>
       </div>
 
+      <HighlightThemePalette
+        color={activePickerColor}
+        onChange={(color) =>
+          onPickerColorsChange({
+            ...highlightPickerColors,
+            [activeStyleTab]: color,
+          })
+        }
+      />
+
       <div className="shrink-0 px-4 py-2.5">
         <div
           ref={tabGroupRef}
@@ -456,7 +525,11 @@ export function GraphicHighlightEditor({
                 className={`graphic-highlight-tab ${selected ? 'graphic-highlight-tab--active' : ''}`}
                 onClick={() => setActiveStyleTab(tab.id)}
               >
-                <HighlightStyleTabLabel tab={tab.id} themeColor={themeColor} selected={selected} />
+                <HighlightStyleTabLabel
+                  tab={tab.id}
+                  themeColor={highlightPickerColors[tab.id]}
+                  selected={selected}
+                />
               </button>
             )
           })}

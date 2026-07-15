@@ -82,7 +82,51 @@ export interface CircleHighlightRun {
   text: string
 }
 
-/** 在同一渲染行内，将连续线圈高亮字符合并为单个线圈范围 */
+export interface CircleHighlightColorRun {
+  start: number
+  end: number
+  text: string
+  color: string
+}
+
+/** 在同一渲染行内，将连续且同色线圈高亮字符合并为单个线圈范围 */
+export function buildCircleHighlightColorRuns(
+  plain: string,
+  blockId: string,
+  charOffset: number,
+  circleColorMap: Readonly<Record<string, string>>,
+): CircleHighlightColorRun[] {
+  const runs: CircleHighlightColorRun[] = []
+  let index = 0
+
+  while (index < plain.length) {
+    const key = `${blockId}:${charOffset + index}`
+    const color = circleColorMap[key]
+    if (!color) {
+      index += 1
+      continue
+    }
+
+    let end = index + 1
+    while (end < plain.length) {
+      const nextKey = `${blockId}:${charOffset + end}`
+      if (circleColorMap[nextKey] !== color) break
+      end += 1
+    }
+
+    runs.push({
+      start: index,
+      end,
+      text: plain.slice(index, end),
+      color,
+    })
+    index = end
+  }
+
+  return runs
+}
+
+/** @deprecated Use buildCircleHighlightColorRuns for per-character colors. */
 export function buildCircleHighlightRuns(
   plain: string,
   blockId: string,

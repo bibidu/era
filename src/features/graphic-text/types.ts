@@ -18,16 +18,20 @@ export interface GraphicTextConfig {
   titleMarginBottom: number
   headingMarginTop: number
   headingMarginBottom: number
-  themeColor: string
   paperColor: string
   aspectRatio: GraphicAspectRatio
   backgroundType: GraphicBackgroundType
   showGrid: boolean
   topText: string
   backgroundUrl: string | null
-  underlineHighlightedCharKeys: string[]
-  quoteHighlightedCharKeys: string[]
-  circleHighlightedCharKeys: string[]
+  underlineHighlightColors: Record<string, string>
+  quoteHighlightColors: Record<string, string>
+  circleHighlightColors: Record<string, string>
+  highlightPickerColors: {
+    underline: string
+    quote: string
+    circle: string
+  }
 }
 
 export type MarkdownBlockType = 'title' | 'heading' | 'paragraph' | 'list' | 'quote' | 'code'
@@ -59,16 +63,20 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   titleMarginBottom: 0.32,
   headingMarginTop: 0.88,
   headingMarginBottom: 0.32,
-  themeColor: '#FACC15',
   paperColor: '#FBF7ED',
   aspectRatio: '9:16',
   backgroundType: 'solid',
   showGrid: true,
   topText: '',
   backgroundUrl: null,
-  underlineHighlightedCharKeys: [],
-  quoteHighlightedCharKeys: [],
-  circleHighlightedCharKeys: [],
+  underlineHighlightColors: {},
+  quoteHighlightColors: {},
+  circleHighlightColors: {},
+  highlightPickerColors: {
+    underline: '#FACC15',
+    quote: '#FACC15',
+    circle: '#FACC15',
+  },
 }
 
 export const DEFAULT_MARKDOWN = `# 工程团队想抄 Dynamic Workflows ，我把它拆透了
