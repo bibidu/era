@@ -1,5 +1,12 @@
 import { useId } from 'react'
-import { PAPER_SCRATCHES, PAPER_SPECKLES, PAPER_WARM_IVORY } from './pagePaperOverlay'
+import {
+  PAPER_FIBER_LINES,
+  PAPER_SCRATCHES,
+  PAPER_SPECKLES,
+  PAPER_WARM_IVORY,
+  paperFiberPath,
+  paperFiberStroke,
+} from './pagePaperOverlay'
 
 export function PagePaperOverlay() {
   const id = useId().replace(/:/g, '')
@@ -52,6 +59,19 @@ export function PagePaperOverlay() {
       <rect width="1" height="1" filter={`url(#${id}-grain)`} opacity="0.42" style={{ mixBlendMode: 'multiply' }} />
       <rect width="1" height="1" filter={`url(#${id}-fiber)`} opacity="0.55" style={{ mixBlendMode: 'soft-light' }} />
 
+      {PAPER_FIBER_LINES.map((line, index) => (
+        <path
+          key={`fiber-${index}`}
+          d={paperFiberPath(line)}
+          fill="none"
+          stroke={paperFiberStroke(line)}
+          strokeWidth={line.width * 0.0014}
+          vectorEffect="non-scaling-stroke"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ))}
+
       {PAPER_SPECKLES.map((speckle, index) => (
         <circle
           key={`speckle-${index}`}
@@ -69,7 +89,7 @@ export function PagePaperOverlay() {
           y1={scratch.y1}
           x2={scratch.x2}
           y2={scratch.y2}
-          stroke={`rgba(142, 124, 98, ${scratch.alpha})`}
+          stroke={`rgba(132, 126, 116, ${scratch.alpha})`}
           strokeWidth={scratch.width * 0.0015}
           vectorEffect="non-scaling-stroke"
           strokeLinecap="round"

@@ -1,6 +1,6 @@
 export type GraphicBackgroundType = 'reference' | 'solid'
 export type GraphicAspectRatio = '3:4' | '9:16'
-export type GraphicPageOverlay = 'none' | 'grid' | 'pixel' | 'paper'
+export type GraphicPageOverlay = 'none' | 'grid' | 'pixel' | 'paper' | 'gradient'
 
 export const GRAPHIC_ASPECT_RATIO_OPTIONS: { id: GraphicAspectRatio; label: string }[] = [
   { id: '9:16', label: '9:16' },

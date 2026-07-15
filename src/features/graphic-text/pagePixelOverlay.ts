@@ -1,61 +1,143 @@
-export const PIXEL_OVERLAY_COLORS = {
-  blue: '#3B82F6',
-  purple: '#A855F7',
-  green: '#22C55E',
-} as const
+export const PIXEL_CANVAS_COLOR = '#FAFBFC'
 
-export interface PixelRect {
+export const PIXEL_GRID_DIVISIONS = 12
+export const PIXEL_GRID_LINE_COLOR = 'rgba(203, 213, 225, 0.42)'
+export const PIXEL_GRID_ACCENT_COLOR = 'rgba(148, 163, 184, 0.28)'
+export const PIXEL_HEADER_LINE_COLOR = 'rgba(186, 196, 210, 0.55)'
+export const PIXEL_HEADER_LINE_Y = [0.074, 0.094]
+
+export interface PixelGlassShape {
   x: number
   y: number
-  size: number
-  color: string
-  alpha: number
+  width: number
+  height: number
+  radius: number
+  fill: string
+  stroke: string
+  strokeWidth?: number
 }
 
-const S = 0.028
-
-/** Square tiles only; adjacent tiles alternate color and alpha. */
-export const PIXEL_OVERLAY_RECTS: PixelRect[] = [
-  { x: 0.01, y: 0.91, size: S, color: PIXEL_OVERLAY_COLORS.blue, alpha: 0.22 },
-  { x: 0.01 + S, y: 0.91, size: S, color: PIXEL_OVERLAY_COLORS.purple, alpha: 0.26 },
-  { x: 0.01, y: 0.91 + S, size: S, color: PIXEL_OVERLAY_COLORS.green, alpha: 0.3 },
-  { x: 0.01 + S, y: 0.91 + S, size: S, color: PIXEL_OVERLAY_COLORS.blue, alpha: 0.36 },
-  { x: 0.01 + S * 2, y: 0.91 + S, size: S, color: PIXEL_OVERLAY_COLORS.purple, alpha: 0.18 },
-
-  { x: 0.91, y: 0.9, size: S, color: PIXEL_OVERLAY_COLORS.purple, alpha: 0.24 },
-  { x: 0.91 + S, y: 0.9, size: S, color: PIXEL_OVERLAY_COLORS.green, alpha: 0.3 },
-  { x: 0.91, y: 0.9 + S, size: S, color: PIXEL_OVERLAY_COLORS.blue, alpha: 0.2 },
-  { x: 0.91 + S, y: 0.9 + S, size: S, color: PIXEL_OVERLAY_COLORS.purple, alpha: 0.34 },
-  { x: 0.91 + S * 2, y: 0.9 + S, size: S, color: PIXEL_OVERLAY_COLORS.green, alpha: 0.26 },
-
-  { x: 0.966, y: 0.14, size: S, color: PIXEL_OVERLAY_COLORS.purple, alpha: 0.22 },
-  { x: 0.966, y: 0.14 + S, size: S, color: PIXEL_OVERLAY_COLORS.blue, alpha: 0.28 },
-  { x: 0.966, y: 0.14 + S * 2, size: S, color: PIXEL_OVERLAY_COLORS.green, alpha: 0.2 },
-  { x: 0.966, y: 0.14 + S * 3, size: S, color: PIXEL_OVERLAY_COLORS.purple, alpha: 0.16 },
-  { x: 0.966, y: 0.14 + S * 4, size: S, color: PIXEL_OVERLAY_COLORS.blue, alpha: 0.24 },
-  { x: 0.966, y: 0.14 + S * 5, size: S, color: PIXEL_OVERLAY_COLORS.green, alpha: 0.18 },
-
-  { x: 0.06, y: 0.01, size: S, color: PIXEL_OVERLAY_COLORS.blue, alpha: 0.18 },
-  { x: 0.06 + S, y: 0.01, size: S, color: PIXEL_OVERLAY_COLORS.purple, alpha: 0.22 },
-  { x: 0.56, y: 0.01, size: S, color: PIXEL_OVERLAY_COLORS.green, alpha: 0.2 },
-  { x: 0.56 + S, y: 0.01, size: S, color: PIXEL_OVERLAY_COLORS.purple, alpha: 0.26 },
-
-  { x: 0.03, y: 0.42, size: S * 0.72, color: PIXEL_OVERLAY_COLORS.purple, alpha: 0.3 },
-  { x: 0.72, y: 0.36, size: S * 0.78, color: PIXEL_OVERLAY_COLORS.green, alpha: 0.32 },
+export const PIXEL_GLASS_SHAPES: PixelGlassShape[] = [
+  {
+    x: 0.04,
+    y: 0.05,
+    width: 0.18,
+    height: 0.09,
+    radius: 0.014,
+    fill: 'rgba(255, 255, 255, 0.58)',
+    stroke: 'rgba(226, 232, 240, 0.82)',
+  },
+  {
+    x: 0.66,
+    y: 0.06,
+    width: 0.28,
+    height: 0.12,
+    radius: 0.018,
+    fill: 'rgba(255, 255, 255, 0.48)',
+    stroke: 'rgba(203, 213, 225, 0.72)',
+  },
+  {
+    x: 0.03,
+    y: 0.84,
+    width: 0.11,
+    height: 0.07,
+    radius: 0.012,
+    fill: 'rgba(34, 211, 238, 0.14)',
+    stroke: 'rgba(34, 211, 238, 0.28)',
+  },
+  {
+    x: 0.14,
+    y: 0.87,
+    width: 0.08,
+    height: 0.055,
+    radius: 0.01,
+    fill: 'rgba(167, 139, 250, 0.13)',
+    stroke: 'rgba(167, 139, 250, 0.26)',
+  },
+  {
+    x: 0.22,
+    y: 0.845,
+    width: 0.055,
+    height: 0.04,
+    radius: 0.008,
+    fill: 'rgba(59, 130, 246, 0.12)',
+    stroke: 'rgba(59, 130, 246, 0.22)',
+  },
+  {
+    x: 0.74,
+    y: 0.36,
+    width: 0.09,
+    height: 0.055,
+    radius: 0.011,
+    fill: 'rgba(34, 211, 238, 0.11)',
+    stroke: 'rgba(34, 211, 238, 0.22)',
+  },
+  {
+    x: 0.84,
+    y: 0.72,
+    width: 0.07,
+    height: 0.05,
+    radius: 0.009,
+    fill: 'rgba(167, 139, 250, 0.12)',
+    stroke: 'rgba(167, 139, 250, 0.24)',
+  },
+  {
+    x: 0.58,
+    y: 0.78,
+    width: 0.1,
+    height: 0.06,
+    radius: 0.012,
+    fill: 'rgba(255, 255, 255, 0.42)',
+    stroke: 'rgba(191, 219, 254, 0.55)',
+  },
 ]
 
-export const PIXEL_HEADER_LINE_Y = [0.072, 0.092, 0.112]
-export const PIXEL_DASHED_DIVISIONS = 5
-export const PIXEL_DASHED_LINE_COLOR = 'rgba(163, 163, 163, 0.5)'
-export const PIXEL_HEADER_LINE_COLOR = 'rgba(163, 163, 163, 0.32)'
+function roundRectPath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  const r = Math.min(radius, width / 2, height / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.lineTo(x + width - r, y)
+  ctx.quadraticCurveTo(x + width, y, x + width, y + r)
+  ctx.lineTo(x + width, y + height - r)
+  ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height)
+  ctx.lineTo(x + r, y + height)
+  ctx.quadraticCurveTo(x, y + height, x, y + height - r)
+  ctx.lineTo(x, y + r)
+  ctx.quadraticCurveTo(x, y, x + r, y)
+  ctx.closePath()
+}
 
-function hexToRgba(hex: string, alpha: number) {
-  const normalized = hex.trim()
-  if (!/^#[0-9a-fA-F]{6}$/.test(normalized)) return `rgba(59, 130, 246, ${alpha})`
-  const r = Number.parseInt(normalized.slice(1, 3), 16)
-  const g = Number.parseInt(normalized.slice(3, 5), 16)
-  const b = Number.parseInt(normalized.slice(5, 7), 16)
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+function drawBlueprintGrid(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+) {
+  ctx.lineWidth = 1
+  ctx.setLineDash([])
+
+  for (let index = 1; index < PIXEL_GRID_DIVISIONS; index += 1) {
+    const ratio = index / PIXEL_GRID_DIVISIONS
+    const major = index % 4 === 0
+    ctx.strokeStyle = major ? PIXEL_GRID_ACCENT_COLOR : PIXEL_GRID_LINE_COLOR
+    const x = ratio * width
+    ctx.beginPath()
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x, height)
+    ctx.stroke()
+
+    const y = ratio * height
+    ctx.beginPath()
+    ctx.moveTo(0, y)
+    ctx.lineTo(width, y)
+    ctx.stroke()
+  }
 }
 
 export function drawPagePixelOverlay(
@@ -63,15 +145,40 @@ export function drawPagePixelOverlay(
   width: number,
   height: number,
 ) {
-  for (const rect of PIXEL_OVERLAY_RECTS) {
-    ctx.fillStyle = hexToRgba(rect.color, rect.alpha)
-    const pixelSize = rect.size * width
-    ctx.fillRect(rect.x * width, rect.y * height, pixelSize, pixelSize)
-  }
+  ctx.fillStyle = PIXEL_CANVAS_COLOR
+  ctx.fillRect(0, 0, width, height)
+
+  const glow = ctx.createRadialGradient(
+    width * 0.82,
+    height * 0.14,
+    0,
+    width * 0.82,
+    height * 0.14,
+    Math.max(width, height) * 0.42,
+  )
+  glow.addColorStop(0, 'rgba(59, 130, 246, 0.14)')
+  glow.addColorStop(0.45, 'rgba(34, 211, 238, 0.06)')
+  glow.addColorStop(1, 'rgba(250, 251, 252, 0)')
+  ctx.fillStyle = glow
+  ctx.fillRect(0, 0, width, height)
+
+  const violetGlow = ctx.createRadialGradient(
+    width * 0.12,
+    height * 0.88,
+    0,
+    width * 0.12,
+    height * 0.88,
+    Math.max(width, height) * 0.28,
+  )
+  violetGlow.addColorStop(0, 'rgba(167, 139, 250, 0.1)')
+  violetGlow.addColorStop(1, 'rgba(250, 251, 252, 0)')
+  ctx.fillStyle = violetGlow
+  ctx.fillRect(0, 0, width, height)
+
+  drawBlueprintGrid(ctx, width, height)
 
   ctx.strokeStyle = PIXEL_HEADER_LINE_COLOR
   ctx.lineWidth = 1
-  ctx.setLineDash([])
   for (const y of PIXEL_HEADER_LINE_Y) {
     const lineY = y * height
     ctx.beginPath()
@@ -80,21 +187,18 @@ export function drawPagePixelOverlay(
     ctx.stroke()
   }
 
-  ctx.strokeStyle = PIXEL_DASHED_LINE_COLOR
-  ctx.lineWidth = 1
-  ctx.setLineDash([8, 8])
-  for (let index = 1; index < PIXEL_DASHED_DIVISIONS; index += 1) {
-    const x = (index / PIXEL_DASHED_DIVISIONS) * width
-    ctx.beginPath()
-    ctx.moveTo(x, 0)
-    ctx.lineTo(x, height)
-    ctx.stroke()
+  for (const shape of PIXEL_GLASS_SHAPES) {
+    const x = shape.x * width
+    const y = shape.y * height
+    const shapeWidth = shape.width * width
+    const shapeHeight = shape.height * height
+    const radius = shape.radius * width
 
-    const y = (index / PIXEL_DASHED_DIVISIONS) * height
-    ctx.beginPath()
-    ctx.moveTo(0, y)
-    ctx.lineTo(width, y)
+    roundRectPath(ctx, x, y, shapeWidth, shapeHeight, radius)
+    ctx.fillStyle = shape.fill
+    ctx.fill()
+    ctx.strokeStyle = shape.stroke
+    ctx.lineWidth = shape.strokeWidth ?? 1
     ctx.stroke()
   }
-  ctx.setLineDash([])
 }

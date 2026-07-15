@@ -18,6 +18,7 @@ import {
   drawPageGridOverlay,
   resolvePageBaseFillColor,
 } from './pageBackground'
+import { drawPageGradientBackground } from './pageGradientOverlay'
 import { drawPagePaperOverlay } from './pagePaperOverlay'
 import { drawPagePixelOverlay } from './pagePixelOverlay'
 import { resolveTopBarParts } from './topBar'
@@ -217,14 +218,18 @@ async function drawPage(
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas 不可用')
 
-  ctx.fillStyle = resolvePageBaseFillColor(config)
-  ctx.fillRect(0, 0, width, height)
-
-  if (config.backgroundType === 'reference' && config.backgroundUrl) {
-    const image = await loadImage(config.backgroundUrl)
-    drawCoverImage(ctx, image, width, height)
-    ctx.fillStyle = 'rgba(255,255,255,.82)'
+  if (config.pageOverlay === 'gradient') {
+    drawPageGradientBackground(ctx, width, height)
+  } else {
+    ctx.fillStyle = resolvePageBaseFillColor(config)
     ctx.fillRect(0, 0, width, height)
+
+    if (config.backgroundType === 'reference' && config.backgroundUrl) {
+      const image = await loadImage(config.backgroundUrl)
+      drawCoverImage(ctx, image, width, height)
+      ctx.fillStyle = 'rgba(255,255,255,.82)'
+      ctx.fillRect(0, 0, width, height)
+    }
   }
 
   if (config.pageOverlay === 'grid') {
