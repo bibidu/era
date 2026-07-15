@@ -298,7 +298,6 @@ body.is-dragging {
 
 .graphic-config-sheet-inline {
   position: relative;
-  z-index: 10;
   width: 100%;
   flex-shrink: 0;
   border-radius: 16px 16px 0 0;

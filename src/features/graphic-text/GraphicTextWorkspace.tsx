@@ -5,7 +5,7 @@ import { ensureFontReady } from '../../utils/fontLoad'
 import { MarkdownEditorDock } from '../../components/MarkdownEditorDock'
 import { GraphicPage } from './GraphicPage'
 import { GraphicSaveImagesSheet } from './GraphicSaveImagesSheet'
-import { GraphicTextConfigSheet } from './GraphicTextConfigSheet'
+import { GraphicTextConfigSheet, createHighlightPreviewDraft } from './GraphicTextConfigSheet'
 import { GraphicTextToolbar } from './GraphicTextToolbar'
 import {
   GraphicAspectStrip,
@@ -23,6 +23,7 @@ import type {
 } from './graphicConfigPanels'
 import { paginateMarkdown, getGraphicLayout } from './layout'
 import { computeGraphicPageDisplaySize } from './graphicPreviewLayout'
+import { getViewportHeight, readCachedSheetHeight } from './topBar'
 import {
   DEFAULT_GRAPHIC_TEXT_CONFIG,
   DEFAULT_MARKDOWN,
@@ -55,7 +56,11 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   const [editorOpen, setEditorOpen] = useState(false)
   const [pasteError, setPasteError] = useState('')
   const pagerRef = useRef<HTMLDivElement>(null)
+  const configRef = useRef(config)
+  configRef.current = config
   const [pagerSize, setPagerSize] = useState({ width: 0, height: 0 })
+  const [sheetHeight, setSheetHeight] = useState(0)
+  const [highlightPreview, setHighlightPreview] = useState(() => createHighlightPreviewDraft(config))
 
   useEffect(() => {
     if (!defaultBackgroundUrl) return
@@ -90,9 +95,32 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
       window.removeEventListener('resize', updateSize)
       window.visualViewport?.removeEventListener('resize', updateSize)
     }
-  }, [])
+  }, [configPanel, sheetHeight])
 
-  const pages = useMemo(() => paginateMarkdown(markdown, config), [markdown, config])
+  useEffect(() => {
+    if (!configPanel) {
+      setSheetHeight(0)
+      return
+    }
+
+    setSheetHeight(readCachedSheetHeight(getViewportHeight()))
+    if (configPanel === 'highlight') {
+      setHighlightPreview(createHighlightPreviewDraft(configRef.current))
+    }
+  }, [configPanel])
+
+  const previewConfig = useMemo(() => {
+    if (configPanel !== 'highlight') return config
+    return {
+      ...config,
+      underlineHighlightColors: highlightPreview.underlineHighlightColors,
+      quoteHighlightColors: highlightPreview.quoteHighlightColors,
+      circleHighlightColors: highlightPreview.circleHighlightColors,
+      highlightPickerColor: highlightPreview.highlightPickerColor,
+    }
+  }, [config, configPanel, highlightPreview])
+
+  const pages = useMemo(() => paginateMarkdown(markdown, previewConfig), [markdown, previewConfig])
 
   const pagerPageSize = useMemo(() => {
     const layout = getGraphicLayout(config)
@@ -106,9 +134,9 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     return computeGraphicPageDisplaySize(
       layout.aspectRatio,
       window.innerWidth - PAGER_PAGE_PADDING,
-      window.innerHeight - 200,
+      window.innerHeight - 200 - (configPanel ? sheetHeight : 0),
     )
-  }, [config, pagerSize])
+  }, [config, pagerSize, configPanel, sheetHeight])
 
   const resetTextAdjust = () => {
     setFontSizeNav(null)
@@ -229,41 +257,43 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-neutral-100">
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-        <div
-          ref={pagerRef}
-          className="graphic-pager relative z-0 flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden"
-        >
-          {pages.map((page) => (
-            <div
-              key={page.index}
-              className="flex h-full w-full shrink-0 snap-center items-center justify-center p-4"
-            >
-              <GraphicPage
-                page={page}
-                config={config}
-                markdown={markdown}
-                displayWidth={pagerPageSize?.width}
-                showSafeArea={showSafeArea}
-                className="rounded-xl shadow-lg"
-              />
-            </div>
-          ))}
-        </div>
-
-        {configPanel && (
-          <GraphicTextConfigSheet
-            isOpen={configPanel !== null}
-            panel={configPanel}
-            config={config}
-            markdown={markdown}
-            onOpenChange={(open) => {
-              if (!open) setConfigPanel(null)
-            }}
-            onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
-          />
-        )}
+      <div
+        ref={pagerRef}
+        className="graphic-pager relative z-0 flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden"
+      >
+        {pages.map((page) => (
+          <div
+            key={page.index}
+            className="flex h-full w-full shrink-0 snap-center items-center justify-center p-4"
+          >
+            <GraphicPage
+              page={page}
+              config={previewConfig}
+              markdown={markdown}
+              displayWidth={pagerPageSize?.width}
+              showSafeArea={showSafeArea}
+              className="rounded-xl shadow-lg"
+            />
+          </div>
+        ))}
       </div>
+
+      {configPanel && (
+        <GraphicTextConfigSheet
+          isOpen={configPanel !== null}
+          panel={configPanel}
+          config={config}
+          markdown={markdown}
+          sheetHeight={sheetHeight}
+          highlightDraft={highlightPreview}
+          onOpenChange={(open) => {
+            if (!open) setConfigPanel(null)
+          }}
+          onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
+          onHeightChange={setSheetHeight}
+          onHighlightDraftChange={setHighlightPreview}
+        />
+      )}
 
       <div className="relative z-20 shrink-0">
         {toolbarStrip === 'font' && (
