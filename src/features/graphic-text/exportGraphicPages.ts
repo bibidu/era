@@ -207,7 +207,7 @@ async function drawPage(
   const underlineColors = config.underlineHighlightColors
   const quoteColors = config.quoteHighlightColors
   const circleColors = config.circleHighlightColors
-  const accentColor = config.highlightPickerColors.underline
+  const accentColor = config.highlightPickerColor
   const topBar = resolveTopBarParts(config, markdown)
   const canvas = document.createElement('canvas')
   canvas.width = width

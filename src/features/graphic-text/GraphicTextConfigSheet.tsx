@@ -198,7 +198,7 @@ export function GraphicTextConfigSheet({
     underline: config.underlineHighlightColors,
     quote: config.quoteHighlightColors,
     circle: config.circleHighlightColors,
-    pickerColors: config.highlightPickerColors,
+    pickerColor: config.highlightPickerColor,
   })
 
   const previewAreaHeight = Math.max(0, viewportHeight - sheetHeight)
@@ -212,7 +212,7 @@ export function GraphicTextConfigSheet({
             underlineHighlightColors: highlightDraft.underline,
             quoteHighlightColors: highlightDraft.quote,
             circleHighlightColors: highlightDraft.circle,
-            highlightPickerColors: highlightDraft.pickerColors,
+            highlightPickerColor: highlightDraft.pickerColor,
           }
         : config,
     [config, sheetView, highlightDraft],
@@ -276,7 +276,7 @@ export function GraphicTextConfigSheet({
         underline: config.underlineHighlightColors,
         quote: config.quoteHighlightColors,
         circle: config.circleHighlightColors,
-        pickerColors: config.highlightPickerColors,
+        pickerColor: config.highlightPickerColor,
       })
     }
   }, [
@@ -284,7 +284,7 @@ export function GraphicTextConfigSheet({
     config.underlineHighlightColors,
     config.quoteHighlightColors,
     config.circleHighlightColors,
-    config.highlightPickerColors,
+    config.highlightPickerColor,
   ])
 
   const handleResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -315,7 +315,7 @@ export function GraphicTextConfigSheet({
       underlineHighlightColors: highlightDraft.underline,
       quoteHighlightColors: highlightDraft.quote,
       circleHighlightColors: highlightDraft.circle,
-      highlightPickerColors: highlightDraft.pickerColors,
+      highlightPickerColor: highlightDraft.pickerColor,
     })
     setSheetView('main')
   }
@@ -362,7 +362,7 @@ export function GraphicTextConfigSheet({
             underlineHighlightColors={highlightDraft.underline}
             quoteHighlightColors={highlightDraft.quote}
             circleHighlightColors={highlightDraft.circle}
-            highlightPickerColors={highlightDraft.pickerColors}
+            highlightPickerColor={highlightDraft.pickerColor}
             onUnderlineChange={(colors) =>
               setHighlightDraft((current) => ({ ...current, underline: colors }))
             }
@@ -372,8 +372,8 @@ export function GraphicTextConfigSheet({
             onCircleChange={(colors) =>
               setHighlightDraft((current) => ({ ...current, circle: colors }))
             }
-            onPickerColorsChange={(pickerColors) =>
-              setHighlightDraft((current) => ({ ...current, pickerColors }))
+            onPickerColorChange={(pickerColor) =>
+              setHighlightDraft((current) => ({ ...current, pickerColor }))
             }
             onConfirm={handleHighlightConfirm}
             onBack={() => setSheetView('main')}

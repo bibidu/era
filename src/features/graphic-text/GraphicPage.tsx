@@ -378,7 +378,7 @@ export function GraphicPage({
   const underlineColors = config.underlineHighlightColors
   const quoteColors = config.quoteHighlightColors
   const circleColors = config.circleHighlightColors
-  const accentColor = config.highlightPickerColors.underline
+  const accentColor = config.highlightPickerColor
 
   const backgroundStyle: CSSProperties = resolvePageBackgroundStyle(config)
 

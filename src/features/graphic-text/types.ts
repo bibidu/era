@@ -27,11 +27,7 @@ export interface GraphicTextConfig {
   underlineHighlightColors: Record<string, string>
   quoteHighlightColors: Record<string, string>
   circleHighlightColors: Record<string, string>
-  highlightPickerColors: {
-    underline: string
-    quote: string
-    circle: string
-  }
+  highlightPickerColor: string
 }
 
 export type MarkdownBlockType = 'title' | 'heading' | 'paragraph' | 'list' | 'quote' | 'code'
@@ -72,11 +68,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   underlineHighlightColors: {},
   quoteHighlightColors: {},
   circleHighlightColors: {},
-  highlightPickerColors: {
-    underline: '#FACC15',
-    quote: '#FACC15',
-    circle: '#FACC15',
-  },
+  highlightPickerColor: '#FACC15',
 }
 
 export const DEFAULT_MARKDOWN = `# 工程团队想抄 Dynamic Workflows ，我把它拆透了
