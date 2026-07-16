@@ -45,6 +45,7 @@ function resolveStyleType(block: MarkdownBlock) {
 type RenderUnit =
   | { kind: 'block'; block: MarkdownBlock }
   | { kind: 'code'; blocks: MarkdownBlock[] }
+  | { kind: 'image'; block: MarkdownBlock }
 
 function buildRenderUnits(blocks: MarkdownBlock[]): RenderUnit[] {
   const units: RenderUnit[] = []
@@ -63,6 +64,11 @@ function buildRenderUnits(blocks: MarkdownBlock[]): RenderUnit[] {
       } else {
         units.push({ kind: 'code', blocks: [block] })
       }
+      continue
+    }
+
+    if (styleType === 'image') {
+      units.push({ kind: 'image', block })
       continue
     }
 
@@ -90,6 +96,9 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
   }
   if (styleType === 'code') {
     return `calc(${codeUnit} * 0.26 + ${gap})`
+  }
+  if (styleType === 'image') {
+    return `calc(${bodyUnit} * 0.26 + ${gap})`
   }
   return `calc(${bodyUnit} * 0.26 + ${gap})`
 }
@@ -491,6 +500,32 @@ export function GraphicPage({
             </div>
           ) : (
             buildRenderUnits(page.blocks).map((unit) => {
+              if (unit.kind === 'image') {
+                const block = unit.block
+                const contentWidth = layout.pageWidth - layout.safeX * 2
+                const widthPercent = block.imageWidth
+                  ? Math.min(100, (block.imageWidth / contentWidth) * 100)
+                  : 100
+                return (
+                  <div
+                    key={block.id}
+                    className="graphic-content-image-wrap"
+                    style={{
+                      marginBottom: blockEndMargin(block, config),
+                      display: 'flex',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <img
+                      className="graphic-content-image"
+                      src={block.imageUrl}
+                      alt=""
+                      style={{ width: `${widthPercent}%`, height: 'auto', display: 'block' }}
+                    />
+                  </div>
+                )
+              }
+
               if (unit.kind === 'code') {
                 const firstBlock = unit.blocks[0]
                 const lastBlock = unit.blocks[unit.blocks.length - 1]

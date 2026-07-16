@@ -804,6 +804,259 @@ body.is-dragging {
   background: #d4d4d4;
 }
 
+.graphic-content-sheet {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #ffffff;
+}
+
+.graphic-content-sheet-header {
+  flex-shrink: 0;
+  padding: 0 1rem 0.75rem;
+}
+
+.graphic-content-sheet-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.graphic-content-sheet-tab {
+  flex: 1;
+  border-radius: 9999px;
+  border: 1px solid #e5e5e5;
+  background: #fafafa;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #525252;
+}
+
+.graphic-content-sheet-tab--active {
+  border-color: #171717;
+  background: #171717;
+  color: #ffffff;
+}
+
+.graphic-content-sheet-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: auto;
+  padding: 0 1rem 1rem;
+}
+
+.graphic-content-sheet-error {
+  margin-bottom: 0.75rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #ef4444;
+}
+
+.graphic-content-block-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.graphic-content-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #737373;
+}
+
+.graphic-content-empty-btn {
+  width: 100%;
+  max-width: 16rem;
+  border-radius: 0.75rem;
+  border: 1px solid #d4d4d4;
+  background: #ffffff;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #171717;
+}
+
+.graphic-content-block-item {
+  border-radius: 0.75rem;
+  border: 1px solid #e5e5e5;
+  background: #fafafa;
+}
+
+.graphic-content-block-item--selected {
+  border-color: #171717;
+  background: #ffffff;
+}
+
+.graphic-content-block-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+}
+
+.graphic-content-block-thumb {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 0;
+  object-fit: cover;
+}
+
+.graphic-content-block-text {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+}
+
+.graphic-content-block-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #171717;
+}
+
+.graphic-content-block-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: #737373;
+}
+
+.graphic-content-block-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.125rem;
+}
+
+.graphic-content-block-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #525252;
+}
+
+.graphic-content-block-actions button:disabled {
+  opacity: 0.35;
+}
+
+.graphic-content-block-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-top: 1px solid #e5e5e5;
+  padding: 0.625rem 0.75rem;
+}
+
+.graphic-content-block-tools button {
+  border-radius: 9999px;
+  border: 1px solid #d4d4d4;
+  background: #ffffff;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  color: #404040;
+}
+
+.graphic-content-block-tools button.is-active {
+  border-color: #171717;
+  background: #171717;
+  color: #ffffff;
+}
+
+.graphic-content-image-tools {
+  align-items: center;
+}
+
+.graphic-content-insert-gap {
+  display: flex;
+  justify-content: center;
+  padding: 0.25rem 0;
+}
+
+.graphic-content-insert-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  background: transparent;
+  font-size: 0.75rem;
+  color: #737373;
+}
+
+.graphic-content-insert-menu {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.graphic-content-insert-menu button {
+  border-radius: 9999px;
+  border: 1px solid #d4d4d4;
+  background: #ffffff;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.graphic-content-asset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.graphic-content-asset-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e5e5;
+  background: #fafafa;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  color: #404040;
+}
+
+.graphic-content-asset-card img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 0;
+  object-fit: cover;
+}
+
+.graphic-content-asset-card--add {
+  justify-content: center;
+  min-height: 6rem;
+  border-style: dashed;
+  color: #737373;
+}
+
+.graphic-content-image-wrap {
+  width: 100%;
+}
+
+.graphic-content-image {
+  border-radius: 0;
+  max-width: 100%;
+  height: auto;
+}
+
 .graphic-config-preview-layer {
   position: absolute;
   top: 0;

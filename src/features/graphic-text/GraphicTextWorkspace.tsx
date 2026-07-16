@@ -5,6 +5,7 @@ import { ensureFontReady } from '../../utils/fontLoad'
 import { MarkdownEditorDock } from '../../components/MarkdownEditorDock'
 import { GraphicPage } from './GraphicPage'
 import { GraphicSaveImagesSheet } from './GraphicSaveImagesSheet'
+import { GraphicContentSheet } from './GraphicContentSheet'
 import { GraphicTextConfigSheet, createHighlightPreviewDraft } from './GraphicTextConfigSheet'
 import { GraphicTextToolbar } from './GraphicTextToolbar'
 import {
@@ -24,13 +25,18 @@ import type {
   TextAdjustField,
   ToolbarStrip,
 } from './graphicConfigPanels'
-import { paginateMarkdown, getGraphicLayout } from './layout'
+import { paginateDocument, getGraphicLayout } from './layout'
+import {
+  createDefaultDocument,
+  getDocumentMarkdown,
+  updateContentBlock,
+  type GraphicDocument,
+} from './document'
 import { collectGraphicFontIds } from './graphicTextFonts'
 import { computeGraphicPageDisplaySize } from './graphicPreviewLayout'
 import { getViewportHeight, readCachedSheetHeight } from './topBar'
 import {
   DEFAULT_GRAPHIC_TEXT_CONFIG,
-  DEFAULT_MARKDOWN,
   type GraphicAspectRatio,
   type GraphicTextConfig,
 } from './types'
@@ -47,7 +53,8 @@ function isTextAdjustTarget(nav: FontSizeNav): nav is FontSizeTarget {
 }
 
 export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorkspaceProps) {
-  const [markdown, setMarkdown] = useState(DEFAULT_MARKDOWN)
+  const [document, setDocument] = useState<GraphicDocument>(createDefaultDocument)
+  const markdown = useMemo(() => getDocumentMarkdown(document), [document])
   const [config, setConfig] = useState<GraphicTextConfig>(() => ({
     ...DEFAULT_GRAPHIC_TEXT_CONFIG,
     backgroundUrl: defaultBackgroundUrl,
@@ -60,6 +67,8 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   const [showSafeArea, setShowSafeArea] = useState(false)
   const [saveSheetOpen, setSaveSheetOpen] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
+  const [editingMarkdownBlockId, setEditingMarkdownBlockId] = useState<string | null>(null)
+  const [selectedContentBlockId, setSelectedContentBlockId] = useState<string | null>(null)
   const [pasteError, setPasteError] = useState('')
   const pagerRef = useRef<HTMLDivElement>(null)
   const toolbarDockRef = useRef<HTMLDivElement>(null)
@@ -132,6 +141,9 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     if (configPanel === 'highlight') {
       setHighlightPreview(createHighlightPreviewDraft(configRef.current))
     }
+    if (configPanel === 'content') {
+      setSelectedContentBlockId(null)
+    }
   }, [configPanel])
 
   const previewConfig = useMemo(() => {
@@ -146,7 +158,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     }
   }, [config, configPanel, highlightPreview])
 
-  const pages = useMemo(() => paginateMarkdown(markdown, previewConfig), [markdown, previewConfig])
+  const pages = useMemo(() => paginateDocument(document, previewConfig), [document, previewConfig])
 
   const sheetOpen = configPanel !== null && sheetHeight > 0
   const pagerPagePadding = sheetOpen ? PAGER_SHEET_PADDING : PAGER_PAGE_PADDING
@@ -180,7 +192,24 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText()
-      setMarkdown(text)
+      setDocument((current) => {
+        if (!current.blocks.length) {
+          return {
+            ...current,
+            blocks: [{ id: crypto.randomUUID(), kind: 'markdown', text }],
+          }
+        }
+        const firstMarkdown = current.blocks.find((block) => block.kind === 'markdown')
+        if (!firstMarkdown || firstMarkdown.kind !== 'markdown') {
+          return {
+            ...current,
+            blocks: [{ id: crypto.randomUUID(), kind: 'markdown', text }, ...current.blocks],
+          }
+        }
+        return updateContentBlock(current, firstMarkdown.id, (block) =>
+          block.kind === 'markdown' ? { ...block, text } : block,
+        )
+      })
       setPasteError('')
     } catch {
       setPasteError('请允许读取剪贴板后重试')
@@ -290,12 +319,25 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   }
 
   const handleEdit = () => {
-    setConfigPanel(null)
+    setConfigPanel('content')
     setToolbarStrip(null)
     resetTemplateNav()
     resetTextAdjust()
-    setEditorOpen((current) => !current)
+    setEditorOpen(false)
+    setEditingMarkdownBlockId(null)
   }
+
+  const handleEditMarkdownBlock = (blockId: string) => {
+    setEditingMarkdownBlockId(blockId)
+    setEditorOpen(true)
+  }
+
+  const editingMarkdownBlock =
+    editingMarkdownBlockId &&
+    document.blocks.find(
+      (block): block is Extract<typeof block, { kind: 'markdown' }> =>
+        block.id === editingMarkdownBlockId && block.kind === 'markdown',
+    )
 
   const handleToggleSafeArea = () => {
     setConfigPanel(null)
@@ -375,12 +417,13 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
         ))}
       </div>
 
-      {configPanel && (
+      {configPanel === 'highlight' && (
         <GraphicTextConfigSheet
-          isOpen={configPanel !== null}
+          isOpen={configPanel === 'highlight'}
           panel={configPanel}
           config={config}
           markdown={markdown}
+          document={document}
           sheetHeight={sheetHeight}
           toolbarDockHeight={toolbarDockHeight}
           highlightDraft={highlightPreview}
@@ -390,6 +433,23 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
           onHeightChange={setSheetHeight}
           onHighlightDraftChange={setHighlightPreview}
+        />
+      )}
+
+      {configPanel === 'content' && (
+        <GraphicContentSheet
+          isOpen={configPanel === 'content'}
+          document={document}
+          sheetHeight={sheetHeight}
+          toolbarDockHeight={toolbarDockHeight}
+          selectedBlockId={selectedContentBlockId}
+          onOpenChange={(open) => {
+            if (!open) setConfigPanel(null)
+          }}
+          onHeightChange={setSheetHeight}
+          onDocumentChange={setDocument}
+          onSelectBlock={setSelectedContentBlockId}
+          onEditMarkdownBlock={handleEditMarkdownBlock}
         />
       )}
 
@@ -445,7 +505,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
             textAdjustField={textAdjustField}
             templateNav={templateNav}
             config={config}
-            editorOpen={editorOpen}
+            editorOpen={editorOpen || editingMarkdownBlockId !== null}
             safeAreaOpen={showSafeArea}
             saveDisabled={pages.length === 0}
             onEdit={handleEdit}
@@ -465,14 +525,27 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
         )}
       </div>
 
-      {editorOpen && (
+      {editorOpen && editingMarkdownBlock && (
         <MarkdownEditorDock
-          value={markdown}
-          onChange={setMarkdown}
+          value={editingMarkdownBlock.text}
+          onChange={(text) =>
+            setDocument((current) =>
+              updateContentBlock(current, editingMarkdownBlock.id, (block) =>
+                block.kind === 'markdown' ? { ...block, text } : block,
+              ),
+            )
+          }
           onPaste={handlePaste}
           pasteError={pasteError}
-          onCommit={() => setEditorOpen(false)}
-          onDismiss={() => setEditorOpen(false)}
+          onCommit={() => {
+            setEditorOpen(false)
+            setEditingMarkdownBlockId(null)
+          }}
+          onDismiss={() => {
+            setEditorOpen(false)
+            setEditingMarkdownBlockId(null)
+          }}
+          title="编辑段落"
         />
       )}
 

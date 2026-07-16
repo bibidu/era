@@ -8,6 +8,7 @@ import {
   readCachedSheetHeight,
   writeCachedSheetHeight,
 } from './topBar'
+import type { GraphicDocument } from './document'
 import type { GraphicTextConfig } from './types'
 
 export interface HighlightPreviewDraft {
@@ -23,6 +24,7 @@ interface GraphicTextConfigSheetProps {
   panel: GraphicConfigPanel
   config: GraphicTextConfig
   markdown: string
+  document: GraphicDocument
   sheetHeight: number
   toolbarDockHeight: number
   highlightDraft: HighlightPreviewDraft
@@ -55,6 +57,7 @@ export function GraphicTextConfigSheet({
   panel,
   config,
   markdown,
+  document,
   sheetHeight,
   toolbarDockHeight,
   highlightDraft,
@@ -181,6 +184,7 @@ export function GraphicTextConfigSheet({
   const panelBody = (
     <GraphicHighlightEditor
       markdown={markdown}
+      document={document}
       config={config}
       underlineHighlightColors={highlightDraft.underlineHighlightColors}
       brushHighlightColors={highlightDraft.brushHighlightColors}

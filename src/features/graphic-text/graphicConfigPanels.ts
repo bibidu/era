@@ -5,6 +5,7 @@ import {
   Heading1,
   Heading2,
   Highlighter,
+  Layers,
   LayoutTemplate,
   Pilcrow,
   Ratio,
@@ -12,7 +13,7 @@ import {
   TextCursorInput,
 } from 'lucide-react'
 
-export type GraphicConfigPanel = 'highlight'
+export type GraphicConfigPanel = 'highlight' | 'content'
 
 export type ToolbarStrip = 'aspect' | 'template' | 'top-text'
 
@@ -28,6 +29,12 @@ export const GRAPHIC_HIGHLIGHT_PANEL = {
   id: 'highlight' as const,
   label: '高亮',
   icon: Highlighter,
+}
+
+export const GRAPHIC_CONTENT_PANEL = {
+  id: 'content' as const,
+  label: '内容',
+  icon: Layers,
 }
 
 export const GRAPHIC_TOP_TEXT_PANEL = {

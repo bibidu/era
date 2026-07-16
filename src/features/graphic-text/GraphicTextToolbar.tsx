@@ -1,6 +1,7 @@
-import { ArrowLeft, CaseSensitive, Download, Keyboard } from 'lucide-react'
+import { ArrowLeft, CaseSensitive, Download } from 'lucide-react'
 import {
   FONT_SIZE_TARGETS,
+  GRAPHIC_CONTENT_PANEL,
   GRAPHIC_HIGHLIGHT_PANEL,
   GRAPHIC_TEXT_ADJUST_MENU,
   GRAPHIC_TOOLBAR_STRIPS,
@@ -77,6 +78,7 @@ export function GraphicTextToolbar({
   const selectedTargetItem = FONT_SIZE_TARGETS.find((item) => item.id === selectedTarget)
   const TopTextIcon = GRAPHIC_TOP_TEXT_PANEL.icon
   const HighlightIcon = GRAPHIC_HIGHLIGHT_PANEL.icon
+  const ContentIcon = GRAPHIC_CONTENT_PANEL.icon
   const TemplateIcon = GRAPHIC_TOOLBAR_STRIPS.find((item) => item.id === 'template')?.icon
 
   return (
@@ -241,13 +243,13 @@ export function GraphicTextToolbar({
           <div className="graphic-text-toolbar-scroll component-scroll-row flex min-w-0 flex-1 items-stretch gap-1 overflow-x-auto">
             <button
               type="button"
-              aria-label="编辑"
+              aria-label={GRAPHIC_CONTENT_PANEL.label}
               aria-pressed={editorOpen}
               className={`graphic-text-toolbar-item ${editorOpen ? 'graphic-text-toolbar-item--active' : ''}`}
               onClick={onEdit}
             >
-              <Keyboard size={22} strokeWidth={1.5} />
-              <span>编辑</span>
+              <ContentIcon size={22} strokeWidth={1.5} />
+              <span>{GRAPHIC_CONTENT_PANEL.label}</span>
             </button>
 
             {GRAPHIC_TOOLBAR_STRIPS.map((item) => {
