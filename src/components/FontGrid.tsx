@@ -22,7 +22,7 @@ export function FontGrid({
         const loaded = isFontLoaded(font)
         const loading = isFontLoading(font.id)
         const needsCloud =
-          (font.source === 'google' || font.source === 'pixel' || font.source === 'cdn') && !loaded
+          (font.source === 'google' || font.source === 'cdn') && !loaded
         const selected = selectedFontId === font.id
 
         return (

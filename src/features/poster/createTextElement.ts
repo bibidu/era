@@ -1,7 +1,8 @@
-import { FONT_OPTIONS } from '../../data/fonts'
+import { getDefaultTextFont } from '../../data/fonts'
 import type { TextElement } from '../../types'
 
 export function createTextElement(): TextElement {
+  const defaultFont = getDefaultTextFont()
   return {
     id: crypto.randomUUID(),
     content: '',
@@ -12,8 +13,8 @@ export function createTextElement(): TextElement {
     fontStyle: 'normal',
     textDecoration: 'none',
     color: '#EF4444',
-    fontFamily: FONT_OPTIONS[0].fontFamily,
-    fontId: FONT_OPTIONS[0].id,
+    fontFamily: defaultFont.fontFamily,
+    fontId: defaultFont.id,
     textAlign: 'none',
     textStylePreset: 'plain',
     backgroundColor: null,

@@ -1,6 +1,6 @@
 import type { TextElement } from '../types'
 import { H_PADDING } from '../types'
-import { FONT_OPTIONS } from '../data/fonts'
+import { ALL_FONT_OPTIONS } from '../data/fonts'
 import { ensureFontsReadyForExport } from './fontLoad'
 import { formatCanvasFont } from './pixelFont'
 import { loadOrientedImageBitmap } from './imageMeta'
@@ -244,8 +244,8 @@ export async function exportPosterToImage(
 ): Promise<Blob> {
   const fontIds = new Set(texts.map((t) => t.fontId))
   const fonts = [...fontIds]
-    .map((fontId) => FONT_OPTIONS.find((f) => f.id === fontId))
-    .filter((font): font is (typeof FONT_OPTIONS)[number] => Boolean(font))
+    .map((fontId) => ALL_FONT_OPTIONS.find((f) => f.id === fontId))
+    .filter((font): font is (typeof ALL_FONT_OPTIONS)[number] => Boolean(font))
   const sampleByFontId = new Map<string, string>()
   for (const fontId of fontIds) {
     const sample = texts
