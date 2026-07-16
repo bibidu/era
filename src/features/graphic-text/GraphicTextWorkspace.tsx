@@ -339,6 +339,14 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     setShowSafeArea((current) => !current)
   }
 
+  const handleCopyContent = async () => {
+    try {
+      await navigator.clipboard.writeText(markdown)
+    } catch {
+      // clipboard API may be unavailable
+    }
+  }
+
   const handleFontSelect = (font: FontOption) => {
     if (!isTextAdjustTarget(fontSizeNav)) return
 
@@ -400,6 +408,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
               markdown={markdown}
               displayWidth={pagerPageSize?.width}
               showSafeArea={showSafeArea}
+              onCopyContent={handleCopyContent}
               className="rounded-xl shadow-lg"
             />
           </div>

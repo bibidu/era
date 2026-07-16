@@ -1,4 +1,7 @@
-/** 将文本拆成换行单元：英文单词保持完整，连续中文作为一组，其余按字符 */
+/** 换行宽度容差：Canvas 度量与浏览器渲染存在细微偏差，略放宽可避免过早断行 */
+const WRAP_WIDTH_SLACK_PX = 6
+
+/** 将文本拆成换行单元：英文单词保持完整，中文按单字，其余按字符 */
 const CJK_CHAR_PATTERN = /[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/
 
 export function splitWrapUnits(text: string): string[] {
@@ -13,10 +16,8 @@ export function splitWrapUnits(text: string): string[] {
       units.push(text.slice(index, end))
       index = end
     } else if (CJK_CHAR_PATTERN.test(char)) {
-      let end = index + 1
-      while (end < text.length && CJK_CHAR_PATTERN.test(text[end])) end += 1
-      units.push(text.slice(index, end))
-      index = end
+      units.push(char)
+      index += 1
     } else {
       units.push(char)
       index += 1
@@ -123,11 +124,13 @@ export function wrapPlainTextLinesByWidth(
   if (!text) return ['']
   if (maxWidth <= 0) return [text]
 
+  const effectiveMaxWidth = maxWidth + WRAP_WIDTH_SLACK_PX
+
   const ctx = createMeasureContext(fontFamily, fontSize, fontWeight)
   if (!ctx) {
     return wrapPlainTextLines(
       text,
-      estimateCharsPerLine(fontFamily, fontSize, fontWeight, maxWidth),
+      estimateCharsPerLine(fontFamily, fontSize, fontWeight, effectiveMaxWidth),
     )
   }
 
@@ -142,11 +145,11 @@ export function wrapPlainTextLinesByWidth(
   }
 
   for (const unit of units) {
-    const pieces = splitUnitToFit(unit, ctx, maxWidth)
+    const pieces = splitUnitToFit(unit, ctx, effectiveMaxWidth)
 
     for (const piece of pieces) {
       const candidate = current + piece
-      if (current && measureTextWidth(ctx, candidate) > maxWidth) {
+      if (current && measureTextWidth(ctx, candidate) > effectiveMaxWidth) {
         flush()
         current = piece
       } else {
