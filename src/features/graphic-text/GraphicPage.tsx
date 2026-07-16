@@ -36,6 +36,7 @@ interface GraphicPageProps {
   className?: string
   showSafeArea?: boolean
   displayWidth?: number
+  onCopyContent?: () => void
 }
 
 function resolveStyleType(block: MarkdownBlock) {
@@ -377,26 +378,36 @@ function renderBlockText(
 
 function SafeAreaGuide({
   layout,
+  onCopyContent,
 }: {
   layout: ReturnType<typeof getGraphicLayout>
+  onCopyContent?: () => void
 }) {
   const { percent } = layout
 
   return (
     <div
-      className="graphic-safe-area-guide pointer-events-none absolute z-20"
+      className="graphic-safe-area-guide absolute z-20"
       style={{
         left: `${percent.safeX}%`,
         right: `${percent.safeX}%`,
         top: `${percent.safeTop}%`,
         bottom: `${percent.contentBottom}%`,
       }}
-      aria-hidden
     >
-      <div className="absolute inset-0 border-2 border-dashed border-sky-500/85" />
-      <span className="absolute left-[1.2cqw] top-[1.2cqw] rounded bg-sky-500/90 px-[1.4cqw] py-[.5cqw] text-[1.8cqw] font-medium text-white">
+      <div className="pointer-events-none absolute inset-0 border-2 border-dashed border-sky-500/85" />
+      <span className="pointer-events-none absolute left-[1.2cqw] top-[1.2cqw] rounded bg-sky-500/90 px-[1.4cqw] py-[.5cqw] text-[1.8cqw] font-medium text-white">
         文字安全区
       </span>
+      {onCopyContent && (
+        <button
+          type="button"
+          className="graphic-safe-area-copy"
+          onClick={onCopyContent}
+        >
+          复制
+        </button>
+      )}
       <span className="graphic-safe-area-corner left-0 top-0" />
       <span className="graphic-safe-area-corner right-0 top-0" />
       <span className="graphic-safe-area-corner bottom-0 left-0" />
@@ -412,6 +423,7 @@ export function GraphicPage({
   className = '',
   showSafeArea = false,
   displayWidth,
+  onCopyContent,
 }: GraphicPageProps) {
   const layout = getGraphicLayout(config)
   const { percent, aspectRatio } = layout
@@ -568,7 +580,7 @@ export function GraphicPage({
 
               const block = unit.block
               return (
-              <div key={block.id} style={blockStyle(block, config)}>
+              <div key={block.id} className="graphic-text-line" style={blockStyle(block, config)}>
                 {renderBlockText(block, brushColors, underlineColors, quoteColors, circleColors)}
               </div>
               )
@@ -577,7 +589,9 @@ export function GraphicPage({
         </div>
       </div>
 
-      {showSafeArea && <SafeAreaGuide layout={layout} />}
+      {showSafeArea && (
+        <SafeAreaGuide layout={layout} onCopyContent={onCopyContent} />
+      )}
 
       <div
         className="absolute left-[3.2%] top-[3.2%] size-[1.5cqw] bg-[var(--graphic-theme)]"

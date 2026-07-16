@@ -1400,6 +1400,32 @@ body.is-dragging {
   border-width: 0 2px 2px 0;
 }
 
+.graphic-safe-area-copy {
+  position: absolute;
+  top: 1.2cqw;
+  right: 1.2cqw;
+  z-index: 1;
+  border: none;
+  border-radius: 0.375rem;
+  background: rgb(14 165 233 / 0.9);
+  padding: 0.5cqw 1.6cqw;
+  font-size: 1.8cqw;
+  font-weight: 500;
+  color: #ffffff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.graphic-safe-area-copy:active {
+  background: rgb(2 132 199 / 0.95);
+}
+
+.graphic-text-line {
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+}
+
 .graphic-theme-brush {
   position: relative;
   box-decoration-break: clone;
