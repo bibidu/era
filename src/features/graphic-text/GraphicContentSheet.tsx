@@ -1,7 +1,6 @@
 import {
   ChevronDown,
   ChevronUp,
-  Code2,
   Heading1,
   Heading2,
   ImagePlus,
@@ -14,7 +13,6 @@ import { useRef, useState } from 'react'
 import {
   addAsset,
   createImageContentBlock,
-  createMarkdownContentBlock,
   describeContentBlock,
   insertContentBlock,
   moveContentBlock,
@@ -24,13 +22,12 @@ import {
   type GraphicDocument,
 } from './document'
 import { fileToGraphicAsset } from './imageAsset'
+import { parseMarkdown } from './layout'
 import {
   clampSheetHeight,
   readCachedSheetHeight,
   writeCachedSheetHeight,
 } from './topBar'
-import { TextAdjustNumericControl } from './TextAdjustNumericControl'
-import { buildNumericOptions } from './configSelectOptions'
 
 type ContentTab = 'blocks' | 'assets'
 
@@ -47,14 +44,11 @@ interface GraphicContentSheetProps {
   onEditMarkdownBlock: (blockId: string) => void
 }
 
-const IMAGE_MARGIN_OPTIONS = buildNumericOptions(0, 1.2, 0.05)
-
 function blockIcon(block: ContentBlock) {
   if (block.kind === 'image') return ImagePlus
-  const firstLine = block.text.trim().split('\n')[0] ?? ''
-  if (firstLine.startsWith('# ')) return Heading1
-  if (/^#{2,6}\s/.test(firstLine)) return Heading2
-  if (firstLine.startsWith('```')) return Code2
+  const first = parseMarkdown(block.text)[0]
+  if (first?.type === 'title') return Heading1
+  if (first?.type === 'heading') return Heading2
   return Pilcrow
 }
 
@@ -74,7 +68,6 @@ export function GraphicContentSheet({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [tab, setTab] = useState<ContentTab>('blocks')
   const [insertIndex, setInsertIndex] = useState<number | null>(null)
-  const [replaceBlockId, setReplaceBlockId] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState('')
   const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
 
@@ -110,23 +103,11 @@ export function GraphicContentSheet({
     window.addEventListener('pointercancel', onEnd)
   }
 
-  const handleUploadFile = async (file: File, insertAt?: number, replaceId?: string) => {
+  const handleUploadFile = async (file: File, insertAt?: number) => {
     try {
       setUploadError('')
       const asset = await fileToGraphicAsset(file)
       const nextDocument = addAsset(document, asset)
-
-      if (replaceId) {
-        onDocumentChange(
-          updateContentBlock(nextDocument, replaceId, (current) =>
-            current.kind === 'image' ? { ...current, assetId: asset.id } : current,
-          ),
-        )
-        onSelectBlock(replaceId)
-        setReplaceBlockId(null)
-        return
-      }
-
       const imageBlock = createImageContentBlock(asset.id)
       const index = insertAt ?? nextDocument.blocks.length
       onDocumentChange(insertContentBlock(nextDocument, index, imageBlock))
@@ -138,18 +119,9 @@ export function GraphicContentSheet({
     }
   }
 
-  const openFilePicker = (insertAt?: number, replaceId?: string) => {
+  const openFilePicker = (insertAt?: number) => {
     setInsertIndex(insertAt ?? null)
-    setReplaceBlockId(replaceId ?? null)
     fileInputRef.current?.click()
-  }
-
-  const insertMarkdownAt = (index: number) => {
-    const block = createMarkdownContentBlock('')
-    onDocumentChange(insertContentBlock(document, index, block))
-    onSelectBlock(block.id)
-    onEditMarkdownBlock(block.id)
-    setInsertIndex(null)
   }
 
   const insertAssetAt = (assetId: string, index: number) => {
@@ -177,13 +149,7 @@ export function GraphicContentSheet({
         className="hidden"
         onChange={(event) => {
           const file = event.target.files?.[0]
-          if (file) {
-            void handleUploadFile(
-              file,
-              replaceBlockId ? undefined : (insertIndex ?? undefined),
-              replaceBlockId ?? undefined,
-            )
-          }
+          if (file) void handleUploadFile(file, insertIndex ?? undefined)
           event.target.value = ''
         }}
       />
@@ -234,16 +200,13 @@ export function GraphicContentSheet({
             {document.blocks.length === 0 ? (
               <div className="graphic-content-empty">
                 <p>还没有内容块</p>
-                <button type="button" className="graphic-content-empty-btn" onClick={() => insertMarkdownAt(0)}>
-                  插入第一段文字
-                </button>
                 <button type="button" className="graphic-content-empty-btn" onClick={() => openFilePicker(0)}>
-                  上传图片
+                  插入图片
                 </button>
               </div>
             ) : (
               <>
-                <InsertGap index={0} onPickMarkdown={() => insertMarkdownAt(0)} onPickUpload={() => openFilePicker(0)} />
+                <InsertGap onInsert={() => openFilePicker(0)} />
 
                 {document.blocks.map((block, index) => {
                   const Icon = blockIcon(block)
@@ -311,9 +274,6 @@ export function GraphicContentSheet({
 
                         {selected && block.kind === 'image' && (
                           <div className="graphic-content-block-tools graphic-content-image-tools">
-                            <button type="button" onClick={() => openFilePicker(undefined, block.id)}>
-                              换图
-                            </button>
                             <button
                               type="button"
                               className={block.fit === 'width' ? 'is-active' : ''}
@@ -340,41 +300,11 @@ export function GraphicContentSheet({
                             >
                               原比例
                             </button>
-                            <TextAdjustNumericControl
-                              aria-label="上间距"
-                              value={block.marginTop}
-                              options={IMAGE_MARGIN_OPTIONS}
-                              onChange={(value) =>
-                                onDocumentChange(
-                                  updateContentBlock(document, block.id, (current) =>
-                                    current.kind === 'image' ? { ...current, marginTop: value } : current,
-                                  ),
-                                )
-                              }
-                            />
-                            <TextAdjustNumericControl
-                              aria-label="下间距"
-                              value={block.marginBottom}
-                              options={IMAGE_MARGIN_OPTIONS}
-                              onChange={(value) =>
-                                onDocumentChange(
-                                  updateContentBlock(document, block.id, (current) =>
-                                    current.kind === 'image'
-                                      ? { ...current, marginBottom: value }
-                                      : current,
-                                  ),
-                                )
-                              }
-                            />
                           </div>
                         )}
                       </div>
 
-                      <InsertGap
-                        index={index + 1}
-                        onPickMarkdown={() => insertMarkdownAt(index + 1)}
-                        onPickUpload={() => openFilePicker(index + 1)}
-                      />
+                      <InsertGap onInsert={() => openFilePicker(index + 1)} />
                     </div>
                   )
                 })}
@@ -399,7 +329,11 @@ export function GraphicContentSheet({
                 <span>{asset.name || '图片'}</span>
               </button>
             ))}
-            <button type="button" className="graphic-content-asset-card graphic-content-asset-card--add" onClick={() => openFilePicker()}>
+            <button
+              type="button"
+              className="graphic-content-asset-card graphic-content-asset-card--add"
+              onClick={() => openFilePicker()}
+            >
               <Plus size={22} />
               <span>上传图片</span>
             </button>
@@ -410,32 +344,13 @@ export function GraphicContentSheet({
   )
 }
 
-function InsertGap({
-  onPickMarkdown,
-  onPickUpload,
-}: {
-  index: number
-  onPickMarkdown: () => void
-  onPickUpload: () => void
-}) {
-  const [open, setOpen] = useState(false)
-
+function InsertGap({ onInsert }: { onInsert: () => void }) {
   return (
     <div className="graphic-content-insert-gap">
-      <button type="button" className="graphic-content-insert-trigger" onClick={() => setOpen((value) => !value)}>
+      <button type="button" className="graphic-content-insert-trigger" onClick={onInsert}>
         <Plus size={14} />
-        在此处插入
+        插入图片
       </button>
-      {open && (
-        <div className="graphic-content-insert-menu">
-          <button type="button" onClick={() => { setOpen(false); onPickMarkdown() }}>
-            文字块
-          </button>
-          <button type="button" onClick={() => { setOpen(false); onPickUpload() }}>
-            上传图片
-          </button>
-        </div>
-      )}
     </div>
   )
 }
