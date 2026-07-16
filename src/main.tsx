@@ -4,9 +4,7 @@ import './index.css'
 import App from './App.tsx'
 import { checkForNewVersion } from './utils/versionCheck'
 
-async function bootstrap() {
-  await checkForNewVersion()
-
+function bootstrap() {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <App />
@@ -14,6 +12,7 @@ async function bootstrap() {
   )
   window.__ERA_APP_MOUNTED__ = true
   sessionStorage.removeItem('era-asset-reload')
+  void checkForNewVersion()
 }
 
-void bootstrap()
+bootstrap()
