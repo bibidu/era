@@ -1,5 +1,4 @@
-export const CODE_FONT_FAMILY =
-  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+export const CODE_FONT_FAMILY = 'Menlo, monospace'
 
 export const CODE_BACKGROUND = '#F2F2F2'
 export const CODE_BORDER_COLOR = '#D1D5DB'

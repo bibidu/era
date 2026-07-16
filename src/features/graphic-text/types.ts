@@ -61,9 +61,8 @@ export interface GraphicTextPage {
 
 const DEFAULT_SONG_FONT_ID = 'song'
 const DEFAULT_SONG_FONT_FAMILY = '"Noto Serif SC", serif'
-const DEFAULT_CODE_FONT_ID = 'system'
-const DEFAULT_CODE_FONT_FAMILY =
-  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+const DEFAULT_CODE_FONT_ID = 'menlo'
+const DEFAULT_CODE_FONT_FAMILY = 'Menlo, monospace'
 
 export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   titleFontId: DEFAULT_SONG_FONT_ID,

@@ -81,7 +81,7 @@ export function TextEditorSheet({
 
   useEffect(() => {
     if (!text) return
-    const cdnIds = ['dachun', 'dachun-medium', 'kai']
+    const cdnIds = ['kai']
     if (!cdnIds.includes(text.fontId)) return
     const font = getFontById(text.fontId)
     loadFont(font, text.content || '你好')

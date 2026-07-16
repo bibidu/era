@@ -1,4 +1,4 @@
-import { FONT_OPTIONS, type FontOption } from '../../data/fonts'
+import { getFontOptionsForTarget, type FontOption } from '../../data/fonts'
 import {
   BODY_FONT_SIZE_OPTIONS,
   BODY_LINE_HEIGHT_OPTIONS,
@@ -45,14 +45,16 @@ export function GraphicTopTextStrip({ value, onChange }: GraphicTopTextStripProp
 }
 
 interface GraphicFontStripProps {
+  target: FontSizeTarget
   selectedFontId: string
   onSelect: (font: FontOption) => void
 }
 
-export function GraphicFontStrip({ selectedFontId, onSelect }: GraphicFontStripProps) {
+export function GraphicFontStrip({ target, selectedFontId, onSelect }: GraphicFontStripProps) {
+  const fonts = getFontOptionsForTarget(target)
   return (
     <StripShell>
-      {FONT_OPTIONS.map((font) => {
+      {fonts.map((font) => {
         const selected = selectedFontId === font.id
         return (
           <button
@@ -134,7 +136,7 @@ function TextAdjustFieldControl({
 }: GraphicTextAdjustFieldStripProps) {
   if (field === 'font') {
     const { fontId } = getFontConfigForTarget(config, target)
-    return <GraphicFontStrip selectedFontId={fontId} onSelect={onFontSelect} />
+    return <GraphicFontStrip target={target} selectedFontId={fontId} onSelect={onFontSelect} />
   }
 
   if (target === 'title') {
@@ -258,7 +260,13 @@ function TextAdjustFieldControl({
 
 export function GraphicTextAdjustFieldStrip(props: GraphicTextAdjustFieldStripProps) {
   if (props.field === 'font') {
-    return <GraphicFontStrip selectedFontId={getFontConfigForTarget(props.config, props.target).fontId} onSelect={props.onFontSelect} />
+    return (
+      <GraphicFontStrip
+        target={props.target}
+        selectedFontId={getFontConfigForTarget(props.config, props.target).fontId}
+        onSelect={props.onFontSelect}
+      />
+    )
   }
 
   return (

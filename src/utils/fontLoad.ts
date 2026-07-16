@@ -1,5 +1,4 @@
 import type { FontOption } from '../data/fonts'
-import { ensurePixelFontLoaded, isPixelFontLoaded as isPixelFontLoadedInternal } from './pixelFont'
 import { sleep } from './async'
 
 const loadedFontIds = new Set<string>()
@@ -66,14 +65,7 @@ async function loadFontInternal(font: FontOption, sampleText: string): Promise<b
     return true
   }
 
-  if (font.source === 'pixel') {
-    const ok = await withTimeoutReject(
-      ensurePixelFontLoaded(font),
-      FONT_LOAD_TIMEOUT_MS,
-      `像素字体「${font.label}」加载超时`,
-    )
-    if (!ok) return false
-  } else if (font.source === 'google' && font.googleFamily) {
+  if (font.source === 'google' && font.googleFamily) {
     await loadStylesheet(font.id, `https://fonts.googleapis.com/css2?family=${font.googleFamily}&display=swap`)
     await waitForGlyphs(primaryFamily(font.fontFamily), sampleText, 16)
   } else if (font.source === 'cdn' && font.cdnUrl) {
@@ -141,5 +133,5 @@ export function isRemoteFontLoaded(fontId: string) {
 
 export function isFontLoaded(font: FontOption): boolean {
   if (font.source === 'system') return true
-  return loadedFontIds.has(font.id) || isPixelFontLoadedInternal(font.id)
+  return loadedFontIds.has(font.id)
 }

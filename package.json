@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "verify:fonts": "npm run build && node scripts/verify-pixel-font.mjs",
+    "verify:fonts": "npm run build",
     "lint": "oxlint",
     "preview": "vite preview"
   },
