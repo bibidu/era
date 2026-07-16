@@ -212,7 +212,7 @@ async function drawPage(
     topBarHeight,
     exportScale,
   } = layout
-  const brushColors = config.brushHighlightColors
+  const brushColors = config.brushHighlightColors ?? {}
   const underlineColors = config.underlineHighlightColors
   const quoteColors = config.quoteHighlightColors
   const circleColors = config.circleHighlightColors
