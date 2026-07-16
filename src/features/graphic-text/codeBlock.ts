@@ -1,27 +1,25 @@
 export const CODE_FONT_FAMILY =
-  'system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans SC", sans-serif'
+  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
 
 export const CODE_BACKGROUND = '#F2F2F2'
 export const CODE_BORDER_COLOR = '#D1D5DB'
 export const CODE_TEXT_COLOR = '#404040'
-export const CODE_SIZE_SCALE = 0.92
-export const CODE_HORIZONTAL_PADDING_SCALE = 0.62
-export const CODE_VERTICAL_PADDING_SCALE = 0.34
+export const CODE_HORIZONTAL_PADDING_SCALE = 0.95
+export const CODE_VERTICAL_PADDING_SCALE = 0.6
 export const CODE_BORDER_WIDTH_PX = 1
-export const CODE_RADIUS_PX = 6
 
-function primaryCodeFamily() {
-  return CODE_FONT_FAMILY.split(',')[0].trim()
+function primaryFontFamily(fontFamily: string) {
+  return fontFamily.replace(/"/g, '').split(',')[0].trim()
 }
 
-export function measureCodeTextWidth(text: string, fontSize: number): number {
+export function measureCodeTextWidth(text: string, fontSize: number, fontFamily = CODE_FONT_FAMILY): number {
   if (!text) return 0
   if (typeof document === 'undefined') return text.length * fontSize * 0.6
 
   const ctx = document.createElement('canvas').getContext('2d')
   if (!ctx) return text.length * fontSize * 0.6
 
-  ctx.font = `400 ${fontSize}px ${primaryCodeFamily()}`
+  ctx.font = `400 ${fontSize}px ${primaryFontFamily(fontFamily)}`
   return ctx.measureText(text).width
 }
 
@@ -34,11 +32,12 @@ export function wrapCodeTextLines(
   text: string,
   maxWidth: number,
   fontSize: number,
+  fontFamily = CODE_FONT_FAMILY,
 ): string[] {
   const logicalLines = text.split('\n')
   const wrapped: string[] = []
 
-  const fits = (value: string) => measureCodeTextWidth(value, fontSize) <= maxWidth
+  const fits = (value: string) => measureCodeTextWidth(value, fontSize, fontFamily) <= maxWidth
 
   const pushHardBrokenToken = (token: string) => {
     let rest = token
@@ -51,7 +50,7 @@ export function wrapCodeTextLines(
       let high = rest.length
       while (low < high) {
         const mid = Math.ceil((low + high) / 2)
-        if (measureCodeTextWidth(rest.slice(0, mid), fontSize) <= maxWidth) {
+        if (measureCodeTextWidth(rest.slice(0, mid), fontSize, fontFamily) <= maxWidth) {
           low = mid
         } else {
           high = mid - 1

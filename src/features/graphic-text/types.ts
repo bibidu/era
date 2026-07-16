@@ -14,15 +14,20 @@ export interface GraphicTextConfig {
   headingFontFamily: string
   bodyFontId: string
   bodyFontFamily: string
+  codeFontId: string
+  codeFontFamily: string
   titleFontSize: number
   headingFontSize: number
   bodyFontSize: number
+  codeFontSize: number
   titleLineHeight: number
   bodyLineHeight: number
+  codeLineHeight: number
   titleMarginTop: number
   titleMarginBottom: number
   headingMarginTop: number
   headingMarginBottom: number
+  codeBackgroundColor: string
   paperColor: string
   aspectRatio: GraphicAspectRatio
   backgroundType: GraphicBackgroundType
@@ -56,6 +61,9 @@ export interface GraphicTextPage {
 
 const DEFAULT_SONG_FONT_ID = 'song'
 const DEFAULT_SONG_FONT_FAMILY = '"Noto Serif SC", serif'
+const DEFAULT_CODE_FONT_ID = 'system'
+const DEFAULT_CODE_FONT_FAMILY =
+  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
 
 export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   titleFontId: DEFAULT_SONG_FONT_ID,
@@ -64,15 +72,20 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   headingFontFamily: DEFAULT_SONG_FONT_FAMILY,
   bodyFontId: DEFAULT_SONG_FONT_ID,
   bodyFontFamily: DEFAULT_SONG_FONT_FAMILY,
+  codeFontId: DEFAULT_CODE_FONT_ID,
+  codeFontFamily: DEFAULT_CODE_FONT_FAMILY,
   titleFontSize: 56,
   headingFontSize: 20,
   bodyFontSize: 13,
+  codeFontSize: 12,
   titleLineHeight: 1.18,
   bodyLineHeight: 1.64,
+  codeLineHeight: 1.5,
   titleMarginTop: 1.2,
   titleMarginBottom: 0.32,
   headingMarginTop: 0.88,
   headingMarginBottom: 0.32,
+  codeBackgroundColor: '#F2F2F2',
   paperColor: '#FBF7ED',
   aspectRatio: '9:16',
   backgroundType: 'solid',

@@ -43,7 +43,7 @@ interface GraphicTextToolbarProps {
 }
 
 function isTextAdjustTarget(nav: FontSizeNav): nav is FontSizeTarget {
-  return nav === 'title' || nav === 'heading' || nav === 'body'
+  return nav === 'title' || nav === 'heading' || nav === 'body' || nav === 'code'
 }
 
 export function GraphicTextToolbar({

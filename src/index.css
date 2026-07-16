@@ -781,6 +781,9 @@ body.is-dragging {
 }
 
 .graphic-code-block {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
   border-width: 1px;
   border-style: solid;
 }

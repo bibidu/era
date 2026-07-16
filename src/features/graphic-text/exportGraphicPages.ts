@@ -1,10 +1,6 @@
 import {
-  CODE_BACKGROUND,
   CODE_BORDER_COLOR,
-  CODE_FONT_FAMILY,
   CODE_HORIZONTAL_PADDING_SCALE,
-  CODE_RADIUS_PX,
-  CODE_SIZE_SCALE,
   CODE_TEXT_COLOR,
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
@@ -184,12 +180,12 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
   }
   if (styleType === 'code') {
     return {
-      size: Math.round(config.bodyFontSize * CODE_SIZE_SCALE * exportScale),
+      size: Math.round(config.codeFontSize * exportScale),
       weight: 400,
-      lineHeight: config.bodyLineHeight,
+      lineHeight: config.codeLineHeight,
       spacing: 0.08,
       marginBefore: 0,
-      fontFamily: CODE_FONT_FAMILY,
+      fontFamily,
     }
   }
   return {
@@ -314,14 +310,11 @@ async function drawPage(
     if (!codeBlockFrame) return
 
     const borderWidth = Math.max(1, Math.round(exportScale))
-    const radius = Math.max(4, Math.round(CODE_RADIUS_PX * exportScale))
     const { x, y: frameY, w, h } = codeBlockFrame
 
     ctx.strokeStyle = CODE_BORDER_COLOR
     ctx.lineWidth = borderWidth
-    ctx.beginPath()
-    ctx.roundRect(x + borderWidth / 2, frameY + borderWidth / 2, w - borderWidth, h - borderWidth, radius)
-    ctx.stroke()
+    ctx.strokeRect(x + borderWidth / 2, frameY + borderWidth / 2, w - borderWidth, h - borderWidth)
     codeBlockFrame = null
   }
 
@@ -360,20 +353,21 @@ async function drawPage(
       const padY = spec.size * CODE_VERTICAL_PADDING_SCALE
       const bgX = safeX
       const bgW = width - safeX * 2
-      const bgTop = y - padY * 0.35
-      const bgHeight = lineHeight + padY * 0.7
+      const lineTop = y - padY * 0.35
+      const lineBottom = y + lineHeight + padY * 0.65
 
       if (codeBlockSourceId !== blockId) {
         flushCodeBlockFrame()
         codeBlockSourceId = blockId
-        codeBlockFrame = { x: bgX, y: bgTop, w: bgW, h: bgHeight }
+        codeBlockFrame = { x: bgX, y: lineTop, w: bgW, h: lineBottom - lineTop }
       } else if (codeBlockFrame) {
-        const nextBottom = bgTop + bgHeight
-        codeBlockFrame.h = nextBottom - codeBlockFrame.y
+        codeBlockFrame.h = lineBottom - codeBlockFrame.y
       }
 
-      ctx.fillStyle = CODE_BACKGROUND
-      ctx.fillRect(bgX, bgTop, bgW, bgHeight)
+      ctx.fillStyle = config.codeBackgroundColor
+      if (codeBlockFrame) {
+        ctx.fillRect(codeBlockFrame.x, codeBlockFrame.y, codeBlockFrame.w, codeBlockFrame.h)
+      }
     } else {
       flushCodeBlockFrame()
       codeBlockSourceId = null

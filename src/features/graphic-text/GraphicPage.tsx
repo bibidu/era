@@ -1,11 +1,7 @@
 import { type CSSProperties, type ReactNode } from 'react'
 import {
-  CODE_BACKGROUND,
   CODE_BORDER_COLOR,
-  CODE_FONT_FAMILY,
   CODE_HORIZONTAL_PADDING_SCALE,
-  CODE_RADIUS_PX,
-  CODE_SIZE_SCALE,
   CODE_TEXT_COLOR,
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
@@ -81,7 +77,7 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
 
   const styleType = resolveStyleType(block)
   const bodyUnit = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
-  const codeUnit = `${((config.bodyFontSize * CODE_SIZE_SCALE) / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
+  const codeUnit = `${(config.codeFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const titleUnit = `${(config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const headingUnit = `${(config.headingFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const gap = '1.1cqw'
@@ -104,7 +100,7 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
   const titleSize = `${(config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const headingSize = `${(config.headingFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const bodySize = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
-  const codeSize = `${((config.bodyFontSize * CODE_SIZE_SCALE) / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
+  const codeSize = `${(config.codeFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const marginBottom = blockEndMargin(block, config)
 
   if (styleType === 'title') {
@@ -143,9 +139,9 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
   if (styleType === 'code') {
     return {
       fontSize: codeSize,
-      lineHeight: config.bodyLineHeight,
+      lineHeight: config.codeLineHeight,
       fontWeight: 400,
-      fontFamily: CODE_FONT_FAMILY,
+      fontFamily: config.codeFontFamily,
       marginBottom,
     }
   }
@@ -498,7 +494,7 @@ export function GraphicPage({
               if (unit.kind === 'code') {
                 const firstBlock = unit.blocks[0]
                 const lastBlock = unit.blocks[unit.blocks.length - 1]
-                const codeSize = `${((config.bodyFontSize * CODE_SIZE_SCALE) / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
+                const codeSize = `${(config.codeFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
                 return (
                   <div
                     key={firstBlock.id}
@@ -507,15 +503,14 @@ export function GraphicPage({
                     }}
                   >
                     <div
-                      className="graphic-code-block overflow-hidden"
+                      className="graphic-code-block"
                       style={{
-                        backgroundColor: CODE_BACKGROUND,
+                        backgroundColor: config.codeBackgroundColor,
                         borderColor: CODE_BORDER_COLOR,
-                        borderRadius: `${(CODE_RADIUS_PX / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`,
                         padding: `calc(${codeSize} * ${CODE_VERTICAL_PADDING_SCALE}) calc(${codeSize} * ${CODE_HORIZONTAL_PADDING_SCALE})`,
-                        fontFamily: CODE_FONT_FAMILY,
+                        fontFamily: config.codeFontFamily,
                         fontSize: codeSize,
-                        lineHeight: config.bodyLineHeight,
+                        lineHeight: config.codeLineHeight,
                         color: CODE_TEXT_COLOR,
                       }}
                     >

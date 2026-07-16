@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   CaseSensitive,
+  Code2,
   Heading1,
   Heading2,
   Highlighter,
@@ -17,7 +18,7 @@ export type ToolbarStrip = 'aspect' | 'template' | 'top-text'
 
 export type TemplateNav = null | 'solid' | 'texture'
 
-export type FontSizeTarget = 'title' | 'heading' | 'body'
+export type FontSizeTarget = 'title' | 'heading' | 'body' | 'code'
 
 export type TextAdjustField = 'font' | 'fontSize' | 'lineHeight' | 'marginTop' | 'marginBottom'
 
@@ -48,6 +49,7 @@ export const FONT_SIZE_TARGETS: { id: FontSizeTarget; label: string; icon: Lucid
   { id: 'title', label: '标题', icon: Heading1 },
   { id: 'heading', label: '二级标题', icon: Heading2 },
   { id: 'body', label: '正文', icon: Pilcrow },
+  { id: 'code', label: '代码块', icon: Code2 },
 ]
 
 export const TEXT_ADJUST_FIELDS: Record<
@@ -68,6 +70,11 @@ export const TEXT_ADJUST_FIELDS: Record<
     { id: 'marginBottom', label: '下间距' },
   ],
   body: [
+    { id: 'font', label: '字体' },
+    { id: 'fontSize', label: '字号' },
+    { id: 'lineHeight', label: '行高' },
+  ],
+  code: [
     { id: 'font', label: '字体' },
     { id: 'fontSize', label: '字号' },
     { id: 'lineHeight', label: '行高' },

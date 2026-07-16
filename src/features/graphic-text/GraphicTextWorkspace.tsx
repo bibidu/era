@@ -43,7 +43,7 @@ interface GraphicTextWorkspaceProps {
 }
 
 function isTextAdjustTarget(nav: FontSizeNav): nav is FontSizeTarget {
-  return nav === 'title' || nav === 'heading' || nav === 'body'
+  return nav === 'title' || nav === 'heading' || nav === 'body' || nav === 'code'
 }
 
 export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorkspaceProps) {
@@ -85,7 +85,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
       if (font.source === 'system') continue
       void ensureFontReady(font, font.sample)
     }
-  }, [config.titleFontId, config.headingFontId, config.bodyFontId])
+  }, [config.titleFontId, config.headingFontId, config.bodyFontId, config.codeFontId])
 
   useEffect(() => {
     const pager = pagerRef.current
@@ -313,7 +313,9 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
         ? { titleFontId: font.id, titleFontFamily: font.fontFamily }
         : fontSizeNav === 'heading'
           ? { headingFontId: font.id, headingFontFamily: font.fontFamily }
-          : { bodyFontId: font.id, bodyFontFamily: font.fontFamily }
+          : fontSizeNav === 'code'
+            ? { codeFontId: font.id, codeFontFamily: font.fontFamily }
+            : { bodyFontId: font.id, bodyFontFamily: font.fontFamily }
 
     setConfig((current) => ({ ...current, ...updates }))
     if (font.source !== 'system') {
