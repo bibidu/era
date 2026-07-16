@@ -137,7 +137,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     return {
       ...config,
       underlineHighlightColors: highlightPreview.underlineHighlightColors,
-      brushHighlightColors: highlightPreview.brushHighlightColors,
+      brushHighlightColors: highlightPreview.brushHighlightColors ?? {},
       quoteHighlightColors: highlightPreview.quoteHighlightColors,
       circleHighlightColors: highlightPreview.circleHighlightColors,
       highlightPickerColor: highlightPreview.highlightPickerColor,

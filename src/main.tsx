@@ -12,6 +12,8 @@ async function bootstrap() {
       <App />
     </StrictMode>,
   )
+  window.__ERA_APP_MOUNTED__ = true
+  sessionStorage.removeItem('era-asset-reload')
 }
 
 void bootstrap()
