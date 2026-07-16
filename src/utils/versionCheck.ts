@@ -8,6 +8,7 @@ declare global {
 const VERSION_URL = 'https://raw.githubusercontent.com/bibidu/era/gh-pages/version.json'
 const RELOAD_KEY = 'era-version-reload'
 const REFRESH_PARAM = 'era_refresh'
+const VERSION_CHECK_TIMEOUT_MS = 2500
 
 function bustCacheAndReload(version: string) {
   const url = new URL(window.location.href)
@@ -25,7 +26,14 @@ export async function checkForNewVersion() {
   if (!localBuild) return
 
   try {
-    const response = await fetch(VERSION_URL, { cache: 'no-store' })
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(() => controller.abort(), VERSION_CHECK_TIMEOUT_MS)
+    let response: Response
+    try {
+      response = await fetch(VERSION_URL, { cache: 'no-store', signal: controller.signal })
+    } finally {
+      window.clearTimeout(timeoutId)
+    }
     if (!response.ok) return
 
     const data = (await response.json()) as { version?: string }

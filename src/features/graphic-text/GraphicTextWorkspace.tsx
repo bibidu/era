@@ -80,18 +80,12 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   }, [defaultBackgroundUrl])
 
   useEffect(() => {
-    const sample = markdown || '图文'
     for (const fontId of collectGraphicFontIds(config)) {
       const font = getFontById(fontId)
       if (font.source === 'system') continue
-      void ensureFontReady(font, sample)
+      void ensureFontReady(font, font.sample)
     }
-  }, [
-    config.titleFontId,
-    config.headingFontId,
-    config.bodyFontId,
-    markdown,
-  ])
+  }, [config.titleFontId, config.headingFontId, config.bodyFontId])
 
   useEffect(() => {
     const pager = pagerRef.current
