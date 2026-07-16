@@ -9,6 +9,7 @@ import {
   TITLE_MARGIN_OPTIONS,
 } from './configSelectOptions'
 import type { FontSizeTarget, TextAdjustField } from './graphicConfigPanels'
+import { getFontConfigForTarget } from './graphicTextFonts'
 import { TextAdjustNumericControl } from './TextAdjustNumericControl'
 import { GRAPHIC_ASPECT_RATIO_OPTIONS, type GraphicAspectRatio, type GraphicTextConfig } from './types'
 
@@ -119,6 +120,7 @@ interface GraphicTextAdjustFieldStripProps {
   field: TextAdjustField
   config: GraphicTextConfig
   onUpdate: (updates: Partial<GraphicTextConfig>) => void
+  onFontSelect: (font: FontOption) => void
 }
 
 function TextAdjustFieldControl({
@@ -126,7 +128,13 @@ function TextAdjustFieldControl({
   field,
   config,
   onUpdate,
+  onFontSelect,
 }: GraphicTextAdjustFieldStripProps) {
+  if (field === 'font') {
+    const { fontId } = getFontConfigForTarget(config, target)
+    return <GraphicFontStrip selectedFontId={fontId} onSelect={onFontSelect} />
+  }
+
   if (target === 'title') {
     if (field === 'fontSize') {
       return (
@@ -224,6 +232,10 @@ function TextAdjustFieldControl({
 }
 
 export function GraphicTextAdjustFieldStrip(props: GraphicTextAdjustFieldStripProps) {
+  if (props.field === 'font') {
+    return <GraphicFontStrip selectedFontId={getFontConfigForTarget(props.config, props.target).fontId} onSelect={props.onFontSelect} />
+  }
+
   return (
     <StripShell>
       <TextAdjustFieldControl {...props} />
@@ -236,11 +248,21 @@ export function GraphicFontSizeDetailStrip({
   target,
   config,
   onUpdate,
+  onFontSelect,
 }: {
   target: FontSizeTarget
   config: GraphicTextConfig
   onUpdate: (updates: Partial<GraphicTextConfig>) => void
+  onFontSelect?: (font: FontOption) => void
 }) {
   const field = target === 'body' ? 'fontSize' : 'fontSize'
-  return <GraphicTextAdjustFieldStrip target={target} field={field} config={config} onUpdate={onUpdate} />
+  return (
+    <GraphicTextAdjustFieldStrip
+      target={target}
+      field={field}
+      config={config}
+      onUpdate={onUpdate}
+      onFontSelect={onFontSelect ?? (() => {})}
+    />
+  )
 }

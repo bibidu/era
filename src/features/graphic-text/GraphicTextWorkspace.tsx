@@ -9,7 +9,6 @@ import { GraphicTextConfigSheet, createHighlightPreviewDraft } from './GraphicTe
 import { GraphicTextToolbar } from './GraphicTextToolbar'
 import {
   GraphicAspectStrip,
-  GraphicFontStrip,
   GraphicTextAdjustFieldStrip,
   GraphicTopTextStrip,
 } from './GraphicToolbarStrips'
@@ -26,6 +25,7 @@ import type {
   ToolbarStrip,
 } from './graphicConfigPanels'
 import { paginateMarkdown, getGraphicLayout } from './layout'
+import { collectGraphicFontIds } from './graphicTextFonts'
 import { computeGraphicPageDisplaySize } from './graphicPreviewLayout'
 import { getViewportHeight, readCachedSheetHeight } from './topBar'
 import {
@@ -80,10 +80,18 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   }, [defaultBackgroundUrl])
 
   useEffect(() => {
-    const font = getFontById(config.fontId)
-    if (font.source === 'system') return
-    void ensureFontReady(font, markdown || font.sample)
-  }, [config.fontId, markdown])
+    const sample = markdown || '图文'
+    for (const fontId of collectGraphicFontIds(config)) {
+      const font = getFontById(fontId)
+      if (font.source === 'system') continue
+      void ensureFontReady(font, sample)
+    }
+  }, [
+    config.titleFontId,
+    config.headingFontId,
+    config.bodyFontId,
+    markdown,
+  ])
 
   useEffect(() => {
     const pager = pagerRef.current
@@ -304,7 +312,16 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   }
 
   const handleFontSelect = (font: FontOption) => {
-    setConfig((current) => ({ ...current, fontId: font.id, fontFamily: font.fontFamily }))
+    if (!isTextAdjustTarget(fontSizeNav)) return
+
+    const updates =
+      fontSizeNav === 'title'
+        ? { titleFontId: font.id, titleFontFamily: font.fontFamily }
+        : fontSizeNav === 'heading'
+          ? { headingFontId: font.id, headingFontFamily: font.fontFamily }
+          : { bodyFontId: font.id, bodyFontFamily: font.fontFamily }
+
+    setConfig((current) => ({ ...current, ...updates }))
     if (font.source !== 'system') {
       void ensureFontReady(font, markdown || font.sample)
     }
@@ -393,8 +410,14 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           }}
         />
 
-        {!configPanel && toolbarStrip === 'font' && (
-          <GraphicFontStrip selectedFontId={config.fontId} onSelect={handleFontSelect} />
+        {!configPanel && showTextAdjustStrip && (
+          <GraphicTextAdjustFieldStrip
+            target={fontSizeNav}
+            field={textAdjustField}
+            config={config}
+            onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
+            onFontSelect={handleFontSelect}
+          />
         )}
         {!configPanel && toolbarStrip === 'aspect' && (
           <GraphicAspectStrip selected={config.aspectRatio} onSelect={handleAspectSelect} />
@@ -415,14 +438,6 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           <GraphicTopTextStrip
             value={config.topText}
             onChange={(topText) => setConfig((current) => ({ ...current, topText }))}
-          />
-        )}
-        {!configPanel && showTextAdjustStrip && (
-          <GraphicTextAdjustFieldStrip
-            target={fontSizeNav}
-            field={textAdjustField}
-            config={config}
-            onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
           />
         )}
 

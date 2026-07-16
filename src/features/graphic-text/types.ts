@@ -8,8 +8,12 @@ export const GRAPHIC_ASPECT_RATIO_OPTIONS: { id: GraphicAspectRatio; label: stri
 ]
 
 export interface GraphicTextConfig {
-  fontId: string
-  fontFamily: string
+  titleFontId: string
+  titleFontFamily: string
+  headingFontId: string
+  headingFontFamily: string
+  bodyFontId: string
+  bodyFontFamily: string
   titleFontSize: number
   headingFontSize: number
   bodyFontSize: number
@@ -50,9 +54,16 @@ export interface GraphicTextPage {
   blocks: MarkdownBlock[]
 }
 
+const DEFAULT_SONG_FONT_ID = 'song'
+const DEFAULT_SONG_FONT_FAMILY = '"Noto Serif SC", serif'
+
 export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
-  fontId: 'song',
-  fontFamily: '"Noto Serif SC", serif',
+  titleFontId: DEFAULT_SONG_FONT_ID,
+  titleFontFamily: DEFAULT_SONG_FONT_FAMILY,
+  headingFontId: DEFAULT_SONG_FONT_ID,
+  headingFontFamily: DEFAULT_SONG_FONT_FAMILY,
+  bodyFontId: DEFAULT_SONG_FONT_ID,
+  bodyFontFamily: DEFAULT_SONG_FONT_FAMILY,
   titleFontSize: 56,
   headingFontSize: 20,
   bodyFontSize: 13,
