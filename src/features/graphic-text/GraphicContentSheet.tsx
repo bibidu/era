@@ -26,11 +26,14 @@ import {
 import { fileToGraphicAsset } from './imageAsset'
 import { GraphicPageRail, mergePageRailSegments } from './GraphicPageRail'
 import { parseMarkdown } from './layout'
+import type { FontOption } from '../../data/fonts'
 import {
   clampSheetHeight,
   readCachedSheetHeight,
   writeCachedSheetHeight,
 } from './topBar'
+import type { FontSizeNav, FontSizeTarget, TextAdjustField } from './graphicConfigPanels'
+import { GraphicContentTextAdjust } from './GraphicContentTextAdjust'
 import type { GraphicTextConfig } from './types'
 
 interface GraphicContentSheetProps {
@@ -40,11 +43,19 @@ interface GraphicContentSheetProps {
   sheetHeight: number
   toolbarDockHeight: number
   selectedBlockId: string | null
+  fontSizeNav: FontSizeNav
+  textAdjustField: TextAdjustField | null
   onOpenChange: (open: boolean) => void
   onHeightChange: (height: number) => void
   onDocumentChange: (document: GraphicDocument) => void
   onSelectBlock: (blockId: string | null) => void
   onEditMarkdownBlock: (blockId: string) => void
+  onOpenTextAdjustMenu: () => void
+  onTextAdjustBack: () => void
+  onSelectTextAdjustTarget: (target: FontSizeTarget) => void
+  onSelectTextAdjustField: (field: TextAdjustField) => void
+  onConfigUpdate: (updates: Partial<GraphicTextConfig>) => void
+  onFontSelect: (font: FontOption) => void
 }
 
 function blockIcon(block: ContentBlock) {
@@ -63,11 +74,19 @@ export function GraphicContentSheet({
   sheetHeight,
   toolbarDockHeight,
   selectedBlockId,
+  fontSizeNav,
+  textAdjustField,
   onOpenChange,
   onHeightChange,
   onDocumentChange,
   onSelectBlock,
   onEditMarkdownBlock,
+  onOpenTextAdjustMenu,
+  onTextAdjustBack,
+  onSelectTextAdjustTarget,
+  onSelectTextAdjustField,
+  onConfigUpdate,
+  onFontSelect,
 }: GraphicContentSheetProps) {
   const panelRef = useRef<HTMLDivElement | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -211,6 +230,18 @@ export function GraphicContentSheet({
       </div>
 
       <div className="graphic-content-sheet-body">
+        <GraphicContentTextAdjust
+          fontSizeNav={fontSizeNav}
+          textAdjustField={textAdjustField}
+          config={config}
+          onOpenMenu={onOpenTextAdjustMenu}
+          onBack={onTextAdjustBack}
+          onSelectTarget={onSelectTextAdjustTarget}
+          onSelectField={onSelectTextAdjustField}
+          onUpdate={onConfigUpdate}
+          onFontSelect={onFontSelect}
+        />
+
         {uploadError && <p className="graphic-content-sheet-error">{uploadError}</p>}
 
         <div ref={scrollRef} className="graphic-content-sheet-scroll">
@@ -250,7 +281,8 @@ export function GraphicContentSheet({
                             className="graphic-content-block-text"
                             onClick={() => onSelectBlock(selected ? null : block.id)}
                           >
-                            <p className="graphic-content-block-preview">{meta.preview}</p>
+                            <p className="graphic-content-block-content">{meta.content}</p>
+                            <p className="graphic-content-block-type">{meta.typeLabel}</p>
                           </button>
                           <div className="graphic-content-block-actions">
                             <button
