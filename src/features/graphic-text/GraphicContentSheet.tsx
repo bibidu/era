@@ -1,6 +1,7 @@
 import {
   ChevronDown,
   ChevronUp,
+  Code2,
   Heading1,
   Heading2,
   ImagePlus,
@@ -9,7 +10,8 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { buildContentBlockPageMap } from './contentBlockPages'
 import {
   addAsset,
   createImageContentBlock,
@@ -22,18 +24,19 @@ import {
   type GraphicDocument,
 } from './document'
 import { fileToGraphicAsset } from './imageAsset'
+import { GraphicPageRail, mergePageRailSegments } from './GraphicPageRail'
 import { parseMarkdown } from './layout'
 import {
   clampSheetHeight,
   readCachedSheetHeight,
   writeCachedSheetHeight,
 } from './topBar'
-
-type ContentTab = 'blocks' | 'assets'
+import type { GraphicTextConfig } from './types'
 
 interface GraphicContentSheetProps {
   isOpen: boolean
   document: GraphicDocument
+  config: GraphicTextConfig
   sheetHeight: number
   toolbarDockHeight: number
   selectedBlockId: string | null
@@ -49,12 +52,14 @@ function blockIcon(block: ContentBlock) {
   const first = parseMarkdown(block.text)[0]
   if (first?.type === 'title') return Heading1
   if (first?.type === 'heading') return Heading2
+  if (first?.type === 'code') return Code2
   return Pilcrow
 }
 
 export function GraphicContentSheet({
   isOpen,
   document,
+  config,
   sheetHeight,
   toolbarDockHeight,
   selectedBlockId,
@@ -66,10 +71,46 @@ export function GraphicContentSheet({
 }: GraphicContentSheetProps) {
   const panelRef = useRef<HTMLDivElement | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [tab, setTab] = useState<ContentTab>('blocks')
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const blockItemRefs = useRef<Map<string, HTMLElement>>(new Map())
   const [insertIndex, setInsertIndex] = useState<number | null>(null)
   const [uploadError, setUploadError] = useState('')
+  const [pageBarSegments, setPageBarSegments] = useState<
+    Array<{ page: number; top: number; height: number }>
+  >([])
   const resizeRef = useRef<{ startY: number; startHeight: number } | null>(null)
+
+  const blockPageMap = useMemo(
+    () => buildContentBlockPageMap(document, config),
+    [document, config],
+  )
+
+  useLayoutEffect(() => {
+    if (!isOpen) return
+
+    const measure = () => {
+      const items = document.blocks
+        .map((block) => {
+          const element = blockItemRefs.current.get(block.id)
+          if (!element) return null
+          return {
+            page: blockPageMap.get(block.id) ?? 1,
+            top: element.offsetTop,
+            height: element.offsetHeight,
+          }
+        })
+        .filter((item): item is { page: number; top: number; height: number } => item !== null)
+
+      setPageBarSegments(mergePageRailSegments(items))
+    }
+
+    measure()
+    const observer = new ResizeObserver(measure)
+    blockItemRefs.current.forEach((element) => observer.observe(element))
+    if (scrollRef.current) observer.observe(scrollRef.current)
+
+    return () => observer.disconnect()
+  }, [isOpen, document.blocks, blockPageMap, selectedBlockId])
 
   if (!isOpen) return null
 
@@ -112,7 +153,6 @@ export function GraphicContentSheet({
       const index = insertAt ?? nextDocument.blocks.length
       onDocumentChange(insertContentBlock(nextDocument, index, imageBlock))
       onSelectBlock(imageBlock.id)
-      setTab('blocks')
       setInsertIndex(null)
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : '图片上传失败')
@@ -124,12 +164,9 @@ export function GraphicContentSheet({
     fileInputRef.current?.click()
   }
 
-  const insertAssetAt = (assetId: string, index: number) => {
-    const block = createImageContentBlock(assetId)
-    onDocumentChange(insertContentBlock(document, index, block))
-    onSelectBlock(block.id)
-    setInsertIndex(null)
-    setTab('blocks')
+  const setBlockItemRef = (blockId: string, element: HTMLElement | null) => {
+    if (element) blockItemRefs.current.set(blockId, element)
+    else blockItemRefs.current.delete(blockId)
   }
 
   return (
@@ -173,29 +210,10 @@ export function GraphicContentSheet({
         <span className="graphic-config-sheet-handle-bar" />
       </div>
 
-      <div className="graphic-content-sheet-header">
-        <div className="graphic-content-sheet-tabs">
-          <button
-            type="button"
-            className={`graphic-content-sheet-tab ${tab === 'blocks' ? 'graphic-content-sheet-tab--active' : ''}`}
-            onClick={() => setTab('blocks')}
-          >
-            块列表
-          </button>
-          <button
-            type="button"
-            className={`graphic-content-sheet-tab ${tab === 'assets' ? 'graphic-content-sheet-tab--active' : ''}`}
-            onClick={() => setTab('assets')}
-          >
-            素材库
-          </button>
-        </div>
-      </div>
-
       <div className="graphic-content-sheet-body">
         {uploadError && <p className="graphic-content-sheet-error">{uploadError}</p>}
 
-        {tab === 'blocks' ? (
+        <div ref={scrollRef} className="graphic-content-sheet-scroll">
           <div className="graphic-content-block-list">
             {document.blocks.length === 0 ? (
               <div className="graphic-content-empty">
@@ -215,6 +233,7 @@ export function GraphicContentSheet({
                   return (
                     <div key={block.id}>
                       <div
+                        ref={(element) => setBlockItemRef(block.id, element)}
                         className={`graphic-content-block-item ${selected ? 'graphic-content-block-item--selected' : ''}`}
                       >
                         <div className="graphic-content-block-main">
@@ -231,8 +250,7 @@ export function GraphicContentSheet({
                             className="graphic-content-block-text"
                             onClick={() => onSelectBlock(selected ? null : block.id)}
                           >
-                            <span className="graphic-content-block-label">{meta.label}</span>
-                            <span className="graphic-content-block-detail">{meta.detail}</span>
+                            <p className="graphic-content-block-preview">{meta.preview}</p>
                           </button>
                           <div className="graphic-content-block-actions">
                             <button
@@ -308,37 +326,12 @@ export function GraphicContentSheet({
                     </div>
                   )
                 })}
+
+                <GraphicPageRail segments={pageBarSegments} />
               </>
             )}
           </div>
-        ) : (
-          <div className="graphic-content-asset-grid">
-            {Object.values(document.assets).map((asset) => (
-              <button
-                key={asset.id}
-                type="button"
-                className="graphic-content-asset-card"
-                onClick={() => {
-                  const index = selectedBlockId
-                    ? document.blocks.findIndex((block) => block.id === selectedBlockId) + 1
-                    : document.blocks.length
-                  insertAssetAt(asset.id, index)
-                }}
-              >
-                <img src={asset.url} alt="" />
-                <span>{asset.name || '图片'}</span>
-              </button>
-            ))}
-            <button
-              type="button"
-              className="graphic-content-asset-card graphic-content-asset-card--add"
-              onClick={() => openFilePicker()}
-            >
-              <Plus size={22} />
-              <span>上传图片</span>
-            </button>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )

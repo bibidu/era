@@ -442,6 +442,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
         <GraphicContentSheet
           isOpen={configPanel === 'content'}
           document={document}
+          config={config}
           sheetHeight={sheetHeight}
           toolbarDockHeight={toolbarDockHeight}
           selectedBlockId={selectedContentBlockId}

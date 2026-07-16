@@ -123,29 +123,30 @@ export function parseScopedMarkdown(scopeId: string, markdown: string) {
 export function describeContentBlock(
   block: ContentBlock,
   assets: Record<string, GraphicAsset>,
-): { label: string; detail: string } {
+): { preview: string } {
   if (block.kind === 'image') {
     const asset = assets[block.assetId]
-    return {
-      label: asset?.name?.trim() || '图片',
-      detail: block.fit === 'contain' ? '图片 · 原始比例' : '图片 · 撑满宽度',
-    }
+    const name = asset?.name?.trim() || '图片'
+    return { preview: `图片：${name}` }
   }
 
   const parsed = parseMarkdown(block.text)
-  if (!parsed.length) return { label: '空文字块', detail: '正文' }
+  if (!parsed.length) return { preview: '正文：空文字块' }
   const first = parsed[0]
-  const plain = first.text.trim() || '文字块'
   const typeLabel =
     first.type === 'title'
       ? '一级标题'
       : first.type === 'heading'
         ? '二级标题'
-        : '正文'
-  return {
-    label: plain.slice(0, 28) + (plain.length > 28 ? '…' : ''),
-    detail: typeLabel,
-  }
+        : first.type === 'code'
+          ? '代码块'
+          : '正文'
+  const previewText =
+    first.type === 'code'
+      ? first.text.split('\n').join(' ').trim()
+      : first.text.trim()
+  const text = previewText || typeLabel
+  return { preview: `${typeLabel}：${text}` }
 }
 
 export function insertContentBlock(
