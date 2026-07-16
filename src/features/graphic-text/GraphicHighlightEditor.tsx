@@ -9,6 +9,7 @@ import {
   type HighlightDisplayLine,
 } from './highlightTokens'
 import type { GraphicDocument } from './document'
+import { GraphicPageRail } from './GraphicPageRail'
 import type { GraphicTextConfig } from './types'
 import {
   THEME_COLORS,
@@ -327,24 +328,7 @@ function HighlightTokenButton({
 }
 
 function HighlightPageRail({ segments }: { segments: Array<{ page: number; top: number; height: number }> }) {
-  if (!segments.length) return null
-
-  return (
-    <div className="graphic-highlight-page-rail" aria-hidden>
-      {segments.map((segment, index) => (
-        <span
-          key={`${segment.page}-${segment.top}-${index}`}
-          className={`graphic-highlight-page-rail-segment ${
-            segment.page % 2 === 1
-              ? 'graphic-highlight-page-rail-segment--odd'
-              : 'graphic-highlight-page-rail-segment--even'
-          }`}
-          style={{ top: segment.top, height: segment.height }}
-          title={`第 ${segment.page} 页`}
-        />
-      ))}
-    </div>
-  )
+  return <GraphicPageRail segments={segments} />
 }
 
 function buildPageBarSegments(
