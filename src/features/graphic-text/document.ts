@@ -1,5 +1,5 @@
 import { parseMarkdown } from './layout'
-import { DEFAULT_MARKDOWN } from './types'
+import { DEFAULT_MARKDOWN, type MarkdownBlock } from './types'
 
 export type ImageFit = 'width' | 'contain'
 
@@ -39,13 +39,55 @@ export function createEmptyDocument(): GraphicDocument {
   return { blocks: [], assets: {} }
 }
 
-export function createDocumentFromMarkdown(markdown: string): GraphicDocument {
+function markdownFromParsedBlock(block: MarkdownBlock): string {
+  switch (block.type) {
+    case 'title':
+      return `# ${block.text}`
+    case 'heading':
+      return `## ${block.text}`
+    case 'code':
+      return `\`\`\`\n${block.text}\n\`\`\``
+    case 'list':
+      return `- ${block.text}`
+    default:
+      return block.text
+  }
+}
+
+export function splitMarkdownToContentBlocks(markdown: string): MarkdownContentBlock[] {
   const text = markdown.trim()
-  if (!text) return createEmptyDocument()
+  if (!text) return []
+  return parseMarkdown(text).map((block) => createMarkdownContentBlock(markdownFromParsedBlock(block)))
+}
+
+export function createDocumentFromMarkdown(markdown: string): GraphicDocument {
   return {
-    blocks: [{ id: createBlockId(), kind: 'markdown', text: markdown }],
+    blocks: splitMarkdownToContentBlocks(markdown),
     assets: {},
   }
+}
+
+export function normalizeDocument(document: GraphicDocument): GraphicDocument {
+  const blocks: ContentBlock[] = []
+
+  for (const block of document.blocks) {
+    if (block.kind === 'image') {
+      blocks.push(block)
+      continue
+    }
+
+    const parsed = parseMarkdown(block.text)
+    if (parsed.length <= 1) {
+      blocks.push(block)
+      continue
+    }
+
+    for (const mdBlock of parsed) {
+      blocks.push(createMarkdownContentBlock(markdownFromParsedBlock(mdBlock)))
+    }
+  }
+
+  return { ...document, blocks }
 }
 
 export function createDefaultDocument(): GraphicDocument {
@@ -91,25 +133,18 @@ export function describeContentBlock(
   }
 
   const parsed = parseMarkdown(block.text)
-  if (!parsed.length) return { label: '空文字块', detail: '点击编辑内容' }
+  if (!parsed.length) return { label: '空文字块', detail: '正文' }
   const first = parsed[0]
-  const plain = block.text.trim().split('\n')[0]?.replace(/^#+\s*/, '') || '文字块'
+  const plain = first.text.trim() || '文字块'
   const typeLabel =
     first.type === 'title'
       ? '一级标题'
       : first.type === 'heading'
         ? '二级标题'
-        : first.type === 'code'
-          ? '代码块'
-          : first.type === 'list'
-            ? '列表'
-            : first.type === 'quote'
-              ? '引用'
-              : '正文'
-  const lineCount = block.text.split('\n').length
+        : '正文'
   return {
     label: plain.slice(0, 28) + (plain.length > 28 ? '…' : ''),
-    detail: `${typeLabel} · ${lineCount} 行`,
+    detail: typeLabel,
   }
 }
 

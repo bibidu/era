@@ -29,6 +29,7 @@ import { paginateDocument, getGraphicLayout } from './layout'
 import {
   createDefaultDocument,
   getDocumentMarkdown,
+  normalizeDocument,
   updateContentBlock,
   type GraphicDocument,
 } from './document'
@@ -53,7 +54,7 @@ function isTextAdjustTarget(nav: FontSizeNav): nav is FontSizeTarget {
 }
 
 export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorkspaceProps) {
-  const [document, setDocument] = useState<GraphicDocument>(createDefaultDocument)
+  const [document, setDocument] = useState<GraphicDocument>(() => normalizeDocument(createDefaultDocument()))
   const markdown = useMemo(() => getDocumentMarkdown(document), [document])
   const [config, setConfig] = useState<GraphicTextConfig>(() => ({
     ...DEFAULT_GRAPHIC_TEXT_CONFIG,
@@ -143,6 +144,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     }
     if (configPanel === 'content') {
       setSelectedContentBlockId(null)
+      setDocument((current) => normalizeDocument(current))
     }
   }, [configPanel])
 
