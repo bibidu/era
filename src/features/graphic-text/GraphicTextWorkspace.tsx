@@ -10,7 +10,6 @@ import { GraphicTextConfigSheet, createHighlightPreviewDraft } from './GraphicTe
 import { GraphicTextToolbar } from './GraphicTextToolbar'
 import {
   GraphicAspectStrip,
-  GraphicTextAdjustFieldStrip,
   GraphicTopTextStrip,
 } from './GraphicToolbarStrips'
 import {
@@ -265,16 +264,8 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   }
 
   const handleOpenTextAdjustMenu = () => {
-    setEditorOpen(false)
-    setConfigPanel(null)
-    setToolbarStrip(null)
-    resetTemplateNav()
     setTextAdjustField(null)
-    setFontSizeNav((current) => {
-      if (current === null) return 'menu'
-      if (current === 'menu') return null
-      return current
-    })
+    setFontSizeNav((current) => (current === null ? 'menu' : current))
   }
 
   const handleTextAdjustBack = () => {
@@ -324,7 +315,6 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     setConfigPanel('content')
     setToolbarStrip(null)
     resetTemplateNav()
-    resetTextAdjust()
     setEditorOpen(false)
     setEditingMarkdownBlockId(null)
   }
@@ -379,9 +369,6 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     setEditorOpen(false)
     setSaveSheetOpen(true)
   }
-
-  const showTextAdjustStrip =
-    textAdjustField !== null && isTextAdjustTarget(fontSizeNav)
 
   return (
     <div
@@ -446,13 +433,24 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           sheetHeight={sheetHeight}
           toolbarDockHeight={toolbarDockHeight}
           selectedBlockId={selectedContentBlockId}
+          fontSizeNav={fontSizeNav}
+          textAdjustField={textAdjustField}
           onOpenChange={(open) => {
-            if (!open) setConfigPanel(null)
+            if (!open) {
+              resetTextAdjust()
+              setConfigPanel(null)
+            }
           }}
           onHeightChange={setSheetHeight}
           onDocumentChange={setDocument}
           onSelectBlock={setSelectedContentBlockId}
           onEditMarkdownBlock={handleEditMarkdownBlock}
+          onOpenTextAdjustMenu={handleOpenTextAdjustMenu}
+          onTextAdjustBack={handleTextAdjustBack}
+          onSelectTextAdjustTarget={handleSelectTextAdjustTarget}
+          onSelectTextAdjustField={handleSelectTextAdjustField}
+          onConfigUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
+          onFontSelect={handleFontSelect}
         />
       )}
 
@@ -469,15 +467,6 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           }}
         />
 
-        {!configPanel && showTextAdjustStrip && (
-          <GraphicTextAdjustFieldStrip
-            target={fontSizeNav}
-            field={textAdjustField}
-            config={config}
-            onUpdate={(updates) => setConfig((current) => ({ ...current, ...updates }))}
-            onFontSelect={handleFontSelect}
-          />
-        )}
         {!configPanel && toolbarStrip === 'aspect' && (
           <GraphicAspectStrip selected={config.aspectRatio} onSelect={handleAspectSelect} />
         )}
@@ -504,8 +493,6 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           <GraphicTextToolbar
             activePanel={configPanel}
             activeStrip={toolbarStrip}
-            fontSizeNav={fontSizeNav}
-            textAdjustField={textAdjustField}
             templateNav={templateNav}
             config={config}
             editorOpen={editorOpen || editingMarkdownBlockId !== null}
@@ -514,10 +501,6 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
             onEdit={handleEdit}
             onSelectStrip={handleSelectStrip}
             onSelectPanel={handleSelectPanel}
-            onOpenTextAdjustMenu={handleOpenTextAdjustMenu}
-            onTextAdjustBack={handleTextAdjustBack}
-            onSelectTextAdjustTarget={handleSelectTextAdjustTarget}
-            onSelectTextAdjustField={handleSelectTextAdjustField}
             onTemplateBack={handleTemplateBack}
             onPickReferenceImage={handlePickReferenceImage}
             onSelectTemplateSolid={handleSelectTemplateSolid}
