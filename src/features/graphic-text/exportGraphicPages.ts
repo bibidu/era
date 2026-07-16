@@ -319,8 +319,27 @@ async function drawPage(
   }
 
   for (const block of page.blocks) {
-    const spec = blockSpec(block, config, exportScale)
     const styleType = resolveStyleType(block)
+
+    if (styleType === 'image') {
+      flushCodeBlockFrame()
+      codeBlockSourceId = null
+      if (block.imageUrl && block.imageWidth && block.imageHeight) {
+        const image = await loadImage(block.imageUrl)
+        const contentWidth = width - safeX * 2
+        const drawWidth = block.imageWidth
+        const drawHeight = block.imageHeight
+        const x = safeX + (contentWidth - drawWidth) / 2
+        ctx.drawImage(image, x, y, drawWidth, drawHeight)
+        y += drawHeight
+      }
+      if (block.isBlockEnd) {
+        y += config.bodyFontSize * exportScale * (0.08 + 0.18) + blockGap
+      }
+      continue
+    }
+
+    const spec = blockSpec(block, config, exportScale)
     if (block.type === 'title' || block.type === 'heading') {
       y += spec.size * spec.marginBefore
     }

@@ -3,11 +3,12 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom'
 import { HAND_DRAWN_CIRCLE_PATH, HAND_DRAWN_CIRCLE_VIEWBOX } from './circleHighlight'
 import {
-  buildHighlightCharPageMap,
-  buildHighlightDisplayLines,
+  buildHighlightCharPageMapFromDocument,
+  buildHighlightDisplayLinesFromDocument,
   type HighlightCharToken,
   type HighlightDisplayLine,
 } from './highlightTokens'
+import type { GraphicDocument } from './document'
 import type { GraphicTextConfig } from './types'
 import {
   THEME_COLORS,
@@ -231,6 +232,7 @@ function HighlightColorPopover({
 
 interface GraphicHighlightEditorProps {
   markdown: string
+  document?: GraphicDocument
   config: GraphicTextConfig
   underlineHighlightColors: HighlightColorMap
   brushHighlightColors: HighlightColorMap
@@ -522,6 +524,7 @@ function HighlightParagraphRows({
 
 export function GraphicHighlightEditor({
   markdown,
+  document,
   config,
   underlineHighlightColors,
   brushHighlightColors,
@@ -562,8 +565,26 @@ export function GraphicHighlightEditor({
     return () => observer.disconnect()
   }, [updateTabIndicator])
 
-  const displayLines = useMemo(() => buildHighlightDisplayLines(markdown), [markdown])
-  const charPageMap = useMemo(() => buildHighlightCharPageMap(markdown, config), [markdown, config])
+  const displayLines = useMemo(
+    () =>
+      document
+        ? buildHighlightDisplayLinesFromDocument(document)
+        : buildHighlightDisplayLinesFromDocument({
+            blocks: [{ id: 'legacy', kind: 'markdown', text: markdown }],
+            assets: {},
+          }),
+    [document, markdown],
+  )
+  const charPageMap = useMemo(
+    () =>
+      document
+        ? buildHighlightCharPageMapFromDocument(document, config)
+        : buildHighlightCharPageMapFromDocument(
+            { blocks: [{ id: 'legacy', kind: 'markdown', text: markdown }], assets: {} },
+            config,
+          ),
+    [document, markdown, config],
+  )
 
   const activeColorMap =
     activeStyleTab === 'underline'

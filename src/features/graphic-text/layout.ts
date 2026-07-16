@@ -1,10 +1,12 @@
 import type {
-  GraphicAspectRatio,
-  GraphicTextConfig,
-  GraphicTextPage,
-  MarkdownBlock,
-  MarkdownBlockType,
-} from './types'
+  ContentBlock,
+  GraphicAsset,
+  GraphicDocument,
+  ImageContentBlock,
+} from './document'
+import { parseScopedMarkdown } from './document'
+import { getFontConfigForStyleType } from './graphicTextFonts'
+import { measureImageLayoutSize } from './imageAsset'
 import { stripHighlightMarkers } from './inlineHighlight'
 import {
   CODE_HORIZONTAL_PADDING_SCALE,
@@ -12,7 +14,13 @@ import {
   wrapCodeTextLines,
 } from './codeBlock'
 import { wrapPlainTextLinesByWidth } from './textWrap'
-import { getFontConfigForStyleType } from './graphicTextFonts'
+import type {
+  GraphicAspectRatio,
+  GraphicTextConfig,
+  GraphicTextPage,
+  MarkdownBlock,
+  MarkdownBlockType,
+} from './types'
 
 export const GRAPHIC_DISPLAY_BASE_WIDTH = 360
 
@@ -50,6 +58,9 @@ interface LayoutLine {
   spacingAfter: number
   sourceBlockId: string
   charOffset: number
+  imageUrl?: string
+  imageWidth?: number
+  imageHeight?: number
 }
 
 function parseAspectRatio(ratio: GraphicAspectRatio) {
@@ -300,14 +311,84 @@ function layoutLinesToBlocks(lines: LayoutLine[]): MarkdownBlock[] {
     isBlockEnd: line.spacingAfter > 0,
     sourceBlockId: line.sourceBlockId,
     charOffset: line.charOffset,
+    imageUrl: line.imageUrl,
+    imageWidth: line.imageWidth,
+    imageHeight: line.imageHeight,
   }))
 }
 
 export function paginateMarkdown(markdown: string, config: GraphicTextConfig): GraphicTextPage[] {
+  return paginateDocument({ blocks: [{ id: 'legacy', kind: 'markdown', text: markdown }], assets: {} }, config)
+}
+
+function imageBlockSpacingBefore(block: ImageContentBlock, config: GraphicTextConfig, exportScale: number) {
+  return config.bodyFontSize * exportScale * block.marginTop
+}
+
+function imageBlockSpacingAfter(
+  block: ImageContentBlock,
+  config: GraphicTextConfig,
+  exportScale: number,
+  layout: GraphicLayout,
+) {
+  const size = config.bodyFontSize * exportScale
+  return size * block.marginBottom + size * 0.18 + blockGap(layout)
+}
+
+function imageBlockToLayoutLine(
+  block: ImageContentBlock,
+  asset: GraphicAsset,
+  config: GraphicTextConfig,
+  layout: GraphicLayout,
+): LayoutLine {
+  const contentWidth = layout.pageWidth - layout.safeX * 2
+  const availableHeight = layout.contentBottom - layout.safeTop
+  const { width, height } = measureImageLayoutSize(
+    asset,
+    contentWidth,
+    availableHeight,
+    block.fit,
+  )
+
+  return {
+    id: block.id,
+    type: 'image',
+    styleType: 'image',
+    text: '',
+    lineHeight: height,
+    spacingBefore: imageBlockSpacingBefore(block, config, layout.exportScale),
+    spacingAfter: imageBlockSpacingAfter(block, config, layout.exportScale, layout),
+    sourceBlockId: block.id,
+    charOffset: 0,
+    imageUrl: asset.url,
+    imageWidth: width,
+    imageHeight: height,
+  }
+}
+
+function documentBlockToLayoutLines(
+  block: ContentBlock,
+  document: GraphicDocument,
+  config: GraphicTextConfig,
+  layout: GraphicLayout,
+): LayoutLine[] {
+  if (block.kind === 'markdown') {
+    return parseScopedMarkdown(block.id, block.text).flatMap((markdownBlock) =>
+      blockToLayoutLines(markdownBlock, config, layout),
+    )
+  }
+
+  const asset = document.assets[block.assetId]
+  if (!asset) return []
+  return [imageBlockToLayoutLine(block, asset, config, layout)]
+}
+
+export function paginateDocument(document: GraphicDocument, config: GraphicTextConfig): GraphicTextPage[] {
   const layout = getGraphicLayout(config)
   const availableHeight = layout.contentBottom - layout.safeTop
-  const sourceBlocks = parseMarkdown(markdown)
-  const allLines = sourceBlocks.flatMap((block) => blockToLayoutLines(block, config, layout))
+  const allLines = document.blocks.flatMap((block) =>
+    documentBlockToLayoutLines(block, document, config, layout),
+  )
 
   if (!allLines.length) {
     return [{ index: 0, blocks: [] }]

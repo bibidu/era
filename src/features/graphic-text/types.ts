@@ -43,7 +43,7 @@ export interface GraphicTextConfig {
   highlightPickerColor: string
 }
 
-export type MarkdownBlockType = 'title' | 'heading' | 'paragraph' | 'list' | 'quote' | 'code'
+export type MarkdownBlockType = 'title' | 'heading' | 'paragraph' | 'list' | 'quote' | 'code' | 'image'
 
 export interface MarkdownBlock {
   id: string
@@ -53,6 +53,9 @@ export interface MarkdownBlock {
   isBlockEnd?: boolean
   sourceBlockId?: string
   charOffset?: number
+  imageUrl?: string
+  imageWidth?: number
+  imageHeight?: number
 }
 
 export interface GraphicTextPage {

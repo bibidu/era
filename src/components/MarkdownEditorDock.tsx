@@ -9,6 +9,7 @@ interface MarkdownEditorDockProps {
   pasteError?: string
   onCommit: () => void
   onDismiss: () => void
+  title?: string
 }
 
 export function MarkdownEditorDock({
@@ -18,6 +19,7 @@ export function MarkdownEditorDock({
   pasteError,
   onCommit,
   onDismiss,
+  title = '编辑 Markdown',
 }: MarkdownEditorDockProps) {
   const dockRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -86,7 +88,7 @@ export function MarkdownEditorDock({
       />
       <div ref={dockRef} className="keyboard-dock keyboard-dock--markdown">
       <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-2">
-        <p className="text-sm font-medium text-neutral-900">编辑 Markdown</p>
+        <p className="text-sm font-medium text-neutral-900">{title}</p>
         <button
           type="button"
           aria-label="完成编辑"
