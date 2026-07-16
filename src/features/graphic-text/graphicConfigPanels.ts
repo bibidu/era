@@ -66,6 +66,7 @@ export const TEXT_ADJUST_FIELDS: Record<
   heading: [
     { id: 'font', label: '字体' },
     { id: 'fontSize', label: '字号' },
+    { id: 'lineHeight', label: '行高' },
     { id: 'marginTop', label: '上间距' },
     { id: 'marginBottom', label: '下间距' },
   ],

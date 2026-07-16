@@ -188,7 +188,8 @@ function blockFontSize(block: MarkdownBlock, config: GraphicTextConfig, exportSc
 function blockLineHeight(block: MarkdownBlock, config: GraphicTextConfig, exportScale: number) {
   const type = resolveStyleType(block)
   const size = blockFontSize(block, config, exportScale)
-  if (type === 'title' || type === 'heading') return size * config.titleLineHeight
+  if (type === 'title') return size * config.titleLineHeight
+  if (type === 'heading') return size * config.headingLineHeight
   if (type === 'code') return size * config.codeLineHeight
   return size * config.bodyLineHeight
 }

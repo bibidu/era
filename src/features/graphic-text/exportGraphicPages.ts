@@ -162,7 +162,7 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
     return {
       size: Math.round(config.headingFontSize * exportScale),
       weight: 700,
-      lineHeight: config.titleLineHeight,
+      lineHeight: config.headingLineHeight,
       spacing: config.headingMarginBottom,
       marginBefore: config.headingMarginTop,
       fontFamily,

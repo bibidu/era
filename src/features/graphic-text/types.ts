@@ -22,6 +22,7 @@ export interface GraphicTextConfig {
   codeFontSize: number
   titleLineHeight: number
   bodyLineHeight: number
+  headingLineHeight: number
   codeLineHeight: number
   titleMarginTop: number
   titleMarginBottom: number
@@ -79,6 +80,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   codeFontSize: 12,
   titleLineHeight: 1.18,
   bodyLineHeight: 1.64,
+  headingLineHeight: 1.18,
   codeLineHeight: 1.5,
   titleMarginTop: 1.2,
   titleMarginBottom: 0.32,

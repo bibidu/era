@@ -118,7 +118,7 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
     return {
       fontFamily,
       fontSize: headingSize,
-      lineHeight: config.titleLineHeight,
+      lineHeight: config.headingLineHeight,
       fontWeight: 700,
       marginTop:
         block.type === 'heading'
