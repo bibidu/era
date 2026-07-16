@@ -1,3 +1,13 @@
+/** 与预览 CSS `.graphic-circle-highlight-svg` 一致的 padding（em 单位） */
+export const HAND_DRAWN_CIRCLE_PAD_LEFT_EM = 0.58
+export const HAND_DRAWN_CIRCLE_PAD_TOP_EM = 0.46
+export const HAND_DRAWN_CIRCLE_PAD_WIDTH_EXTRA_EM = 1.16
+export const HAND_DRAWN_CIRCLE_PAD_HEIGHT_EXTRA_EM = 0.92
+export const HAND_DRAWN_CIRCLE_STROKE_WIDTH = 4
+
+export const HAND_DRAWN_CIRCLE_VIEWBOX_WIDTH = 100
+export const HAND_DRAWN_CIRCLE_VIEWBOX_HEIGHT = 56
+
 /** 手绘风格线圈路径（viewBox 0 0 100 56） */
 export const HAND_DRAWN_CIRCLE_VIEWBOX = '0 0 100 56'
 
@@ -56,24 +66,27 @@ export function drawHandDrawnCircleAroundTextBounds(
   ascent: number,
   descent: number,
   color: string,
-  lineWidth = 4,
+  fontSize: number,
+  lineWidth = HAND_DRAWN_CIRCLE_STROKE_WIDTH,
 ) {
-  const padX = Math.max(8, width * 0.22)
-  const padTop = Math.max(7, ascent * 0.42)
-  const padBottom = Math.max(7, descent * 0.55)
-  const left = x - padX
-  const top = yTop - padTop
-  const boxWidth = width + padX * 2
-  const boxHeight = ascent + descent + padTop + padBottom
-  strokeHandDrawnEllipse(
-    ctx,
-    left + boxWidth / 2,
-    top + boxHeight / 2,
-    boxWidth / 2,
-    boxHeight / 2,
-    color,
-    lineWidth,
-  )
+  const em = fontSize
+  const boxLeft = x - em * HAND_DRAWN_CIRCLE_PAD_LEFT_EM
+  const boxTop = yTop - em * HAND_DRAWN_CIRCLE_PAD_TOP_EM
+  const boxWidth = width + em * HAND_DRAWN_CIRCLE_PAD_WIDTH_EXTRA_EM
+  const boxHeight = ascent + descent + em * HAND_DRAWN_CIRCLE_PAD_HEIGHT_EXTRA_EM
+  const scaleX = boxWidth / HAND_DRAWN_CIRCLE_VIEWBOX_WIDTH
+  const scaleY = boxHeight / HAND_DRAWN_CIRCLE_VIEWBOX_HEIGHT
+
+  ctx.save()
+  ctx.translate(boxLeft, boxTop)
+  ctx.scale(scaleX, scaleY)
+  const path = new Path2D(HAND_DRAWN_CIRCLE_PATH)
+  ctx.strokeStyle = color
+  ctx.lineWidth = lineWidth / Math.max(scaleX, scaleY)
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.stroke(path)
+  ctx.restore()
 }
 
 export interface CircleHighlightRun {

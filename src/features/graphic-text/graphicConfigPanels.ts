@@ -9,18 +9,17 @@ import {
   Ratio,
   ScanEye,
   TextCursorInput,
-  Type,
 } from 'lucide-react'
 
 export type GraphicConfigPanel = 'highlight'
 
-export type ToolbarStrip = 'font' | 'aspect' | 'template' | 'top-text'
+export type ToolbarStrip = 'aspect' | 'template' | 'top-text'
 
 export type TemplateNav = null | 'solid' | 'texture'
 
 export type FontSizeTarget = 'title' | 'heading' | 'body'
 
-export type TextAdjustField = 'fontSize' | 'lineHeight' | 'marginTop' | 'marginBottom'
+export type TextAdjustField = 'font' | 'fontSize' | 'lineHeight' | 'marginTop' | 'marginBottom'
 
 export type FontSizeNav = null | 'menu' | FontSizeTarget
 
@@ -56,17 +55,20 @@ export const TEXT_ADJUST_FIELDS: Record<
   { id: TextAdjustField; label: string }[]
 > = {
   title: [
+    { id: 'font', label: '字体' },
     { id: 'fontSize', label: '字号' },
     { id: 'lineHeight', label: '行高' },
     { id: 'marginTop', label: '上间距' },
     { id: 'marginBottom', label: '下间距' },
   ],
   heading: [
+    { id: 'font', label: '字体' },
     { id: 'fontSize', label: '字号' },
     { id: 'marginTop', label: '上间距' },
     { id: 'marginBottom', label: '下间距' },
   ],
   body: [
+    { id: 'font', label: '字体' },
     { id: 'fontSize', label: '字号' },
     { id: 'lineHeight', label: '行高' },
   ],
@@ -77,7 +79,6 @@ export const GRAPHIC_TOOLBAR_STRIPS: {
   label: string
   icon: LucideIcon
 }[] = [
-  { id: 'font', label: '字体', icon: Type },
   { id: 'aspect', label: '比例', icon: Ratio },
   { id: 'template', label: '模板', icon: LayoutTemplate },
 ]

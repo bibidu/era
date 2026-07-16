@@ -9,6 +9,7 @@ import {
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
 import { buildCircleHighlightColorRuns, drawHandDrawnCircleAroundTextBounds } from './circleHighlight'
+import { collectGraphicFontIds, getFontConfigForStyleType } from './graphicTextFonts'
 import { getGraphicLayout } from './layout'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { getFontById } from '../../data/fonts'
@@ -121,6 +122,7 @@ function drawStyledLine(
         ascent,
         descent,
         run.color,
+        fontSize,
         Math.max(4, circleLineWidth),
       )
     }
@@ -149,6 +151,7 @@ function resolveStyleType(block: MarkdownBlock) {
 
 function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale: number) {
   const styleType = resolveStyleType(block)
+  const { fontFamily } = getFontConfigForStyleType(config, styleType)
   if (styleType === 'title') {
     return {
       size: config.titleFontSize * exportScale,
@@ -156,7 +159,7 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
       lineHeight: config.titleLineHeight,
       spacing: config.titleMarginBottom,
       marginBefore: config.titleMarginTop,
-      fontFamily: config.fontFamily,
+      fontFamily,
     }
   }
   if (styleType === 'heading') {
@@ -166,7 +169,7 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
       lineHeight: config.titleLineHeight,
       spacing: config.headingMarginBottom,
       marginBefore: config.headingMarginTop,
-      fontFamily: config.fontFamily,
+      fontFamily,
     }
   }
   if (styleType === 'quote') {
@@ -176,7 +179,7 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
       lineHeight: config.bodyLineHeight,
       spacing: 0.08,
       marginBefore: 0,
-      fontFamily: config.fontFamily,
+      fontFamily,
     }
   }
   if (styleType === 'code') {
@@ -195,7 +198,7 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
     lineHeight: config.bodyLineHeight,
     spacing: 0.08,
     marginBefore: 0,
-    fontFamily: config.fontFamily,
+    fontFamily,
   }
 }
 
@@ -267,7 +270,7 @@ async function drawPage(
 
   ctx.fillStyle = '#525252'
   const topBarFontSize = Math.round(TOP_BAR_FONT_SIZE_PX * exportScale)
-  ctx.font = `400 ${topBarFontSize}px ${config.fontFamily}`
+  ctx.font = `400 ${topBarFontSize}px ${config.bodyFontFamily}`
   ctx.textBaseline = 'bottom'
   const topBarTextY = underlineY - 8
   const topBarMetrics = ctx.measureText(topBar.countText || '文')
@@ -432,10 +435,13 @@ export async function exportGraphicPages(
   markdown: string,
   onProgress?: (current: number, total: number) => void,
 ) {
-  const font = getFontById(config.fontId)
-  if (font.source !== 'system') {
-    const sample = pages.flatMap((page) => page.blocks.map((block) => block.text)).join('')
-    await ensureFontReady(font, sample || font.sample)
+  const fontIds = collectGraphicFontIds(config)
+  const sample = pages.flatMap((page) => page.blocks.map((block) => block.text)).join('')
+  for (const fontId of fontIds) {
+    const font = getFontById(fontId)
+    if (font.source !== 'system') {
+      await ensureFontReady(font, sample || font.sample)
+    }
   }
 
   const blobs: Blob[] = []

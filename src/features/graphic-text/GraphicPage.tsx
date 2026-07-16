@@ -10,6 +10,7 @@ import {
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
 import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
+import { getFontConfigForStyleType } from './graphicTextFonts'
 import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
 import {
   buildCircleHighlightColorRuns,
@@ -99,6 +100,7 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
 
 function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSProperties {
   const styleType = resolveStyleType(block)
+  const { fontFamily } = getFontConfigForStyleType(config, styleType)
   const titleSize = `${(config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const headingSize = `${(config.headingFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const bodySize = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
@@ -107,6 +109,7 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
 
   if (styleType === 'title') {
     return {
+      fontFamily,
       fontSize: titleSize,
       lineHeight: config.titleLineHeight,
       fontWeight: 700,
@@ -117,6 +120,7 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
   }
   if (styleType === 'heading') {
     return {
+      fontFamily,
       fontSize: headingSize,
       lineHeight: config.titleLineHeight,
       fontWeight: 700,
@@ -129,6 +133,7 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
   }
   if (styleType === 'quote') {
     return {
+      fontFamily,
       fontSize: bodySize,
       lineHeight: config.bodyLineHeight,
       fontWeight: 700,
@@ -145,6 +150,7 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
     }
   }
   return {
+    fontFamily,
     fontSize: bodySize,
     lineHeight: config.bodyLineHeight,
     fontWeight: 400,
@@ -422,7 +428,7 @@ export function GraphicPage({
           width: displayWidth ? `${displayWidth}px` : '100%',
           aspectRatio: `${aspectRatio.width} / ${aspectRatio.height}`,
           '--graphic-theme': accentColor,
-          fontFamily: config.fontFamily,
+          fontFamily: config.bodyFontFamily,
           containerType: 'inline-size',
         } as CSSProperties
       }
