@@ -1,5 +1,6 @@
 import { ArrowLeft, Check } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { HAND_DRAWN_CIRCLE_PATH, HAND_DRAWN_CIRCLE_VIEWBOX } from './circleHighlight'
 import {
   buildHighlightCharPageMap,
@@ -15,6 +16,9 @@ import {
 import { themeAlpha } from './inlineHighlight'
 
 const TAB_PREVIEW_COLOR = '#171717'
+const BRUSH_TAB_PREVIEW_BG = '#F0F0F0'
+const COLOR_POPOVER_EDGE_MARGIN = 12
+const COLOR_POPOVER_TRIGGER_GAP = 8
 
 export type HighlightStyleTab = 'underline' | 'brush' | 'quote' | 'circle'
 
@@ -51,7 +55,7 @@ function HighlightStyleTabLabel({
     return (
       <span
         className={`rounded px-1.5 py-0.5 text-xs font-medium ${textClass}`}
-        style={{ backgroundColor: themeAlpha(TAB_PREVIEW_COLOR, 0.28) }}
+        style={{ backgroundColor: BRUSH_TAB_PREVIEW_BG }}
       >
         刷子
       </span>
@@ -102,14 +106,52 @@ function HighlightColorPopover({
   onChange: (color: string) => void
 }) {
   const [open, setOpen] = useState(false)
+  const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({})
   const anchorRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const popoverRef = useRef<HTMLDivElement>(null)
   const isCustomColor = !THEME_COLORS.includes(color)
+
+  const updatePopoverPosition = useCallback(() => {
+    const trigger = triggerRef.current
+    if (!trigger) return
+
+    const rect = trigger.getBoundingClientRect()
+    const left = rect.right + COLOR_POPOVER_TRIGGER_GAP
+    const maxWidth = Math.max(
+      120,
+      window.innerWidth - left - COLOR_POPOVER_EDGE_MARGIN,
+    )
+
+    setPopoverStyle({
+      top: rect.top + rect.height / 2,
+      left,
+      maxWidth,
+    })
+  }, [])
+
+  useLayoutEffect(() => {
+    if (!open) return
+    updatePopoverPosition()
+
+    window.addEventListener('resize', updatePopoverPosition)
+    window.visualViewport?.addEventListener('resize', updatePopoverPosition)
+    window.visualViewport?.addEventListener('scroll', updatePopoverPosition)
+
+    return () => {
+      window.removeEventListener('resize', updatePopoverPosition)
+      window.visualViewport?.removeEventListener('resize', updatePopoverPosition)
+      window.visualViewport?.removeEventListener('scroll', updatePopoverPosition)
+    }
+  }, [open, updatePopoverPosition])
 
   useEffect(() => {
     if (!open) return
 
     const handlePointerDown = (event: PointerEvent) => {
-      if (anchorRef.current?.contains(event.target as Node)) return
+      const target = event.target as Node
+      if (anchorRef.current?.contains(target)) return
+      if (popoverRef.current?.contains(target)) return
       setOpen(false)
     }
 
@@ -122,53 +164,60 @@ function HighlightColorPopover({
     setOpen(false)
   }
 
+  const popover =
+    open &&
+    createPortal(
+      <div
+        ref={popoverRef}
+        className="graphic-highlight-color-popover graphic-highlight-color-popover--fixed"
+        style={popoverStyle}
+        role="dialog"
+        aria-label="高亮颜色"
+      >
+        <div className="graphic-highlight-color-popover-row component-scroll-row">
+          {THEME_COLORS.map((swatch) => (
+            <button
+              key={swatch}
+              type="button"
+              aria-label={`主题色 ${swatch}`}
+              className={`graphic-highlight-color-swatch ${
+                color === swatch ? 'graphic-highlight-color-swatch--selected' : ''
+              }`}
+              style={{ backgroundColor: swatch }}
+              onClick={() => handleSelect(swatch)}
+            />
+          ))}
+          <label
+            className={`theme-color-palette-btn graphic-highlight-color-swatch graphic-highlight-color-swatch--picker ${
+              isCustomColor ? 'graphic-highlight-color-swatch--selected' : ''
+            }`}
+          >
+            <input
+              type="color"
+              value={color}
+              onChange={(event) => handleSelect(event.target.value)}
+              className="absolute inset-[-8px] size-12 cursor-pointer opacity-0"
+              aria-label="自定义主题色"
+            />
+          </label>
+        </div>
+      </div>,
+      document.body,
+    )
+
   return (
     <div ref={anchorRef} className="graphic-highlight-color-anchor">
       <button
+        ref={triggerRef}
         type="button"
         aria-label="选择高亮颜色"
         aria-expanded={open}
-        className="graphic-highlight-color-trigger"
+        className={`theme-color-palette-btn graphic-highlight-color-swatch graphic-highlight-color-swatch--picker graphic-highlight-color-trigger ${
+          isCustomColor ? 'graphic-highlight-color-swatch--selected' : ''
+        }`}
         onClick={() => setOpen((current) => !current)}
-      >
-        <span
-          className="graphic-highlight-color-trigger-swatch"
-          style={{ backgroundColor: color }}
-          aria-hidden
-        />
-      </button>
-
-      {open && (
-        <div className="graphic-highlight-color-popover" role="dialog" aria-label="高亮颜色">
-          <div className="graphic-highlight-color-popover-row component-scroll-row">
-            {THEME_COLORS.map((swatch) => (
-              <button
-                key={swatch}
-                type="button"
-                aria-label={`主题色 ${swatch}`}
-                className={`graphic-highlight-color-swatch ${
-                  color === swatch ? 'graphic-highlight-color-swatch--selected' : ''
-                }`}
-                style={{ backgroundColor: swatch }}
-                onClick={() => handleSelect(swatch)}
-              />
-            ))}
-            <label
-              className={`theme-color-palette-btn graphic-highlight-color-swatch graphic-highlight-color-swatch--picker ${
-                isCustomColor ? 'graphic-highlight-color-swatch--selected' : ''
-              }`}
-            >
-              <input
-                type="color"
-                value={color}
-                onChange={(event) => handleSelect(event.target.value)}
-                className="absolute inset-[-8px] size-12 cursor-pointer opacity-0"
-                aria-label="自定义主题色"
-              />
-            </label>
-          </div>
-        </div>
-      )}
+      />
+      {popover}
     </div>
   )
 }
