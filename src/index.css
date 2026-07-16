@@ -374,43 +374,12 @@ body.is-dragging {
 }
 
 .graphic-highlight-color-trigger {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: none;
-  border-radius: 9999px;
-  background: conic-gradient(
-    from 180deg,
-    #ef4444,
-    #f97316,
-    #eab308,
-    #22c55e,
-    #3b82f6,
-    #a855f7,
-    #ef4444
-  );
+  flex-shrink: 0;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
-.graphic-highlight-color-trigger-swatch {
-  width: 24px;
-  height: 24px;
-  border: 2px solid #ffffff;
-  border-radius: 9999px;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
-}
-
 .graphic-highlight-color-popover {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0;
-  z-index: 30;
-  width: max-content;
-  max-width: min(18rem, calc(100vw - 2rem));
   padding: 10px 12px;
   border: 1px solid #e5e5e5;
   border-radius: 14px;
@@ -418,11 +387,23 @@ body.is-dragging {
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
 }
 
+.graphic-highlight-color-popover--fixed {
+  position: fixed;
+  z-index: 110;
+  transform: translateY(-50%);
+}
+
 .graphic-highlight-color-popover-row {
   display: flex;
   align-items: center;
   gap: 8px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.graphic-highlight-color-popover-row::-webkit-scrollbar {
+  display: none;
 }
 
 .graphic-highlight-color-swatch {
