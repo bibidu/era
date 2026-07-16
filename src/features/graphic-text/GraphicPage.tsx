@@ -1,8 +1,10 @@
 import { type CSSProperties, type ReactNode } from 'react'
 import {
   CODE_BACKGROUND,
+  CODE_BORDER_COLOR,
   CODE_FONT_FAMILY,
   CODE_HORIZONTAL_PADDING_SCALE,
+  CODE_RADIUS_PX,
   CODE_SIZE_SCALE,
   CODE_TEXT_COLOR,
   CODE_VERTICAL_PADDING_SCALE,
@@ -499,9 +501,11 @@ export function GraphicPage({
                     }}
                   >
                     <div
-                      className="overflow-hidden rounded-[1.2cqw]"
+                      className="graphic-code-block overflow-hidden"
                       style={{
                         backgroundColor: CODE_BACKGROUND,
+                        borderColor: CODE_BORDER_COLOR,
+                        borderRadius: `${(CODE_RADIUS_PX / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`,
                         padding: `calc(${codeSize} * ${CODE_VERTICAL_PADDING_SCALE}) calc(${codeSize} * ${CODE_HORIZONTAL_PADDING_SCALE})`,
                         fontFamily: CODE_FONT_FAMILY,
                         fontSize: codeSize,
