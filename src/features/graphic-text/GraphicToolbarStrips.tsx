@@ -2,6 +2,8 @@ import { FONT_OPTIONS, type FontOption } from '../../data/fonts'
 import {
   BODY_FONT_SIZE_OPTIONS,
   BODY_LINE_HEIGHT_OPTIONS,
+  CODE_FONT_SIZE_OPTIONS,
+  CODE_LINE_HEIGHT_OPTIONS,
   HEADING_FONT_SIZE_OPTIONS,
   HEADING_MARGIN_OPTIONS,
   TITLE_FONT_SIZE_OPTIONS,
@@ -205,6 +207,29 @@ function TextAdjustFieldControl({
         value={config.headingMarginBottom}
         options={HEADING_MARGIN_OPTIONS}
         onChange={(value) => onUpdate({ headingMarginBottom: value })}
+      />
+    )
+  }
+
+  if (target === 'code') {
+    if (field === 'fontSize') {
+      return (
+        <TextAdjustNumericControl
+          aria-label="代码块字号"
+          value={config.codeFontSize}
+          options={CODE_FONT_SIZE_OPTIONS}
+          onChange={(value) => onUpdate({ codeFontSize: value })}
+          format={(value) => `${value}px`}
+        />
+      )
+    }
+
+    return (
+      <TextAdjustNumericControl
+        aria-label="代码块行高"
+        value={config.codeLineHeight}
+        options={CODE_LINE_HEIGHT_OPTIONS}
+        onChange={(value) => onUpdate({ codeLineHeight: value })}
       />
     )
   }
