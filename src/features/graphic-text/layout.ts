@@ -12,7 +12,7 @@ import {
   estimateCodeLineWidth,
   wrapCodeTextLines,
 } from './codeBlock'
-import { estimateCharsPerLine, wrapPlainTextLines } from './textWrap'
+import { wrapPlainTextLinesByWidth } from './textWrap'
 import { getFontById } from '../../data/fonts'
 
 export const GRAPHIC_DISPLAY_BASE_WIDTH = 360
@@ -252,9 +252,12 @@ function blockToLayoutLines(
   const wrappedLines =
     block.type === 'code' || styleType === 'code'
       ? wrapCodeTextLines(plainText, estimateCodeLineWidth(size, availableWidth), size)
-      : wrapPlainTextLines(
+      : wrapPlainTextLinesByWidth(
           plainText,
-          estimateCharsPerLine(font.fontFamily, size, fontWeight, availableWidth),
+          font.fontFamily,
+          size,
+          fontWeight,
+          availableWidth,
         )
   const lineHeight = blockLineHeight(block, config, layout.exportScale)
 

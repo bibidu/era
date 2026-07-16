@@ -105,12 +105,15 @@ function HighlightColorPopover({
   color: string
   onChange: (color: string) => void
 }) {
+  const isCustomColor = !THEME_COLORS.includes(color)
   const [open, setOpen] = useState(false)
+  const [colorLocked, setColorLocked] = useState(
+    () => isCustomColor || color !== '#FACC15',
+  )
   const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({})
   const anchorRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
-  const isCustomColor = !THEME_COLORS.includes(color)
 
   const updatePopoverPosition = useCallback(() => {
     const trigger = triggerRef.current
@@ -161,6 +164,7 @@ function HighlightColorPopover({
 
   const handleSelect = (nextColor: string) => {
     onChange(nextColor)
+    setColorLocked(true)
     setOpen(false)
   }
 
@@ -212,9 +216,12 @@ function HighlightColorPopover({
         type="button"
         aria-label="选择高亮颜色"
         aria-expanded={open}
-        className={`theme-color-palette-btn graphic-highlight-color-swatch graphic-highlight-color-swatch--picker graphic-highlight-color-trigger ${
-          isCustomColor ? 'graphic-highlight-color-swatch--selected' : ''
-        }`}
+        className={
+          colorLocked
+            ? 'graphic-highlight-color-swatch graphic-highlight-color-swatch--selected graphic-highlight-color-trigger'
+            : 'theme-color-palette-btn graphic-highlight-color-swatch graphic-highlight-color-swatch--picker graphic-highlight-color-trigger'
+        }
+        style={colorLocked ? { backgroundColor: color } : undefined}
         onClick={() => setOpen((current) => !current)}
       />
       {popover}
