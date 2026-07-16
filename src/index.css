@@ -780,6 +780,11 @@ body.is-dragging {
   font-variant-numeric: tabular-nums;
 }
 
+.graphic-code-block {
+  border-width: 1px;
+  border-style: solid;
+}
+
 .graphic-config-sheet-handle {
   display: flex;
   flex-shrink: 0;

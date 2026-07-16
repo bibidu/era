@@ -1,7 +1,9 @@
 import {
   CODE_BACKGROUND,
+  CODE_BORDER_COLOR,
   CODE_FONT_FAMILY,
   CODE_HORIZONTAL_PADDING_SCALE,
+  CODE_RADIUS_PX,
   CODE_SIZE_SCALE,
   CODE_TEXT_COLOR,
   CODE_VERTICAL_PADDING_SCALE,
@@ -301,8 +303,24 @@ async function drawPage(
   const codeInset = (size: number) => size * CODE_HORIZONTAL_PADDING_SCALE
   const blockGap = width * 0.011
   let codeBlockSourceId: string | null = null
+  let codeBlockFrame: { x: number; y: number; w: number; h: number } | null = null
 
   const circleLineWidth = Math.max(4, 4 * exportScale)
+
+  const flushCodeBlockFrame = () => {
+    if (!codeBlockFrame) return
+
+    const borderWidth = Math.max(1, Math.round(exportScale))
+    const radius = Math.max(4, Math.round(CODE_RADIUS_PX * exportScale))
+    const { x, y: frameY, w, h } = codeBlockFrame
+
+    ctx.strokeStyle = CODE_BORDER_COLOR
+    ctx.lineWidth = borderWidth
+    ctx.beginPath()
+    ctx.roundRect(x + borderWidth / 2, frameY + borderWidth / 2, w - borderWidth, h - borderWidth, radius)
+    ctx.stroke()
+    codeBlockFrame = null
+  }
 
   for (const block of page.blocks) {
     const spec = blockSpec(block, config, exportScale)
@@ -336,15 +354,25 @@ async function drawPage(
     const ascent = textMetrics.actualBoundingBoxAscent ?? spec.size * 0.88
 
     if (styleType === 'code') {
-      if (codeBlockSourceId !== blockId) {
-        codeBlockSourceId = blockId
-      }
       const padY = spec.size * CODE_VERTICAL_PADDING_SCALE
       const bgX = safeX
       const bgW = width - safeX * 2
+      const bgTop = y - padY * 0.35
+      const bgHeight = lineHeight + padY * 0.7
+
+      if (codeBlockSourceId !== blockId) {
+        flushCodeBlockFrame()
+        codeBlockSourceId = blockId
+        codeBlockFrame = { x: bgX, y: bgTop, w: bgW, h: bgHeight }
+      } else if (codeBlockFrame) {
+        const nextBottom = bgTop + bgHeight
+        codeBlockFrame.h = nextBottom - codeBlockFrame.y
+      }
+
       ctx.fillStyle = CODE_BACKGROUND
-      ctx.fillRect(bgX, y - padY * 0.35, bgW, lineHeight + padY * 0.7)
+      ctx.fillRect(bgX, bgTop, bgW, bgHeight)
     } else {
+      flushCodeBlockFrame()
       codeBlockSourceId = null
     }
 
@@ -381,6 +409,7 @@ async function drawPage(
     y += lineHeight
 
     if (styleType === 'code' && block.isBlockEnd) {
+      flushCodeBlockFrame()
       codeBlockSourceId = null
     }
 

@@ -1,11 +1,14 @@
 export const CODE_FONT_FAMILY =
-  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+  'system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans SC", sans-serif'
 
-export const CODE_BACKGROUND = '#171717'
-export const CODE_TEXT_COLOR = '#F5F5F5'
+export const CODE_BACKGROUND = '#F2F2F2'
+export const CODE_BORDER_COLOR = '#D1D5DB'
+export const CODE_TEXT_COLOR = '#404040'
 export const CODE_SIZE_SCALE = 0.92
-export const CODE_HORIZONTAL_PADDING_SCALE = 0.5
-export const CODE_VERTICAL_PADDING_SCALE = 0.22
+export const CODE_HORIZONTAL_PADDING_SCALE = 0.62
+export const CODE_VERTICAL_PADDING_SCALE = 0.34
+export const CODE_BORDER_WIDTH_PX = 1
+export const CODE_RADIUS_PX = 6
 
 function primaryCodeFamily() {
   return CODE_FONT_FAMILY.split(',')[0].trim()
