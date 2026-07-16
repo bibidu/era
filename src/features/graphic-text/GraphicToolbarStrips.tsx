@@ -6,6 +6,7 @@ import {
   CODE_LINE_HEIGHT_OPTIONS,
   HEADING_FONT_SIZE_OPTIONS,
   HEADING_MARGIN_OPTIONS,
+  HEADING_LINE_HEIGHT_OPTIONS,
   TITLE_FONT_SIZE_OPTIONS,
   TITLE_LINE_HEIGHT_OPTIONS,
   TITLE_MARGIN_OPTIONS,
@@ -190,6 +191,16 @@ function TextAdjustFieldControl({
           options={HEADING_FONT_SIZE_OPTIONS}
           onChange={(value) => onUpdate({ headingFontSize: value })}
           format={(value) => `${value}px`}
+        />
+      )
+    }
+    if (field === 'lineHeight') {
+      return (
+        <TextAdjustNumericControl
+          aria-label="二级行高"
+          value={config.headingLineHeight}
+          options={HEADING_LINE_HEIGHT_OPTIONS}
+          onChange={(value) => onUpdate({ headingLineHeight: value })}
         />
       )
     }
