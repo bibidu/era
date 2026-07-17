@@ -3,6 +3,12 @@ import type { FontOption } from '../../data/fonts'
 import { getFontById } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
 import { MarkdownEditorDock } from '../../components/MarkdownEditorDock'
+import {
+  configFromSnapshot,
+  documentFromSnapshot,
+  useEraAgentBridge,
+  type GraphicAgentController,
+} from '../../agent/useEraAgentBridge'
 import { GraphicPage } from './GraphicPage'
 import { GraphicSaveImagesSheet } from './GraphicSaveImagesSheet'
 import { GraphicContentSheet } from './GraphicContentSheet'
@@ -75,10 +81,26 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
   const templateRefInputRef = useRef<HTMLInputElement>(null)
   const configRef = useRef(config)
   configRef.current = config
+  const documentRef = useRef(document)
+  documentRef.current = document
   const [pagerSize, setPagerSize] = useState({ width: 0, height: 0 })
   const [sheetHeight, setSheetHeight] = useState(0)
   const [toolbarDockHeight, setToolbarDockHeight] = useState(0)
   const [highlightPreview, setHighlightPreview] = useState(() => createHighlightPreviewDraft(config))
+
+  const agentController = useMemo<GraphicAgentController>(
+    () => ({
+      getDocument: () => documentRef.current,
+      getConfig: () => configRef.current,
+      applySnapshot: (snapshot) => {
+        setDocument(documentFromSnapshot(snapshot))
+        setConfig((current) => configFromSnapshot(snapshot, current))
+        setHighlightPreview(createHighlightPreviewDraft(configFromSnapshot(snapshot, configRef.current)))
+      },
+    }),
+    [],
+  )
+  const { connected: agentConnected } = useEraAgentBridge(agentController)
 
   useEffect(() => {
     if (!defaultBackgroundUrl) return
@@ -380,7 +402,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
 
   return (
     <div
-      className="flex min-h-0 flex-1 flex-col bg-neutral-100"
+      className="relative flex min-h-0 flex-1 flex-col bg-neutral-100"
       style={
         sheetOpen
           ? {
@@ -389,6 +411,15 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
           : undefined
       }
     >
+      {agentConnected ? (
+        <div
+          className="pointer-events-none absolute right-3 top-3 z-20 flex items-center gap-1.5 rounded-full bg-black/70 px-2 py-1 text-[10px] text-white"
+          title="Era Agent 浏览器通道已连接"
+        >
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          Agent
+        </div>
+      ) : null}
       <div
         ref={pagerRef}
         className="graphic-pager relative z-0 flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden"

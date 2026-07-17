@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "era": {
+      "command": "npx",
+      "args": ["tsx", "server/mcp.ts"],
+      "cwd": "/absolute/path/to/era",
+      "env": {
+        "ERA_AGENT_URL": "http://127.0.0.1:3847"
+      }
+    }
+  }
+}
