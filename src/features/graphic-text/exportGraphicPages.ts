@@ -5,7 +5,7 @@ import {
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
 import { buildCircleHighlightColorRuns, drawHandDrawnCircleAroundTextBounds } from './circleHighlight'
-import { drawHandDrawnUnderline } from './handDrawnUnderline'
+import { drawHandDrawnUnderline, buildHandUnderlineColorRuns, HAND_DRAWN_UNDERLINE_TILE_WIDTH } from './handDrawnUnderline'
 import { collectGraphicFontIds, getFontConfigForStyleType } from './graphicTextFonts'
 import { getGraphicLayout } from './layout'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
@@ -72,7 +72,8 @@ function drawStyledLine(
   charOffset: number,
   brushSegments: LineSegment[],
   underlineSegments: LineSegment[],
-  handUnderlineSegments: LineSegment[],
+  handUnderlineColors: Readonly<Record<string, string>>,
+  handUnderlineTileWidth: number,
   circleColors: Readonly<Record<string, string>>,
   x: number,
   yTop: number,
@@ -131,7 +132,7 @@ function drawStyledLine(
       const metrics = ctx.measureText(segment.text)
       if (segment.color) {
         ctx.strokeStyle = segment.color
-        ctx.lineWidth = Math.max(2, fontSize * 0.06)
+        ctx.lineWidth = Math.max(4, fontSize * 0.12)
         ctx.lineCap = 'round'
         ctx.beginPath()
         ctx.moveTo(underlineX, underlineY)
@@ -141,21 +142,20 @@ function drawStyledLine(
       underlineX += metrics.width
     }
 
-    let handUnderlineX = x
-    for (const segment of handUnderlineSegments) {
-      if (!segment.text) continue
-      const metrics = ctx.measureText(segment.text)
-      if (segment.color) {
-        drawHandDrawnUnderline(
-          ctx,
-          handUnderlineX,
-          underlineY,
-          metrics.width,
-          segment.color,
-          Math.max(3, fontSize * 0.08),
-        )
-      }
-      handUnderlineX += metrics.width
+    const handRuns = buildHandUnderlineColorRuns(plainText, blockId, charOffset, handUnderlineColors)
+    for (const run of handRuns) {
+      const prefix = plainText.slice(0, run.start)
+      const runX = x + ctx.measureText(prefix).width
+      const runWidth = ctx.measureText(run.text).width
+      drawHandDrawnUnderline(
+        ctx,
+        runX,
+        underlineY,
+        runWidth,
+        run.color,
+        Math.max(3, fontSize * 0.08),
+        handUnderlineTileWidth,
+      )
     }
   }
 }
@@ -384,9 +384,6 @@ async function drawPage(
     const underlineSegments = enableHighlight
       ? buildCharHighlightColorSegments(block.text, blockId, underlineColors, charOffset)
       : [{ text: plainText, color: null }]
-    const handUnderlineSegments = enableHighlight
-      ? buildCharHighlightColorSegments(block.text, blockId, handUnderlineColors, charOffset)
-      : [{ text: plainText, color: null }]
     const lineHeight = spec.size * spec.lineHeight
     const textMetrics = ctx.measureText(plainText || '文')
     const ascent = textMetrics.actualBoundingBoxAscent ?? spec.size * 0.88
@@ -437,7 +434,8 @@ async function drawPage(
       charOffset,
       brushSegments,
       underlineSegments,
-      handUnderlineSegments,
+      handUnderlineColors,
+      HAND_DRAWN_UNDERLINE_TILE_WIDTH * exportScale,
       circleColors,
       safeX + inset,
       y,
