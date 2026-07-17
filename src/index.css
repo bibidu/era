@@ -1423,7 +1423,9 @@ body.is-dragging {
 .graphic-text-line {
   white-space: nowrap;
   max-width: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
+  padding-bottom: 0.2em;
 }
 
 .graphic-theme-brush {
@@ -1435,8 +1437,7 @@ body.is-dragging {
 .graphic-hand-underline {
   position: relative;
   display: inline;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
+  white-space: nowrap;
 }
 
 .graphic-hand-underline-text {
@@ -1446,11 +1447,11 @@ body.is-dragging {
 
 .graphic-hand-underline-svg {
   position: absolute;
-  left: -0.08em;
-  right: -0.08em;
-  bottom: -0.12em;
-  height: 0.42em;
-  width: calc(100% + 0.16em);
+  left: 0;
+  right: 0;
+  bottom: -0.14em;
+  height: 0.5em;
+  width: 100%;
   pointer-events: none;
   overflow: visible;
 }
@@ -1468,7 +1469,7 @@ body.is-dragging {
   left: -0.02em;
   right: -0.02em;
   bottom: 0.04em;
-  height: max(2px, 0.1em);
+  height: max(4px, 0.2em);
   background-color: var(--graphic-highlight-underline, currentColor);
   z-index: 3;
   pointer-events: none;

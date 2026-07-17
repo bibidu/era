@@ -14,6 +14,7 @@ import {
   HAND_DRAWN_CIRCLE_PATH,
   HAND_DRAWN_CIRCLE_VIEWBOX,
 } from './circleHighlight'
+import { buildHandUnderlineColorRuns } from './handDrawnUnderline'
 import {
   buildMergedThemeHighlightSegments,
   stripHighlightMarkers,
@@ -165,7 +166,62 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
   }
 }
 
-function UnderlineSegments({
+function BrushUnderlineSegments({
+  text,
+  blockId,
+  charOffset,
+  brushColors,
+  underlineColors,
+}: {
+  text: string
+  blockId: string
+  charOffset: number
+  brushColors: Readonly<Record<string, string>>
+  underlineColors: Readonly<Record<string, string>>
+}) {
+  const segments = buildMergedThemeHighlightSegments(
+    text,
+    blockId,
+    brushColors,
+    underlineColors,
+    {},
+    charOffset,
+  )
+
+  return (
+    <>
+      {segments.map((segment, index) => {
+        if (!segment.brushColor && !segment.underlineColor) {
+          return <span key={`${index}-${segment.text}`}>{segment.text}</span>
+        }
+
+        return (
+          <span
+            key={`${index}-${segment.text}`}
+            className={[
+              segment.brushColor ? 'graphic-theme-brush' : '',
+              segment.underlineColor ? 'graphic-theme-underline' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            style={{
+              ...(segment.brushColor
+                ? { backgroundColor: themeAlpha(segment.brushColor, 0.28) }
+                : null),
+              ...(segment.underlineColor
+                ? { ['--graphic-highlight-underline' as string]: segment.underlineColor }
+                : null),
+            }}
+          >
+            {segment.text}
+          </span>
+        )
+      })}
+    </>
+  )
+}
+
+function HandUnderlineAwareSegments({
   text,
   blockId,
   charOffset,
@@ -180,61 +236,60 @@ function UnderlineSegments({
   underlineColors: Readonly<Record<string, string>>
   handUnderlineColors: Readonly<Record<string, string>>
 }) {
-  const segments = buildMergedThemeHighlightSegments(
-    text,
-    blockId,
-    brushColors,
-    underlineColors,
-    handUnderlineColors,
-    charOffset,
-  )
+  const plain = stripHighlightMarkers(text)
+  const handRuns = buildHandUnderlineColorRuns(plain, blockId, charOffset, handUnderlineColors)
 
-  return (
-    <>
-      {segments.map((segment, index) => {
-        if (!segment.brushColor && !segment.underlineColor && !segment.handUnderlineColor) {
-          return <span key={`${index}-${segment.text}`}>{segment.text}</span>
-        }
+  if (!handRuns.length) {
+    return (
+      <BrushUnderlineSegments
+        text={text}
+        blockId={blockId}
+        charOffset={charOffset}
+        brushColors={brushColors}
+        underlineColors={underlineColors}
+      />
+    )
+  }
 
-        let content: ReactNode = segment.text
+  const parts: ReactNode[] = []
+  let index = 0
+  let runCursor = 0
 
-        if (segment.underlineColor) {
-          content = (
-            <span
-              className="graphic-theme-underline"
-              style={
-                {
-                  ['--graphic-highlight-underline' as string]: segment.underlineColor,
-                } as CSSProperties
-              }
-            >
-              {content}
-            </span>
-          )
-        }
+  while (index < plain.length) {
+    const run = handRuns[runCursor]
+    if (run && index === run.start) {
+      parts.push(
+        <HandDrawnUnderline key={`hand-${index}`} color={run.color}>
+          <BrushUnderlineSegments
+            text={run.text}
+            blockId={blockId}
+            charOffset={charOffset + run.start}
+            brushColors={brushColors}
+            underlineColors={underlineColors}
+          />
+        </HandDrawnUnderline>,
+      )
+      index = run.end
+      runCursor += 1
+      continue
+    }
 
-        if (segment.handUnderlineColor) {
-          content = (
-            <HandDrawnUnderline color={segment.handUnderlineColor}>{content}</HandDrawnUnderline>
-          )
-        }
+    const nextHandStart = run?.start ?? plain.length
+    const end = Math.min(nextHandStart, plain.length)
+    parts.push(
+      <BrushUnderlineSegments
+        key={`plain-${index}`}
+        text={plain.slice(index, end)}
+        blockId={blockId}
+        charOffset={charOffset + index}
+        brushColors={brushColors}
+        underlineColors={underlineColors}
+      />,
+    )
+    index = end
+  }
 
-        if (segment.brushColor) {
-          return (
-            <span
-              key={`${index}-${segment.text}`}
-              className="graphic-theme-brush"
-              style={{ backgroundColor: themeAlpha(segment.brushColor, 0.28) }}
-            >
-              {content}
-            </span>
-          )
-        }
-
-        return <span key={`${index}-${segment.text}`}>{content}</span>
-      })}
-    </>
-  )
+  return <>{parts}</>
 }
 
 function CircleHighlightWrap({
@@ -299,7 +354,7 @@ function StyledHighlightedText({
     if (run && index === run.start) {
       parts.push(
         <CircleHighlightWrap key={`circle-${index}`} themeColor={run.color}>
-          <UnderlineSegments
+          <HandUnderlineAwareSegments
             text={run.text}
             blockId={blockId}
             charOffset={charOffset + run.start}
@@ -317,7 +372,7 @@ function StyledHighlightedText({
     const nextCircleStart = run?.start ?? plain.length
     const end = Math.min(nextCircleStart, plain.length)
     parts.push(
-      <UnderlineSegments
+      <HandUnderlineAwareSegments
         key={`text-${index}`}
         text={plain.slice(index, end)}
         blockId={blockId}
@@ -523,7 +578,7 @@ export function GraphicPage({
       </div>
 
       <div
-        className="absolute z-10 overflow-hidden"
+        className="absolute z-10 overflow-x-hidden overflow-y-visible"
         style={{
           left: `${percent.safeX}%`,
           right: `${percent.safeX}%`,
