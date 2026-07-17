@@ -578,7 +578,7 @@ export function GraphicPage({
       </div>
 
       <div
-        className="absolute z-10 overflow-x-hidden overflow-y-visible"
+        className="absolute z-10 overflow-visible"
         style={{
           left: `${percent.safeX}%`,
           right: `${percent.safeX}%`,

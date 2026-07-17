@@ -89,7 +89,7 @@ function drawStyledLine(
   const ascent = textMetrics.actualBoundingBoxAscent ?? fontSize * 0.88
   const descent = textMetrics.actualBoundingBoxDescent ?? fontSize * 0.12
   const baselineY = yTop + ascent
-  const underlineY = baselineY + fontSize * 0.1
+  const underlineY = baselineY + fontSize * 0.18
 
   if (enableHighlight) {
     let bgX = x
