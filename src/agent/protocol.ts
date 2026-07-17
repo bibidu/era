@@ -37,6 +37,7 @@ export type LayoutWarningCode =
   | 'title_circle_wrapped'
   | 'too_many_colors'
   | 'title_line_height_loose'
+  | 'too_many_highlights_per_page'
 
 export interface LayoutWarning {
   code: LayoutWarningCode

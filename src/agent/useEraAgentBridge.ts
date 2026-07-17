@@ -98,6 +98,7 @@ async function handleBridgeCommand(
           blocks,
           aspectRatio: config.aspectRatio,
           aspectHint: config.aspectRatio === '3:4' ? '小红书风格' : '抖音风格',
+          pageOverlay: config.pageOverlay,
         },
       }
     }

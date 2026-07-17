@@ -15,6 +15,64 @@ export const TITLE_LINE_HEIGHT_MAX = 1.12
 /** 单篇文章高亮颜色种类上限 */
 export const MAX_HIGHLIGHT_COLORS = 3
 
+/** 单页高亮片段上限（极个别可放宽，默认检测按此阈值） */
+export const MAX_HIGHLIGHTS_PER_PAGE = 4
+
+function highlightMaps(config: GraphicTextConfig) {
+  return [
+    config.underlineHighlightColors ?? {},
+    config.brushHighlightColors ?? {},
+    config.quoteHighlightColors ?? {},
+    config.circleHighlightColors ?? {},
+  ]
+}
+
+function charHasHighlight(config: GraphicTextConfig, blockId: string, charIndex: number) {
+  const key = `${blockId}:${charIndex}`
+  return highlightMaps(config).some((map) => Boolean(map[key]))
+}
+
+/**
+ * 统计每页「高亮片段」数量：同一 sourceBlock 内连续被高亮的字符算 1 处；
+ * 跨 style（brush/underline 叠加同一字符）仍只算一次连续片段。
+ */
+function countHighlightRunsPerPage(
+  pages: ReturnType<typeof paginateDocument>,
+  config: GraphicTextConfig,
+): number[] {
+  return pages.map((page) => {
+    let runs = 0
+    const bySource = new Map<string, { offset: number; text: string }[]>()
+    for (const block of page.blocks) {
+      if (block.type === 'image') continue
+      const sourceId = block.sourceBlockId ?? block.id
+      const offset = block.charOffset ?? 0
+      const text = stripHighlightMarkers(block.text)
+      const list = bySource.get(sourceId) ?? []
+      list.push({ offset, text })
+      bySource.set(sourceId, list)
+    }
+
+    for (const [sourceId, lines] of bySource) {
+      const covered = new Set<number>()
+      for (const line of lines) {
+        const chars = [...line.text]
+        for (let i = 0; i < chars.length; i += 1) {
+          const index = line.offset + i
+          if (charHasHighlight(config, sourceId, index)) covered.add(index)
+        }
+      }
+      const indexes = [...covered].sort((a, b) => a - b)
+      if (!indexes.length) continue
+      runs += 1
+      for (let i = 1; i < indexes.length; i += 1) {
+        if (indexes[i] !== indexes[i - 1] + 1) runs += 1
+      }
+    }
+    return runs
+  })
+}
+
 function resolvePrimaryFontFamily(fontFamily: string) {
   return fontFamily.replace(/"/g, '').split(',')[0].trim()
 }
@@ -199,22 +257,32 @@ export function inspectGraphicLayout(
     const hasGray = colors.some((color) => {
       const value = color.toUpperCase()
       return (
-        value === '#9CA3AF' ||
         value === '#525252' ||
-        value === '#6B7280' ||
-        value === '#D1D5DB' ||
-        value === '#A3A3A3' ||
-        value === '#737373'
+        value === '#737373' ||
+        value === '#404040' ||
+        value === '#666666' ||
+        value === '#6B7280'
       )
     })
     if (!hasGray) {
       warnings.push({
         code: 'too_many_colors',
-        message: `使用满 ${MAX_HIGHLIGHT_COLORS} 种高亮色时必须包含灰色（当前：${colors.join(', ')}）`,
+        message: `使用满 ${MAX_HIGHLIGHT_COLORS} 种高亮色时必须包含明确灰色（推荐 #525252 / #737373；当前：${colors.join(', ')}）`,
         pageIndex: 0,
       })
     }
   }
+
+  const runsPerPage = countHighlightRunsPerPage(pages, config)
+  runsPerPage.forEach((count, pageIndex) => {
+    if (count > MAX_HIGHLIGHTS_PER_PAGE) {
+      warnings.push({
+        code: 'too_many_highlights_per_page',
+        message: `第 ${pageIndex + 1} 页高亮 ${count} 处，超过上限 ${MAX_HIGHLIGHTS_PER_PAGE}（极个别页才可放宽）`,
+        pageIndex,
+      })
+    }
+  })
 
   const titleIds = titleSourceIds(pages)
   const circleMap = config.circleHighlightColors ?? {}
