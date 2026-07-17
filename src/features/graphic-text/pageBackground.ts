@@ -3,13 +3,13 @@ import {
   GRADIENT_OVERLAY_FALLBACK,
   gradientVariantToCss,
   resolveGradientVariant,
-} from './pageGradientOverlay'
+} from './pageGradientTokens'
 import {
   shouldDrawReferenceBackground,
   usesConfiguredBaseBackground,
   usesOverlayAsBackground,
 } from './pageLayering'
-import { PIXEL_CANVAS_COLOR } from './pagePixelOverlay'
+import { PIXEL_CANVAS_COLOR } from './pagePixelTokens'
 import type { GraphicTextConfig } from './types'
 
 export const DEFAULT_PAGE_BASE_COLOR = '#FBF7ED'

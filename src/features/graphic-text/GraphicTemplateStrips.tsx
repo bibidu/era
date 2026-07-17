@@ -1,7 +1,7 @@
 import { PAPER_COLORS, TemplatePreviewSquare } from './graphicTemplateOptions'
 import { GradientPreviewArt } from './GradientPreviewArt'
 import { PixelPreviewArt } from './PixelPreviewArt'
-import { createRandomGradientVariant } from './pageGradientOverlay'
+import { createRandomGradientVariant } from './pageGradientTokens'
 import type { GraphicPageOverlay, GraphicTextConfig } from './types'
 
 function StripShell({ children }: { children: React.ReactNode }) {

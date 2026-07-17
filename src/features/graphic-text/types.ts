@@ -1,5 +1,5 @@
-import type { GradientOverlayVariant } from './pageGradientOverlay'
-import { DEFAULT_GRADIENT_VARIANT } from './pageGradientOverlay'
+import type { GradientOverlayVariant } from './pageGradientTokens'
+import { DEFAULT_GRADIENT_VARIANT } from './pageGradientTokens'
 
 export type GraphicBackgroundType = 'reference' | 'solid'
 export type GraphicAspectRatio = '3:4' | '9:16'

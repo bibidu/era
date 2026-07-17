@@ -7,7 +7,7 @@ import {
   PIXEL_GRID_LINE_COLOR,
   PIXEL_HEADER_LINE_COLOR,
   PIXEL_HEADER_LINE_Y,
-} from './pagePixelOverlay'
+} from './pagePixelTokens'
 
 interface PagePixelOverlayProps {
   stacked?: boolean

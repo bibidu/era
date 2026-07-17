@@ -14,7 +14,7 @@ import {
   HAND_DRAWN_CIRCLE_PATH,
   HAND_DRAWN_CIRCLE_VIEWBOX,
 } from './circleHighlight'
-import { buildHandUnderlineColorRuns } from './handDrawnUnderline'
+import { buildHandUnderlineColorRuns } from './handDrawnUnderlinePath'
 import {
   buildMergedThemeHighlightSegments,
   stripHighlightMarkers,

@@ -2,7 +2,7 @@ import {
   gradientVariantToCss,
   resolveGradientVariant,
   type GradientOverlayVariant,
-} from './pageGradientOverlay'
+} from './pageGradientTokens'
 
 export function PageGradientOverlay({
   variant,

@@ -4,7 +4,7 @@ import {
   HAND_DRAWN_UNDERLINE_STROKE_WIDTH,
   HAND_DRAWN_UNDERLINE_TILE_WIDTH,
   HAND_DRAWN_UNDERLINE_VIEWBOX_HEIGHT,
-} from './handDrawnUnderline'
+} from './handDrawnUnderlinePath'
 
 interface HandDrawnUnderlineProps {
   color: string

@@ -1,4 +1,4 @@
-import { PIXEL_CANVAS_COLOR, PIXEL_GLASS_SHAPES, PIXEL_GRID_DIVISIONS } from './pagePixelOverlay'
+import { PIXEL_CANVAS_COLOR, PIXEL_GLASS_SHAPES, PIXEL_GRID_DIVISIONS } from './pagePixelTokens'
 
 export function PixelPreviewArt() {
   const gridLines: { x1: number; y1: number; x2: number; y2: number }[] = []

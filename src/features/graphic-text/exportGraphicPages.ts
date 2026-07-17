@@ -5,7 +5,7 @@ import {
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
 import { buildCircleHighlightColorRuns, drawHandDrawnCircleAroundTextBounds } from './circleHighlight'
-import { drawHandDrawnUnderline, buildHandUnderlineColorRuns, HAND_DRAWN_UNDERLINE_TILE_WIDTH } from './handDrawnUnderline'
+import { drawHandDrawnUnderline, buildHandUnderlineColorRuns, HAND_DRAWN_UNDERLINE_TILE_WIDTH } from './handDrawnUnderlinePath'
 import { collectGraphicFontIds, getFontConfigForStyleType } from './graphicTextFonts'
 import { getGraphicLayout } from './layout'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
@@ -18,8 +18,8 @@ import {
   drawPageGridOverlay,
   resolvePageBaseFillColor,
 } from './pageBackground'
-import { drawPageGradientBackground } from './pageGradientOverlay'
-import { drawPagePixelOverlay } from './pagePixelOverlay'
+import { drawPageGradientBackground } from './pageGradientTokens'
+import { drawPagePixelOverlay } from './pagePixelTokens'
 import {
   shouldDrawBaseBackground,
   shouldDrawPageOverlay,

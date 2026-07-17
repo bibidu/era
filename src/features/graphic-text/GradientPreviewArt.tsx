@@ -1,4 +1,4 @@
-import { GRADIENT_OVERLAY_CSS } from './pageGradientOverlay'
+import { GRADIENT_OVERLAY_CSS } from './pageGradientTokens'
 
 export function GradientPreviewArt() {
   return (

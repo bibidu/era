@@ -6,7 +6,7 @@ import {
   HAND_DRAWN_UNDERLINE_PATH,
   HAND_DRAWN_UNDERLINE_STROKE_WIDTH,
   HAND_DRAWN_UNDERLINE_VIEWBOX,
-} from './handDrawnUnderline'
+} from './handDrawnUnderlinePath'
 import {
   buildHighlightCharPageMapFromDocument,
   buildHighlightDisplayLinesFromDocument,
