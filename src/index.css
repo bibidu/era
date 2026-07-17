@@ -1425,10 +1425,8 @@ body.is-dragging {
   white-space: nowrap;
   max-width: 100%;
   overflow: visible;
-  padding-top: 0.5em;
-  padding-bottom: 0.55em;
-  margin-top: -0.5em;
-  margin-bottom: -0.35em;
+  /* 装饰（线圈等）用绝对定位向外绘制；勿用 padding+负 margin，
+     否则会与行内 marginTop/marginBottom 互相覆盖，导致实际高度大于分页预算、溢出安全区 */
 }
 
 .graphic-theme-brush {
