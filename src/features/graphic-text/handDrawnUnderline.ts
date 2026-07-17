@@ -10,31 +10,27 @@ export const HAND_DRAWN_UNDERLINE_STROKE_WIDTH = 5.5
 
 /**
  * 单段手绘马克笔路径（viewBox 0 0 100 24）：
- * 左段平直 → 中段回环 scribble（向右再折回再向前）→ 右段平直。
- * 供 Tab 预览等固定宽度场景使用。
+ * 先偏上平直，再向下折到更低的水平线，上下错开，避免打结/成环。
  */
 export const HAND_DRAWN_UNDERLINE_PATH =
-  'M 0 14 C 18 14, 32 14, 44 14 C 52 14, 58 9, 64 11.5 C 68 13.5, 66 17, 58 16 C 52 15.2, 50 13, 56 12 C 64 10.5, 72 14, 78 14 C 86 14, 94 14, 100 14'
+  'M 0 9 C 16 9, 28 9, 42 9 C 50 9, 54 9, 58 10.5 C 60 12, 58 14.5, 52 16 C 48 17, 52 17.5, 62 17.5 C 74 17.5, 88 17.5, 100 17.5'
 
 /**
  * 单段 motif 关键点（归一化 x∈[0,1]，y 为 viewBox 高度坐标）。
- * 中段 x 会短暂回退，形成马克笔回环 scribble，而不是上下波浪。
+ * 上段偏高 → 中段下折（可略回退形成马克笔折笔）→ 下段偏低，垂直错开不成环。
  */
 const HAND_UNDERLINE_MOTIF_POINTS: Array<[number, number]> = [
-  [0, 14],
-  [0.2, 14],
-  [0.38, 14],
-  [0.48, 14],
-  [0.58, 10.5],
-  [0.66, 12],
-  [0.7, 16],
-  [0.58, 16.2], // 回环：向左折回
-  [0.5, 14.5],
-  [0.5, 12.8],
-  [0.62, 12],
-  [0.72, 14],
-  [0.85, 14],
-  [1, 14],
+  [0, 9],
+  [0.22, 9],
+  [0.4, 9],
+  [0.52, 9.2],
+  [0.58, 11],
+  [0.55, 14], // 下折，略回退
+  [0.48, 16.5],
+  [0.58, 17.5],
+  [0.72, 17.5],
+  [0.88, 17.5],
+  [1, 17.5],
 ]
 
 export interface HandUnderlineColorRun {
@@ -152,7 +148,8 @@ export function drawHandDrawnUnderline(
   if (!pathD) return
 
   const scaleY = Math.max(0.7, lineWidth / HAND_DRAWN_UNDERLINE_STROKE_WIDTH)
-  const pathBaseline = 14
+  // 对齐折笔中段（上段约 9、下段约 17.5）
+  const pathBaseline = 13.5
 
   ctx.save()
   ctx.translate(x, y - pathBaseline * scaleY)
