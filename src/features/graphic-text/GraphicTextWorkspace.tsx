@@ -93,9 +93,13 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
       getDocument: () => documentRef.current,
       getConfig: () => configRef.current,
       applySnapshot: (snapshot) => {
-        setDocument(documentFromSnapshot(snapshot))
-        setConfig((current) => configFromSnapshot(snapshot, current))
-        setHighlightPreview(createHighlightPreviewDraft(configFromSnapshot(snapshot, configRef.current)))
+        const nextDocument = documentFromSnapshot(snapshot)
+        const nextConfig = configFromSnapshot(snapshot, configRef.current)
+        documentRef.current = nextDocument
+        configRef.current = nextConfig
+        setDocument(nextDocument)
+        setConfig(nextConfig)
+        setHighlightPreview(createHighlightPreviewDraft(nextConfig))
       },
     }),
     [],

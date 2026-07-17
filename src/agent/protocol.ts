@@ -32,6 +32,10 @@ export type LayoutWarningCode =
   | 'line_overflow'
   | 'orphan_line'
   | 'punctuation_only_line'
+  | 'title_missing_circle'
+  | 'title_circle_wrapped'
+  | 'too_many_colors'
+  | 'title_line_height_loose'
 
 export interface LayoutWarning {
   code: LayoutWarningCode
