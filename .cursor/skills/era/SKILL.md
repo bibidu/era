@@ -57,8 +57,11 @@ description: >-
 - **标题必须有高亮**
 - **禁止**对标题使用 `quote`（引用条）高亮；标题用 `brush` / `underline` / `circle`
 - **每一页尽量都有一些高亮**（先按默认画幅或 9:16 估算分页；最终每种导出比例都会再检）
-- 用自然语言说明「哪段哪几个字 + 何种样式 + 颜色」，并列出将调用的 range（`blockId/start/end/style/color`）
-- `blockId` 必须来自 `era_get_project` / `era_set_markdown` 返回的 blocks
+- 用自然语言说明「哪段哪几个字 + 何种样式 + 颜色」
+- **给用户看颜色时禁止只甩 hex**：必须用可读名称（如「明黄 / 橙黄 / 警示红 / 翠绿 / 天蓝」），括号里可附带 hex 供写入 API
+- 推荐色名对照（写入时用右侧 hex）：
+  - 明黄 `#FACC15` · 橙黄 `#FB923C` · 警示红 `#EF4444` · 翠绿 `#22C55E` · 天蓝 `#3B82F6` · 紫 `#A855F7`
+- 列出将调用的 range（`blockId/start/end/style/color`）；`blockId` 必须来自 `era_get_project` / `era_set_markdown` 返回的 blocks
 
 询问是否继续。用户确认后执行 `era_apply_highlights`。
 
