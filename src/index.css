@@ -1439,6 +1439,7 @@ body.is-dragging {
 
 .graphic-hand-underline {
   position: relative;
+  z-index: 2;
   display: inline-block;
   max-width: 100%;
   white-space: nowrap;
@@ -1453,12 +1454,12 @@ body.is-dragging {
 .graphic-hand-underline-svg {
   position: absolute;
   left: 0;
-  bottom: -0.28em;
-  height: 0.72em;
+  bottom: -0.32em;
+  height: 0.78em;
   width: 100%;
   overflow: visible;
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
 }
 
 .graphic-theme-underline {
