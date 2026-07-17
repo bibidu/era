@@ -58,23 +58,108 @@ function titleSourceIds(pages: ReturnType<typeof paginateDocument>): string[] {
   return [...ids]
 }
 
-function contiguousCircleRuns(circleMap: Record<string, string>, titleId: string) {
-  const indexes = Object.keys(circleMap)
-    .filter((key) => key.startsWith(`${titleId}:`))
-    .map((key) => Number(key.slice(titleId.length + 1)))
-    .filter((index) => Number.isFinite(index))
-    .sort((a, b) => a - b)
+function parseCircleKey(key: string): { blockId: string; index: number } | null {
+  const lastColon = key.lastIndexOf(':')
+  if (lastColon <= 0) return null
+  const blockId = key.slice(0, lastColon)
+  const index = Number(key.slice(lastColon + 1))
+  if (!blockId || !Number.isFinite(index)) return null
+  return { blockId, index }
+}
 
-  const runs: { start: number; end: number }[] = []
-  for (const index of indexes) {
-    const last = runs[runs.length - 1]
-    if (last && index === last.end) {
-      last.end = index + 1
-    } else {
-      runs.push({ start: index, end: index + 1 })
+/** 将同一 block 内连续的画圈字符合并为 run（[start, end)） */
+function contiguousCircleRunsByBlock(circleMap: Record<string, string>) {
+  const byBlock = new Map<string, number[]>()
+  for (const key of Object.keys(circleMap)) {
+    const parsed = parseCircleKey(key)
+    if (!parsed) continue
+    const list = byBlock.get(parsed.blockId) ?? []
+    list.push(parsed.index)
+    byBlock.set(parsed.blockId, list)
+  }
+
+  const result: { blockId: string; start: number; end: number }[] = []
+  for (const [blockId, indexes] of byBlock) {
+    indexes.sort((a, b) => a - b)
+    let start = indexes[0]
+    let end = indexes[0] + 1
+    for (let i = 1; i < indexes.length; i += 1) {
+      const index = indexes[i]
+      if (index === end) {
+        end = index + 1
+      } else {
+        result.push({ blockId, start, end })
+        start = index
+        end = index + 1
+      }
+    }
+    result.push({ blockId, start, end })
+  }
+  return result
+}
+
+/**
+ * 画圈词语不得跨视觉行：run 内每个字符必须落在同一 layout line。
+ */
+function collectCircleWrapWarnings(
+  pages: ReturnType<typeof paginateDocument>,
+  circleMap: Record<string, string>,
+): LayoutWarning[] {
+  const warnings: LayoutWarning[] = []
+  const runs = contiguousCircleRunsByBlock(circleMap)
+
+  for (const run of runs) {
+    // charIndex -> lineKey
+    const lineByChar = new Map<number, string>()
+    pages.forEach((page, pageIndex) => {
+      page.blocks.forEach((block, lineIndex) => {
+        if (block.type === 'image') return
+        const sourceId = block.sourceBlockId ?? block.id
+        if (sourceId !== run.blockId) return
+        const offset = block.charOffset ?? 0
+        const plain = stripHighlightMarkers(block.text)
+        const length = [...plain].length
+        const lineKey = `${pageIndex}:${lineIndex}:${offset}`
+        for (let index = run.start; index < run.end; index += 1) {
+          if (index >= offset && index < offset + length) {
+            lineByChar.set(index, lineKey)
+          }
+        }
+      })
+    })
+
+    const covered = [...lineByChar.keys()].sort((a, b) => a - b)
+    if (covered.length < run.end - run.start) {
+      warnings.push({
+        code: 'circle_wrapped',
+        message: `画圈词语未能完整落在可视行内（block ${run.blockId} [${run.start},${run.end})）`,
+        pageIndex: 0,
+        blockId: run.blockId,
+      })
+      continue
+    }
+
+    const lineKeys = new Set(lineByChar.values())
+    if (lineKeys.size > 1) {
+      const pageIndex = Number([...lineKeys][0]?.split(':')[0] ?? 0)
+      warnings.push({
+        code: 'circle_wrapped',
+        message: `画圈词语跨行了（${run.blockId} [${run.start},${run.end})），请调整字号/换行，保证圈词在同一行`,
+        pageIndex,
+        blockId: run.blockId,
+      })
+      if (run.blockId.includes('::title')) {
+        warnings.push({
+          code: 'title_circle_wrapped',
+          message: `标题画圈词语跨行了（[${run.start},${run.end})），请微调标题字号并收紧行高`,
+          pageIndex: 0,
+          blockId: run.blockId,
+        })
+      }
     }
   }
-  return runs
+
+  return warnings
 }
 
 /**
@@ -125,34 +210,8 @@ export function inspectGraphicLayout(
     })
   }
 
-  // 标题画圈 run 是否落在同一视觉行
-  for (const titleId of titleIds) {
-    const runs = contiguousCircleRuns(circleMap, titleId)
-    for (const run of runs) {
-      const lineKeys = new Set<string>()
-      pages.forEach((page, pageIndex) => {
-        for (const block of page.blocks) {
-          if ((block.sourceBlockId ?? block.id) !== titleId) continue
-          if ((block.styleType ?? block.type) !== 'title') continue
-          const offset = block.charOffset ?? 0
-          const plain = stripHighlightMarkers(block.text)
-          const lineEnd = offset + [...plain].length
-          const overlaps = run.start < lineEnd && run.end > offset
-          if (overlaps) {
-            lineKeys.add(`${pageIndex}:${offset}`)
-          }
-        }
-      })
-      if (lineKeys.size > 1) {
-        warnings.push({
-          code: 'title_circle_wrapped',
-          message: `标题画圈词语跨行了（[${run.start},${run.end})），请调大/微调标题字号并收紧行高，避免圈词折行`,
-          pageIndex: 0,
-          blockId: titleId,
-        })
-      }
-    }
-  }
+  // 画圈词语不得跨行（全文所有 circle，含标题）
+  warnings.push(...collectCircleWrapWarnings(pages, circleMap))
 
   // 孤行：同一 sourceBlock 跨页，且在后一页只出现 1 行
   const blockPageLines = new Map<string, Map<number, number>>()

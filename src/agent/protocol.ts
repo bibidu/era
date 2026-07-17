@@ -33,6 +33,7 @@ export type LayoutWarningCode =
   | 'orphan_line'
   | 'punctuation_only_line'
   | 'title_missing_circle'
+  | 'circle_wrapped'
   | 'title_circle_wrapped'
   | 'too_many_colors'
   | 'title_line_height_loose'
