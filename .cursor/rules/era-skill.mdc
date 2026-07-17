@@ -1,0 +1,14 @@
+---
+description: 当用户要用 Era 做图文/小红书/抖音出图时，必须启用 era skill
+alwaysApply: true
+---
+
+# Era Skill 强制路由
+
+只要用户提到以下任一意图，**必须**读取并严格执行项目 skill `.cursor/skills/era/SKILL.md`（也可用 `/era`）：
+
+- 用 era 生成图文
+- 根据标题/大纲出小红书或抖音图
+- 图文高亮、分页导出、发图
+
+不要跳过确认步骤；不要在未启动 Era 服务时假装已出图。

@@ -8,24 +8,39 @@
     "build": "tsc -b && vite build",
     "verify:fonts": "npm run build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "agent": "tsx server/index.ts",
+    "mcp": "tsx server/mcp.ts",
+    "start:local-agent": "bash scripts/start-local-agent.sh",
+    "ensure:era": "bash scripts/ensure-era-ready.sh"
   },
   "dependencies": {
     "@heroui/react": "^3.0.0",
     "@heroui/styles": "^3.0.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@tailwindcss/vite": "^4.1.11",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
     "lucide-react": "^0.525.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "tailwindcss": "^4.1.11"
+    "tailwindcss": "^4.1.11",
+    "uuid": "^14.0.1",
+    "ws": "^8.21.1",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^6.0.3",
     "oxlint": "^1.71.0",
     "playwright": "^1.49.1",
+    "tsx": "^4.23.1",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"
   }
