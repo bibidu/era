@@ -5,6 +5,7 @@ import {
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
 import { buildCircleHighlightColorRuns, drawHandDrawnCircleAroundTextBounds } from './circleHighlight'
+import { drawHandDrawnUnderline } from './handDrawnUnderline'
 import { collectGraphicFontIds, getFontConfigForStyleType } from './graphicTextFonts'
 import { getGraphicLayout } from './layout'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
@@ -128,13 +129,14 @@ function drawStyledLine(
       if (!segment.text) continue
       const metrics = ctx.measureText(segment.text)
       if (segment.color) {
-        ctx.strokeStyle = segment.color
-        ctx.lineWidth = Math.max(2, fontSize * 0.06)
-        ctx.lineCap = 'round'
-        ctx.beginPath()
-        ctx.moveTo(underlineX, underlineY)
-        ctx.lineTo(underlineX + metrics.width, underlineY)
-        ctx.stroke()
+        drawHandDrawnUnderline(
+          ctx,
+          underlineX,
+          underlineY,
+          metrics.width,
+          segment.color,
+          Math.max(3, fontSize * 0.08),
+        )
       }
       underlineX += metrics.width
     }

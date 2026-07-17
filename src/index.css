@@ -1432,42 +1432,47 @@ body.is-dragging {
   -webkit-box-decoration-break: clone;
 }
 
-.graphic-theme-underline {
+.graphic-hand-underline {
   position: relative;
-  isolation: isolate;
+  display: inline;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
 
-.graphic-theme-underline::after {
-  content: '';
-  position: absolute;
-  left: -0.02em;
-  right: -0.02em;
-  bottom: 0.04em;
-  height: max(2px, 0.1em);
-  background-color: var(--graphic-highlight-underline, currentColor);
-  z-index: 3;
-  pointer-events: none;
-}
-
-.graphic-circle-highlight {
-  position: relative;
-  display: inline-block;
-  max-width: 100%;
-  vertical-align: baseline;
-  white-space: nowrap;
-}
-
-.graphic-circle-highlight-text {
+.graphic-hand-underline-text {
   position: relative;
   z-index: 1;
-  white-space: nowrap;
+}
+
+.graphic-hand-underline-svg {
+  position: absolute;
+  left: -0.08em;
+  right: -0.08em;
+  bottom: -0.12em;
+  height: 0.42em;
+  width: calc(100% + 0.16em);
+  pointer-events: none;
+  overflow: visible;
+}
+
+.graphic-highlight-tab-scroll {
+  min-width: 0;
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.graphic-highlight-tab-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .graphic-highlight-tab-group {
   position: relative;
-  display: flex;
+  display: inline-flex;
+  width: max-content;
+  min-width: 100%;
   padding: 3px;
   border-radius: 12px;
   background: rgb(245 245 245);
@@ -1487,16 +1492,29 @@ body.is-dragging {
   pointer-events: none;
 }
 
+.graphic-circle-highlight {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+
+.graphic-circle-highlight-text {
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+}
+
 .graphic-highlight-tab {
-  flex: 1;
+  flex: 0 0 auto;
   position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 36px;
-  min-width: 0;
-  padding: 6px 6px;
+  padding: 6px 10px;
   border: none;
   border-radius: 9px;
   background: transparent;

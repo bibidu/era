@@ -3,6 +3,11 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom'
 import { HAND_DRAWN_CIRCLE_PATH, HAND_DRAWN_CIRCLE_VIEWBOX } from './circleHighlight'
 import {
+  HAND_DRAWN_UNDERLINE_PATH,
+  HAND_DRAWN_UNDERLINE_STROKE_WIDTH,
+  HAND_DRAWN_UNDERLINE_VIEWBOX,
+} from './handDrawnUnderline'
+import {
   buildHighlightCharPageMapFromDocument,
   buildHighlightDisplayLinesFromDocument,
   type HighlightCharToken,
@@ -42,13 +47,24 @@ function HighlightStyleTabLabel({
 
   if (tab === 'underline') {
     return (
-      <span className={`relative text-xs font-medium ${textClass}`}>
-        <span>下划线</span>
-        <span
-          className="absolute -bottom-0.5 left-0 right-0 h-0.5 rounded-full"
-          style={{ backgroundColor: TAB_PREVIEW_COLOR }}
+      <span className={`relative inline-flex items-center px-1 text-xs font-medium ${textClass}`}>
+        <span className="relative z-[1]">下划线</span>
+        <svg
+          className="pointer-events-none absolute -inset-x-0.5 -bottom-1 h-3 w-[calc(100%+4px)]"
+          viewBox={HAND_DRAWN_UNDERLINE_VIEWBOX}
+          preserveAspectRatio="none"
           aria-hidden
-        />
+        >
+          <path
+            d={HAND_DRAWN_UNDERLINE_PATH}
+            fill="none"
+            stroke={TAB_PREVIEW_COLOR}
+            strokeWidth={HAND_DRAWN_UNDERLINE_STROKE_WIDTH}
+            vectorEffect="non-scaling-stroke"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </span>
     )
   }
@@ -299,11 +315,22 @@ function HighlightTokenButton({
         {isWhitespace ? '␣' : token.char}
       </span>
       {selected && styleTab === 'underline' && (
-        <span
-          className="absolute bottom-1 left-1.5 right-1.5 h-0.5 rounded-full"
-          style={{ backgroundColor: previewColor }}
+        <svg
+          className="pointer-events-none absolute -inset-x-0.5 bottom-0.5 h-3 w-[calc(100%+4px)]"
+          viewBox={HAND_DRAWN_UNDERLINE_VIEWBOX}
+          preserveAspectRatio="none"
           aria-hidden
-        />
+        >
+          <path
+            d={HAND_DRAWN_UNDERLINE_PATH}
+            fill="none"
+            stroke={previewColor}
+            strokeWidth={HAND_DRAWN_UNDERLINE_STROKE_WIDTH}
+            vectorEffect="non-scaling-stroke"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       )}
       {selected && styleTab === 'circle' && (
         <svg
@@ -664,35 +691,44 @@ export function GraphicHighlightEditor({
         <div className="graphic-highlight-toolbar-row">
           <HighlightColorPopover color={highlightPickerColor} onChange={onPickerColorChange} />
 
-          <div
-            ref={tabGroupRef}
-            className="graphic-highlight-tab-group min-w-0 flex-1"
-            role="tablist"
-            aria-label="高亮样式"
-          >
+          <div className="graphic-highlight-tab-scroll min-w-0 flex-1">
             <div
-              className="graphic-highlight-tab-indicator"
-              style={{ left: tabIndicator.left, width: tabIndicator.width }}
-              aria-hidden
-            />
-            {HIGHLIGHT_STYLE_TABS.map((tab, index) => {
-              const selected = activeStyleTab === tab.id
-              return (
-                <button
-                  key={tab.id}
-                  ref={(node) => {
-                    tabRefs.current[index] = node
-                  }}
-                  type="button"
-                  role="tab"
-                  aria-selected={selected}
-                  className={`graphic-highlight-tab ${selected ? 'graphic-highlight-tab--active' : ''}`}
-                  onClick={() => setActiveStyleTab(tab.id)}
-                >
-                  <HighlightStyleTabLabel tab={tab.id} selected={selected} />
-                </button>
-              )
-            })}
+              ref={tabGroupRef}
+              className="graphic-highlight-tab-group"
+              role="tablist"
+              aria-label="高亮样式"
+            >
+              <div
+                className="graphic-highlight-tab-indicator"
+                style={{ left: tabIndicator.left, width: tabIndicator.width }}
+                aria-hidden
+              />
+              {HIGHLIGHT_STYLE_TABS.map((tab, index) => {
+                const selected = activeStyleTab === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    ref={(node) => {
+                      tabRefs.current[index] = node
+                    }}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    className={`graphic-highlight-tab ${selected ? 'graphic-highlight-tab--active' : ''}`}
+                    onClick={() => {
+                      setActiveStyleTab(tab.id)
+                      tabRefs.current[index]?.scrollIntoView({
+                        behavior: 'smooth',
+                        inline: 'nearest',
+                        block: 'nearest',
+                      })
+                    }}
+                  >
+                    <HighlightStyleTabLabel tab={tab.id} selected={selected} />
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>

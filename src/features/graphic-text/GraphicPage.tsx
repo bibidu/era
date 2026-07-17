@@ -5,6 +5,7 @@ import {
   CODE_TEXT_COLOR,
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
+import { HandDrawnUnderline } from './HandDrawnUnderline'
 import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
 import { getFontConfigForStyleType } from './graphicTextFonts'
 import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
@@ -192,27 +193,27 @@ function UnderlineSegments({
           return <span key={`${index}-${segment.text}`}>{segment.text}</span>
         }
 
-        return (
-          <span
-            key={`${index}-${segment.text}`}
-            className={[
-              segment.brushColor ? 'graphic-theme-brush' : '',
-              segment.underlineColor ? 'graphic-theme-underline' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            style={{
-              ...(segment.brushColor
-                ? { backgroundColor: themeAlpha(segment.brushColor, 0.28) }
-                : null),
-              ...(segment.underlineColor
-                ? { ['--graphic-highlight-underline' as string]: segment.underlineColor }
-                : null),
-            }}
-          >
-            {segment.text}
-          </span>
-        )
+        let content: ReactNode = segment.text
+
+        if (segment.underlineColor) {
+          content = (
+            <HandDrawnUnderline color={segment.underlineColor}>{content}</HandDrawnUnderline>
+          )
+        }
+
+        if (segment.brushColor) {
+          return (
+            <span
+              key={`${index}-${segment.text}`}
+              className="graphic-theme-brush"
+              style={{ backgroundColor: themeAlpha(segment.brushColor, 0.28) }}
+            >
+              {content}
+            </span>
+          )
+        }
+
+        return <span key={`${index}-${segment.text}`}>{content}</span>
       })}
     </>
   )
