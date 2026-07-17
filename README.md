@@ -29,6 +29,18 @@ npm run dev
 
 ### 启动
 
+一键（推荐，进入仓库根目录后执行）：
+
+```bash
+cd /path/to/era
+npm run start:local-agent
+# 或: bash scripts/start-local-agent.sh
+```
+
+会同时拉起 Agent（`:3847`）与前端（`http://127.0.0.1:5173/era/`），并尽量自动打开浏览器。看到右上角 **Agent** 指示后，即可在 WorkBuddy / OpenClaw 里对话修改。
+
+也可以分两个终端手动启动：
+
 ```bash
 # 终端 1：Agent REST + 浏览器控制通道
 npm run agent

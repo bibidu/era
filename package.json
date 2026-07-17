@@ -10,7 +10,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "agent": "tsx server/index.ts",
-    "mcp": "tsx server/mcp.ts"
+    "mcp": "tsx server/mcp.ts",
+    "start:local-agent": "bash scripts/start-local-agent.sh"
   },
   "dependencies": {
     "@heroui/react": "^3.0.0",
