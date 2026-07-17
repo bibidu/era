@@ -27,10 +27,11 @@ const BRUSH_TAB_PREVIEW_BG = '#F0F0F0'
 const COLOR_POPOVER_EDGE_MARGIN = 12
 const COLOR_POPOVER_TRIGGER_GAP = 8
 
-export type HighlightStyleTab = 'underline' | 'brush' | 'quote' | 'circle'
+export type HighlightStyleTab = 'underline' | 'handUnderline' | 'brush' | 'quote' | 'circle'
 
 const HIGHLIGHT_STYLE_TABS: { id: HighlightStyleTab; label: string }[] = [
   { id: 'underline', label: '下划线' },
+  { id: 'handUnderline', label: '手绘线' },
   { id: 'brush', label: '刷子' },
   { id: 'quote', label: '引用' },
   { id: 'circle', label: '线圈' },
@@ -47,8 +48,21 @@ function HighlightStyleTabLabel({
 
   if (tab === 'underline') {
     return (
-      <span className={`relative inline-flex items-center px-1 text-xs font-medium ${textClass}`}>
-        <span className="relative z-[1]">下划线</span>
+      <span className={`relative inline-flex items-center text-xs font-medium ${textClass}`}>
+        <span>下划线</span>
+        <span
+          className="absolute -bottom-0.5 left-0 right-0 h-0.5 rounded-full"
+          style={{ backgroundColor: TAB_PREVIEW_COLOR }}
+          aria-hidden
+        />
+      </span>
+    )
+  }
+
+  if (tab === 'handUnderline') {
+    return (
+      <span className={`relative inline-flex items-center text-xs font-medium ${textClass}`}>
+        <span className="relative z-[1]">手绘线</span>
         <svg
           className="pointer-events-none absolute -inset-x-0.5 -bottom-1 h-3 w-[calc(100%+4px)]"
           viewBox={HAND_DRAWN_UNDERLINE_VIEWBOX}
@@ -252,11 +266,13 @@ interface GraphicHighlightEditorProps {
   document?: GraphicDocument
   config: GraphicTextConfig
   underlineHighlightColors: HighlightColorMap
+  handUnderlineHighlightColors: HighlightColorMap
   brushHighlightColors: HighlightColorMap
   quoteHighlightColors: HighlightColorMap
   circleHighlightColors: HighlightColorMap
   highlightPickerColor: string
   onUnderlineChange: (colors: HighlightColorMap) => void
+  onHandUnderlineChange: (colors: HighlightColorMap) => void
   onBrushChange: (colors: HighlightColorMap) => void
   onQuoteChange: (colors: HighlightColorMap) => void
   onCircleChange: (colors: HighlightColorMap) => void
@@ -315,6 +331,13 @@ function HighlightTokenButton({
         {isWhitespace ? '␣' : token.char}
       </span>
       {selected && styleTab === 'underline' && (
+        <span
+          className="absolute bottom-1 left-1.5 right-1.5 h-0.5 rounded-full"
+          style={{ backgroundColor: previewColor }}
+          aria-hidden
+        />
+      )}
+      {selected && styleTab === 'handUnderline' && (
         <svg
           className="pointer-events-none absolute -inset-x-0.5 bottom-0.5 h-3 w-[calc(100%+4px)]"
           viewBox={HAND_DRAWN_UNDERLINE_VIEWBOX}
@@ -538,11 +561,13 @@ export function GraphicHighlightEditor({
   document,
   config,
   underlineHighlightColors,
+  handUnderlineHighlightColors,
   brushHighlightColors,
   quoteHighlightColors,
   circleHighlightColors,
   highlightPickerColor,
   onUnderlineChange,
+  onHandUnderlineChange,
   onBrushChange,
   onQuoteChange,
   onCircleChange,
@@ -600,19 +625,23 @@ export function GraphicHighlightEditor({
   const activeColorMap =
     activeStyleTab === 'underline'
       ? underlineHighlightColors
-      : activeStyleTab === 'brush'
-        ? brushHighlightColors
-        : activeStyleTab === 'quote'
-          ? quoteHighlightColors
-          : circleHighlightColors
+      : activeStyleTab === 'handUnderline'
+        ? handUnderlineHighlightColors
+        : activeStyleTab === 'brush'
+          ? brushHighlightColors
+          : activeStyleTab === 'quote'
+            ? quoteHighlightColors
+            : circleHighlightColors
   const onActiveChange =
     activeStyleTab === 'underline'
       ? onUnderlineChange
-      : activeStyleTab === 'brush'
-        ? onBrushChange
-        : activeStyleTab === 'quote'
-          ? onQuoteChange
-          : onCircleChange
+      : activeStyleTab === 'handUnderline'
+        ? onHandUnderlineChange
+        : activeStyleTab === 'brush'
+          ? onBrushChange
+          : activeStyleTab === 'quote'
+            ? onQuoteChange
+            : onCircleChange
   const activePickerColor = highlightPickerColor
 
   const highlightedSet = useMemo(() => new Set(Object.keys(activeColorMap)), [activeColorMap])

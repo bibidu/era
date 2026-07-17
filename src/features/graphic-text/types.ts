@@ -37,6 +37,7 @@ export interface GraphicTextConfig {
   topText: string
   backgroundUrl: string | null
   underlineHighlightColors: Record<string, string>
+  handUnderlineHighlightColors: Record<string, string>
   brushHighlightColors: Record<string, string>
   quoteHighlightColors: Record<string, string>
   circleHighlightColors: Record<string, string>
@@ -98,6 +99,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   topText: '',
   backgroundUrl: null,
   underlineHighlightColors: {},
+  handUnderlineHighlightColors: {},
   brushHighlightColors: {},
   quoteHighlightColors: {},
   circleHighlightColors: {},

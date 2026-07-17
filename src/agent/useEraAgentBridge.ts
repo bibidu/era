@@ -238,6 +238,7 @@ export function configFromSnapshot(
     ...fallback,
     ...raw,
     underlineHighlightColors: raw.underlineHighlightColors ?? {},
+    handUnderlineHighlightColors: raw.handUnderlineHighlightColors ?? {},
     brushHighlightColors: raw.brushHighlightColors ?? {},
     quoteHighlightColors: raw.quoteHighlightColors ?? {},
     circleHighlightColors: raw.circleHighlightColors ?? {},

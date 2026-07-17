@@ -122,6 +122,7 @@ export interface ThemeHighlightSegment {
   text: string
   brushColor: string | null
   underlineColor: string | null
+  handUnderlineColor: string | null
 }
 
 export function buildMergedThemeHighlightSegments(
@@ -129,6 +130,7 @@ export function buildMergedThemeHighlightSegments(
   blockId: string,
   brushColors: Readonly<Record<string, string>>,
   underlineColors: Readonly<Record<string, string>>,
+  handUnderlineColors: Readonly<Record<string, string>>,
   charOffset = 0,
 ): ThemeHighlightSegment[] {
   const plain = stripHighlightMarkers(text)
@@ -136,6 +138,7 @@ export function buildMergedThemeHighlightSegments(
   let currentText = ''
   let currentBrush: string | null = null
   let currentUnderline: string | null = null
+  let currentHandUnderline: string | null = null
 
   const flush = () => {
     if (!currentText) return
@@ -143,6 +146,7 @@ export function buildMergedThemeHighlightSegments(
       text: currentText,
       brushColor: currentBrush,
       underlineColor: currentUnderline,
+      handUnderlineColor: currentHandUnderline,
     })
     currentText = ''
   }
@@ -151,8 +155,13 @@ export function buildMergedThemeHighlightSegments(
     const key = `${blockId}:${charOffset + index}`
     const brushColor = brushColors[key] ?? null
     const underlineColor = underlineColors[key] ?? null
+    const handUnderlineColor = handUnderlineColors[key] ?? null
 
-    if (brushColor === currentBrush && underlineColor === currentUnderline) {
+    if (
+      brushColor === currentBrush &&
+      underlineColor === currentUnderline &&
+      handUnderlineColor === currentHandUnderline
+    ) {
       currentText += plain[index]
       continue
     }
@@ -160,11 +169,12 @@ export function buildMergedThemeHighlightSegments(
     flush()
     currentBrush = brushColor
     currentUnderline = underlineColor
+    currentHandUnderline = handUnderlineColor
     currentText = plain[index] ?? ''
   }
 
   flush()
   return segments.length
     ? segments
-    : [{ text: plain, brushColor: null, underlineColor: null }]
+    : [{ text: plain, brushColor: null, underlineColor: null, handUnderlineColor: null }]
 }
