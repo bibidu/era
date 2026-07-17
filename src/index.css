@@ -1453,8 +1453,8 @@ body.is-dragging {
 .graphic-hand-underline-svg {
   position: absolute;
   left: 0;
-  bottom: -0.22em;
-  height: 0.55em;
+  bottom: -0.28em;
+  height: 0.72em;
   width: 100%;
   overflow: visible;
   pointer-events: none;

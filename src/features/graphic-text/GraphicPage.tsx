@@ -536,7 +536,7 @@ export function GraphicPage({
       )}
       {shouldDrawPageOverlay(config) &&
         config.pageOverlay === 'gradient' &&
-        config.overlayStacked && <PageGradientOverlay />}
+        config.overlayStacked && <PageGradientOverlay variant={config.gradientVariant} />}
 
       <div
         className="absolute z-10 flex min-w-0 items-center gap-2 border-b border-neutral-300"

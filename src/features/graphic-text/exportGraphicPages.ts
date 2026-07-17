@@ -256,7 +256,7 @@ async function drawPage(
       ctx.fillRect(0, 0, width, height)
     }
   } else if (config.pageOverlay === 'gradient') {
-    drawPageGradientBackground(ctx, width, height)
+    drawPageGradientBackground(ctx, width, height, config.gradientVariant)
   } else if (config.pageOverlay === 'pixel') {
     drawPagePixelOverlay(ctx, width, height, false)
   }
@@ -270,7 +270,7 @@ async function drawPage(
   }
 
   if (shouldDrawPageOverlay(config) && config.pageOverlay === 'gradient' && config.overlayStacked) {
-    drawPageGradientBackground(ctx, width, height)
+    drawPageGradientBackground(ctx, width, height, config.gradientVariant)
   }
 
   const edgeX = safeX

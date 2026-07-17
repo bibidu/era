@@ -1,6 +1,7 @@
 import { PAPER_COLORS, TemplatePreviewSquare } from './graphicTemplateOptions'
 import { GradientPreviewArt } from './GradientPreviewArt'
 import { PixelPreviewArt } from './PixelPreviewArt'
+import { createRandomGradientVariant } from './pageGradientOverlay'
 import type { GraphicPageOverlay, GraphicTextConfig } from './types'
 
 function StripShell({ children }: { children: React.ReactNode }) {
@@ -99,11 +100,20 @@ export function GraphicTemplateTextureStrip({
               className={`graphic-toolbar-strip-template-btn graphic-toolbar-strip-template-btn--horizontal ${
                 config.pageOverlay === option.id ? 'graphic-toolbar-strip-template-btn--selected' : ''
               }`}
-              onClick={() =>
-                onUpdate({
-                  pageOverlay: config.pageOverlay === option.id ? 'none' : option.id,
-                })
-              }
+              onClick={() => {
+                if (config.pageOverlay === option.id) {
+                  onUpdate({ pageOverlay: 'none' })
+                  return
+                }
+                if (option.id === 'gradient') {
+                  onUpdate({
+                    pageOverlay: 'gradient',
+                    gradientVariant: createRandomGradientVariant(),
+                  })
+                  return
+                }
+                onUpdate({ pageOverlay: option.id })
+              }}
             >
               <TemplatePreviewSquare
                 className={`graphic-toolbar-strip-template-preview ${option.previewClassName ?? ''}`}
