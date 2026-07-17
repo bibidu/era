@@ -171,25 +171,28 @@ function UnderlineSegments({
   charOffset,
   brushColors,
   underlineColors,
+  handUnderlineColors,
 }: {
   text: string
   blockId: string
   charOffset: number
   brushColors: Readonly<Record<string, string>>
   underlineColors: Readonly<Record<string, string>>
+  handUnderlineColors: Readonly<Record<string, string>>
 }) {
   const segments = buildMergedThemeHighlightSegments(
     text,
     blockId,
     brushColors,
     underlineColors,
+    handUnderlineColors,
     charOffset,
   )
 
   return (
     <>
       {segments.map((segment, index) => {
-        if (!segment.brushColor && !segment.underlineColor) {
+        if (!segment.brushColor && !segment.underlineColor && !segment.handUnderlineColor) {
           return <span key={`${index}-${segment.text}`}>{segment.text}</span>
         }
 
@@ -197,7 +200,22 @@ function UnderlineSegments({
 
         if (segment.underlineColor) {
           content = (
-            <HandDrawnUnderline color={segment.underlineColor}>{content}</HandDrawnUnderline>
+            <span
+              className="graphic-theme-underline"
+              style={
+                {
+                  ['--graphic-highlight-underline' as string]: segment.underlineColor,
+                } as CSSProperties
+              }
+            >
+              {content}
+            </span>
+          )
+        }
+
+        if (segment.handUnderlineColor) {
+          content = (
+            <HandDrawnUnderline color={segment.handUnderlineColor}>{content}</HandDrawnUnderline>
           )
         }
 
@@ -254,6 +272,7 @@ function StyledHighlightedText({
   block,
   brushColors,
   underlineColors,
+  handUnderlineColors,
   circleColors,
   enableHighlight,
 }: {
@@ -261,6 +280,7 @@ function StyledHighlightedText({
   block: MarkdownBlock
   brushColors: Readonly<Record<string, string>>
   underlineColors: Readonly<Record<string, string>>
+  handUnderlineColors: Readonly<Record<string, string>>
   circleColors: Readonly<Record<string, string>>
   enableHighlight: boolean
 }) {
@@ -285,6 +305,7 @@ function StyledHighlightedText({
             charOffset={charOffset + run.start}
             brushColors={brushColors}
             underlineColors={underlineColors}
+            handUnderlineColors={handUnderlineColors}
           />
         </CircleHighlightWrap>,
       )
@@ -303,6 +324,7 @@ function StyledHighlightedText({
         charOffset={charOffset + index}
         brushColors={brushColors}
         underlineColors={underlineColors}
+        handUnderlineColors={handUnderlineColors}
       />,
     )
     index = end
@@ -334,6 +356,7 @@ function renderBlockText(
   block: MarkdownBlock,
   brushColors: Readonly<Record<string, string>>,
   underlineColors: Readonly<Record<string, string>>,
+  handUnderlineColors: Readonly<Record<string, string>>,
   quoteColors: Readonly<Record<string, string>>,
   circleColors: Readonly<Record<string, string>>,
 ) {
@@ -346,6 +369,7 @@ function renderBlockText(
       block={block}
       brushColors={brushColors}
       underlineColors={underlineColors}
+      handUnderlineColors={handUnderlineColors}
       circleColors={circleColors}
       enableHighlight
     />
@@ -431,6 +455,7 @@ export function GraphicPage({
   const topBar = resolveTopBarParts(config, markdown)
   const brushColors = config.brushHighlightColors ?? {}
   const underlineColors = config.underlineHighlightColors
+  const handUnderlineColors = config.handUnderlineHighlightColors ?? {}
   const quoteColors = config.quoteHighlightColors
   const circleColors = config.circleHighlightColors
   const accentColor = config.highlightPickerColor
@@ -569,6 +594,7 @@ export function GraphicPage({
                             block={block}
                             brushColors={brushColors}
                             underlineColors={underlineColors}
+                            handUnderlineColors={handUnderlineColors}
                             circleColors={circleColors}
                             enableHighlight
                           />
@@ -582,7 +608,7 @@ export function GraphicPage({
               const block = unit.block
               return (
               <div key={block.id} className="graphic-text-line" style={blockStyle(block, config)}>
-                {renderBlockText(block, brushColors, underlineColors, quoteColors, circleColors)}
+                {renderBlockText(block, brushColors, underlineColors, handUnderlineColors, quoteColors, circleColors)}
               </div>
               )
             })

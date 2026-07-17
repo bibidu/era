@@ -4,6 +4,7 @@ export type HighlightColorMap = Record<string, string>
 
 export interface HighlightMaps {
   underlineHighlightColors: HighlightColorMap
+  handUnderlineHighlightColors: HighlightColorMap
   brushHighlightColors: HighlightColorMap
   quoteHighlightColors: HighlightColorMap
   circleHighlightColors: HighlightColorMap
@@ -13,6 +14,8 @@ function mapKeyForStyle(style: HighlightStyle): keyof HighlightMaps {
   switch (style) {
     case 'underline':
       return 'underlineHighlightColors'
+    case 'handUnderline':
+      return 'handUnderlineHighlightColors'
     case 'brush':
       return 'brushHighlightColors'
     case 'quote':
@@ -25,6 +28,7 @@ function mapKeyForStyle(style: HighlightStyle): keyof HighlightMaps {
 export function emptyHighlightMaps(): HighlightMaps {
   return {
     underlineHighlightColors: {},
+    handUnderlineHighlightColors: {},
     brushHighlightColors: {},
     quoteHighlightColors: {},
     circleHighlightColors: {},
@@ -41,6 +45,7 @@ export function applyHighlightRanges(
 ): { maps: HighlightMaps; applied: number; errors: string[] } {
   const next: HighlightMaps = {
     underlineHighlightColors: { ...maps.underlineHighlightColors },
+    handUnderlineHighlightColors: { ...maps.handUnderlineHighlightColors },
     brushHighlightColors: { ...maps.brushHighlightColors },
     quoteHighlightColors: { ...maps.quoteHighlightColors },
     circleHighlightColors: { ...maps.circleHighlightColors },

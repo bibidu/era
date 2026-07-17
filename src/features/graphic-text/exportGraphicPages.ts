@@ -72,6 +72,7 @@ function drawStyledLine(
   charOffset: number,
   brushSegments: LineSegment[],
   underlineSegments: LineSegment[],
+  handUnderlineSegments: LineSegment[],
   circleColors: Readonly<Record<string, string>>,
   x: number,
   yTop: number,
@@ -129,16 +130,32 @@ function drawStyledLine(
       if (!segment.text) continue
       const metrics = ctx.measureText(segment.text)
       if (segment.color) {
+        ctx.strokeStyle = segment.color
+        ctx.lineWidth = Math.max(2, fontSize * 0.06)
+        ctx.lineCap = 'round'
+        ctx.beginPath()
+        ctx.moveTo(underlineX, underlineY)
+        ctx.lineTo(underlineX + metrics.width, underlineY)
+        ctx.stroke()
+      }
+      underlineX += metrics.width
+    }
+
+    let handUnderlineX = x
+    for (const segment of handUnderlineSegments) {
+      if (!segment.text) continue
+      const metrics = ctx.measureText(segment.text)
+      if (segment.color) {
         drawHandDrawnUnderline(
           ctx,
-          underlineX,
+          handUnderlineX,
           underlineY,
           metrics.width,
           segment.color,
           Math.max(3, fontSize * 0.08),
         )
       }
-      underlineX += metrics.width
+      handUnderlineX += metrics.width
     }
   }
 }
@@ -217,6 +234,7 @@ async function drawPage(
   } = layout
   const brushColors = config.brushHighlightColors ?? {}
   const underlineColors = config.underlineHighlightColors
+  const handUnderlineColors = config.handUnderlineHighlightColors ?? {}
   const quoteColors = config.quoteHighlightColors
   const circleColors = config.circleHighlightColors
   const accentColor = config.highlightPickerColor
@@ -366,6 +384,9 @@ async function drawPage(
     const underlineSegments = enableHighlight
       ? buildCharHighlightColorSegments(block.text, blockId, underlineColors, charOffset)
       : [{ text: plainText, color: null }]
+    const handUnderlineSegments = enableHighlight
+      ? buildCharHighlightColorSegments(block.text, blockId, handUnderlineColors, charOffset)
+      : [{ text: plainText, color: null }]
     const lineHeight = spec.size * spec.lineHeight
     const textMetrics = ctx.measureText(plainText || '文')
     const ascent = textMetrics.actualBoundingBoxAscent ?? spec.size * 0.88
@@ -416,6 +437,7 @@ async function drawPage(
       charOffset,
       brushSegments,
       underlineSegments,
+      handUnderlineSegments,
       circleColors,
       safeX + inset,
       y,

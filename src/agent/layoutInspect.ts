@@ -21,6 +21,7 @@ export const MAX_HIGHLIGHTS_PER_PAGE = 4
 function highlightMaps(config: GraphicTextConfig) {
   return [
     config.underlineHighlightColors ?? {},
+    config.handUnderlineHighlightColors ?? {},
     config.brushHighlightColors ?? {},
     config.quoteHighlightColors ?? {},
     config.circleHighlightColors ?? {},
@@ -94,6 +95,7 @@ function collectHighlightColors(config: GraphicTextConfig): string[] {
   const colors = new Set<string>()
   for (const map of [
     config.underlineHighlightColors,
+    config.handUnderlineHighlightColors,
     config.brushHighlightColors,
     config.quoteHighlightColors,
     config.circleHighlightColors,

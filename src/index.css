@@ -1455,9 +1455,29 @@ body.is-dragging {
   overflow: visible;
 }
 
+.graphic-theme-underline {
+  position: relative;
+  isolation: isolate;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.graphic-theme-underline::after {
+  content: '';
+  position: absolute;
+  left: -0.02em;
+  right: -0.02em;
+  bottom: 0.04em;
+  height: max(2px, 0.1em);
+  background-color: var(--graphic-highlight-underline, currentColor);
+  z-index: 3;
+  pointer-events: none;
+}
+
 .graphic-highlight-tab-scroll {
   min-width: 0;
   flex: 1;
+  max-width: calc(100vw - 24px - 10px - 32px);
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;

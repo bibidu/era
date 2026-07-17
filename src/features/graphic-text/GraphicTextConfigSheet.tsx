@@ -13,6 +13,7 @@ import type { GraphicTextConfig } from './types'
 
 export interface HighlightPreviewDraft {
   underlineHighlightColors: GraphicTextConfig['underlineHighlightColors']
+  handUnderlineHighlightColors: GraphicTextConfig['handUnderlineHighlightColors']
   brushHighlightColors: GraphicTextConfig['brushHighlightColors']
   quoteHighlightColors: GraphicTextConfig['quoteHighlightColors']
   circleHighlightColors: GraphicTextConfig['circleHighlightColors']
@@ -45,6 +46,7 @@ export function createHighlightPreviewDraft(
 ): HighlightPreviewDraft {
   return {
     underlineHighlightColors: config.underlineHighlightColors,
+    handUnderlineHighlightColors: config.handUnderlineHighlightColors ?? {},
     brushHighlightColors: config.brushHighlightColors ?? {},
     quoteHighlightColors: config.quoteHighlightColors,
     circleHighlightColors: config.circleHighlightColors,
@@ -170,6 +172,7 @@ export function GraphicTextConfigSheet({
     if (panel === 'highlight') {
       onUpdate({
         underlineHighlightColors: highlightDraft.underlineHighlightColors,
+        handUnderlineHighlightColors: highlightDraft.handUnderlineHighlightColors,
         brushHighlightColors: highlightDraft.brushHighlightColors,
         quoteHighlightColors: highlightDraft.quoteHighlightColors,
         circleHighlightColors: highlightDraft.circleHighlightColors,
@@ -187,6 +190,7 @@ export function GraphicTextConfigSheet({
       document={document}
       config={config}
       underlineHighlightColors={highlightDraft.underlineHighlightColors}
+      handUnderlineHighlightColors={highlightDraft.handUnderlineHighlightColors}
       brushHighlightColors={highlightDraft.brushHighlightColors}
       quoteHighlightColors={highlightDraft.quoteHighlightColors}
       circleHighlightColors={highlightDraft.circleHighlightColors}
@@ -194,6 +198,9 @@ export function GraphicTextConfigSheet({
       hideHeader
       onUnderlineChange={(colors) =>
         onHighlightDraftChange({ ...highlightDraft, underlineHighlightColors: colors })
+      }
+      onHandUnderlineChange={(colors) =>
+        onHighlightDraftChange({ ...highlightDraft, handUnderlineHighlightColors: colors })
       }
       onBrushChange={(colors) =>
         onHighlightDraftChange({ ...highlightDraft, brushHighlightColors: colors })
