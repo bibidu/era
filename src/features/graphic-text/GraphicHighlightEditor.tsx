@@ -29,9 +29,13 @@ const COLOR_POPOVER_TRIGGER_GAP = 8
 
 export type HighlightStyleTab = 'underline' | 'handUnderline' | 'brush' | 'quote' | 'circle'
 
-const HIGHLIGHT_STYLE_TABS: { id: HighlightStyleTab; label: string }[] = [
+const HIGHLIGHT_STYLE_TABS: {
+  id: HighlightStyleTab
+  label: string
+  disabled?: boolean
+}[] = [
   { id: 'underline', label: '下划线' },
-  { id: 'handUnderline', label: '手绘线' },
+  { id: 'handUnderline', label: '手绘线', disabled: true },
   { id: 'brush', label: '刷子' },
   { id: 'quote', label: '引用' },
   { id: 'circle', label: '线圈' },
@@ -40,11 +44,19 @@ const HIGHLIGHT_STYLE_TABS: { id: HighlightStyleTab; label: string }[] = [
 function HighlightStyleTabLabel({
   tab,
   selected,
+  disabled = false,
 }: {
   tab: HighlightStyleTab
   selected: boolean
+  disabled?: boolean
 }) {
-  const textClass = selected ? 'text-neutral-900' : 'text-neutral-500'
+  const textClass = disabled
+    ? 'text-neutral-300'
+    : selected
+      ? 'text-neutral-900'
+      : 'text-neutral-500'
+  const previewColor = disabled ? '#D4D4D4' : TAB_PREVIEW_COLOR
+  const brushPreviewBg = disabled ? '#F5F5F5' : BRUSH_TAB_PREVIEW_BG
 
   if (tab === 'underline') {
     return (
@@ -52,7 +64,7 @@ function HighlightStyleTabLabel({
         <span>下划线</span>
         <span
           className="absolute -bottom-0.5 left-0 right-0 h-0.5 rounded-full"
-          style={{ backgroundColor: TAB_PREVIEW_COLOR }}
+          style={{ backgroundColor: previewColor }}
           aria-hidden
         />
       </span>
@@ -72,7 +84,7 @@ function HighlightStyleTabLabel({
           <path
             d={HAND_DRAWN_UNDERLINE_PATH}
             fill="none"
-            stroke={TAB_PREVIEW_COLOR}
+            stroke={previewColor}
             strokeWidth={HAND_DRAWN_UNDERLINE_STROKE_WIDTH}
             vectorEffect="non-scaling-stroke"
             strokeLinecap="round"
@@ -87,7 +99,7 @@ function HighlightStyleTabLabel({
     return (
       <span
         className={`rounded px-1.5 py-0.5 text-xs font-medium ${textClass}`}
-        style={{ backgroundColor: BRUSH_TAB_PREVIEW_BG }}
+        style={{ backgroundColor: brushPreviewBg }}
       >
         刷子
       </span>
@@ -99,7 +111,7 @@ function HighlightStyleTabLabel({
       <span className={`flex items-center gap-1.5 text-xs font-medium ${textClass}`}>
         <span
           className="h-3.5 w-0.5 shrink-0 rounded-full"
-          style={{ backgroundColor: TAB_PREVIEW_COLOR }}
+          style={{ backgroundColor: previewColor }}
           aria-hidden
         />
         引用
@@ -119,7 +131,7 @@ function HighlightStyleTabLabel({
         <path
           d={HAND_DRAWN_CIRCLE_PATH}
           fill="none"
-          stroke={TAB_PREVIEW_COLOR}
+          stroke={previewColor}
           strokeWidth={3}
           vectorEffect="non-scaling-stroke"
           strokeLinecap="round"
@@ -734,6 +746,7 @@ export function GraphicHighlightEditor({
               />
               {HIGHLIGHT_STYLE_TABS.map((tab, index) => {
                 const selected = activeStyleTab === tab.id
+                const disabled = Boolean(tab.disabled)
                 return (
                   <button
                     key={tab.id}
@@ -743,8 +756,14 @@ export function GraphicHighlightEditor({
                     type="button"
                     role="tab"
                     aria-selected={selected}
-                    className={`graphic-highlight-tab ${selected ? 'graphic-highlight-tab--active' : ''}`}
+                    aria-disabled={disabled}
+                    disabled={disabled}
+                    title={disabled ? '暂不可用' : undefined}
+                    className={`graphic-highlight-tab ${selected ? 'graphic-highlight-tab--active' : ''} ${
+                      disabled ? 'graphic-highlight-tab--disabled' : ''
+                    }`}
                     onClick={() => {
+                      if (disabled) return
                       setActiveStyleTab(tab.id)
                       tabRefs.current[index]?.scrollIntoView({
                         behavior: 'smooth',
@@ -753,7 +772,7 @@ export function GraphicHighlightEditor({
                       })
                     }}
                   >
-                    <HighlightStyleTabLabel tab={tab.id} selected={selected} />
+                    <HighlightStyleTabLabel tab={tab.id} selected={selected} disabled={disabled} />
                   </button>
                 )
               })}
