@@ -1,13 +1,13 @@
 ---
 name: era
 description: >-
-  用 Era 根据用户提供的标题/大纲生成社媒图文（小红书 3:4 / 抖音 9:16），含正文确认、5 个标题候选、高亮建议、布局校验与导出发图。
+  用 Era 根据用户提供的标题/大纲生成社媒图文（小红书 3:4 / 抖音 9:16），含正文确认、5 个标题候选、自动高亮、布局校验与导出发图。
   在用户提到 era、图文、小红书/抖音出图、用标题生成图文、导出海报长图时必须使用本 skill。
 ---
 
 # Era 图文生成 Skill
 
-严格按下列流程执行。任何一步未获用户明确「继续 / 确认」前，不得跳步。
+严格按下列流程执行。任何一步未获用户明确「继续 / 确认」前，不得跳步（**高亮步骤除外：见 §4，默认自动生成**）。
 
 ## 0. 前置：确认 Era 服务可用
 
@@ -21,6 +21,8 @@ description: >-
 云端 Agent：同样在本仓库拉起上述服务；导出后把 `output/` 下 PNG 作为附件发给用户。
 
 画幅约定：`3:4` = 小红书；`9:16` = 抖音。
+
+**模板**：默认优先使用 **像素模板**（`pageOverlay: 'pixel'`），除非用户明确指定其它纹理。
 
 ---
 
@@ -37,7 +39,7 @@ description: >-
 2. 展示全文后**明确询问**：是否继续？
 3. 用户提出修改 → 改完后再展示，并再次询问是否继续。
 4. 只有用户明确说继续 / 确认正文后，才进入标题阶段。
-5. 确认后：`era_create_project` / `era_set_markdown` 写入工程（先不必定死画幅）。
+5. 确认后：`era_create_project` / `era_set_markdown` 写入工程（并设 `pageOverlay: 'pixel'`）。
 
 ---
 
@@ -51,22 +53,34 @@ description: >-
 
 ---
 
-## 4. 高亮建议（确认后再写入）
+## 4. 高亮（默认自动生成，不再先征求确认）
 
-主动给出高亮方案，规则：
+### 4.1 何时生成
 
-- **标题必须有高亮**，且**标题必须至少有一处画圈（circle）**
-- **禁止**对标题使用 `quote`（引用条）；标题可用 `brush` / `underline` / `circle`
-- **任何画圈词语渲染时都不可折行**（圈住的连续文字必须落在同一视觉行；`preview_layout` 会报 `circle_wrapped` / `title_circle_wrapped`）。若折行：优先微调字号（标题**可以偏大，不要过小**，一般不要低于约 48），并**收紧标题行高**（`titleLineHeight` 建议 ≤ 1.12）
-- **每一页尽量都有一些高亮**
-- **全文高亮颜色种类 ≤ 3**（含所有 brush/underline/circle/quote）
-- 用自然语言说明「哪段哪几个字 + 何种样式 + 颜色」
-- **给用户看颜色时禁止只甩 hex**：必须用可读名称（如「明黄 / 警示红 / 天蓝」），括号里可附带 hex 供写入 API
-- 推荐控制在 3 色内，例如：
-  - 明黄 `#FACC15` · 警示红 `#EF4444` · 天蓝 `#3B82F6`
-- 列出将调用的 range（`blockId/start/end/style/color`）；`blockId` 必须来自工程 blocks
+- 标题确认并「继续」后：**自动生成并写入高亮**，然后进入导出平台询问。
+- **仅当用户在生成高亮之前主动说明**偏好/禁忌时，才按其要求生成。
+- **否则**：必须等用户看到导出图片后，才能按「二次修改」更新高亮逻辑；不要在出图前反复让用户确认高亮方案。
 
-询问是否继续。用户确认后执行 `era_apply_highlights`。
+### 4.2 配色
+
+- 全文高亮颜色种类 **≤ 3**（brush/underline/circle/quote 合计）。
+- **若用满 3 种颜色，其中必须有一种是灰色**（推荐中灰 `#9CA3AF` 或深灰 `#525252`）。
+- 给用户说明颜色时用可读名（明黄 / 警示红 / 中灰等），括号可附 hex。
+- 推荐常用组合：
+  - 2 色：明黄 `#FACC15` + 中灰 `#9CA3AF`
+  - 3 色：明黄 `#FACC15` + 警示红 `#EF4444` + 中灰 `#9CA3AF`
+
+### 4.3 密度与语义（最重要）
+
+- **宁少勿多**：不要整页刷满；每页有点睛即可，避免密集。
+- **必须结合段落语义**选词：只标真正改变理解的关键词/结论句，禁止机械均匀撒点。
+- **二级标题（`##` / heading）不要任何高亮**。
+- **列表 `ul/li`**：可用下划线或笔刷，但**整篇文章所有列表项高亮样式必须统一**（要么全 underline，要么全 brush；颜色也统一）。
+- **一句话或两句话的重点**：优先用 **下划线**；若当前页还不密，可 **下划线 + 笔刷叠加**。
+- **一级标题**：必须有高亮，且至少一处 **画圈（circle）**；禁止对标题用 `quote`。
+- **画圈词语不可折行**（`circle_wrapped` / `title_circle_wrapped`）。折行则调字号（可偏大、勿过小，一般 ≥48）并收紧 `titleLineHeight`（≤ 1.12）。
+
+写入：`era_apply_highlights`（可先清空旧 map 再写入）。
 
 ---
 
@@ -83,12 +97,12 @@ description: >-
 
 对每个目标 `aspectRatio` 分别：
 
-1. `era_update_config` 设 `aspectRatio`（并确认 `titleLineHeight` 不过松）
+1. `era_update_config` 设 `aspectRatio`（保持 `pageOverlay: 'pixel'`，`titleLineHeight` 不过松）
 2. `era_preview_layout`
 3. 若有告警必须先修再导出，包括：
    - 单行溢出、孤行、独行标点
    - **标题缺少画圈**
-   - **画圈词语跨行**（`circle_wrapped` / `title_circle_wrapped`）
+   - **画圈词语跨行**
    - **高亮颜色超过 3 种**
    - **标题行高过松**
 4. 通过后再对该比例 `era_export_images`
@@ -98,7 +112,7 @@ description: >-
 ## 7. 发图与返工
 
 1. 检测全部通过后，把**真正的 PNG**发给用户。
-2. 若用户有改动意见 → 修改 → **重新校验 → 重新导出 → 再发图**。
+2. 高亮/内容/画幅的改动意见 → 修改 → **重新校验 → 重新导出 → 再发图**。
 3. 每次改完仍要问是否还要继续调整，直到用户满意。
 
 ---
@@ -110,7 +124,7 @@ description: >-
 | 建工程 | `era_create_project` · `POST /v1/projects` |
 | 写正文 | `era_set_markdown` · `PUT .../markdown` |
 | 写标题 | `era_set_title` · `PUT .../title` |
-| 画幅 | `era_update_config` · `PATCH .../config` |
+| 画幅/模板 | `era_update_config` · `PATCH .../config`（优先 `pageOverlay: 'pixel'`） |
 | 高亮 | `era_apply_highlights` · `POST .../highlights` |
 | 校验 | `era_preview_layout` · `POST .../preview-layout` |
 | 导出 | `era_export_images` · `POST .../export` |

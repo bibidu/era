@@ -195,6 +195,26 @@ export function inspectGraphicLayout(
       pageIndex: 0,
     })
   }
+  if (colors.length === MAX_HIGHLIGHT_COLORS) {
+    const hasGray = colors.some((color) => {
+      const value = color.toUpperCase()
+      return (
+        value === '#9CA3AF' ||
+        value === '#525252' ||
+        value === '#6B7280' ||
+        value === '#D1D5DB' ||
+        value === '#A3A3A3' ||
+        value === '#737373'
+      )
+    })
+    if (!hasGray) {
+      warnings.push({
+        code: 'too_many_colors',
+        message: `使用满 ${MAX_HIGHLIGHT_COLORS} 种高亮色时必须包含灰色（当前：${colors.join(', ')}）`,
+        pageIndex: 0,
+      })
+    }
+  }
 
   const titleIds = titleSourceIds(pages)
   const circleMap = config.circleHighlightColors ?? {}
