@@ -1,5 +1,9 @@
 import type { CSSProperties } from 'react'
-import { GRADIENT_OVERLAY_CSS, GRADIENT_OVERLAY_FALLBACK } from './pageGradientOverlay'
+import {
+  GRADIENT_OVERLAY_FALLBACK,
+  gradientVariantToCss,
+  resolveGradientVariant,
+} from './pageGradientOverlay'
 import {
   shouldDrawReferenceBackground,
   usesConfiguredBaseBackground,
@@ -21,8 +25,9 @@ export function resolvePageBackgroundStyle(config: GraphicTextConfig): CSSProper
 
   if (usesOverlayAsBackground(config)) {
     if (config.pageOverlay === 'gradient') {
+      const gradientCss = gradientVariantToCss(resolveGradientVariant(config.gradientVariant))
       style.backgroundColor = GRADIENT_OVERLAY_FALLBACK
-      style.backgroundImage = GRADIENT_OVERLAY_CSS
+      style.backgroundImage = gradientCss
     } else if (config.pageOverlay === 'pixel') {
       style.backgroundColor = PIXEL_CANVAS_COLOR
     }

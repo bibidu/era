@@ -1,32 +1,40 @@
-export const HAND_DRAWN_UNDERLINE_VIEWBOX = '0 0 100 20'
+export const HAND_DRAWN_UNDERLINE_VIEWBOX = '0 0 100 24'
 export const HAND_DRAWN_UNDERLINE_VIEWBOX_WIDTH = 100
-export const HAND_DRAWN_UNDERLINE_VIEWBOX_HEIGHT = 20
+export const HAND_DRAWN_UNDERLINE_VIEWBOX_HEIGHT = 24
 
-/** 完整一段手绘下划线的标准宽度（CSS px） */
+/** 完整一段手绘马克笔下划线的标准宽度（CSS px） */
 export const HAND_DRAWN_UNDERLINE_TILE_WIDTH = 36
 
-export const HAND_DRAWN_UNDERLINE_STROKE_WIDTH = 4
+/** 马克笔风格线宽（相对字符更明显） */
+export const HAND_DRAWN_UNDERLINE_STROKE_WIDTH = 5.5
 
 /**
- * 单段手绘荧光笔路径（viewBox 0 0 100 20）：左侧较平，右侧柔和起伏。
- * 使用三次贝塞尔，避免尖角折线。
+ * 单段手绘马克笔路径（viewBox 0 0 100 24）：
+ * 左段平直 → 中段回环 scribble（向右再折回再向前）→ 右段平直。
+ * 供 Tab 预览等固定宽度场景使用。
  */
 export const HAND_DRAWN_UNDERLINE_PATH =
-  'M 0 13 C 14 13, 28 13, 42 13 C 48 13, 51 9.5, 55 11.2 C 59 13, 61 15, 65 12.2 C 69 9.2, 73 14.2, 77 11.5 C 81 8.8, 85 13.2, 90 12.2 C 94 11.4, 97 12.2, 100 12'
+  'M 0 14 C 18 14, 32 14, 44 14 C 52 14, 58 9, 64 11.5 C 68 13.5, 66 17, 58 16 C 52 15.2, 50 13, 56 12 C 64 10.5, 72 14, 78 14 C 86 14, 94 14, 100 14'
 
-/** 单段 motif 采样点（归一化 x∈[0,1]，y 为 viewBox 高度坐标）——用于按宽度连续铺开 */
+/**
+ * 单段 motif 关键点（归一化 x∈[0,1]，y 为 viewBox 高度坐标）。
+ * 中段 x 会短暂回退，形成马克笔回环 scribble，而不是上下波浪。
+ */
 const HAND_UNDERLINE_MOTIF_POINTS: Array<[number, number]> = [
-  [0, 13],
-  [0.14, 13],
-  [0.28, 13],
-  [0.42, 13],
-  [0.5, 10.2],
-  [0.58, 14.2],
-  [0.66, 9.5],
-  [0.74, 13.8],
-  [0.82, 10.5],
-  [0.9, 13],
-  [1, 12],
+  [0, 14],
+  [0.2, 14],
+  [0.38, 14],
+  [0.48, 14],
+  [0.58, 10.5],
+  [0.66, 12],
+  [0.7, 16],
+  [0.58, 16.2], // 回环：向左折回
+  [0.5, 14.5],
+  [0.5, 12.8],
+  [0.62, 12],
+  [0.72, 14],
+  [0.85, 14],
+  [1, 14],
 ]
 
 export interface HandUnderlineColorRun {
@@ -73,28 +81,12 @@ export function buildHandUnderlineColorRuns(
   return runs
 }
 
-function lerp(a: number, b: number, t: number) {
-  return a + (b - a) * t
-}
-
-function sampleMotifY(t: number) {
-  const clamped = Math.min(1, Math.max(0, t))
-  const points = HAND_UNDERLINE_MOTIF_POINTS
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const [x0, y0] = points[index]
-    const [x1, y1] = points[index + 1]
-    if (clamped <= x1 || index === points.length - 2) {
-      const localT = x1 === x0 ? 0 : (clamped - x0) / (x1 - x0)
-      return lerp(y0, y1, Math.min(1, Math.max(0, localT)))
-    }
-  }
-  return points[points.length - 1][1]
-}
-
-/** Catmull-Rom → 三次贝塞尔，保证整段连续且圆滑 */
+/** Catmull-Rom → 三次贝塞尔，保证回环处也圆滑 */
 function pointsToSmoothPath(points: Array<[number, number]>): string {
   if (points.length === 0) return ''
-  if (points.length === 1) return `M ${points[0][0].toFixed(2)} ${points[0][1].toFixed(2)}`
+  if (points.length === 1) {
+    return `M ${points[0][0].toFixed(2)} ${points[0][1].toFixed(2)}`
+  }
   if (points.length === 2) {
     return `M ${points[0][0].toFixed(2)} ${points[0][1].toFixed(2)} L ${points[1][0].toFixed(2)} ${points[1][1].toFixed(2)}`
   }
@@ -114,33 +106,32 @@ function pointsToSmoothPath(points: Array<[number, number]>): string {
   return d
 }
 
+function buildMotifPoints(offsetX: number, tileWidth: number): Array<[number, number]> {
+  return HAND_UNDERLINE_MOTIF_POINTS.map(([xNorm, y]) => [offsetX + xNorm * tileWidth, y])
+}
+
 /**
- * 按实际选区宽度生成一整条连续手绘线。
- * 以 tileWidth(36px) 为完整周期：18px→前半段，72px→两段平滑衔接。
+ * 按实际选区宽度生成一整条连续马克笔手绘线。
+ * 以 tileWidth(36px) 为完整周期：每段含一次回环 scribble；
+ * 不足一段时仍画完整 motif，由调用方按宽度裁剪（显示前半段）。
  */
 export function buildContinuousHandUnderlinePath(
   widthPx: number,
   tileWidth = HAND_DRAWN_UNDERLINE_TILE_WIDTH,
 ): string {
-  if (widthPx <= 0) return ''
+  if (widthPx <= 0 || tileWidth <= 0) return ''
 
-  const samplesPerTile = 12
-  const step = tileWidth / samplesPerTile
+  const tileCount = Math.max(1, Math.ceil(widthPx / tileWidth))
   const points: Array<[number, number]> = []
 
-  for (let x = 0; x < widthPx; x += step) {
-    const localT = (x % tileWidth) / tileWidth
-    points.push([x, sampleMotifY(localT)])
-  }
-
-  const endT = (widthPx % tileWidth) / tileWidth
-  const endY = sampleMotifY(endT === 0 && widthPx > 0 ? 1 : endT)
-  const last = points[points.length - 1]
-  if (!last || Math.abs(last[0] - widthPx) > 0.01) {
-    points.push([widthPx, endY])
-  } else {
-    last[0] = widthPx
-    last[1] = endY
+  for (let tile = 0; tile < tileCount; tile += 1) {
+    const motif = buildMotifPoints(tile * tileWidth, tileWidth)
+    if (tile === 0) {
+      points.push(...motif)
+      continue
+    }
+    // 跳过与上一段终点重合的起点，保持单笔连续
+    points.push(...motif.slice(1))
   }
 
   return pointsToSmoothPath(points)
@@ -160,13 +151,14 @@ export function drawHandDrawnUnderline(
   const pathD = buildContinuousHandUnderlinePath(width, tileWidth)
   if (!pathD) return
 
-  // path 坐标：x 为像素宽度，y 为 viewBox 高度坐标系（约 0–20）
-  // 将 path 的 y=13 附近对齐到传入的 baseline underlineY
-  const scaleY = Math.max(0.55, lineWidth / HAND_DRAWN_UNDERLINE_STROKE_WIDTH)
-  const pathBaseline = 13
+  const scaleY = Math.max(0.7, lineWidth / HAND_DRAWN_UNDERLINE_STROKE_WIDTH)
+  const pathBaseline = 14
 
   ctx.save()
   ctx.translate(x, y - pathBaseline * scaleY)
+  ctx.beginPath()
+  ctx.rect(0, -4, width, HAND_DRAWN_UNDERLINE_VIEWBOX_HEIGHT + 8)
+  ctx.clip()
   ctx.scale(1, scaleY)
   ctx.strokeStyle = color
   ctx.lineWidth = HAND_DRAWN_UNDERLINE_STROKE_WIDTH

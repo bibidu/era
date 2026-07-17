@@ -1,4 +1,4 @@
-import { type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   buildContinuousHandUnderlinePath,
   HAND_DRAWN_UNDERLINE_STROKE_WIDTH,
@@ -13,11 +13,12 @@ interface HandDrawnUnderlineProps {
 }
 
 /**
- * 按连续选区整体测量宽度后绘制一条连续手绘线（36px 周期平滑铺开）。
- * 选区变化 → 宽度变化 → 路径整体重算，避免逐字断开。
+ * 按连续选区整体测量宽度后绘制一条马克笔手绘线（36px 周期，中段回环 scribble）。
+ * 选区变化 → 宽度变化 → 路径整体重算；不足一段时裁剪显示前半段。
  */
 export function HandDrawnUnderline({ color, children, className = '' }: HandDrawnUnderlineProps) {
   const rootRef = useRef<HTMLSpanElement>(null)
+  const clipId = useId()
   const [width, setWidth] = useState(0)
 
   useLayoutEffect(() => {
@@ -52,15 +53,22 @@ export function HandDrawnUnderline({ color, children, className = '' }: HandDraw
           preserveAspectRatio="none"
           aria-hidden
         >
-          <path
-            d={path}
-            fill="none"
-            stroke={color}
-            strokeWidth={HAND_DRAWN_UNDERLINE_STROKE_WIDTH}
-            vectorEffect="non-scaling-stroke"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <defs>
+            <clipPath id={clipId}>
+              <rect x="0" y="0" width={width} height={HAND_DRAWN_UNDERLINE_VIEWBOX_HEIGHT} />
+            </clipPath>
+          </defs>
+          <g clipPath={`url(#${clipId})`}>
+            <path
+              d={path}
+              fill="none"
+              stroke={color}
+              strokeWidth={HAND_DRAWN_UNDERLINE_STROKE_WIDTH}
+              vectorEffect="non-scaling-stroke"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </g>
         </svg>
       ) : null}
     </span>

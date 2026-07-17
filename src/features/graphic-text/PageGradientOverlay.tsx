@@ -1,10 +1,19 @@
-import { GRADIENT_OVERLAY_CSS } from './pageGradientOverlay'
+import {
+  gradientVariantToCss,
+  resolveGradientVariant,
+  type GradientOverlayVariant,
+} from './pageGradientOverlay'
 
-export function PageGradientOverlay() {
+export function PageGradientOverlay({
+  variant,
+}: {
+  variant?: GradientOverlayVariant | null
+}) {
+  const css = gradientVariantToCss(resolveGradientVariant(variant))
   return (
     <div
       className="graphic-page-overlay pointer-events-none absolute inset-0 z-0"
-      style={{ background: GRADIENT_OVERLAY_CSS }}
+      style={{ background: css }}
       aria-hidden
     />
   )

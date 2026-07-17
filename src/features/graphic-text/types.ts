@@ -1,3 +1,6 @@
+import type { GradientOverlayVariant } from './pageGradientOverlay'
+import { DEFAULT_GRADIENT_VARIANT } from './pageGradientOverlay'
+
 export type GraphicBackgroundType = 'reference' | 'solid'
 export type GraphicAspectRatio = '3:4' | '9:16'
 export type GraphicPageOverlay = 'none' | 'grid' | 'pixel' | 'gradient'
@@ -34,6 +37,7 @@ export interface GraphicTextConfig {
   backgroundType: GraphicBackgroundType
   pageOverlay: GraphicPageOverlay
   overlayStacked: boolean
+  gradientVariant: GradientOverlayVariant
   topText: string
   backgroundUrl: string | null
   underlineHighlightColors: Record<string, string>
@@ -96,6 +100,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   backgroundType: 'solid',
   pageOverlay: 'grid',
   overlayStacked: false,
+  gradientVariant: DEFAULT_GRADIENT_VARIANT,
   topText: '',
   backgroundUrl: null,
   underlineHighlightColors: {},

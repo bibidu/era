@@ -9,6 +9,7 @@ import { exportGraphicPages } from '../features/graphic-text/exportGraphicPages'
 import { paginateDocument, parseMarkdown } from '../features/graphic-text/layout'
 import { parseScopedMarkdown } from '../features/graphic-text/document'
 import type { GraphicTextConfig } from '../features/graphic-text/types'
+import { DEFAULT_GRADIENT_VARIANT } from '../features/graphic-text/pageGradientOverlay'
 import { inspectGraphicLayout } from './layoutInspect'
 import {
   ERA_AGENT_DEFAULT_HOST,
@@ -237,6 +238,7 @@ export function configFromSnapshot(
   return {
     ...fallback,
     ...raw,
+    gradientVariant: raw.gradientVariant ?? fallback.gradientVariant ?? DEFAULT_GRADIENT_VARIANT,
     underlineHighlightColors: raw.underlineHighlightColors ?? {},
     handUnderlineHighlightColors: raw.handUnderlineHighlightColors ?? {},
     brushHighlightColors: raw.brushHighlightColors ?? {},
