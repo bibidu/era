@@ -1421,11 +1421,14 @@ body.is-dragging {
 }
 
 .graphic-text-line {
+  /* 不可用 overflow-x:hidden + overflow-y:visible：浏览器会把 y 算成 auto，线圈会被裁切 */
   white-space: nowrap;
   max-width: 100%;
-  overflow-x: hidden;
-  overflow-y: visible;
-  padding-bottom: 0.2em;
+  overflow: visible;
+  padding-top: 0.5em;
+  padding-bottom: 0.55em;
+  margin-top: -0.5em;
+  margin-bottom: -0.35em;
 }
 
 .graphic-theme-brush {
@@ -1436,8 +1439,10 @@ body.is-dragging {
 
 .graphic-hand-underline {
   position: relative;
-  display: inline;
+  display: inline-block;
+  max-width: 100%;
   white-space: nowrap;
+  vertical-align: baseline;
 }
 
 .graphic-hand-underline-text {
@@ -1448,12 +1453,12 @@ body.is-dragging {
 .graphic-hand-underline-svg {
   position: absolute;
   left: 0;
-  right: 0;
-  bottom: -0.14em;
-  height: 0.5em;
+  bottom: -0.22em;
+  height: 0.55em;
   width: 100%;
-  pointer-events: none;
   overflow: visible;
+  pointer-events: none;
+  z-index: 2;
 }
 
 .graphic-theme-underline {
@@ -1468,7 +1473,7 @@ body.is-dragging {
   position: absolute;
   left: -0.02em;
   right: -0.02em;
-  bottom: 0.04em;
+  bottom: -0.08em;
   height: max(4px, 0.2em);
   background-color: var(--graphic-highlight-underline, currentColor);
   z-index: 3;
@@ -1519,6 +1524,7 @@ body.is-dragging {
   max-width: 100%;
   vertical-align: baseline;
   white-space: nowrap;
+  overflow: visible;
 }
 
 .graphic-circle-highlight-text {
