@@ -1,6 +1,8 @@
 import { useId } from 'react'
 import {
   WIREMESH_CANVAS_COLOR,
+  WIREMESH_FOCUS_X,
+  WIREMESH_FOCUS_Y,
   WIREMESH_GEOMETRY,
 } from './pageWiremeshTokens'
 
@@ -32,15 +34,25 @@ export function PageWiremeshOverlay({ stacked = false }: PageWiremeshOverlayProp
       aria-hidden
     >
       <defs>
-        <radialGradient id={`${id}-mint-glow`} cx="50%" cy="48%" r="58%">
-          <stop offset="0%" stopColor="rgba(167, 243, 208, 0.3)" />
-          <stop offset="45%" stopColor="rgba(110, 231, 183, 0.12)" />
+        <radialGradient
+          id={`${id}-mint-glow`}
+          cx={`${WIREMESH_FOCUS_X * 100}%`}
+          cy={`${WIREMESH_FOCUS_Y * 100}%`}
+          r="52%"
+        >
+          <stop offset="0%" stopColor="rgba(167, 243, 208, 0.28)" />
+          <stop offset="45%" stopColor="rgba(110, 231, 183, 0.1)" />
           <stop offset="100%" stopColor="rgba(238, 240, 242, 0)" />
         </radialGradient>
-        <radialGradient id={`${id}-edge-fade`} cx="50%" cy="50%" r="72%">
+        <radialGradient
+          id={`${id}-edge-fade`}
+          cx={`${WIREMESH_FOCUS_X * 100}%`}
+          cy={`${WIREMESH_FOCUS_Y * 100}%`}
+          r="68%"
+        >
           <stop offset="0%" stopColor="rgba(238, 240, 242, 0)" />
-          <stop offset="70%" stopColor="rgba(238, 240, 242, 0.18)" />
-          <stop offset="100%" stopColor="rgba(238, 240, 242, 0.72)" />
+          <stop offset="65%" stopColor="rgba(238, 240, 242, 0.16)" />
+          <stop offset="100%" stopColor="rgba(238, 240, 242, 0.78)" />
         </radialGradient>
         <pattern
           id={`${id}-paper`}
@@ -110,7 +122,8 @@ export function PageWiremeshOverlay({ stacked = false }: PageWiremeshOverlayProp
 
       {pixels.map((pixel, index) => {
         const falloff = Math.sqrt(
-          ((pixel.x - 0.5) / 0.52) ** 2 + ((pixel.y - 0.5) / 0.58) ** 2,
+          ((pixel.x - WIREMESH_FOCUS_X) / 0.48) ** 2 +
+            ((pixel.y - WIREMESH_FOCUS_Y) / 0.42) ** 2,
         )
         const alpha = clamp01(1 - falloff * 1.1)
         if (alpha < 0.08) return null

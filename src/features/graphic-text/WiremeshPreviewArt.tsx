@@ -1,23 +1,29 @@
-import { WIREMESH_CANVAS_COLOR, WIREMESH_GEOMETRY } from './pageWiremeshTokens'
+import {
+  WIREMESH_CANVAS_COLOR,
+  WIREMESH_FOCUS_X,
+  WIREMESH_FOCUS_Y,
+  WIREMESH_GEOMETRY,
+} from './pageWiremeshTokens'
 
 function clamp01(value: number) {
   return Math.min(1, Math.max(0, value))
 }
 
-/** 工具条缩略预览：中心薄荷绿线网 + 浅灰纸底 */
+/** 工具条缩略预览：偏下半屏薄荷绿线网 + 浅灰纸底 */
 export function WiremeshPreviewArt() {
   const { points, edges, pixels } = WIREMESH_GEOMETRY
-  const previewEdges = edges.filter((edge) => edge.falloff < 0.95)
-  const previewPixels = pixels.filter((pixel) => {
-    const dx = (pixel.x - 0.5) / 0.55
-    const dy = (pixel.y - 0.5) / 0.55
-    return Math.sqrt(dx * dx + dy * dy) < 0.95
-  })
+  const previewEdges = edges.filter((edge) => edge.falloff < 1)
+  const previewPixels = pixels.filter((pixel) => pixel.y > 0.45)
 
   return (
     <svg className="size-full" viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden>
       <defs>
-        <radialGradient id="wiremesh-preview-glow" cx="50%" cy="48%" r="60%">
+        <radialGradient
+          id="wiremesh-preview-glow"
+          cx={`${WIREMESH_FOCUS_X * 100}%`}
+          cy={`${WIREMESH_FOCUS_Y * 100}%`}
+          r="55%"
+        >
           <stop offset="0%" stopColor="rgba(167, 243, 208, 0.42)" />
           <stop offset="100%" stopColor="rgba(238, 240, 242, 0)" />
         </radialGradient>

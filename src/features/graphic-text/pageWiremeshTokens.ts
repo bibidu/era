@@ -29,13 +29,17 @@ export interface WiremeshPixel {
   soft?: boolean
 }
 
+/** 线网视觉重心：偏下半屏 */
+export const WIREMESH_FOCUS_X = 0.5
+export const WIREMESH_FOCUS_Y = 0.7
+
 function clamp01(value: number) {
   return Math.min(1, Math.max(0, value))
 }
 
-function distFromCenter(x: number, y: number) {
-  const dx = (x - 0.5) / 0.52
-  const dy = (y - 0.5) / 0.58
+function distFromFocus(x: number, y: number) {
+  const dx = (x - WIREMESH_FOCUS_X) / 0.48
+  const dy = (y - WIREMESH_FOCUS_Y) / 0.42
   return Math.sqrt(dx * dx + dy * dy)
 }
 
@@ -46,10 +50,10 @@ function hashNoise(i: number, j: number, salt = 1) {
 }
 
 /**
- * 生成对称三角点阵线网（单位坐标）。
- * 中心更密、边缘更疏的观感靠 falloff 透明度实现。
+ * 生成偏疏、重心偏下的三角点阵线网（单位坐标）。
+ * 上半屏只留少量延伸，主体集中在下半部分。
  */
-export function buildWiremeshGeometry(cols = 11, rows = 15) {
+export function buildWiremeshGeometry(cols = 7, rows = 9) {
   const points: WiremeshPoint[] = []
   const indexAt: (number | null)[][] = Array.from({ length: rows }, () =>
     Array.from({ length: cols }, () => null),
@@ -58,18 +62,22 @@ export function buildWiremeshGeometry(cols = 11, rows = 15) {
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
       const stagger = row % 2 === 0 ? 0 : 0.5
+      const t = row / (rows - 1)
+      // 行位置压向中下：约 0.38 → 0.92，上半更空
+      const baseY = 0.38 + t * t * 0.54
       const baseX = (col + stagger) / (cols - 0.5)
-      const baseY = row / (rows - 1)
-      const jitterX = (hashNoise(col, row, 1) - 0.5) * 0.018
-      const jitterY = (hashNoise(col, row, 2) - 0.5) * 0.014
-      // 轻微径向收缩，让中心更对称紧凑
-      const cx = 0.5
-      const cy = 0.5
-      const pull = 0.04
-      const x = clamp01(baseX + jitterX + (cx - baseX) * pull)
-      const y = clamp01(baseY + jitterY + (cy - baseY) * pull * 0.6)
-      const falloff = distFromCenter(x, y)
-      if (falloff > 1.35) continue
+      const jitterX = (hashNoise(col, row, 1) - 0.5) * 0.022
+      const jitterY = (hashNoise(col, row, 2) - 0.5) * 0.016
+      const pull = 0.06
+      const x = clamp01(baseX + jitterX + (WIREMESH_FOCUS_X - baseX) * pull)
+      const y = clamp01(baseY + jitterY + (WIREMESH_FOCUS_Y - baseY) * pull * 0.75)
+
+      // 上半再抽稀：y 越靠上越容易丢掉
+      if (y < 0.45 && hashNoise(col, row, 7) > 0.28) continue
+      if (y < 0.55 && hashNoise(col, row, 8) > 0.55) continue
+
+      const falloff = distFromFocus(x, y)
+      if (falloff > 1.18) continue
       indexAt[row][col] = points.length
       points.push({ x, y, falloff })
     }
@@ -78,13 +86,16 @@ export function buildWiremeshGeometry(cols = 11, rows = 15) {
   const edges: WiremeshEdge[] = []
   const seen = new Set<string>()
 
-  const addEdge = (ai: number | null, bi: number | null) => {
+  const addEdge = (ai: number | null, bi: number | null, preferDiagonal = false) => {
     if (ai == null || bi == null) return
     const key = ai < bi ? `${ai}-${bi}` : `${bi}-${ai}`
     if (seen.has(key)) return
-    seen.add(key)
     const falloff = Math.max(points[ai].falloff, points[bi].falloff)
-    if (falloff > 1.28) return
+    if (falloff > 1.12) return
+    // 再抽稀连线：对角更少，整体更疏
+    const keepChance = preferDiagonal ? 0.42 : 0.72
+    if (hashNoise(ai + 1, bi + 1, preferDiagonal ? 11 : 12) > keepChance) return
+    seen.add(key)
     edges.push({ a: ai, b: bi, falloff })
   }
 
@@ -92,45 +103,44 @@ export function buildWiremeshGeometry(cols = 11, rows = 15) {
     for (let col = 0; col < cols; col += 1) {
       const current = indexAt[row][col]
       if (current == null) continue
-      // 右邻
       if (col + 1 < cols) addEdge(current, indexAt[row][col + 1])
-      // 下行
       if (row + 1 < rows) {
         addEdge(current, indexAt[row + 1][col])
         if (row % 2 === 0) {
-          if (col > 0) addEdge(current, indexAt[row + 1][col - 1])
+          if (col > 0) addEdge(current, indexAt[row + 1][col - 1], true)
         } else if (col + 1 < cols) {
-          addEdge(current, indexAt[row + 1][col + 1])
+          addEdge(current, indexAt[row + 1][col + 1], true)
         }
       }
     }
   }
 
-  // 网格对齐的薄荷绿像素 / 数据点：取部分顶点 + 少量半格点
   const pixels: WiremeshPixel[] = []
   points.forEach((point, index) => {
-    if (point.falloff > 1.05) return
+    if (point.falloff > 0.95) return
+    if (point.y < 0.48) return
     const pick = hashNoise(index, 3, 9)
-    if (pick > 0.62) return
-    const soft = pick > 0.38
+    if (pick > 0.48) return
+    const soft = pick > 0.28
     pixels.push({
       x: point.x,
       y: point.y,
-      size: soft ? 0.0065 : 0.0095 + hashNoise(index, 4, 5) * 0.004,
+      size: soft ? 0.007 : 0.01 + hashNoise(index, 4, 5) * 0.004,
       soft,
     })
   })
 
-  // 额外少量对齐半点，增加「数据点」感
-  for (let i = 0; i < edges.length; i += 7) {
+  for (let i = 0; i < edges.length; i += 11) {
     const edge = edges[i]
-    if (edge.falloff > 0.85) continue
+    if (edge.falloff > 0.75) continue
     const a = points[edge.a]
     const b = points[edge.b]
+    const midY = (a.y + b.y) / 2
+    if (midY < 0.5) continue
     pixels.push({
       x: (a.x + b.x) / 2,
-      y: (a.y + b.y) / 2,
-      size: 0.0055,
+      y: midY,
+      size: 0.0058,
       soft: true,
     })
   }
@@ -178,17 +188,17 @@ export function drawPageWiremeshOverlay(
     ctx.restore()
   }
 
-  // 中心薄荷绿发光底
+  // 偏下半屏的薄荷绿发光底
   const glow = ctx.createRadialGradient(
-    width * 0.5,
-    height * 0.48,
+    width * WIREMESH_FOCUS_X,
+    height * WIREMESH_FOCUS_Y,
     0,
-    width * 0.5,
-    height * 0.48,
-    Math.max(width, height) * 0.55,
+    width * WIREMESH_FOCUS_X,
+    height * WIREMESH_FOCUS_Y,
+    Math.max(width, height) * 0.5,
   )
-  glow.addColorStop(0, 'rgba(167, 243, 208, 0.28)')
-  glow.addColorStop(0.45, 'rgba(110, 231, 183, 0.12)')
+  glow.addColorStop(0, 'rgba(167, 243, 208, 0.26)')
+  glow.addColorStop(0.45, 'rgba(110, 231, 183, 0.1)')
   glow.addColorStop(1, 'rgba(238, 240, 242, 0)')
   ctx.fillStyle = glow
   ctx.fillRect(0, 0, width, height)
@@ -240,7 +250,7 @@ export function drawPageWiremeshOverlay(
 
   // 漂浮薄荷绿像素块
   for (const pixel of pixels) {
-    const falloff = distFromCenter(pixel.x, pixel.y)
+    const falloff = distFromFocus(pixel.x, pixel.y)
     const alpha = clamp01(1 - falloff * 1.1)
     if (alpha < 0.08) continue
     const size = pixel.size * width
@@ -252,18 +262,18 @@ export function drawPageWiremeshOverlay(
     ctx.fillRect(x, y, size, size)
   }
 
-  // 边缘再压一层纸色，强化向边缘淡出
+  // 边缘再压一层纸色；淡出中心跟随线网重心偏下
   const edgeFade = ctx.createRadialGradient(
-    width * 0.5,
-    height * 0.5,
-    Math.min(width, height) * 0.28,
-    width * 0.5,
-    height * 0.5,
-    Math.max(width, height) * 0.72,
+    width * WIREMESH_FOCUS_X,
+    height * WIREMESH_FOCUS_Y,
+    Math.min(width, height) * 0.22,
+    width * WIREMESH_FOCUS_X,
+    height * WIREMESH_FOCUS_Y,
+    Math.max(width, height) * 0.68,
   )
   edgeFade.addColorStop(0, 'rgba(238, 240, 242, 0)')
-  edgeFade.addColorStop(0.7, 'rgba(238, 240, 242, 0.18)')
-  edgeFade.addColorStop(1, 'rgba(238, 240, 242, 0.72)')
+  edgeFade.addColorStop(0.65, 'rgba(238, 240, 242, 0.16)')
+  edgeFade.addColorStop(1, 'rgba(238, 240, 242, 0.78)')
   ctx.fillStyle = edgeFade
   ctx.fillRect(0, 0, width, height)
 }
