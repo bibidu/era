@@ -405,6 +405,7 @@ export class EraAgentRuntime {
     if (!response.ok) throw new Error(response.error ?? 'export_images 失败')
 
     const images = (response.data?.images as { name: string; base64: string }[]) ?? []
+    const sheet = response.data?.sheet as { name: string; base64: string } | undefined
     const targetDir = path.resolve(outDir ?? path.join(this.outputDir, projectId))
     await fs.mkdir(targetDir, { recursive: true })
     const paths: string[] = []
@@ -413,7 +414,22 @@ export class EraAgentRuntime {
       await fs.writeFile(filePath, Buffer.from(image.base64, 'base64'))
       paths.push(filePath)
     }
-    return { projectId, outDir: targetDir, paths, count: paths.length }
+
+    let sheetPath: string | null = null
+    if (sheet?.base64) {
+      sheetPath = path.join(targetDir, sheet.name || 'graphic-review-sheet.png')
+      await fs.writeFile(sheetPath, Buffer.from(sheet.base64, 'base64'))
+    }
+
+    return {
+      projectId,
+      outDir: targetDir,
+      paths,
+      count: paths.length,
+      sheetPath,
+      /** 审阅用拼图；发分图前应先把 sheetPath 给用户确认 */
+      reviewSheet: sheetPath,
+    }
   }
 
   async pushSync(projectId: string) {
