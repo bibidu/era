@@ -27,22 +27,16 @@ export function PageWiremeshOverlay({ stacked = false }: PageWiremeshOverlayProp
       aria-hidden
     >
       <defs>
-        <radialGradient
-          id={`${id}-mint-glow`}
-          cx={`${WIREMESH_FOCUS_X * 100}%`}
-          cy={`${WIREMESH_FOCUS_Y * 100}%`}
-          r="62%"
-        >
-          <stop offset="0%" stopColor={`rgba(167, 243, 208, ${0.24 * WIREMESH_FADE})`} />
-          <stop offset="50%" stopColor={`rgba(110, 231, 183, ${0.09 * WIREMESH_FADE})`} />
+        <radialGradient id={`${id}-glow-tl`} cx="18%" cy="16%" r="42%">
+          <stop offset="0%" stopColor={`rgba(167, 243, 208, ${0.14 * WIREMESH_FADE})`} />
+          <stop offset="55%" stopColor={`rgba(110, 231, 183, ${0.05 * WIREMESH_FADE})`} />
           <stop offset="100%" stopColor={`rgba(${WIREMESH_CANVAS_RGB}, 0)`} />
         </radialGradient>
-        <linearGradient id={`${id}-vertical-wash`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={`rgba(167, 243, 208, ${0.02 * WIREMESH_FADE})`} />
-          <stop offset="35%" stopColor={`rgba(167, 243, 208, ${0.04 * WIREMESH_FADE})`} />
-          <stop offset="70%" stopColor={`rgba(110, 231, 183, ${0.08 * WIREMESH_FADE})`} />
-          <stop offset="100%" stopColor={`rgba(52, 211, 153, ${0.06 * WIREMESH_FADE})`} />
-        </linearGradient>
+        <radialGradient id={`${id}-glow-br`} cx="82%" cy="84%" r="42%">
+          <stop offset="0%" stopColor={`rgba(167, 243, 208, ${0.14 * WIREMESH_FADE})`} />
+          <stop offset="55%" stopColor={`rgba(110, 231, 183, ${0.05 * WIREMESH_FADE})`} />
+          <stop offset="100%" stopColor={`rgba(${WIREMESH_CANVAS_RGB}, 0)`} />
+        </radialGradient>
         <radialGradient
           id={`${id}-edge-fade`}
           cx={`${WIREMESH_FOCUS_X * 100}%`}
@@ -74,14 +68,14 @@ export function PageWiremeshOverlay({ stacked = false }: PageWiremeshOverlayProp
 
       {!stacked && <rect width="1" height="1" fill={WIREMESH_CANVAS_COLOR} />}
       {!stacked && <rect width="1" height="1" fill={`url(#${id}-paper)`} />}
-      <rect width="1" height="1" fill={`url(#${id}-mint-glow)`} />
-      <rect width="1" height="1" fill={`url(#${id}-vertical-wash)`} />
+      <rect width="1" height="1" fill={`url(#${id}-glow-tl)`} />
+      <rect width="1" height="1" fill={`url(#${id}-glow-br)`} />
 
       {edges.map((edge, index) => {
         const a = points[edge.a]
         const b = points[edge.b]
-        const alpha = lineOpacity(edge.falloff, edge.midY)
-        if (alpha < 0.03) return null
+        const alpha = lineOpacity(edge.falloff, edge.midX, edge.midY)
+        if (alpha < 0.04) return null
         return (
           <g key={`e-${index}`}>
             <line
@@ -89,7 +83,7 @@ export function PageWiremeshOverlay({ stacked = false }: PageWiremeshOverlayProp
               y1={a.y}
               x2={b.x}
               y2={b.y}
-              stroke={`rgba(167, 243, 208, ${alpha * 0.62})`}
+              stroke={`rgba(167, 243, 208, ${alpha * 0.55})`}
               strokeWidth={0.0038}
               strokeLinecap="round"
             />
@@ -98,7 +92,7 @@ export function PageWiremeshOverlay({ stacked = false }: PageWiremeshOverlayProp
               y1={a.y}
               x2={b.x}
               y2={b.y}
-              stroke={`rgba(52, 211, 153, ${alpha * 0.68})`}
+              stroke={`rgba(52, 211, 153, ${alpha})`}
               strokeWidth={0.0017}
               strokeLinecap="round"
             />
@@ -107,7 +101,7 @@ export function PageWiremeshOverlay({ stacked = false }: PageWiremeshOverlayProp
       })}
 
       {points.map((point, index) => {
-        const alpha = nodeOpacity(point.falloff, point.y)
+        const alpha = nodeOpacity(point.falloff, point.x, point.y)
         if (alpha < 0.04) return null
         return (
           <circle
@@ -125,8 +119,8 @@ export function PageWiremeshOverlay({ stacked = false }: PageWiremeshOverlayProp
           ((pixel.x - WIREMESH_FOCUS_X) / 0.62) ** 2 +
             ((pixel.y - WIREMESH_FOCUS_Y) / 0.68) ** 2,
         )
-        const alpha = pixelOpacity(falloff, pixel.y)
-        if (alpha < 0.06) return null
+        const alpha = pixelOpacity(falloff, pixel.x, pixel.y)
+        if (alpha < 0.05) return null
         return (
           <rect
             key={`p-${index}`}
@@ -136,8 +130,8 @@ export function PageWiremeshOverlay({ stacked = false }: PageWiremeshOverlayProp
             height={pixel.size}
             fill={
               pixel.soft
-                ? `rgba(110, 231, 183, ${alpha * 0.72})`
-                : `rgba(52, 211, 153, ${alpha * 0.95})`
+                ? `rgba(110, 231, 183, ${alpha * 0.85})`
+                : `rgba(52, 211, 153, ${alpha})`
             }
           />
         )

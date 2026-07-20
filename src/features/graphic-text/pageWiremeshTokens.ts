@@ -27,7 +27,8 @@ export interface WiremeshEdge {
   a: number
   b: number
   falloff: number
-  /** 边中点 y，用于上淡下深 */
+  /** 边中点，用于对角透明度 */
+  midX: number
   midY: number
 }
 
@@ -54,17 +55,41 @@ function distFromFocus(x: number, y: number) {
 }
 
 /**
- * 纵向深度：上半淡但仍可见，下半更深。
- * y=0.12 → ~0.40，y=0.5 → ~0.74，y=0.88 → ~1.0
+ * 对角可见度：左上 / 右下角接近 1，其余接近 0。
+ * 影响半径约 0.55（单位坐标），带 smoothstep 过渡。
+ */
+export function cornerStrength(x: number, y: number) {
+  const radius = 0.55
+  const tl = Math.hypot(x / radius, y / radius)
+  const br = Math.hypot((1 - x) / radius, (1 - y) / radius)
+  const near = Math.max(clamp01(1 - tl), clamp01(1 - br))
+  return near * near * (3 - 2 * near)
+}
+
+/** 网线目标透明度：角 40%，其它 10% */
+export const WIREMESH_LINE_ALPHA_CORNER = 0.4
+export const WIREMESH_LINE_ALPHA_ELSE = 0.1
+
+export function lineAlphaAt(x: number, y: number) {
+  const c = cornerStrength(x, y)
+  return (
+    WIREMESH_LINE_ALPHA_ELSE +
+    (WIREMESH_LINE_ALPHA_CORNER - WIREMESH_LINE_ALPHA_ELSE) * c
+  )
+}
+
+/**
+ * 纵向深度：保留轻微下半偏深，主要对角由 lineAlphaAt 控制。
+ * @deprecated 网线请用 lineAlphaAt / lineOpacity
  */
 export function verticalStrength(y: number) {
   return clamp01(0.36 + Math.pow(clamp01((y - 0.06) / 0.86), 1.05) * 0.64)
 }
 
-/** 综合透明度：径向覆盖 × 上淡下深 × 整体淡化 */
-export function meshOpacity(falloff: number, y: number, base = 1) {
-  const radial = clamp01(1 - falloff * 0.88)
-  return radial * verticalStrength(y) * base * WIREMESH_FADE
+/** 节点/像素：跟随对角，略低于网线 */
+export function meshOpacity(falloff: number, x: number, y: number, base = 1) {
+  const radial = clamp01(1 - falloff * 0.5)
+  return lineAlphaAt(x, y) * radial * base
 }
 
 /** 确定性抖动，保证预览/导出几何一致 */
@@ -115,8 +140,9 @@ export function buildWiremeshGeometry(cols = 12, rows = 16) {
     const keepChance = diagonal ? 0.88 : 0.98
     if (hashNoise(ai + 1, bi + 1, diagonal ? 11 : 12) > keepChance) return
     seen.add(key)
+    const midX = (points[ai].x + points[bi].x) / 2
     const midY = (points[ai].y + points[bi].y) / 2
-    edges.push({ a: ai, b: bi, falloff, midY })
+    edges.push({ a: ai, b: bi, falloff, midX, midY })
   }
 
   for (let row = 0; row < rows; row += 1) {
@@ -168,16 +194,18 @@ export function buildWiremeshGeometry(cols = 12, rows = 16) {
 
 export const WIREMESH_GEOMETRY = buildWiremeshGeometry()
 
-export function lineOpacity(falloff: number, midY: number) {
-  return meshOpacity(falloff, midY, 1.05)
+/** 网线绝对透明度：左上/右下约 40%，其它约 10% */
+export function lineOpacity(falloff: number, midX: number, midY: number) {
+  const radial = clamp01(1 - falloff * 0.35)
+  return lineAlphaAt(midX, midY) * radial
 }
 
-export function nodeOpacity(falloff: number, y: number) {
-  return meshOpacity(falloff, y, 0.78)
+export function nodeOpacity(falloff: number, x: number, y: number) {
+  return meshOpacity(falloff, x, y, 0.9)
 }
 
-export function pixelOpacity(falloff: number, y: number) {
-  return meshOpacity(falloff, y, 1.05)
+export function pixelOpacity(falloff: number, x: number, y: number) {
+  return meshOpacity(falloff, x, y, 1)
 }
 
 export function drawPageWiremeshOverlay(
@@ -209,29 +237,25 @@ export function drawPageWiremeshOverlay(
     ctx.restore()
   }
 
-  // 大范围薄荷绿光晕，略偏下、覆盖约 75%
-  const glow = ctx.createRadialGradient(
-    width * WIREMESH_FOCUS_X,
-    height * WIREMESH_FOCUS_Y,
-    0,
-    width * WIREMESH_FOCUS_X,
-    height * WIREMESH_FOCUS_Y,
-    Math.max(width, height) * 0.62,
-  )
-  glow.addColorStop(0, `rgba(167, 243, 208, ${0.22 * WIREMESH_FADE})`)
-  glow.addColorStop(0.5, `rgba(110, 231, 183, ${0.09 * WIREMESH_FADE})`)
-  glow.addColorStop(1, `rgba(${WIREMESH_CANVAS_RGB}, 0)`)
-  ctx.fillStyle = glow
-  ctx.fillRect(0, 0, width, height)
-
-  // 额外一层自上而下的淡→深，强化下半更深
-  const verticalWash = ctx.createLinearGradient(0, 0, 0, height)
-  verticalWash.addColorStop(0, `rgba(167, 243, 208, ${0.02 * WIREMESH_FADE})`)
-  verticalWash.addColorStop(0.35, `rgba(167, 243, 208, ${0.04 * WIREMESH_FADE})`)
-  verticalWash.addColorStop(0.7, `rgba(110, 231, 183, ${0.08 * WIREMESH_FADE})`)
-  verticalWash.addColorStop(1, `rgba(52, 211, 153, ${0.06 * WIREMESH_FADE})`)
-  ctx.fillStyle = verticalWash
-  ctx.fillRect(0, 0, width, height)
+  // 左上 / 右下两处淡薄荷绿光晕
+  for (const [cx, cy] of [
+    [0.18, 0.16],
+    [0.82, 0.84],
+  ] as const) {
+    const glow = ctx.createRadialGradient(
+      width * cx,
+      height * cy,
+      0,
+      width * cx,
+      height * cy,
+      Math.max(width, height) * 0.42,
+    )
+    glow.addColorStop(0, `rgba(167, 243, 208, ${0.14 * WIREMESH_FADE})`)
+    glow.addColorStop(0.55, `rgba(110, 231, 183, ${0.05 * WIREMESH_FADE})`)
+    glow.addColorStop(1, `rgba(${WIREMESH_CANVAS_RGB}, 0)`)
+    ctx.fillStyle = glow
+    ctx.fillRect(0, 0, width, height)
+  }
 
   const { points, edges, pixels } = WIREMESH_GEOMETRY
 
@@ -241,8 +265,8 @@ export function drawPageWiremeshOverlay(
   for (const edge of edges) {
     const a = points[edge.a]
     const b = points[edge.b]
-    const alpha = lineOpacity(edge.falloff, edge.midY) * 0.62
-    if (alpha < 0.025) continue
+    const alpha = lineOpacity(edge.falloff, edge.midX, edge.midY) * 0.55
+    if (alpha < 0.02) continue
     ctx.strokeStyle = `rgba(167, 243, 208, ${alpha})`
     ctx.lineWidth = Math.max(1.5, width * 0.003)
     ctx.beginPath()
@@ -254,9 +278,9 @@ export function drawPageWiremeshOverlay(
   for (const edge of edges) {
     const a = points[edge.a]
     const b = points[edge.b]
-    const alpha = lineOpacity(edge.falloff, edge.midY)
-    if (alpha < 0.035) continue
-    ctx.strokeStyle = `rgba(52, 211, 153, ${alpha * 0.68})`
+    const alpha = lineOpacity(edge.falloff, edge.midX, edge.midY)
+    if (alpha < 0.04) continue
+    ctx.strokeStyle = `rgba(52, 211, 153, ${alpha})`
     ctx.lineWidth = Math.max(1, width * 0.00155)
     ctx.beginPath()
     ctx.moveTo(a.x * width, a.y * height)
@@ -266,7 +290,7 @@ export function drawPageWiremeshOverlay(
   ctx.restore()
 
   for (const point of points) {
-    const alpha = nodeOpacity(point.falloff, point.y)
+    const alpha = nodeOpacity(point.falloff, point.x, point.y)
     if (alpha < 0.04) continue
     const r = Math.max(1.1, width * 0.0022)
     ctx.fillStyle = `rgba(52, 211, 153, ${alpha})`
@@ -277,14 +301,14 @@ export function drawPageWiremeshOverlay(
 
   for (const pixel of pixels) {
     const falloff = distFromFocus(pixel.x, pixel.y)
-    const alpha = pixelOpacity(falloff, pixel.y)
-    if (alpha < 0.06) continue
+    const alpha = pixelOpacity(falloff, pixel.x, pixel.y)
+    if (alpha < 0.05) continue
     const size = pixel.size * width
     const x = pixel.x * width - size / 2
     const y = pixel.y * height - size / 2
     ctx.fillStyle = pixel.soft
-      ? `rgba(110, 231, 183, ${alpha * 0.72})`
-      : `rgba(52, 211, 153, ${alpha * 0.95})`
+      ? `rgba(110, 231, 183, ${alpha * 0.85})`
+      : `rgba(52, 211, 153, ${alpha})`
     ctx.fillRect(x, y, size, size)
   }
 
