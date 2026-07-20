@@ -58,7 +58,8 @@ Agent（严格执行 era skill）
 | `era_update_config` | 部分更新配置（含 `aspectRatio`） |
 | `era_apply_highlights` | 按 range 批量高亮 |
 | `era_preview_layout` | 分页预览 + 异常检测（需浏览器） |
-| `era_export_images` | 导出 PNG（需浏览器） |
+| `era_export_images` | 导出各页 PNG + 纵向拼图 `graphic-review-sheet.png`（需浏览器）；skill 要求先发拼图确认、再发分图 |
+
 | `era_list_fonts` | 可选字体 |
 | `era_list_highlight_styles` | 高亮样式枚举 |
 | `era_bridge_status` | 浏览器通道是否已连接 |

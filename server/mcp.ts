@@ -186,7 +186,7 @@ async function main() {
 
   server.tool(
     'era_export_images',
-    '在已连接的浏览器中导出 PNG 并保存到本机目录',
+    '在已连接的浏览器中导出 PNG：生成各页图片，并额外生成纵向拼图 graphic-review-sheet.png（sheetPath）供用户先审阅确认',
     {
       projectId: z.string(),
       pages: z.array(z.number().int().nonnegative()).optional().describe('0-based 页码，默认全部'),

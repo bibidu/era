@@ -18,7 +18,7 @@ description: >-
 3. 检查 bridge 已连接（`connected: true`）。若未连接：确保前端 `http://127.0.0.1:5173/era/` 已在浏览器打开且出现 Agent 指示
 4. 优先用 MCP 工具（`era_*`）；若无 MCP，用 REST `http://127.0.0.1:3847/v1/...`
 
-云端 Agent：同样在本仓库拉起上述服务；导出后把 `output/` 下 PNG 作为附件发给用户。
+云端 Agent：同样在本仓库拉起上述服务；导出后**先**把 `output/` 下的拼图 `graphic-review-sheet.png` 作为附件发给用户确认，**确认后再**发各页独立 PNG。
 
 画幅约定：`3:4` = 小红书；`9:16` = 抖音。
 
@@ -94,7 +94,7 @@ description: >-
 
 ---
 
-## 6. 校验（每种比例都要做）
+## 6. 校验与导出（每种比例都要做）
 
 对每个目标 `aspectRatio` 分别：
 
@@ -106,15 +106,22 @@ description: >-
    - **画圈词语跨行**
    - **高亮颜色超过 3 种**
    - **标题行高过松**
-4. 通过后再对该比例 `era_export_images`
+4. 通过后再对该比例 `era_export_images`（会同时写出各页 PNG + 一张纵向拼图 `graphic-review-sheet.png`，返回字段含 `sheetPath` / `reviewSheet`）
 
 ---
 
-## 7. 发图与返工
+## 7. 发图：先拼图确认，再发分图
 
-1. 检测全部通过后，把**真正的 PNG**发给用户。
-2. 高亮/内容/画幅的改动意见 → 修改 → **重新校验 → 重新导出 → 再发图**。
-3. 每次改完仍要问是否还要继续调整，直到用户满意。
+**硬性顺序，不得颠倒：**
+
+1. 检测全部通过并导出后，**先只把拼图** `graphic-review-sheet.png`（`sheetPath`）发给用户。  
+   - 这是多页纵向拼成的一整张总览图；提醒用户可放大查看每一页内容。  
+   - **此步不要附带各页独立 PNG**，避免来回切换。
+2. **明确询问**：拼图效果是否 OK？要改高亮/正文/画幅吗？
+3. 若用户要改 → 修改 → **重新校验 → 重新导出 → 仍先只发拼图**，再问确认。
+4. **仅当用户明确确认没问题后**，再把该比例下的各页独立 PNG（`paths` / `graphic-page-XX.png`）发给用户。
+5. 双平台导出时：每个比例各自「先拼图确认 → 再分图」；不要把两个平台的分图提前混发。
+6. 每次改完仍要问是否还要继续调整，直到用户满意。
 
 ---
 
@@ -128,7 +135,7 @@ description: >-
 | 画幅/模板 | `era_update_config` · `PATCH .../config`（优先 `pageOverlay: 'pixel'`） |
 | 高亮 | `era_apply_highlights` · `POST .../highlights` |
 | 校验 | `era_preview_layout` · `POST .../preview-layout` |
-| 导出 | `era_export_images` · `POST .../export` |
+| 导出 | `era_export_images` · `POST .../export`（含拼图 `sheetPath`） |
 | 通道 | `era_bridge_status` · `GET /v1/bridge/status` |
 
 更多协议见仓库 `docs/agent-mcp-design.md`。

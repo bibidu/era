@@ -488,6 +488,44 @@ export async function exportGraphicPages(
   return blobs
 }
 
+/** 将多页 PNG 纵向拼成一张总览图，便于放大审阅 */
+export async function stitchGraphicPagesVertical(
+  blobs: Blob[],
+  gapPx = 24,
+  backgroundColor = '#F5F5F5',
+): Promise<Blob> {
+  if (!blobs.length) throw new Error('没有可拼接的页面')
+  if (blobs.length === 1) return blobs[0]
+
+  const bitmaps = await Promise.all(blobs.map((blob) => createImageBitmap(blob)))
+  try {
+    const width = Math.max(...bitmaps.map((bitmap) => bitmap.width))
+    const height =
+      bitmaps.reduce((sum, bitmap) => sum + bitmap.height, 0) + gapPx * (bitmaps.length - 1)
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Canvas 不可用')
+
+    ctx.fillStyle = backgroundColor
+    ctx.fillRect(0, 0, width, height)
+
+    let y = 0
+    for (const bitmap of bitmaps) {
+      const x = Math.round((width - bitmap.width) / 2)
+      ctx.drawImage(bitmap, x, y)
+      y += bitmap.height + gapPx
+    }
+
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png', 1))
+    if (!blob) throw new Error('拼图生成失败')
+    return blob
+  } finally {
+    for (const bitmap of bitmaps) bitmap.close()
+  }
+}
+
 export async function saveGraphicPages(blobs: Blob[]) {
   const files = blobs.map(
     (blob, index) =>
