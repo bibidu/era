@@ -1,6 +1,7 @@
 import { PAPER_COLORS, TemplatePreviewSquare } from './graphicTemplateOptions'
 import { GradientPreviewArt } from './GradientPreviewArt'
 import { PixelPreviewArt } from './PixelPreviewArt'
+import { WiremeshPreviewArt } from './WiremeshPreviewArt'
 import { createRandomGradientVariant } from './pageGradientTokens'
 import type { GraphicPageOverlay, GraphicTextConfig } from './types'
 
@@ -33,6 +34,11 @@ const TEXTURE_OPTIONS: {
     id: 'gradient',
     label: '渐变',
     preview: <GradientPreviewArt />,
+  },
+  {
+    id: 'wiremesh',
+    label: '线网',
+    preview: <WiremeshPreviewArt />,
   },
 ]
 
