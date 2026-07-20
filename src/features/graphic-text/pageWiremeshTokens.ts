@@ -1,13 +1,20 @@
 /** 线网模板：浅灰纸感画布 + 薄荷绿几何线网（约 75% 区域，上淡下深） */
 
-export const WIREMESH_CANVAS_COLOR = '#EEF0F2'
+/** 整体再淡约 50%：网线/光晕透明度倍率 */
+export const WIREMESH_FADE = 0.5
 
-export const WIREMESH_GLOW_COLOR = 'rgba(110, 231, 183, 0.22)'
-export const WIREMESH_LINE_COLOR = 'rgba(52, 211, 153, 0.42)'
-export const WIREMESH_LINE_SOFT_COLOR = 'rgba(167, 243, 208, 0.28)'
+/** 浅灰纸底（相对原 #EEF0F2 再靠白约一半） */
+export const WIREMESH_CANVAS_COLOR = '#F7F8F9'
+
+export const WIREMESH_GLOW_COLOR = `rgba(110, 231, 183, ${0.22 * WIREMESH_FADE})`
+export const WIREMESH_LINE_COLOR = `rgba(52, 211, 153, ${0.42 * WIREMESH_FADE})`
+export const WIREMESH_LINE_SOFT_COLOR = `rgba(167, 243, 208, ${0.28 * WIREMESH_FADE})`
 export const WIREMESH_NODE_COLOR = '#34D399'
 export const WIREMESH_PIXEL_COLOR = '#6EE7B7'
-export const WIREMESH_PIXEL_SOFT_COLOR = 'rgba(52, 211, 153, 0.55)'
+export const WIREMESH_PIXEL_SOFT_COLOR = `rgba(52, 211, 153, ${0.55 * WIREMESH_FADE})`
+
+/** 边缘淡出用的纸色 RGB，与 WIREMESH_CANVAS_COLOR 对齐 */
+export const WIREMESH_CANVAS_RGB = '247, 248, 249'
 
 export interface WiremeshPoint {
   x: number
@@ -54,10 +61,10 @@ export function verticalStrength(y: number) {
   return clamp01(0.36 + Math.pow(clamp01((y - 0.06) / 0.86), 1.05) * 0.64)
 }
 
-/** 综合透明度：径向覆盖 × 上淡下深 */
+/** 综合透明度：径向覆盖 × 上淡下深 × 整体淡化 */
 export function meshOpacity(falloff: number, y: number, base = 1) {
   const radial = clamp01(1 - falloff * 0.88)
-  return radial * verticalStrength(y) * base
+  return radial * verticalStrength(y) * base * WIREMESH_FADE
 }
 
 /** 确定性抖动，保证预览/导出几何一致 */
@@ -184,7 +191,7 @@ export function drawPageWiremeshOverlay(
     ctx.fillRect(0, 0, width, height)
 
     ctx.save()
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.045)'
+    ctx.strokeStyle = `rgba(148, 163, 184, ${0.045 * WIREMESH_FADE})`
     ctx.lineWidth = 1
     for (let y = 0; y < height; y += 6) {
       ctx.beginPath()
@@ -192,7 +199,7 @@ export function drawPageWiremeshOverlay(
       ctx.lineTo(width, y)
       ctx.stroke()
     }
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.03)'
+    ctx.strokeStyle = `rgba(148, 163, 184, ${0.03 * WIREMESH_FADE})`
     for (let x = -height; x < width; x += 14) {
       ctx.beginPath()
       ctx.moveTo(x, 0)
@@ -211,18 +218,18 @@ export function drawPageWiremeshOverlay(
     height * WIREMESH_FOCUS_Y,
     Math.max(width, height) * 0.62,
   )
-  glow.addColorStop(0, 'rgba(167, 243, 208, 0.22)')
-  glow.addColorStop(0.5, 'rgba(110, 231, 183, 0.09)')
-  glow.addColorStop(1, 'rgba(238, 240, 242, 0)')
+  glow.addColorStop(0, `rgba(167, 243, 208, ${0.22 * WIREMESH_FADE})`)
+  glow.addColorStop(0.5, `rgba(110, 231, 183, ${0.09 * WIREMESH_FADE})`)
+  glow.addColorStop(1, `rgba(${WIREMESH_CANVAS_RGB}, 0)`)
   ctx.fillStyle = glow
   ctx.fillRect(0, 0, width, height)
 
   // 额外一层自上而下的淡→深，强化下半更深
   const verticalWash = ctx.createLinearGradient(0, 0, 0, height)
-  verticalWash.addColorStop(0, 'rgba(167, 243, 208, 0.02)')
-  verticalWash.addColorStop(0.35, 'rgba(167, 243, 208, 0.04)')
-  verticalWash.addColorStop(0.7, 'rgba(110, 231, 183, 0.08)')
-  verticalWash.addColorStop(1, 'rgba(52, 211, 153, 0.06)')
+  verticalWash.addColorStop(0, `rgba(167, 243, 208, ${0.02 * WIREMESH_FADE})`)
+  verticalWash.addColorStop(0.35, `rgba(167, 243, 208, ${0.04 * WIREMESH_FADE})`)
+  verticalWash.addColorStop(0.7, `rgba(110, 231, 183, ${0.08 * WIREMESH_FADE})`)
+  verticalWash.addColorStop(1, `rgba(52, 211, 153, ${0.06 * WIREMESH_FADE})`)
   ctx.fillStyle = verticalWash
   ctx.fillRect(0, 0, width, height)
 
@@ -290,9 +297,9 @@ export function drawPageWiremeshOverlay(
     height * WIREMESH_FOCUS_Y,
     Math.max(width, height) * 0.78,
   )
-  edgeFade.addColorStop(0, 'rgba(238, 240, 242, 0)')
-  edgeFade.addColorStop(0.55, 'rgba(238, 240, 242, 0.08)')
-  edgeFade.addColorStop(1, 'rgba(238, 240, 242, 0.62)')
+  edgeFade.addColorStop(0, `rgba(${WIREMESH_CANVAS_RGB}, 0)`)
+  edgeFade.addColorStop(0.55, `rgba(${WIREMESH_CANVAS_RGB}, 0.08)`)
+  edgeFade.addColorStop(1, `rgba(${WIREMESH_CANVAS_RGB}, 0.62)`)
   ctx.fillStyle = edgeFade
   ctx.fillRect(0, 0, width, height)
 }

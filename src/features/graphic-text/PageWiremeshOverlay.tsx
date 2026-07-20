@@ -1,6 +1,8 @@
 import { useId } from 'react'
 import {
   WIREMESH_CANVAS_COLOR,
+  WIREMESH_CANVAS_RGB,
+  WIREMESH_FADE,
   WIREMESH_FOCUS_X,
   WIREMESH_FOCUS_Y,
   WIREMESH_GEOMETRY,
@@ -31,15 +33,15 @@ export function PageWiremeshOverlay({ stacked = false }: PageWiremeshOverlayProp
           cy={`${WIREMESH_FOCUS_Y * 100}%`}
           r="62%"
         >
-          <stop offset="0%" stopColor="rgba(167, 243, 208, 0.24)" />
-          <stop offset="50%" stopColor="rgba(110, 231, 183, 0.09)" />
-          <stop offset="100%" stopColor="rgba(238, 240, 242, 0)" />
+          <stop offset="0%" stopColor={`rgba(167, 243, 208, ${0.24 * WIREMESH_FADE})`} />
+          <stop offset="50%" stopColor={`rgba(110, 231, 183, ${0.09 * WIREMESH_FADE})`} />
+          <stop offset="100%" stopColor={`rgba(${WIREMESH_CANVAS_RGB}, 0)`} />
         </radialGradient>
         <linearGradient id={`${id}-vertical-wash`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(167, 243, 208, 0.02)" />
-          <stop offset="35%" stopColor="rgba(167, 243, 208, 0.04)" />
-          <stop offset="70%" stopColor="rgba(110, 231, 183, 0.08)" />
-          <stop offset="100%" stopColor="rgba(52, 211, 153, 0.06)" />
+          <stop offset="0%" stopColor={`rgba(167, 243, 208, ${0.02 * WIREMESH_FADE})`} />
+          <stop offset="35%" stopColor={`rgba(167, 243, 208, ${0.04 * WIREMESH_FADE})`} />
+          <stop offset="70%" stopColor={`rgba(110, 231, 183, ${0.08 * WIREMESH_FADE})`} />
+          <stop offset="100%" stopColor={`rgba(52, 211, 153, ${0.06 * WIREMESH_FADE})`} />
         </linearGradient>
         <radialGradient
           id={`${id}-edge-fade`}
@@ -47,9 +49,9 @@ export function PageWiremeshOverlay({ stacked = false }: PageWiremeshOverlayProp
           cy={`${WIREMESH_FOCUS_Y * 100}%`}
           r="78%"
         >
-          <stop offset="0%" stopColor="rgba(238, 240, 242, 0)" />
-          <stop offset="55%" stopColor="rgba(238, 240, 242, 0.08)" />
-          <stop offset="100%" stopColor="rgba(238, 240, 242, 0.62)" />
+          <stop offset="0%" stopColor={`rgba(${WIREMESH_CANVAS_RGB}, 0)`} />
+          <stop offset="55%" stopColor={`rgba(${WIREMESH_CANVAS_RGB}, 0.08)`} />
+          <stop offset="100%" stopColor={`rgba(${WIREMESH_CANVAS_RGB}, 0.62)`} />
         </radialGradient>
         <pattern
           id={`${id}-paper`}
@@ -59,12 +61,12 @@ export function PageWiremeshOverlay({ stacked = false }: PageWiremeshOverlayProp
         >
           <path
             d="M0 0.015 H0.03"
-            stroke="rgba(148,163,184,0.07)"
+            stroke={`rgba(148,163,184,${0.07 * WIREMESH_FADE})`}
             strokeWidth="0.001"
           />
           <path
             d="M0 0 L0.03 0.03"
-            stroke="rgba(148,163,184,0.04)"
+            stroke={`rgba(148,163,184,${0.04 * WIREMESH_FADE})`}
             strokeWidth="0.001"
           />
         </pattern>
