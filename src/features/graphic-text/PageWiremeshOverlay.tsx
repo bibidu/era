@@ -87,7 +87,7 @@ export function PageWiremeshOverlay({ stacked = false }: PageWiremeshOverlayProp
               y1={a.y}
               x2={b.x}
               y2={b.y}
-              stroke={`rgba(167, 243, 208, ${alpha * 0.55})`}
+              stroke={`rgba(167, 243, 208, ${alpha * 0.62})`}
               strokeWidth={0.0038}
               strokeLinecap="round"
             />
@@ -96,7 +96,7 @@ export function PageWiremeshOverlay({ stacked = false }: PageWiremeshOverlayProp
               y1={a.y}
               x2={b.x}
               y2={b.y}
-              stroke={`rgba(52, 211, 153, ${alpha * 0.58})`}
+              stroke={`rgba(52, 211, 153, ${alpha * 0.68})`}
               strokeWidth={0.0017}
               strokeLinecap="round"
             />

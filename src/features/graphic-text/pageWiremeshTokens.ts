@@ -47,16 +47,16 @@ function distFromFocus(x: number, y: number) {
 }
 
 /**
- * 纵向深度：上半淡、下半深。
- * y=0.15 → ~0.22，y=0.5 → ~0.62，y=0.85 → ~1.0
+ * 纵向深度：上半淡但仍可见，下半更深。
+ * y=0.12 → ~0.40，y=0.5 → ~0.74，y=0.88 → ~1.0
  */
 export function verticalStrength(y: number) {
-  return clamp01(0.18 + Math.pow(clamp01((y - 0.08) / 0.82), 1.15) * 0.82)
+  return clamp01(0.36 + Math.pow(clamp01((y - 0.06) / 0.86), 1.05) * 0.64)
 }
 
 /** 综合透明度：径向覆盖 × 上淡下深 */
 export function meshOpacity(falloff: number, y: number, base = 1) {
-  const radial = clamp01(1 - falloff * 0.95)
+  const radial = clamp01(1 - falloff * 0.88)
   return radial * verticalStrength(y) * base
 }
 
@@ -70,7 +70,7 @@ function hashNoise(i: number, j: number, salt = 1) {
  * 中等密度三角点阵，铺满约 75% 区域。
  * 疏密靠透明度的上淡下深表现，而不是大幅抽点。
  */
-export function buildWiremeshGeometry(cols = 10, rows = 13) {
+export function buildWiremeshGeometry(cols = 12, rows = 16) {
   const points: WiremeshPoint[] = []
   const indexAt: (number | null)[][] = Array.from({ length: rows }, () =>
     Array.from({ length: cols }, () => null),
@@ -80,18 +80,17 @@ export function buildWiremeshGeometry(cols = 10, rows = 13) {
     for (let col = 0; col < cols; col += 1) {
       const stagger = row % 2 === 0 ? 0 : 0.5
       const t = row / (rows - 1)
-      // 覆盖约 y=0.10 → 0.94，留出上下边距
-      const baseY = 0.1 + t * 0.84
+      // 覆盖约 y=0.08 → 0.95
+      const baseY = 0.08 + t * 0.87
       const baseX = (col + stagger) / (cols - 0.5)
-      const jitterX = (hashNoise(col, row, 1) - 0.5) * 0.016
-      const jitterY = (hashNoise(col, row, 2) - 0.5) * 0.012
-      const pull = 0.035
+      const jitterX = (hashNoise(col, row, 1) - 0.5) * 0.012
+      const jitterY = (hashNoise(col, row, 2) - 0.5) * 0.01
+      const pull = 0.03
       const x = clamp01(baseX + jitterX + (WIREMESH_FOCUS_X - baseX) * pull)
-      const y = clamp01(baseY + jitterY + (WIREMESH_FOCUS_Y - baseY) * pull * 0.45)
+      const y = clamp01(baseY + jitterY + (WIREMESH_FOCUS_Y - baseY) * pull * 0.4)
 
       const falloff = distFromFocus(x, y)
-      // 约 75% 椭圆内保留
-      if (falloff > 1.05) continue
+      if (falloff > 1.08) continue
       indexAt[row][col] = points.length
       points.push({ x, y, falloff })
     }
@@ -105,9 +104,8 @@ export function buildWiremeshGeometry(cols = 10, rows = 13) {
     const key = ai < bi ? `${ai}-${bi}` : `${bi}-${ai}`
     if (seen.has(key)) return
     const falloff = Math.max(points[ai].falloff, points[bi].falloff)
-    if (falloff > 1.02) return
-    // 适度保留连线：正交多、对角略少，避免过密也不过疏
-    const keepChance = diagonal ? 0.78 : 0.94
+    if (falloff > 1.05) return
+    const keepChance = diagonal ? 0.88 : 0.98
     if (hashNoise(ai + 1, bi + 1, diagonal ? 11 : 12) > keepChance) return
     seen.add(key)
     const midY = (points[ai].y + points[bi].y) / 2
@@ -132,23 +130,22 @@ export function buildWiremeshGeometry(cols = 10, rows = 13) {
 
   const pixels: WiremeshPixel[] = []
   points.forEach((point, index) => {
-    if (point.falloff > 0.98) return
+    if (point.falloff > 1.0) return
     const pick = hashNoise(index, 3, 9)
-    // 下半多留一些数据点
-    const threshold = point.y < 0.4 ? 0.32 : point.y < 0.6 ? 0.48 : 0.58
+    const threshold = point.y < 0.35 ? 0.42 : point.y < 0.55 ? 0.55 : 0.68
     if (pick > threshold) return
     const soft = pick > threshold * 0.55
     pixels.push({
       x: point.x,
       y: point.y,
-      size: soft ? 0.0065 : 0.009 + hashNoise(index, 4, 5) * 0.004,
+      size: soft ? 0.006 : 0.0085 + hashNoise(index, 4, 5) * 0.0035,
       soft,
     })
   })
 
-  for (let i = 0; i < edges.length; i += 8) {
+  for (let i = 0; i < edges.length; i += 6) {
     const edge = edges[i]
-    if (edge.falloff > 0.9) continue
+    if (edge.falloff > 0.95) continue
     const a = points[edge.a]
     const b = points[edge.b]
     pixels.push({
@@ -165,15 +162,15 @@ export function buildWiremeshGeometry(cols = 10, rows = 13) {
 export const WIREMESH_GEOMETRY = buildWiremeshGeometry()
 
 export function lineOpacity(falloff: number, midY: number) {
-  return meshOpacity(falloff, midY, 0.95)
+  return meshOpacity(falloff, midY, 1.05)
 }
 
 export function nodeOpacity(falloff: number, y: number) {
-  return meshOpacity(falloff, y, 0.7)
+  return meshOpacity(falloff, y, 0.78)
 }
 
 export function pixelOpacity(falloff: number, y: number) {
-  return meshOpacity(falloff, y, 1)
+  return meshOpacity(falloff, y, 1.05)
 }
 
 export function drawPageWiremeshOverlay(
@@ -237,8 +234,8 @@ export function drawPageWiremeshOverlay(
   for (const edge of edges) {
     const a = points[edge.a]
     const b = points[edge.b]
-    const alpha = lineOpacity(edge.falloff, edge.midY) * 0.55
-    if (alpha < 0.02) continue
+    const alpha = lineOpacity(edge.falloff, edge.midY) * 0.62
+    if (alpha < 0.025) continue
     ctx.strokeStyle = `rgba(167, 243, 208, ${alpha})`
     ctx.lineWidth = Math.max(1.5, width * 0.003)
     ctx.beginPath()
@@ -251,8 +248,8 @@ export function drawPageWiremeshOverlay(
     const a = points[edge.a]
     const b = points[edge.b]
     const alpha = lineOpacity(edge.falloff, edge.midY)
-    if (alpha < 0.03) continue
-    ctx.strokeStyle = `rgba(52, 211, 153, ${alpha * 0.58})`
+    if (alpha < 0.035) continue
+    ctx.strokeStyle = `rgba(52, 211, 153, ${alpha * 0.68})`
     ctx.lineWidth = Math.max(1, width * 0.00155)
     ctx.beginPath()
     ctx.moveTo(a.x * width, a.y * height)
