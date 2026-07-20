@@ -1,4 +1,4 @@
-/** 线网模板：浅灰纸感画布 + 中心薄荷绿几何线网 + 对齐数据点 */
+/** 线网模板：浅灰纸感画布 + 薄荷绿几何线网（约 75% 区域，上淡下深） */
 
 export const WIREMESH_CANVAS_COLOR = '#EEF0F2'
 
@@ -12,7 +12,7 @@ export const WIREMESH_PIXEL_SOFT_COLOR = 'rgba(52, 211, 153, 0.55)'
 export interface WiremeshPoint {
   x: number
   y: number
-  /** 距中心归一化距离 0..1+，用于淡出 */
+  /** 距焦点归一化距离 0..1+，用于边缘淡出 */
   falloff: number
 }
 
@@ -20,6 +20,8 @@ export interface WiremeshEdge {
   a: number
   b: number
   falloff: number
+  /** 边中点 y，用于上淡下深 */
+  midY: number
 }
 
 export interface WiremeshPixel {
@@ -29,18 +31,33 @@ export interface WiremeshPixel {
   soft?: boolean
 }
 
-/** 线网视觉重心：偏下半屏 */
+/** 覆盖约 75% 画布：焦点略偏下，半径够大 */
 export const WIREMESH_FOCUS_X = 0.5
-export const WIREMESH_FOCUS_Y = 0.7
+export const WIREMESH_FOCUS_Y = 0.58
 
 function clamp01(value: number) {
   return Math.min(1, Math.max(0, value))
 }
 
 function distFromFocus(x: number, y: number) {
-  const dx = (x - WIREMESH_FOCUS_X) / 0.48
-  const dy = (y - WIREMESH_FOCUS_Y) / 0.42
+  // 椭圆覆盖约 3/4 区域；横向略宽、纵向略高
+  const dx = (x - WIREMESH_FOCUS_X) / 0.62
+  const dy = (y - WIREMESH_FOCUS_Y) / 0.68
   return Math.sqrt(dx * dx + dy * dy)
+}
+
+/**
+ * 纵向深度：上半淡、下半深。
+ * y=0.15 → ~0.22，y=0.5 → ~0.62，y=0.85 → ~1.0
+ */
+export function verticalStrength(y: number) {
+  return clamp01(0.18 + Math.pow(clamp01((y - 0.08) / 0.82), 1.15) * 0.82)
+}
+
+/** 综合透明度：径向覆盖 × 上淡下深 */
+export function meshOpacity(falloff: number, y: number, base = 1) {
+  const radial = clamp01(1 - falloff * 0.95)
+  return radial * verticalStrength(y) * base
 }
 
 /** 确定性抖动，保证预览/导出几何一致 */
@@ -50,10 +67,10 @@ function hashNoise(i: number, j: number, salt = 1) {
 }
 
 /**
- * 生成偏疏、重心偏下的三角点阵线网（单位坐标）。
- * 上半屏只留少量延伸，主体集中在下半部分。
+ * 中等密度三角点阵，铺满约 75% 区域。
+ * 疏密靠透明度的上淡下深表现，而不是大幅抽点。
  */
-export function buildWiremeshGeometry(cols = 7, rows = 9) {
+export function buildWiremeshGeometry(cols = 10, rows = 13) {
   const points: WiremeshPoint[] = []
   const indexAt: (number | null)[][] = Array.from({ length: rows }, () =>
     Array.from({ length: cols }, () => null),
@@ -63,21 +80,18 @@ export function buildWiremeshGeometry(cols = 7, rows = 9) {
     for (let col = 0; col < cols; col += 1) {
       const stagger = row % 2 === 0 ? 0 : 0.5
       const t = row / (rows - 1)
-      // 行位置压向中下：约 0.38 → 0.92，上半更空
-      const baseY = 0.38 + t * t * 0.54
+      // 覆盖约 y=0.10 → 0.94，留出上下边距
+      const baseY = 0.1 + t * 0.84
       const baseX = (col + stagger) / (cols - 0.5)
-      const jitterX = (hashNoise(col, row, 1) - 0.5) * 0.022
-      const jitterY = (hashNoise(col, row, 2) - 0.5) * 0.016
-      const pull = 0.06
+      const jitterX = (hashNoise(col, row, 1) - 0.5) * 0.016
+      const jitterY = (hashNoise(col, row, 2) - 0.5) * 0.012
+      const pull = 0.035
       const x = clamp01(baseX + jitterX + (WIREMESH_FOCUS_X - baseX) * pull)
-      const y = clamp01(baseY + jitterY + (WIREMESH_FOCUS_Y - baseY) * pull * 0.75)
-
-      // 上半再抽稀：y 越靠上越容易丢掉
-      if (y < 0.45 && hashNoise(col, row, 7) > 0.28) continue
-      if (y < 0.55 && hashNoise(col, row, 8) > 0.55) continue
+      const y = clamp01(baseY + jitterY + (WIREMESH_FOCUS_Y - baseY) * pull * 0.45)
 
       const falloff = distFromFocus(x, y)
-      if (falloff > 1.18) continue
+      // 约 75% 椭圆内保留
+      if (falloff > 1.05) continue
       indexAt[row][col] = points.length
       points.push({ x, y, falloff })
     }
@@ -86,17 +100,18 @@ export function buildWiremeshGeometry(cols = 7, rows = 9) {
   const edges: WiremeshEdge[] = []
   const seen = new Set<string>()
 
-  const addEdge = (ai: number | null, bi: number | null, preferDiagonal = false) => {
+  const addEdge = (ai: number | null, bi: number | null, diagonal = false) => {
     if (ai == null || bi == null) return
     const key = ai < bi ? `${ai}-${bi}` : `${bi}-${ai}`
     if (seen.has(key)) return
     const falloff = Math.max(points[ai].falloff, points[bi].falloff)
-    if (falloff > 1.12) return
-    // 再抽稀连线：对角更少，整体更疏
-    const keepChance = preferDiagonal ? 0.42 : 0.72
-    if (hashNoise(ai + 1, bi + 1, preferDiagonal ? 11 : 12) > keepChance) return
+    if (falloff > 1.02) return
+    // 适度保留连线：正交多、对角略少，避免过密也不过疏
+    const keepChance = diagonal ? 0.78 : 0.94
+    if (hashNoise(ai + 1, bi + 1, diagonal ? 11 : 12) > keepChance) return
     seen.add(key)
-    edges.push({ a: ai, b: bi, falloff })
+    const midY = (points[ai].y + points[bi].y) / 2
+    edges.push({ a: ai, b: bi, falloff, midY })
   }
 
   for (let row = 0; row < rows; row += 1) {
@@ -117,30 +132,29 @@ export function buildWiremeshGeometry(cols = 7, rows = 9) {
 
   const pixels: WiremeshPixel[] = []
   points.forEach((point, index) => {
-    if (point.falloff > 0.95) return
-    if (point.y < 0.48) return
+    if (point.falloff > 0.98) return
     const pick = hashNoise(index, 3, 9)
-    if (pick > 0.48) return
-    const soft = pick > 0.28
+    // 下半多留一些数据点
+    const threshold = point.y < 0.4 ? 0.32 : point.y < 0.6 ? 0.48 : 0.58
+    if (pick > threshold) return
+    const soft = pick > threshold * 0.55
     pixels.push({
       x: point.x,
       y: point.y,
-      size: soft ? 0.007 : 0.01 + hashNoise(index, 4, 5) * 0.004,
+      size: soft ? 0.0065 : 0.009 + hashNoise(index, 4, 5) * 0.004,
       soft,
     })
   })
 
-  for (let i = 0; i < edges.length; i += 11) {
+  for (let i = 0; i < edges.length; i += 8) {
     const edge = edges[i]
-    if (edge.falloff > 0.75) continue
+    if (edge.falloff > 0.9) continue
     const a = points[edge.a]
     const b = points[edge.b]
-    const midY = (a.y + b.y) / 2
-    if (midY < 0.5) continue
     pixels.push({
       x: (a.x + b.x) / 2,
-      y: midY,
-      size: 0.0058,
+      y: (a.y + b.y) / 2,
+      size: 0.0055,
       soft: true,
     })
   }
@@ -150,12 +164,16 @@ export function buildWiremeshGeometry(cols = 7, rows = 9) {
 
 export const WIREMESH_GEOMETRY = buildWiremeshGeometry()
 
-function lineOpacity(falloff: number) {
-  return clamp01(1 - falloff * 0.92) * 0.9
+export function lineOpacity(falloff: number, midY: number) {
+  return meshOpacity(falloff, midY, 0.95)
 }
 
-function nodeOpacity(falloff: number) {
-  return clamp01(1 - falloff * 1.05)
+export function nodeOpacity(falloff: number, y: number) {
+  return meshOpacity(falloff, y, 0.7)
+}
+
+export function pixelOpacity(falloff: number, y: number) {
+  return meshOpacity(falloff, y, 1)
 }
 
 export function drawPageWiremeshOverlay(
@@ -168,7 +186,6 @@ export function drawPageWiremeshOverlay(
     ctx.fillStyle = WIREMESH_CANVAS_COLOR
     ctx.fillRect(0, 0, width, height)
 
-    // 极淡纸纹：细斜线 + 噪点感横纹
     ctx.save()
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.045)'
     ctx.lineWidth = 1
@@ -188,48 +205,55 @@ export function drawPageWiremeshOverlay(
     ctx.restore()
   }
 
-  // 偏下半屏的薄荷绿发光底
+  // 大范围薄荷绿光晕，略偏下、覆盖约 75%
   const glow = ctx.createRadialGradient(
     width * WIREMESH_FOCUS_X,
     height * WIREMESH_FOCUS_Y,
     0,
     width * WIREMESH_FOCUS_X,
     height * WIREMESH_FOCUS_Y,
-    Math.max(width, height) * 0.5,
+    Math.max(width, height) * 0.62,
   )
-  glow.addColorStop(0, 'rgba(167, 243, 208, 0.26)')
-  glow.addColorStop(0.45, 'rgba(110, 231, 183, 0.1)')
+  glow.addColorStop(0, 'rgba(167, 243, 208, 0.22)')
+  glow.addColorStop(0.5, 'rgba(110, 231, 183, 0.09)')
   glow.addColorStop(1, 'rgba(238, 240, 242, 0)')
   ctx.fillStyle = glow
   ctx.fillRect(0, 0, width, height)
 
+  // 额外一层自上而下的淡→深，强化下半更深
+  const verticalWash = ctx.createLinearGradient(0, 0, 0, height)
+  verticalWash.addColorStop(0, 'rgba(167, 243, 208, 0.02)')
+  verticalWash.addColorStop(0.35, 'rgba(167, 243, 208, 0.04)')
+  verticalWash.addColorStop(0.7, 'rgba(110, 231, 183, 0.08)')
+  verticalWash.addColorStop(1, 'rgba(52, 211, 153, 0.06)')
+  ctx.fillStyle = verticalWash
+  ctx.fillRect(0, 0, width, height)
+
   const { points, edges, pixels } = WIREMESH_GEOMETRY
 
-  // 软光描边层
   ctx.save()
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
   for (const edge of edges) {
     const a = points[edge.a]
     const b = points[edge.b]
-    const alpha = lineOpacity(edge.falloff) * 0.55
+    const alpha = lineOpacity(edge.falloff, edge.midY) * 0.55
     if (alpha < 0.02) continue
     ctx.strokeStyle = `rgba(167, 243, 208, ${alpha})`
-    ctx.lineWidth = Math.max(1.6, width * 0.0032)
+    ctx.lineWidth = Math.max(1.5, width * 0.003)
     ctx.beginPath()
     ctx.moveTo(a.x * width, a.y * height)
     ctx.lineTo(b.x * width, b.y * height)
     ctx.stroke()
   }
 
-  // 主线网
   for (const edge of edges) {
     const a = points[edge.a]
     const b = points[edge.b]
-    const alpha = lineOpacity(edge.falloff)
+    const alpha = lineOpacity(edge.falloff, edge.midY)
     if (alpha < 0.03) continue
-    ctx.strokeStyle = `rgba(52, 211, 153, ${alpha * 0.55})`
-    ctx.lineWidth = Math.max(1, width * 0.0016)
+    ctx.strokeStyle = `rgba(52, 211, 153, ${alpha * 0.58})`
+    ctx.lineWidth = Math.max(1, width * 0.00155)
     ctx.beginPath()
     ctx.moveTo(a.x * width, a.y * height)
     ctx.lineTo(b.x * width, b.y * height)
@@ -237,43 +261,41 @@ export function drawPageWiremeshOverlay(
   }
   ctx.restore()
 
-  // 顶点微点
   for (const point of points) {
-    const alpha = nodeOpacity(point.falloff) * 0.55
-    if (alpha < 0.05) continue
-    const r = Math.max(1.2, width * 0.0024)
+    const alpha = nodeOpacity(point.falloff, point.y)
+    if (alpha < 0.04) continue
+    const r = Math.max(1.1, width * 0.0022)
     ctx.fillStyle = `rgba(52, 211, 153, ${alpha})`
     ctx.beginPath()
     ctx.arc(point.x * width, point.y * height, r, 0, Math.PI * 2)
     ctx.fill()
   }
 
-  // 漂浮薄荷绿像素块
   for (const pixel of pixels) {
     const falloff = distFromFocus(pixel.x, pixel.y)
-    const alpha = clamp01(1 - falloff * 1.1)
-    if (alpha < 0.08) continue
+    const alpha = pixelOpacity(falloff, pixel.y)
+    if (alpha < 0.06) continue
     const size = pixel.size * width
     const x = pixel.x * width - size / 2
     const y = pixel.y * height - size / 2
     ctx.fillStyle = pixel.soft
-      ? `rgba(110, 231, 183, ${alpha * 0.7})`
-      : `rgba(52, 211, 153, ${alpha * 0.92})`
+      ? `rgba(110, 231, 183, ${alpha * 0.72})`
+      : `rgba(52, 211, 153, ${alpha * 0.95})`
     ctx.fillRect(x, y, size, size)
   }
 
-  // 边缘再压一层纸色；淡出中心跟随线网重心偏下
+  // 仅在最外圈压纸色，保留约 75% 网可见
   const edgeFade = ctx.createRadialGradient(
     width * WIREMESH_FOCUS_X,
     height * WIREMESH_FOCUS_Y,
-    Math.min(width, height) * 0.22,
+    Math.min(width, height) * 0.38,
     width * WIREMESH_FOCUS_X,
     height * WIREMESH_FOCUS_Y,
-    Math.max(width, height) * 0.68,
+    Math.max(width, height) * 0.78,
   )
   edgeFade.addColorStop(0, 'rgba(238, 240, 242, 0)')
-  edgeFade.addColorStop(0.65, 'rgba(238, 240, 242, 0.16)')
-  edgeFade.addColorStop(1, 'rgba(238, 240, 242, 0.78)')
+  edgeFade.addColorStop(0.55, 'rgba(238, 240, 242, 0.08)')
+  edgeFade.addColorStop(1, 'rgba(238, 240, 242, 0.62)')
   ctx.fillStyle = edgeFade
   ctx.fillRect(0, 0, width, height)
 }
