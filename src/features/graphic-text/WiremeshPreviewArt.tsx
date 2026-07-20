@@ -1,5 +1,6 @@
 import {
   WIREMESH_CANVAS_COLOR,
+  WIREMESH_FADE,
   WIREMESH_FOCUS_X,
   WIREMESH_FOCUS_Y,
   WIREMESH_GEOMETRY,
@@ -21,12 +22,12 @@ export function WiremeshPreviewArt() {
           cy={`${WIREMESH_FOCUS_Y * 100}%`}
           r="60%"
         >
-          <stop offset="0%" stopColor="rgba(167, 243, 208, 0.38)" />
-          <stop offset="100%" stopColor="rgba(238, 240, 242, 0)" />
+          <stop offset="0%" stopColor={`rgba(167, 243, 208, ${0.38 * WIREMESH_FADE})`} />
+          <stop offset="100%" stopColor="rgba(247, 248, 249, 0)" />
         </radialGradient>
         <linearGradient id="wiremesh-preview-wash" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(167, 243, 208, 0.05)" />
-          <stop offset="100%" stopColor="rgba(52, 211, 153, 0.12)" />
+          <stop offset="0%" stopColor={`rgba(167, 243, 208, ${0.05 * WIREMESH_FADE})`} />
+          <stop offset="100%" stopColor={`rgba(52, 211, 153, ${0.12 * WIREMESH_FADE})`} />
         </linearGradient>
       </defs>
       <rect width="1" height="1" fill={WIREMESH_CANVAS_COLOR} />
@@ -43,7 +44,7 @@ export function WiremeshPreviewArt() {
             y1={a.y}
             x2={b.x}
             y2={b.y}
-            stroke={`rgba(52, 211, 153, ${0.18 + alpha * 0.5})`}
+            stroke={`rgba(52, 211, 153, ${Math.min(0.55, alpha * 0.95 + 0.04)})`}
             strokeWidth={0.009}
             strokeLinecap="round"
           />
@@ -56,7 +57,7 @@ export function WiremeshPreviewArt() {
           y={pixel.y - pixel.size}
           width={pixel.size * 2}
           height={pixel.size * 2}
-          fill={pixel.soft ? 'rgba(110, 231, 183, 0.7)' : '#34D399'}
+          fill={pixel.soft ? `rgba(110, 231, 183, ${0.7 * WIREMESH_FADE})` : `rgba(52, 211, 153, ${0.85 * WIREMESH_FADE})`}
           opacity={0.35 + pixel.y * 0.55}
         />
       ))}
