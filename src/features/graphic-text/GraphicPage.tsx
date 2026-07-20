@@ -27,6 +27,7 @@ import {
 import { resolvePageBackgroundStyle } from './pageBackground'
 import { PageGradientOverlay } from './PageGradientOverlay'
 import { PagePixelOverlay } from './PagePixelOverlay'
+import { PageWiremeshOverlay } from './PageWiremeshOverlay'
 import { shouldDrawPageOverlay } from './pageLayering'
 import { resolveTopBarParts } from './topBar'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
@@ -533,6 +534,9 @@ export function GraphicPage({
     >
       {shouldDrawPageOverlay(config) && config.pageOverlay === 'pixel' && (
         <PagePixelOverlay stacked={config.overlayStacked} />
+      )}
+      {shouldDrawPageOverlay(config) && config.pageOverlay === 'wiremesh' && (
+        <PageWiremeshOverlay stacked={config.overlayStacked} />
       )}
       {shouldDrawPageOverlay(config) &&
         config.pageOverlay === 'gradient' &&

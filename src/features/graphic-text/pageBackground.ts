@@ -10,6 +10,7 @@ import {
   usesOverlayAsBackground,
 } from './pageLayering'
 import { PIXEL_CANVAS_COLOR } from './pagePixelTokens'
+import { WIREMESH_CANVAS_COLOR } from './pageWiremeshTokens'
 import type { GraphicTextConfig } from './types'
 
 export const DEFAULT_PAGE_BASE_COLOR = '#FBF7ED'
@@ -30,6 +31,8 @@ export function resolvePageBackgroundStyle(config: GraphicTextConfig): CSSProper
       style.backgroundImage = gradientCss
     } else if (config.pageOverlay === 'pixel') {
       style.backgroundColor = PIXEL_CANVAS_COLOR
+    } else if (config.pageOverlay === 'wiremesh') {
+      style.backgroundColor = WIREMESH_CANVAS_COLOR
     }
   } else if (shouldDrawReferenceBackground(config)) {
     style.backgroundImage = `linear-gradient(rgba(255,255,255,.82), rgba(255,255,255,.82)), url("${config.backgroundUrl}")`
@@ -59,6 +62,7 @@ export function resolvePageBaseFillColor(config: GraphicTextConfig) {
   if (usesOverlayAsBackground(config)) {
     if (config.pageOverlay === 'gradient') return GRADIENT_OVERLAY_FALLBACK
     if (config.pageOverlay === 'pixel') return PIXEL_CANVAS_COLOR
+    if (config.pageOverlay === 'wiremesh') return WIREMESH_CANVAS_COLOR
   }
   if (usesConfiguredBaseBackground(config) && config.backgroundType === 'solid') {
     return config.paperColor

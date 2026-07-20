@@ -20,6 +20,7 @@ import {
 } from './pageBackground'
 import { drawPageGradientBackground } from './pageGradientTokens'
 import { drawPagePixelOverlay } from './pagePixelTokens'
+import { drawPageWiremeshOverlay } from './pageWiremeshTokens'
 import {
   shouldDrawBaseBackground,
   shouldDrawPageOverlay,
@@ -259,6 +260,8 @@ async function drawPage(
     drawPageGradientBackground(ctx, width, height, config.gradientVariant)
   } else if (config.pageOverlay === 'pixel') {
     drawPagePixelOverlay(ctx, width, height, false)
+  } else if (config.pageOverlay === 'wiremesh') {
+    drawPageWiremeshOverlay(ctx, width, height, false)
   }
 
   if (shouldDrawPageOverlay(config) && config.pageOverlay === 'grid') {
@@ -267,6 +270,10 @@ async function drawPage(
 
   if (shouldDrawPageOverlay(config) && config.pageOverlay === 'pixel' && config.overlayStacked) {
     drawPagePixelOverlay(ctx, width, height, true)
+  }
+
+  if (shouldDrawPageOverlay(config) && config.pageOverlay === 'wiremesh' && config.overlayStacked) {
+    drawPageWiremeshOverlay(ctx, width, height, true)
   }
 
   if (shouldDrawPageOverlay(config) && config.pageOverlay === 'gradient' && config.overlayStacked) {

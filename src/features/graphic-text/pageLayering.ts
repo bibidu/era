@@ -2,7 +2,11 @@ import type { GraphicTextConfig } from './types'
 
 export function usesOverlayAsBackground(config: GraphicTextConfig) {
   if (config.overlayStacked) return false
-  return config.pageOverlay === 'gradient' || config.pageOverlay === 'pixel'
+  return (
+    config.pageOverlay === 'gradient' ||
+    config.pageOverlay === 'pixel' ||
+    config.pageOverlay === 'wiremesh'
+  )
 }
 
 export function shouldDrawPageOverlay(config: GraphicTextConfig) {
