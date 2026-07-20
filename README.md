@@ -19,12 +19,12 @@ npm run dev
 
 推送到 `main` 后会自动构建部署到 `gh-pages`。
 
-## Era Skill（图文对话出图）
+## 图文 Skill（图文对话出图）
 
-云端 / 本机 Agent 生成图文时，统一走 skill **`era`**（`.cursor/skills/era/SKILL.md`）：
+云端 / 本机 Agent 生成图文时，统一走 skill **图文skill**（`.cursor/skills/tuwen/SKILL.md`）：
 
-- 对话里可输入 `/era`
-- 提到「用 era + 标题生成图文」时会自动匹配该 skill
+- 对话里说 **「图文skill」** 即可触发
+- 也可输入 `/tuwen`，或提到「用标题生成图文 / 小红书·抖音出图」
 - 流程：确认服务 → 正文确认 → 5 个标题 → 高亮建议 → 选抖音/小红书（默认都要）→ 校验 → 发图
 
 技术方案：[docs/agent-mcp-design.md](./docs/agent-mcp-design.md)

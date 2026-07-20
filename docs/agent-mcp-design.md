@@ -2,7 +2,7 @@
 
 > 状态：已按用户确认落地（分支 `cursor/mcp-local-agent-be32`）  
 > 范围：仅图文模式（graphic-text），不含海报  
-> 交互流程：见项目 skill `.cursor/skills/era/SKILL.md`（`/era`）
+> 交互流程：见项目 skill `.cursor/skills/tuwen/SKILL.md`（**图文skill** / `/tuwen`）
 
 ## 背景知识
 
@@ -89,8 +89,8 @@ Agent（严格执行 era skill）
 ## 目录
 
 ```
-.cursor/skills/era/        # era skill（云端/本机 Agent 自动发现）
-.agents/skills/era/        # 兼容副本
+.cursor/skills/tuwen/      # 图文skill（云端/本机 Agent 自动发现）
+.agents/skills/tuwen/      # 兼容副本
 docs/agent-mcp-design.md   # 本文件
 server/                    # Agent HTTP + WS + MCP
 src/agent/                 # 浏览器控制通道
