@@ -5,7 +5,7 @@ import {
   normalizeDocument,
   type GraphicDocument,
 } from '../features/graphic-text/document'
-import { exportGraphicPages, stitchGraphicPagesVertical } from '../features/graphic-text/exportGraphicPages'
+import { exportGraphicPages, stitchGraphicPagesHorizontal } from '../features/graphic-text/exportGraphicPages'
 import { paginateDocument, parseMarkdown } from '../features/graphic-text/layout'
 import { parseScopedMarkdown } from '../features/graphic-text/document'
 import type { GraphicTextConfig } from '../features/graphic-text/types'
@@ -121,7 +121,7 @@ async function handleBridgeCommand(
           base64: await blobToBase64(blobs[index]),
         })
       }
-      const sheetBlob = await stitchGraphicPagesVertical(blobs)
+      const sheetBlob = await stitchGraphicPagesHorizontal(blobs)
       const sheet = {
         name: 'graphic-review-sheet.png',
         base64: await blobToBase64(sheetBlob),
