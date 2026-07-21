@@ -30,6 +30,8 @@ description: >-
 
 **模板**：默认优先使用 **像素模板**（`pageOverlay: 'pixel'`），除非用户明确指定其它纹理。
 
+**风水风格特例**：若用户提到「风水」「风水风格」「风水质感」等，**直接**使用风水模板（`pageOverlay: 'fengshui'`），并**固定抖音尺寸**（`aspectRatio: '9:16'`），无需再问导出平台（除非用户另指定小红书）。
+
 ---
 
 ## 1. 收集选题
@@ -45,7 +47,7 @@ description: >-
 2. 展示全文后**明确询问**：是否继续？
 3. 用户提出修改 → 改完后再展示，并再次询问是否继续。
 4. 只有用户明确说继续 / 确认正文后，才进入标题阶段。
-5. 确认后：`era_create_project` / `era_set_markdown` 写入工程（并设 `pageOverlay: 'pixel'`）。
+5. 确认后：`era_create_project` / `era_set_markdown` 写入工程（默认 `pageOverlay: 'pixel'`；若用户已指定风水风格则用 `pageOverlay: 'fengshui'` + `aspectRatio: '9:16'`）。
 
 ---
 
@@ -98,6 +100,7 @@ description: >-
 
 - **默认：优先导出抖音（`9:16`）**
 - 用户说继续且未改默认 → 按抖音比例执行
+- **例外**：已按风水风格锁定 `fengshui` + `9:16` 时，可跳过本步直接校验导出
 
 ---
 
@@ -105,7 +108,7 @@ description: >-
 
 对每个目标 `aspectRatio` 分别：
 
-1. `era_update_config` 设 `aspectRatio`（保持 `pageOverlay: 'pixel'`，`titleLineHeight` 不过松）
+1. `era_update_config` 设 `aspectRatio`（保持当前模板：默认 `pageOverlay: 'pixel'`，风水风格用 `fengshui`；`titleLineHeight` 不过松）
 2. `era_preview_layout`
 3. 若有告警必须先修再导出，包括：
    - 单行溢出、孤行、独行标点
@@ -140,7 +143,7 @@ description: >-
 | 建工程 | `era_create_project` · `POST /v1/projects` |
 | 写正文 | `era_set_markdown` · `PUT .../markdown` |
 | 写标题 | `era_set_title` · `PUT .../title` |
-| 画幅/模板 | `era_update_config` · `PATCH .../config`（优先 `pageOverlay: 'pixel'`） |
+| 画幅/模板 | `era_update_config` · `PATCH .../config`（优先 `pageOverlay: 'pixel'`；风水风格用 `fengshui` + `9:16`） |
 | 高亮 | `era_apply_highlights` · `POST .../highlights` |
 | 校验 | `era_preview_layout` · `POST .../preview-layout` |
 | 导出 | `era_export_images` · `POST .../export`（含拼图 `sheetPath`） |

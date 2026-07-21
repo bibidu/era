@@ -9,6 +9,7 @@ import {
   usesConfiguredBaseBackground,
   usesOverlayAsBackground,
 } from './pageLayering'
+import { FENGSHUI_CANVAS_COLOR } from './pageFengshuiTokens'
 import { PIXEL_CANVAS_COLOR } from './pagePixelTokens'
 import { WIREMESH_CANVAS_COLOR } from './pageWiremeshTokens'
 import type { GraphicTextConfig } from './types'
@@ -33,6 +34,8 @@ export function resolvePageBackgroundStyle(config: GraphicTextConfig): CSSProper
       style.backgroundColor = PIXEL_CANVAS_COLOR
     } else if (config.pageOverlay === 'wiremesh') {
       style.backgroundColor = WIREMESH_CANVAS_COLOR
+    } else if (config.pageOverlay === 'fengshui') {
+      style.backgroundColor = FENGSHUI_CANVAS_COLOR
     }
   } else if (shouldDrawReferenceBackground(config)) {
     style.backgroundImage = `linear-gradient(rgba(255,255,255,.82), rgba(255,255,255,.82)), url("${config.backgroundUrl}")`
@@ -63,6 +66,7 @@ export function resolvePageBaseFillColor(config: GraphicTextConfig) {
     if (config.pageOverlay === 'gradient') return GRADIENT_OVERLAY_FALLBACK
     if (config.pageOverlay === 'pixel') return PIXEL_CANVAS_COLOR
     if (config.pageOverlay === 'wiremesh') return WIREMESH_CANVAS_COLOR
+    if (config.pageOverlay === 'fengshui') return FENGSHUI_CANVAS_COLOR
   }
   if (usesConfiguredBaseBackground(config) && config.backgroundType === 'solid') {
     return config.paperColor

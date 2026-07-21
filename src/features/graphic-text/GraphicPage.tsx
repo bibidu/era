@@ -26,6 +26,7 @@ import {
 } from './highlightColors'
 import { resolvePageBackgroundStyle } from './pageBackground'
 import { PageGradientOverlay } from './PageGradientOverlay'
+import { PageFengshuiOverlay } from './PageFengshuiOverlay'
 import { PagePixelOverlay } from './PagePixelOverlay'
 import { PageWiremeshOverlay } from './PageWiremeshOverlay'
 import { shouldDrawPageOverlay } from './pageLayering'
@@ -537,6 +538,9 @@ export function GraphicPage({
       )}
       {shouldDrawPageOverlay(config) && config.pageOverlay === 'wiremesh' && (
         <PageWiremeshOverlay stacked={config.overlayStacked} />
+      )}
+      {shouldDrawPageOverlay(config) && config.pageOverlay === 'fengshui' && (
+        <PageFengshuiOverlay stacked={config.overlayStacked} />
       )}
       {shouldDrawPageOverlay(config) &&
         config.pageOverlay === 'gradient' &&
