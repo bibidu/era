@@ -18,6 +18,7 @@ import {
   drawPageGridOverlay,
   resolvePageBaseFillColor,
 } from './pageBackground'
+import { drawPageFengshuiOverlay } from './pageFengshuiTokens'
 import { drawPageGradientBackground } from './pageGradientTokens'
 import { drawPagePixelOverlay } from './pagePixelTokens'
 import { drawPageWiremeshOverlay } from './pageWiremeshTokens'
@@ -262,6 +263,8 @@ async function drawPage(
     drawPagePixelOverlay(ctx, width, height, false)
   } else if (config.pageOverlay === 'wiremesh') {
     drawPageWiremeshOverlay(ctx, width, height, false)
+  } else if (config.pageOverlay === 'fengshui') {
+    await drawPageFengshuiOverlay(ctx, width, height, false, loadImage)
   }
 
   if (shouldDrawPageOverlay(config) && config.pageOverlay === 'grid') {
@@ -274,6 +277,10 @@ async function drawPage(
 
   if (shouldDrawPageOverlay(config) && config.pageOverlay === 'wiremesh' && config.overlayStacked) {
     drawPageWiremeshOverlay(ctx, width, height, true)
+  }
+
+  if (shouldDrawPageOverlay(config) && config.pageOverlay === 'fengshui' && config.overlayStacked) {
+    await drawPageFengshuiOverlay(ctx, width, height, true, loadImage)
   }
 
   if (shouldDrawPageOverlay(config) && config.pageOverlay === 'gradient' && config.overlayStacked) {

@@ -3,7 +3,13 @@ import { DEFAULT_GRADIENT_VARIANT } from './pageGradientTokens'
 
 export type GraphicBackgroundType = 'reference' | 'solid'
 export type GraphicAspectRatio = '3:4' | '9:16'
-export type GraphicPageOverlay = 'none' | 'grid' | 'pixel' | 'gradient' | 'wiremesh'
+export type GraphicPageOverlay =
+  | 'none'
+  | 'grid'
+  | 'pixel'
+  | 'gradient'
+  | 'wiremesh'
+  | 'fengshui'
 
 export const GRAPHIC_ASPECT_RATIO_OPTIONS: { id: GraphicAspectRatio; label: string }[] = [
   { id: '9:16', label: '9:16' },

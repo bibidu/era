@@ -5,7 +5,8 @@ export function usesOverlayAsBackground(config: GraphicTextConfig) {
   return (
     config.pageOverlay === 'gradient' ||
     config.pageOverlay === 'pixel' ||
-    config.pageOverlay === 'wiremesh'
+    config.pageOverlay === 'wiremesh' ||
+    config.pageOverlay === 'fengshui'
   )
 }
 

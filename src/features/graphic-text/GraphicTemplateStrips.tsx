@@ -1,4 +1,5 @@
 import { PAPER_COLORS, TemplatePreviewSquare } from './graphicTemplateOptions'
+import { FengshuiPreviewArt } from './FengshuiPreviewArt'
 import { GradientPreviewArt } from './GradientPreviewArt'
 import { PixelPreviewArt } from './PixelPreviewArt'
 import { WiremeshPreviewArt } from './WiremeshPreviewArt'
@@ -39,6 +40,11 @@ const TEXTURE_OPTIONS: {
     id: 'wiremesh',
     label: '线网',
     preview: <WiremeshPreviewArt />,
+  },
+  {
+    id: 'fengshui',
+    label: '风水',
+    preview: <FengshuiPreviewArt />,
   },
 ]
 
