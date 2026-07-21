@@ -24,3 +24,6 @@ output
 *.sln
 *.sw?
 era-source.zip
+
+# Local Cursor / MCP config (machine-specific paths)
+.cursor/
