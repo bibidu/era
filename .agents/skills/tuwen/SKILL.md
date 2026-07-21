@@ -1,22 +1,28 @@
 ---
-name: era
+name: tuwen
 description: >-
-  用 Era 根据用户提供的标题/大纲生成社媒图文（小红书 3:4 / 抖音 9:16），含正文确认、5 个标题候选、自动高亮、布局校验与导出发图。
-  在用户提到 era、图文、小红书/抖音出图、用标题生成图文、导出海报长图时必须使用本 skill。
+  【图文skill】用 Era 根据用户提供的标题/大纲生成社媒图文（小红书 3:4 / 抖音 9:16），含正文确认、5 个标题候选、自动高亮、布局校验与导出发图。
+  当用户说「图文skill」、图文、小红书/抖音出图、用标题生成图文、导出海报长图时必须使用本 skill。
 ---
 
-# Era 图文生成 Skill
+# 图文 Skill（Era 图文生成）
 
 严格按下列流程执行。任何一步未获用户明确「继续 / 确认」前，不得跳步（**高亮步骤除外：见 §4，默认自动生成**）。
 
 ## 0. 前置：确认 Era 服务可用
 
+> **端口约定**：后端/前端端口可在启动时通过命令行参数指定，例如
+> `bash scripts/ensure-era-ready.sh --agent-port 3848 --dev-port 5174`
+> （或环境变量 `ERA_AGENT_PORT` / `ERA_DEV_PORT`）。未指定时默认后端 `3847`、前端 `5173`。
+> 下文以默认端口为例；若以其它端口启动，请把 URL 中的 `3847`/`5173` 替换为实际端口。
+> 实际端口可从启动脚本输出、或 `~/.workbuddy/mcp.json` 的 `ERA_AGENT_URL` 读取。
+
 每次开跑必须先确认服务：
 
-1. 在仓库根目录执行：`bash scripts/ensure-era-ready.sh`（或 `npm run start:local-agent`）
-2. 检查 `curl -s http://127.0.0.1:3847/health` 返回 `ok: true`
-3. 检查 bridge 已连接（`connected: true`）。若未连接：确保前端 `http://127.0.0.1:5173/era/` 已在浏览器打开且出现 Agent 指示
-4. 优先用 MCP 工具（`era_*`）；若无 MCP，用 REST `http://127.0.0.1:3847/v1/...`
+1. 在仓库根目录执行：`bash scripts/ensure-era-ready.sh`（或 `npm run start:local-agent`），可带 `--agent-port`/`--dev-port`
+2. 检查 `curl -s http://127.0.0.1:${ERA_AGENT_PORT:-3847}/health` 返回 `ok: true`
+3. 检查 bridge 已连接（`connected: true`）。若未连接：确保前端 `http://127.0.0.1:${ERA_DEV_PORT:-5173}/era/` 已在浏览器打开且出现 Agent 指示
+4. 优先用 MCP 工具（`era_*`）；若无 MCP，用 REST `http://127.0.0.1:${ERA_AGENT_PORT:-3847}/v1/...`
 
 云端 Agent：同样在本仓库拉起上述服务；导出后**先**把 `output/` 下的拼图 `graphic-review-sheet.png` 作为附件发给用户确认，**确认后再**发各页独立 PNG。
 

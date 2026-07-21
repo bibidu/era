@@ -1,6 +1,6 @@
 # Era 服务就绪检查
 
-供 `/era` skill 调用：确保依赖安装、Agent REST 与前端 Bridge 可用。
+供 **图文skill** 调用：确保依赖安装、Agent REST 与前端 Bridge 可用。
 
 ```bash
 bash scripts/ensure-era-ready.sh
