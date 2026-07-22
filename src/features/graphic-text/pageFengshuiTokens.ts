@@ -11,10 +11,13 @@ export const FENGSHUI_TOP_MIST = `rgba(${FENGSHUI_CANVAS_RGB}, 0.55)`
 export const FENGSHUI_MID_MIST = 'rgba(180, 186, 190, 0.07)'
 export const FENGSHUI_SEPIA_WASH = 'rgba(196, 178, 150, 0.08)'
 
+/** 资源版本：底图更新后递增，避免浏览器缓存旧图 */
+export const FENGSHUI_TEXTURE_VERSION = '20260722a'
+
 export function resolveFengshuiTextureUrl() {
   const base = import.meta.env.BASE_URL || '/'
   const normalized = base.endsWith('/') ? base : `${base}/`
-  return `${normalized}textures/fengshui-bg.png`
+  return `${normalized}textures/fengshui-bg.png?v=${FENGSHUI_TEXTURE_VERSION}`
 }
 
 function drawCoverImage(
