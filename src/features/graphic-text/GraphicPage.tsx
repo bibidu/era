@@ -556,7 +556,7 @@ export function GraphicPage({
           paddingBottom: '6px',
         }}
       >
-        {topBar.custom ? (
+        {topBar.custom && topBar.countText ? (
           <>
             <span
               className="min-w-0 truncate font-normal text-neutral-600"
@@ -575,14 +575,21 @@ export function GraphicPage({
               {topBar.countText}
             </span>
           </>
-        ) : (
+        ) : topBar.custom ? (
+          <span
+            className="truncate font-normal text-neutral-600"
+            style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px` }}
+          >
+            {topBar.custom}
+          </span>
+        ) : topBar.countText ? (
           <span
             className="truncate font-normal text-neutral-600"
             style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px` }}
           >
             {topBar.countText}
           </span>
-        )}
+        ) : null}
       </div>
 
       <div

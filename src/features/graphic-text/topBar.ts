@@ -17,17 +17,22 @@ export function countMarkdownChars(markdown: string): number {
 }
 
 export function resolveTopBarParts(
-  config: Pick<GraphicTextConfig, 'topText'>,
+  config: Pick<GraphicTextConfig, 'topText' | 'showWordCount'>,
   markdown: string,
 ): TopBarParts {
   const custom = config.topText.trim()
-  const countText = `全文 ${countMarkdownChars(markdown)} 字`
+  const showCount = config.showWordCount !== false
+  const countText = showCount ? `全文 ${countMarkdownChars(markdown)} 字` : ''
   return { custom: custom || null, countText }
 }
 
-export function resolveTopBarText(config: Pick<GraphicTextConfig, 'topText'>, markdown: string) {
+export function resolveTopBarText(
+  config: Pick<GraphicTextConfig, 'topText' | 'showWordCount'>,
+  markdown: string,
+) {
   const { custom, countText } = resolveTopBarParts(config, markdown)
-  if (custom) return `${custom} | ${countText}`
+  if (custom && countText) return `${custom} | ${countText}`
+  if (custom) return custom
   return countText
 }
 

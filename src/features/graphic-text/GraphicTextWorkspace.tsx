@@ -530,7 +530,11 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
         {!configPanel && toolbarStrip === 'top-text' && (
           <GraphicTopTextStrip
             value={config.topText}
+            showWordCount={config.showWordCount !== false}
             onChange={(topText) => setConfig((current) => ({ ...current, topText }))}
+            onShowWordCountChange={(showWordCount) =>
+              setConfig((current) => ({ ...current, showWordCount }))
+            }
           />
         )}
 

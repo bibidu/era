@@ -28,16 +28,34 @@ function StripShell({ children }: { children: React.ReactNode }) {
 
 interface GraphicTopTextStripProps {
   value: string
+  showWordCount: boolean
   onChange: (value: string) => void
+  onShowWordCountChange: (showWordCount: boolean) => void
 }
 
-export function GraphicTopTextStrip({ value, onChange }: GraphicTopTextStripProps) {
+export function GraphicTopTextStrip({
+  value,
+  showWordCount,
+  onChange,
+  onShowWordCountChange,
+}: GraphicTopTextStripProps) {
   return (
     <StripShell>
+      <button
+        type="button"
+        aria-label="显示全文数字"
+        aria-pressed={showWordCount}
+        className={`graphic-toolbar-strip-stack-toggle shrink-0 ${showWordCount ? 'graphic-toolbar-strip-stack-toggle--active' : ''}`}
+        onClick={() => onShowWordCountChange(!showWordCount)}
+      >
+        <span className="graphic-toolbar-strip-stack-radio" aria-hidden />
+        <span>全文数字</span>
+      </button>
+      <span className="graphic-toolbar-strip-divider shrink-0" aria-hidden />
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="留空则显示「全文 xxx 字」"
+        placeholder={showWordCount ? '留空则显示「全文 xxx 字」' : '自定义顶部文案（可选）'}
         aria-label="顶部文案"
         className="graphic-toolbar-strip-top-text h-9 min-w-0 flex-1 rounded-lg border border-neutral-300 bg-neutral-50 px-2 text-sm outline-none focus:border-neutral-500"
       />

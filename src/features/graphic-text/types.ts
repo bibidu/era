@@ -45,6 +45,8 @@ export interface GraphicTextConfig {
   overlayStacked: boolean
   gradientVariant: GradientOverlayVariant
   topText: string
+  /** 是否显示左上角「全文 xxx 字」；自定义 topText 仍可单独显示 */
+  showWordCount: boolean
   backgroundUrl: string | null
   underlineHighlightColors: Record<string, string>
   handUnderlineHighlightColors: Record<string, string>
@@ -108,6 +110,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   overlayStacked: false,
   gradientVariant: DEFAULT_GRADIENT_VARIANT,
   topText: '',
+  showWordCount: true,
   backgroundUrl: null,
   underlineHighlightColors: {},
   handUnderlineHighlightColors: {},

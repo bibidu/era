@@ -303,12 +303,13 @@ async function drawPage(
   ctx.font = `400 ${topBarFontSize}px ${config.bodyFontFamily}`
   ctx.textBaseline = 'bottom'
   const topBarTextY = underlineY - 8
-  const topBarMetrics = ctx.measureText(topBar.countText || '文')
+  const measureSample = topBar.countText || topBar.custom || '文'
+  const topBarMetrics = ctx.measureText(measureSample)
   const topBarAscent = topBarMetrics.actualBoundingBoxAscent ?? topBarFontSize * 0.85
   const topBarDescent = topBarMetrics.actualBoundingBoxDescent ?? topBarFontSize * 0.15
   const topBarMidY = topBarTextY - (topBarAscent + topBarDescent) / 2
 
-  if (topBar.custom) {
+  if (topBar.custom && topBar.countText) {
     const gap = Math.max(6, Math.round(8 * exportScale))
     const dividerWidth = Math.max(1, Math.round(exportScale))
     const dividerHeight = Math.round(topBarFontSize * 0.85)
@@ -326,7 +327,9 @@ async function drawPage(
     ctx.fillRect(dividerX, topBarMidY - dividerHeight / 2, dividerWidth, dividerHeight)
     ctx.fillStyle = '#525252'
     ctx.fillText(topBar.countText, dividerX + gap + dividerWidth, topBarTextY)
-  } else {
+  } else if (topBar.custom) {
+    ctx.fillText(topBar.custom, edgeX, topBarTextY, edgeWidth)
+  } else if (topBar.countText) {
     ctx.fillText(topBar.countText, edgeX, topBarTextY, edgeWidth)
   }
 

@@ -55,6 +55,7 @@ const DEFAULT_CONFIG = {
   pageOverlay: 'grid',
   overlayStacked: false,
   topText: '',
+  showWordCount: true,
   backgroundUrl: null,
   ...emptyHighlightMaps(),
   highlightPickerColor: '#FACC15',
