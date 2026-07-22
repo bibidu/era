@@ -1,10 +1,14 @@
-import { resolveFengshuiTextureUrl, FENGSHUI_CANVAS_COLOR } from './pageFengshuiTokens'
+import {
+  resolveFengshuiTextureUrl,
+  FENGSHUI_CANVAS_COLOR,
+  FENGSHUI_IMAGE_OPACITY,
+} from './pageFengshuiTokens'
 
 interface PageFengshuiOverlayProps {
   stacked?: boolean
 }
 
-/** 预览层：淡绘参考图 + 透明雾色，避免颜色过重 */
+/** 预览层：水色底图 + 透明雾色，保留蓝调且不抢标题 */
 export function PageFengshuiOverlay({ stacked = false }: PageFengshuiOverlayProps) {
   const textureUrl = resolveFengshuiTextureUrl()
 
@@ -20,15 +24,15 @@ export function PageFengshuiOverlay({ stacked = false }: PageFengshuiOverlayProp
         className="absolute inset-0 bg-cover bg-center"
         style={{
           backgroundImage: `url("${textureUrl}")`,
-          opacity: 0.42,
+          opacity: FENGSHUI_IMAGE_OPACITY,
         }}
       />
-      {/* 顶部宣纸雾，给大标题留白 */}
+      {/* 顶部宣纸雾，给大标题留白（略轻，保留水色） */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(180deg, rgba(247,244,238,0.72) 0%, rgba(247,244,238,0.28) 45%, rgba(247,244,238,0) 70%)',
+            'linear-gradient(180deg, rgba(247,244,238,0.55) 0%, rgba(247,244,238,0.18) 38%, rgba(247,244,238,0) 58%)',
         }}
       />
       {/* 中部极淡灰雾 */}
@@ -36,7 +40,7 @@ export function PageFengshuiOverlay({ stacked = false }: PageFengshuiOverlayProp
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(ellipse at 50% 42%, rgba(170,176,180,0.1) 0%, rgba(170,176,180,0) 70%)',
+            'radial-gradient(ellipse at 50% 42%, rgba(170,176,180,0.07) 0%, rgba(170,176,180,0) 70%)',
         }}
       />
       {/* 底部微暖透明罩 */}
@@ -44,7 +48,7 @@ export function PageFengshuiOverlay({ stacked = false }: PageFengshuiOverlayProp
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(180deg, rgba(196,178,150,0) 55%, rgba(196,178,150,0.1) 100%)',
+            'linear-gradient(180deg, rgba(196,178,150,0) 55%, rgba(196,178,150,0.08) 100%)',
         }}
       />
     </div>

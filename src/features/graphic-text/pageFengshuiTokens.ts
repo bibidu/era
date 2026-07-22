@@ -3,13 +3,13 @@
 export const FENGSHUI_CANVAS_COLOR = '#F7F4EE'
 export const FENGSHUI_CANVAS_RGB = '247, 244, 238'
 
-/** 底图不透明度：偏淡，让标题区更干净 */
-export const FENGSHUI_IMAGE_OPACITY = 0.42
+/** 底图不透明度：保留水色蓝调，同时不抢标题 */
+export const FENGSHUI_IMAGE_OPACITY = 0.62
 
-/** 顶部留白雾罩，方便大标题阅读 */
+/** 顶部留白雾罩，方便大标题阅读（略轻，避免盖掉蓝色） */
 export const FENGSHUI_TOP_MIST = `rgba(${FENGSHUI_CANVAS_RGB}, 0.55)`
-export const FENGSHUI_MID_MIST = 'rgba(180, 186, 190, 0.08)'
-export const FENGSHUI_SEPIA_WASH = 'rgba(196, 178, 150, 0.06)'
+export const FENGSHUI_MID_MIST = 'rgba(180, 186, 190, 0.07)'
+export const FENGSHUI_SEPIA_WASH = 'rgba(196, 178, 150, 0.08)'
 
 export function resolveFengshuiTextureUrl() {
   const base = import.meta.env.BASE_URL || '/'
@@ -50,10 +50,10 @@ function drawCoverImage(
 }
 
 function drawMistWashes(ctx: CanvasRenderingContext2D, width: number, height: number) {
-  // 顶部大面积淡雾，压低山色对比
-  const top = ctx.createLinearGradient(0, 0, 0, height * 0.55)
-  top.addColorStop(0, `rgba(${FENGSHUI_CANVAS_RGB}, 0.72)`)
-  top.addColorStop(0.45, `rgba(${FENGSHUI_CANVAS_RGB}, 0.28)`)
+  // 顶部淡雾：标题区可读，同时保留水色蓝调
+  const top = ctx.createLinearGradient(0, 0, 0, height * 0.58)
+  top.addColorStop(0, `rgba(${FENGSHUI_CANVAS_RGB}, 0.55)`)
+  top.addColorStop(0.55, `rgba(${FENGSHUI_CANVAS_RGB}, 0.18)`)
   top.addColorStop(1, `rgba(${FENGSHUI_CANVAS_RGB}, 0)`)
   ctx.fillStyle = top
   ctx.fillRect(0, 0, width, height)
@@ -67,7 +67,7 @@ function drawMistWashes(ctx: CanvasRenderingContext2D, width: number, height: nu
     height * 0.42,
     width * 0.7,
   )
-  mid.addColorStop(0, 'rgba(170, 176, 180, 0.1)')
+  mid.addColorStop(0, 'rgba(170, 176, 180, 0.07)')
   mid.addColorStop(1, 'rgba(170, 176, 180, 0)')
   ctx.fillStyle = mid
   ctx.fillRect(0, 0, width, height)
@@ -75,7 +75,7 @@ function drawMistWashes(ctx: CanvasRenderingContext2D, width: number, height: nu
   // 底部微弱暖色透明罩，避免屋顶色过重
   const bottom = ctx.createLinearGradient(0, height * 0.55, 0, height)
   bottom.addColorStop(0, 'rgba(196, 178, 150, 0)')
-  bottom.addColorStop(1, 'rgba(196, 178, 150, 0.1)')
+  bottom.addColorStop(1, 'rgba(196, 178, 150, 0.08)')
   ctx.fillStyle = bottom
   ctx.fillRect(0, 0, width, height)
 }
