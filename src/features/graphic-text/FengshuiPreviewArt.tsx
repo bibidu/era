@@ -1,6 +1,6 @@
-import { FENGSHUI_CANVAS_COLOR, resolveFengshuiTextureUrl } from './pageFengshuiTokens'
+import { FENGSHUI_CANVAS_COLOR, FENGSHUI_IMAGE_OPACITY, resolveFengshuiTextureUrl } from './pageFengshuiTokens'
 
-/** 工具条缩略预览：淡色水墨村舍 */
+/** 工具条缩略预览：偏蓝水色村舍 */
 export function FengshuiPreviewArt() {
   const textureUrl = resolveFengshuiTextureUrl()
 
@@ -8,13 +8,13 @@ export function FengshuiPreviewArt() {
     <div className="relative size-full overflow-hidden" style={{ backgroundColor: FENGSHUI_CANVAS_COLOR }}>
       <div
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url("${textureUrl}")`, opacity: 0.62 }}
+        style={{ backgroundImage: `url("${textureUrl}")`, opacity: FENGSHUI_IMAGE_OPACITY }}
       />
       <div
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(180deg, rgba(247,244,238,0.55) 0%, rgba(247,244,238,0.15) 55%, rgba(196,178,150,0.08) 100%)',
+            'linear-gradient(180deg, rgba(240,245,248,0.5) 0%, rgba(240,245,248,0.14) 55%, rgba(180,205,220,0.06) 100%)',
         }}
       />
     </div>

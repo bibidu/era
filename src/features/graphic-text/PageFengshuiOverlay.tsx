@@ -8,7 +8,7 @@ interface PageFengshuiOverlayProps {
   stacked?: boolean
 }
 
-/** 预览层：水色底图 + 透明雾色，保留蓝调且不抢标题 */
+/** 预览层：偏蓝水色底图 + 冷调雾罩，与导出参数一致 */
 export function PageFengshuiOverlay({ stacked = false }: PageFengshuiOverlayProps) {
   const textureUrl = resolveFengshuiTextureUrl()
 
@@ -27,28 +27,28 @@ export function PageFengshuiOverlay({ stacked = false }: PageFengshuiOverlayProp
           opacity: FENGSHUI_IMAGE_OPACITY,
         }}
       />
-      {/* 顶部宣纸雾，给大标题留白（略轻，保留水色） */}
+      {/* 顶部冷调雾，给大标题留白 */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(180deg, rgba(247,244,238,0.55) 0%, rgba(247,244,238,0.18) 38%, rgba(247,244,238,0) 58%)',
+            'linear-gradient(180deg, rgba(240,245,248,0.5) 0%, rgba(240,245,248,0.16) 38%, rgba(240,245,248,0) 58%)',
         }}
       />
-      {/* 中部极淡灰雾 */}
+      {/* 中部极淡青灰雾 */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(ellipse at 50% 42%, rgba(170,176,180,0.07) 0%, rgba(170,176,180,0) 70%)',
+            'radial-gradient(ellipse at 50% 42%, rgba(170,190,205,0.08) 0%, rgba(170,190,205,0) 70%)',
         }}
       />
-      {/* 底部微暖透明罩 */}
+      {/* 底部微弱冷青罩 */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(180deg, rgba(196,178,150,0) 55%, rgba(196,178,150,0.08) 100%)',
+            'linear-gradient(180deg, rgba(180,205,220,0) 55%, rgba(180,205,220,0.06) 100%)',
         }}
       />
     </div>

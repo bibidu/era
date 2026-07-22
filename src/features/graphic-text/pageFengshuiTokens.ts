@@ -1,18 +1,18 @@
-/** 风水质感：淡彩水墨底图 + 透明雾色罩层（整体偏淡，避免颜色过重） */
+/** 风水质感：偏蓝水色底图 + 透明雾色罩层（冷调宣纸，避免暖黄冲淡蓝色） */
 
-export const FENGSHUI_CANVAS_COLOR = '#F7F4EE'
-export const FENGSHUI_CANVAS_RGB = '247, 244, 238'
+export const FENGSHUI_CANVAS_COLOR = '#F0F5F8'
+export const FENGSHUI_CANVAS_RGB = '240, 245, 248'
 
 /** 底图不透明度：保留水色蓝调，同时不抢标题 */
-export const FENGSHUI_IMAGE_OPACITY = 0.62
+export const FENGSHUI_IMAGE_OPACITY = 0.68
 
 /** 顶部留白雾罩，方便大标题阅读（略轻，避免盖掉蓝色） */
-export const FENGSHUI_TOP_MIST = `rgba(${FENGSHUI_CANVAS_RGB}, 0.55)`
-export const FENGSHUI_MID_MIST = 'rgba(180, 186, 190, 0.07)'
-export const FENGSHUI_SEPIA_WASH = 'rgba(196, 178, 150, 0.08)'
+export const FENGSHUI_TOP_MIST = `rgba(${FENGSHUI_CANVAS_RGB}, 0.5)`
+export const FENGSHUI_MID_MIST = 'rgba(170, 190, 205, 0.08)'
+export const FENGSHUI_SEPIA_WASH = 'rgba(180, 205, 220, 0.06)'
 
-/** 资源版本：底图更新后递增，避免浏览器缓存旧图 */
-export const FENGSHUI_TEXTURE_VERSION = '20260722a'
+/** 资源版本：底图/参数更新后递增，避免浏览器缓存旧图 */
+export const FENGSHUI_TEXTURE_VERSION = '20260722b'
 
 export function resolveFengshuiTextureUrl() {
   const base = import.meta.env.BASE_URL || '/'
@@ -55,13 +55,13 @@ function drawCoverImage(
 function drawMistWashes(ctx: CanvasRenderingContext2D, width: number, height: number) {
   // 顶部淡雾：标题区可读，同时保留水色蓝调
   const top = ctx.createLinearGradient(0, 0, 0, height * 0.58)
-  top.addColorStop(0, `rgba(${FENGSHUI_CANVAS_RGB}, 0.55)`)
-  top.addColorStop(0.55, `rgba(${FENGSHUI_CANVAS_RGB}, 0.18)`)
+  top.addColorStop(0, `rgba(${FENGSHUI_CANVAS_RGB}, 0.5)`)
+  top.addColorStop(0.55, `rgba(${FENGSHUI_CANVAS_RGB}, 0.16)`)
   top.addColorStop(1, `rgba(${FENGSHUI_CANVAS_RGB}, 0)`)
   ctx.fillStyle = top
   ctx.fillRect(0, 0, width, height)
 
-  // 中部极淡灰雾
+  // 中部极淡青灰雾
   const mid = ctx.createRadialGradient(
     width * 0.5,
     height * 0.42,
@@ -70,21 +70,21 @@ function drawMistWashes(ctx: CanvasRenderingContext2D, width: number, height: nu
     height * 0.42,
     width * 0.7,
   )
-  mid.addColorStop(0, 'rgba(170, 176, 180, 0.07)')
-  mid.addColorStop(1, 'rgba(170, 176, 180, 0)')
+  mid.addColorStop(0, 'rgba(170, 190, 205, 0.08)')
+  mid.addColorStop(1, 'rgba(170, 190, 205, 0)')
   ctx.fillStyle = mid
   ctx.fillRect(0, 0, width, height)
 
-  // 底部微弱暖色透明罩，避免屋顶色过重
+  // 底部微弱冷青罩，强化水色而不偏暖黄
   const bottom = ctx.createLinearGradient(0, height * 0.55, 0, height)
-  bottom.addColorStop(0, 'rgba(196, 178, 150, 0)')
-  bottom.addColorStop(1, 'rgba(196, 178, 150, 0.08)')
+  bottom.addColorStop(0, 'rgba(180, 205, 220, 0)')
+  bottom.addColorStop(1, 'rgba(180, 205, 220, 0.06)')
   ctx.fillStyle = bottom
   ctx.fillRect(0, 0, width, height)
 }
 
 /**
- * 导出用：先铺宣纸底，再淡绘参考图，最后加透明雾色。
+ * 导出用：先铺冷调宣纸底，再淡绘水色参考图，最后加透明雾色。
  * stacked=true 时不铺底色，只叠淡图与雾罩。
  */
 export async function drawPageFengshuiOverlay(
@@ -118,7 +118,7 @@ function drawProceduralFengshuiFallback(
   width: number,
   height: number,
 ) {
-  ctx.fillStyle = 'rgba(160, 166, 170, 0.12)'
+  ctx.fillStyle = 'rgba(150, 175, 195, 0.14)'
   ctx.beginPath()
   ctx.moveTo(0, height * 0.48)
   ctx.quadraticCurveTo(width * 0.22, height * 0.34, width * 0.4, height * 0.46)
@@ -129,7 +129,7 @@ function drawProceduralFengshuiFallback(
   ctx.closePath()
   ctx.fill()
 
-  ctx.fillStyle = 'rgba(148, 154, 158, 0.1)'
+  ctx.fillStyle = 'rgba(140, 168, 190, 0.12)'
   ctx.beginPath()
   ctx.moveTo(0, height * 0.58)
   ctx.quadraticCurveTo(width * 0.3, height * 0.48, width * 0.55, height * 0.58)
