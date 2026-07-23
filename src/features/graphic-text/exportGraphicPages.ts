@@ -4,7 +4,7 @@ import {
   CODE_TEXT_COLOR,
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
-import { buildCircleHighlightColorRuns, drawHandDrawnCircleAroundTextBounds } from './circleHighlight'
+import { buildCircleHighlightColorRuns, drawHandDrawnCircleAroundTextBounds, HAND_DRAWN_CIRCLE_STROKE_WIDTH } from './circleHighlight'
 import { drawHandDrawnUnderline, buildHandUnderlineColorRuns, HAND_DRAWN_UNDERLINE_TILE_WIDTH } from './handDrawnUnderlinePath'
 import { collectGraphicFontIds, getFontConfigForStyleType } from './graphicTextFonts'
 import { getGraphicLayout } from './layout'
@@ -124,7 +124,7 @@ function drawStyledLine(
         descent,
         run.color,
         fontSize,
-        Math.max(4, circleLineWidth),
+        Math.max(HAND_DRAWN_CIRCLE_STROKE_WIDTH, circleLineWidth),
       )
     }
 
@@ -341,7 +341,10 @@ async function drawPage(
   let codeBlockSourceId: string | null = null
   let codeBlockFrame: { x: number; y: number; w: number; h: number } | null = null
 
-  const circleLineWidth = Math.max(4, 4 * exportScale)
+  const circleLineWidth = Math.max(
+    HAND_DRAWN_CIRCLE_STROKE_WIDTH,
+    HAND_DRAWN_CIRCLE_STROKE_WIDTH * exportScale,
+  )
 
   const flushCodeBlockFrame = () => {
     if (!codeBlockFrame) return

@@ -3,7 +3,8 @@ export const HAND_DRAWN_CIRCLE_PAD_LEFT_EM = 0.58
 export const HAND_DRAWN_CIRCLE_PAD_TOP_EM = 0.46
 export const HAND_DRAWN_CIRCLE_PAD_WIDTH_EXTRA_EM = 1.16
 export const HAND_DRAWN_CIRCLE_PAD_HEIGHT_EXTRA_EM = 0.92
-export const HAND_DRAWN_CIRCLE_STROKE_WIDTH = 4
+/** 手绘圈描边宽度（预览 SVG / 导出 Canvas 共用，偏粗更醒目） */
+export const HAND_DRAWN_CIRCLE_STROKE_WIDTH = 7
 
 export const HAND_DRAWN_CIRCLE_VIEWBOX_WIDTH = 100
 export const HAND_DRAWN_CIRCLE_VIEWBOX_HEIGHT = 56
@@ -38,7 +39,7 @@ export function strokeHandDrawnEllipse(
   rx: number,
   ry: number,
   color: string,
-  lineWidth = 4,
+  lineWidth = HAND_DRAWN_CIRCLE_STROKE_WIDTH,
 ) {
   const points = handDrawnEllipsePoints(cx, cy, rx, ry)
   if (points.length < 2) return
