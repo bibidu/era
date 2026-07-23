@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>图片手动切割工具</title>
   <style>
     :root {
@@ -13,57 +13,81 @@
       --muted: #93a0b5;
       --accent: #5b8cff;
       --accent-2: #3dd68c;
-      --danger: #ff6b6b;
     }
     * { box-sizing: border-box; }
-    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+    html, body {
+      margin: 0; height: 100%; overflow: hidden;
+      background: var(--bg); color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      overscroll-behavior: none;
+      touch-action: manipulation;
+    }
     body { display: grid; grid-template-rows: auto 1fr; }
     header {
       display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
       padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel);
+      flex-shrink: 0;
     }
-    header h1 { font-size: 15px; margin: 0 12px 0 0; font-weight: 650; letter-spacing: .02em; }
+    header h1 { font-size: 15px; margin: 0 12px 0 0; font-weight: 650; }
     .btn, button, label.btn {
       appearance: none; border: 1px solid var(--line); background: #1d2330; color: var(--text);
       border-radius: 8px; padding: 8px 12px; font-size: 13px; cursor: pointer;
     }
     .btn:hover, button:hover, label.btn:hover { border-color: #3a4660; background: #242b3b; }
     .btn.primary { background: var(--accent); border-color: transparent; color: #fff; font-weight: 600; }
-    .btn.primary:hover { filter: brightness(1.05); }
     .btn.ok { background: var(--accent-2); border-color: transparent; color: #062416; font-weight: 700; }
     .btn.danger { background: transparent; border-color: #5a2d2d; color: #ffb4b4; }
     input[type="text"], input[type="number"] {
       background: #12161f; border: 1px solid var(--line); color: var(--text);
-      border-radius: 8px; padding: 8px 10px; font-size: 13px; min-width: 220px;
+      border-radius: 8px; padding: 8px 10px; font-size: 13px; min-width: 200px;
     }
     input[type="file"] { display: none; }
     .spacer { flex: 1; }
     .hint { color: var(--muted); font-size: 12px; }
-    main { display: grid; grid-template-columns: 1fr 320px; min-height: 0; }
-    .stage-wrap { min-height: 0; overflow: auto; padding: 16px; background:
-      linear-gradient(45deg, #151922 25%, transparent 25%) 0 0 / 20px 20px,
-      linear-gradient(-45deg, #151922 25%, transparent 25%) 0 0 / 20px 20px,
-      #10141c; }
+    main { display: grid; grid-template-columns: 1fr 300px; min-height: 0; overflow: hidden; }
+    .stage-wrap {
+      min-height: 0; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      padding: 12px;
+      background:
+        linear-gradient(45deg, #151922 25%, transparent 25%) 0 0 / 20px 20px,
+        linear-gradient(-45deg, #151922 25%, transparent 25%) 0 0 / 20px 20px,
+        #10141c;
+      touch-action: none;
+      user-select: none;
+    }
     .stage {
       position: relative; display: inline-block; line-height: 0;
       box-shadow: 0 10px 40px rgba(0,0,0,.35); background: #fff;
+      max-width: 100%; max-height: 100%;
+      touch-action: none;
     }
-    .stage img { display: block; max-width: none; user-select: none; -webkit-user-drag: none; }
+    .stage img {
+      display: block; max-width: none;
+      user-select: none; -webkit-user-drag: none;
+      pointer-events: none;
+      touch-action: none;
+    }
     canvas#overlay {
       position: absolute; inset: 0; width: 100%; height: 100%;
       cursor: crosshair;
+      touch-action: none;
     }
     aside {
       border-left: 1px solid var(--line); background: var(--panel);
       padding: 14px; overflow: auto; display: flex; flex-direction: column; gap: 12px;
+      min-height: 0;
     }
-    aside h2 { margin: 0; font-size: 13px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+    aside h2 {
+      margin: 0; font-size: 13px; color: var(--muted); font-weight: 600;
+      text-transform: uppercase; letter-spacing: .06em;
+    }
     .region {
       border: 1px solid var(--line); border-radius: 10px; padding: 10px; background: #12161f;
     }
     .region.active { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(91,140,255,.35) inset; }
     .region-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-    .swatch { width: 12px; height: 12px; border-radius: 3px; }
+    .swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
     .region-head strong { font-size: 13px; }
     .coords { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .coords label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--muted); }
@@ -71,8 +95,8 @@
     .toolbar-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .status { font-size: 12px; color: var(--muted); min-height: 1.2em; }
     @media (max-width: 960px) {
-      main { grid-template-columns: 1fr; }
-      aside { border-left: none; border-top: 1px solid var(--line); max-height: 40vh; }
+      main { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+      aside { border-left: none; border-top: 1px solid var(--line); max-height: 36vh; }
     }
   </style>
 </head>
@@ -84,14 +108,14 @@
     <button class="btn" id="loadUrl">加载 URL</button>
     <button class="btn" id="loadDefault">加载示例图</button>
     <div class="spacer"></div>
-    <span class="hint">拖拽框选 / 点选区域后拖动或拖角点缩放 · Delete 删除</span>
+    <span class="hint">拖框移动 · 拖边框/角点缩放 · 空白处拖拽新建</span>
     <button class="btn" id="addRegion">+ 加区域</button>
     <button class="btn danger" id="clearRegions">清空区域</button>
     <button class="btn primary" id="exportOne">导出当前</button>
     <button class="btn ok" id="exportAll">导出全部 PNG</button>
   </header>
   <main>
-    <div class="stage-wrap">
+    <div class="stage-wrap" id="stageWrap">
       <div class="stage" id="stage" hidden>
         <img id="img" alt="source" />
         <canvas id="overlay"></canvas>
@@ -102,8 +126,6 @@
       <h2>区域列表</h2>
       <div class="status" id="status">尚未加载图片</div>
       <div class="toolbar-row">
-        <button class="btn" id="fitView">适应窗口</button>
-        <button class="btn" id="zoom100">100%</button>
         <button class="btn" id="preset9">生成 3×3 网格</button>
       </div>
       <div id="list"></div>
@@ -117,6 +139,8 @@
       '#ff85c0', '#95de64', '#ffc069'
     ];
 
+    const EDGE_HIT_PX = 10; // screen pixels for edge hit
+
     const state = {
       img: null,
       naturalW: 0,
@@ -124,7 +148,8 @@
       scale: 1,
       regions: [],
       active: -1,
-      drag: null, // { type: 'create'|'move'|'resize', ... }
+      drag: null,
+      hoverCursor: 'crosshair',
     };
 
     const els = {
@@ -132,6 +157,7 @@
       url: document.getElementById('url'),
       loadUrl: document.getElementById('loadUrl'),
       loadDefault: document.getElementById('loadDefault'),
+      stageWrap: document.getElementById('stageWrap'),
       stage: document.getElementById('stage'),
       img: document.getElementById('img'),
       overlay: document.getElementById('overlay'),
@@ -142,8 +168,6 @@
       clearRegions: document.getElementById('clearRegions'),
       exportOne: document.getElementById('exportOne'),
       exportAll: document.getElementById('exportAll'),
-      fitView: document.getElementById('fitView'),
-      zoom100: document.getElementById('zoom100'),
       preset9: document.getElementById('preset9'),
     };
 
@@ -173,30 +197,27 @@
     }
 
     async function setImage(source) {
-      let im;
-      if (typeof source === 'string') im = await loadImageFromUrl(source);
-      else {
-        im = source;
-      }
+      const im = typeof source === 'string' ? await loadImageFromUrl(source) : source;
       state.img = im;
       state.naturalW = im.naturalWidth;
       state.naturalH = im.naturalHeight;
       els.img.src = im.src;
       els.stage.hidden = false;
       els.emptyHint.hidden = true;
-      fitView();
+      fitLocked();
       setStatus(`${state.naturalW} × ${state.naturalH} · 区域 ${state.regions.length}`);
       draw();
       renderList();
     }
 
-    function fitView() {
+    /** 仅按容器自适应，禁止用户缩放 / 滚动画布 */
+    function fitLocked() {
       if (!state.img) return;
-      const wrap = document.querySelector('.stage-wrap');
-      const pad = 32;
-      const sw = wrap.clientWidth - pad;
-      const sh = wrap.clientHeight - pad;
-      const s = Math.min(sw / state.naturalW, sh / state.naturalH, 1);
+      const wrap = els.stageWrap;
+      const pad = 8;
+      const sw = Math.max(1, wrap.clientWidth - pad * 2);
+      const sh = Math.max(1, wrap.clientHeight - pad * 2);
+      const s = Math.min(sw / state.naturalW, sh / state.naturalH);
       setScale(s || 1);
     }
 
@@ -221,22 +242,48 @@
       };
     }
 
+    function cursorForHandle(handle) {
+      if (!handle) return 'move';
+      if (handle === 'n' || handle === 's') return 'ns-resize';
+      if (handle === 'e' || handle === 'w') return 'ew-resize';
+      if (handle === 'nw' || handle === 'se') return 'nwse-resize';
+      if (handle === 'ne' || handle === 'sw') return 'nesw-resize';
+      return 'move';
+    }
+
+    /**
+     * 命中优先级：角点 > 边框 > 内部移动
+     * handle: n/s/e/w/nw/ne/sw/se
+     */
     function hitTest(px, py) {
-      const hs = 8 / state.scale; // handle size in image coords
+      const edge = EDGE_HIT_PX / state.scale;
+      const corner = (EDGE_HIT_PX + 2) / state.scale;
+
       for (let i = state.regions.length - 1; i >= 0; i--) {
         const r = state.regions[i];
-        const handles = [
-          ['nw', r.x, r.y],
-          ['ne', r.x + r.w, r.y],
-          ['sw', r.x, r.y + r.h],
-          ['se', r.x + r.w, r.y + r.h],
-        ];
-        for (const [name, hx, hy] of handles) {
-          if (Math.abs(px - hx) <= hs && Math.abs(py - hy) <= hs) {
-            return { index: i, type: 'resize', handle: name };
-          }
-        }
-        if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) {
+        const x0 = r.x, y0 = r.y, x1 = r.x + r.w, y1 = r.y + r.h;
+
+        const nearL = Math.abs(px - x0) <= corner;
+        const nearR = Math.abs(px - x1) <= corner;
+        const nearT = Math.abs(py - y0) <= corner;
+        const nearB = Math.abs(py - y1) <= corner;
+        const inX = px >= x0 - edge && px <= x1 + edge;
+        const inY = py >= y0 - edge && py <= y1 + edge;
+
+        // corners
+        if (nearL && nearT && inX && inY) return { index: i, type: 'resize', handle: 'nw' };
+        if (nearR && nearT && inX && inY) return { index: i, type: 'resize', handle: 'ne' };
+        if (nearL && nearB && inX && inY) return { index: i, type: 'resize', handle: 'sw' };
+        if (nearR && nearB && inX && inY) return { index: i, type: 'resize', handle: 'se' };
+
+        // edges
+        if (nearT && px >= x0 && px <= x1) return { index: i, type: 'resize', handle: 'n' };
+        if (nearB && px >= x0 && px <= x1) return { index: i, type: 'resize', handle: 's' };
+        if (nearL && py >= y0 && py <= y1) return { index: i, type: 'resize', handle: 'w' };
+        if (nearR && py >= y0 && py <= y1) return { index: i, type: 'resize', handle: 'e' };
+
+        // interior move
+        if (px >= x0 && px <= x1 && py >= y0 && py <= y1) {
           return { index: i, type: 'move' };
         }
       }
@@ -244,8 +291,7 @@
     }
 
     function draw() {
-      const { overlay } = els;
-      ctx.clearRect(0, 0, overlay.width, overlay.height);
+      ctx.clearRect(0, 0, els.overlay.width, els.overlay.height);
       const s = state.scale;
 
       state.regions.forEach((r, i) => {
@@ -259,27 +305,39 @@
         ctx.fillStyle = color + '22';
         ctx.fillRect(r.x * s, r.y * s, r.w * s, r.h * s);
 
-        // label
         ctx.setLineDash([]);
         ctx.fillStyle = color;
-        ctx.font = `bold ${12}px ui-sans-serif, system-ui`;
+        ctx.font = 'bold 12px ui-sans-serif, system-ui';
         const label = `#${i + 1}`;
         const tw = ctx.measureText(label).width + 10;
         ctx.fillRect(r.x * s, r.y * s, tw, 18);
         ctx.fillStyle = '#111';
         ctx.fillText(label, r.x * s + 5, r.y * s + 13);
 
-        // handles
         if (active) {
-          const pts = [
+          // corner handles
+          const corners = [
             [r.x, r.y], [r.x + r.w, r.y], [r.x, r.y + r.h], [r.x + r.w, r.y + r.h],
+          ];
+          // edge mid handles
+          const mids = [
+            [r.x + r.w / 2, r.y],
+            [r.x + r.w / 2, r.y + r.h],
+            [r.x, r.y + r.h / 2],
+            [r.x + r.w, r.y + r.h / 2],
           ];
           ctx.fillStyle = '#fff';
           ctx.strokeStyle = color;
           ctx.lineWidth = 2;
-          for (const [hx, hy] of pts) {
+          for (const [hx, hy] of corners) {
             ctx.beginPath();
             ctx.rect(hx * s - 4, hy * s - 4, 8, 8);
+            ctx.fill();
+            ctx.stroke();
+          }
+          for (const [hx, hy] of mids) {
+            ctx.beginPath();
+            ctx.rect(hx * s - 3, hy * s - 3, 6, 6);
             ctx.fill();
             ctx.stroke();
           }
@@ -335,7 +393,6 @@
       if (k === 'w') v = clamp(v, 1, state.naturalW);
       if (k === 'h') v = clamp(v, 1, state.naturalH);
       state.regions[i][k] = v;
-      // keep in bounds
       const r = state.regions[i];
       if (r.x + r.w > state.naturalW) r.w = state.naturalW - r.x;
       if (r.y + r.h > state.naturalH) r.h = state.naturalH - r.y;
@@ -353,8 +410,9 @@
       draw();
     });
 
-    els.overlay.addEventListener('mousedown', (e) => {
+    function pointerDown(e) {
       if (!state.img) return;
+      e.preventDefault();
       const p = toImageXY(e);
       const hit = hitTest(p.x, p.y);
       if (hit) {
@@ -367,24 +425,32 @@
           startY: p.y,
           orig: { ...r },
         };
+        els.overlay.style.cursor = cursorForHandle(hit.handle);
       } else {
         state.active = -1;
-        state.drag = {
-          type: 'create',
-          startX: p.x,
-          startY: p.y,
-        };
+        state.drag = { type: 'create', startX: p.x, startY: p.y };
+        els.overlay.style.cursor = 'crosshair';
       }
       renderList();
       draw();
-    });
+    }
 
-    window.addEventListener('mousemove', (e) => {
-      if (!state.drag || !state.img) return;
+    function pointerMove(e) {
+      if (!state.img) return;
       const p = toImageXY(e);
+
+      if (!state.drag) {
+        const hit = hitTest(p.x, p.y);
+        els.overlay.style.cursor = hit
+          ? cursorForHandle(hit.handle)
+          : 'crosshair';
+        return;
+      }
+
+      e.preventDefault();
+
       if (state.drag.type === 'create') {
         const rect = normRect(state.drag.startX, state.drag.startY, p.x, p.y);
-        // temporary preview region
         if (state.drag.tempIndex == null) {
           state.regions.push(rect);
           state.drag.tempIndex = state.regions.length - 1;
@@ -395,16 +461,18 @@
         draw();
         return;
       }
+
       const r = state.regions[state.active];
       const o = state.drag.orig;
       const dx = p.x - state.drag.startX;
       const dy = p.y - state.drag.startY;
+
       if (state.drag.type === 'move') {
         r.x = clamp(o.x + dx, 0, state.naturalW - o.w);
         r.y = clamp(o.y + dy, 0, state.naturalH - o.h);
       } else if (state.drag.type === 'resize') {
         let x0 = o.x, y0 = o.y, x1 = o.x + o.w, y1 = o.y + o.h;
-        const hdl = state.drag.handle;
+        const hdl = state.drag.handle || '';
         if (hdl.includes('w')) x0 = clamp(o.x + dx, 0, x1 - 2);
         if (hdl.includes('e')) x1 = clamp(o.x + o.w + dx, x0 + 2, state.naturalW);
         if (hdl.includes('n')) y0 = clamp(o.y + dy, 0, y1 - 2);
@@ -412,9 +480,9 @@
         Object.assign(r, normRect(x0, y0, x1, y1));
       }
       draw();
-    });
+    }
 
-    window.addEventListener('mouseup', () => {
+    function pointerUp() {
       if (!state.drag) return;
       if (state.drag.type === 'create' && state.drag.tempIndex != null) {
         const r = state.regions[state.drag.tempIndex];
@@ -426,16 +494,47 @@
       state.drag = null;
       renderList();
       draw();
-    });
+    }
+
+    els.overlay.addEventListener('mousedown', pointerDown);
+    window.addEventListener('mousemove', pointerMove);
+    window.addEventListener('mouseup', pointerUp);
+
+    els.overlay.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      const t = e.touches[0];
+      pointerDown({
+        clientX: t.clientX,
+        clientY: t.clientY,
+        preventDefault: () => e.preventDefault(),
+      });
+    }, { passive: false });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!state.drag || e.touches.length !== 1) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      pointerMove({
+        clientX: t.clientX,
+        clientY: t.clientY,
+        preventDefault: () => {},
+      });
+    }, { passive: false });
+
+    window.addEventListener('touchend', pointerUp);
+    window.addEventListener('touchcancel', pointerUp);
+
+    // 禁止滚轮缩放 / 画布滚动
+    els.stageWrap.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
+    document.addEventListener('gesturestart', (e) => e.preventDefault());
+    document.addEventListener('gesturechange', (e) => e.preventDefault());
 
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (state.active >= 0 && !(e.target instanceof HTMLInputElement)) {
-          state.regions.splice(state.active, 1);
-          state.active = -1;
-          renderList();
-          draw();
-        }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && state.active >= 0 && !(e.target instanceof HTMLInputElement)) {
+        state.regions.splice(state.active, 1);
+        state.active = -1;
+        renderList();
+        draw();
       }
     });
 
@@ -447,7 +546,7 @@
       cctx.drawImage(
         state.img,
         Math.round(r.x), Math.round(r.y), Math.round(r.w), Math.round(r.h),
-        0, 0, c.width, c.height
+        0, 0, c.width, c.height,
       );
       return c;
     }
@@ -465,30 +564,20 @@
     els.file.addEventListener('change', async () => {
       const f = els.file.files?.[0];
       if (!f) return;
-      const url = URL.createObjectURL(f);
-      try {
-        await setImage(url);
-      } catch (err) {
-        alert(err.message || String(err));
-      }
+      try { await setImage(URL.createObjectURL(f)); }
+      catch (err) { alert(err.message || String(err)); }
     });
 
     els.loadUrl.addEventListener('click', async () => {
       const url = els.url.value.trim();
       if (!url) return alert('请先粘贴图片 URL');
-      try {
-        await setImage(url);
-      } catch (err) {
-        alert(err.message + '\n提示：若跨域失败，请改用「选择本地图片」。');
-      }
+      try { await setImage(url); }
+      catch (err) { alert(err.message + '\n提示：若跨域失败，请改用「选择本地图片」。'); }
     });
 
     els.loadDefault.addEventListener('click', async () => {
-      try {
-        await setImage('./source.jpg');
-      } catch (err) {
-        alert('示例图加载失败：' + (err.message || err));
-      }
+      try { await setImage('./source.jpg'); }
+      catch (err) { alert('示例图加载失败：' + (err.message || err)); }
     });
 
     els.addRegion.addEventListener('click', () => {
@@ -533,14 +622,10 @@
       draw();
     });
 
-    els.fitView.addEventListener('click', fitView);
-    els.zoom100.addEventListener('click', () => setScale(1));
-
     els.exportOne.addEventListener('click', () => {
       if (!state.img) return alert('请先加载图片');
       if (state.active < 0) return alert('请先选中一个区域');
-      const r = state.regions[state.active];
-      downloadCanvas(cropRegion(r), `slice-${String(state.active + 1).padStart(2, '0')}.png`);
+      downloadCanvas(cropRegion(state.regions[state.active]), `slice-${String(state.active + 1).padStart(2, '0')}.png`);
     });
 
     els.exportAll.addEventListener('click', async () => {
@@ -550,11 +635,15 @@
         const r = state.regions[i];
         if (r.w < 1 || r.h < 1) continue;
         downloadCanvas(cropRegion(r), `slice-${String(i + 1).padStart(2, '0')}.png`);
-        await new Promise((r) => setTimeout(r, 120));
+        await new Promise((res) => setTimeout(res, 120));
       }
     });
 
-    // boot: try default source
+    // 窗口变化时只自适应铺满，不提供手动缩放
+    window.addEventListener('resize', () => {
+      if (state.img) fitLocked();
+    });
+
     setImage('./source.jpg').catch(() => {
       setStatus('请选择本地图片，或粘贴 URL 加载');
     });
