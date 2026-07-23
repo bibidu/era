@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=overlays-content" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet" />
+    <title>海报编辑器</title>
+    <script type="module" crossorigin src="/era/assets/index-CCtBHVoj.js"></script>
+    <link rel="stylesheet" crossorigin href="/era/assets/index-CEmuHQiy.css">
+      <meta name="era-build" content="af8984981f8d079f77a06e055337bd2a05eff520" />
+    <script>window.__ERA_BUILD__="af8984981f8d079f77a06e055337bd2a05eff520"</script>
+  </head>
+  <body>
+    <div id="root">
+      <div
+        style="
+          display: flex;
+          min-height: 100dvh;
+          align-items: center;
+          justify-content: center;
+          color: #737373;
+          font: 14px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
+        "
+      >
+        加载中...
+      </div>
+    </div>
+    <script>
+      ;(function () {
+        var assetReloadKey = 'era-asset-reload'
+
+        function showLoadFailure() {
+          var root = document.getElementById('root')
+          if (!root || window.__ERA_APP_MOUNTED__) return
+          root.innerHTML =
+            '<div style="display:flex;min-height:100dvh;align-items:center;justify-content:center;padding:24px;text-align:center;color:#525252;font:14px/1.5 system-ui,-apple-system,\'Segoe UI\',sans-serif">页面加载失败，请下拉刷新或清除浏览器缓存后重试</div>'
+        }
+
+        window.addEventListener(
+          'error',
+          function (event) {
+            var target = event.target
+            if (!target || (target.tagName !== 'SCRIPT' && target.tagName !== 'LINK')) return
+            if (sessionStorage.getItem(assetReloadKey)) {
+              showLoadFailure()
+              return
+            }
+            sessionStorage.setItem(assetReloadKey, '1')
+            var url = new URL(window.location.href)
+            url.searchParams.set('era_refresh', Date.now().toString(36))
+            window.location.replace(url.toString())
+          },
+          true,
+        )
+      })()
+    </script>
+  </body>
+</html>
