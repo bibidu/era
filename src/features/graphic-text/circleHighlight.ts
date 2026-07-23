@@ -3,8 +3,10 @@ export const HAND_DRAWN_CIRCLE_PAD_LEFT_EM = 0.58
 export const HAND_DRAWN_CIRCLE_PAD_TOP_EM = 0.46
 export const HAND_DRAWN_CIRCLE_PAD_WIDTH_EXTRA_EM = 1.16
 export const HAND_DRAWN_CIRCLE_PAD_HEIGHT_EXTRA_EM = 0.92
-/** 手绘圈描边宽度（预览 SVG / 导出 Canvas 共用，偏粗更醒目） */
-export const HAND_DRAWN_CIRCLE_STROKE_WIDTH = 7
+/** 手绘圈描边宽度（预览 SVG / 导出 Canvas 共用；大标题会再按字号加粗） */
+export const HAND_DRAWN_CIRCLE_STROKE_WIDTH = 8
+/** 相对字号的描边下限，避免大标题时圈线显得过细 */
+export const HAND_DRAWN_CIRCLE_STROKE_FONT_RATIO = 0.12
 
 export const HAND_DRAWN_CIRCLE_VIEWBOX_WIDTH = 100
 export const HAND_DRAWN_CIRCLE_VIEWBOX_HEIGHT = 56
@@ -83,7 +85,9 @@ export function drawHandDrawnCircleAroundTextBounds(
   ctx.scale(scaleX, scaleY)
   const path = new Path2D(HAND_DRAWN_CIRCLE_PATH)
   ctx.strokeStyle = color
-  ctx.lineWidth = lineWidth / Math.max(scaleX, scaleY)
+  // 目标为设备像素宽度：基础宽度与字号比例取较大值，再抵消 scale
+  const targetStroke = Math.max(lineWidth, fontSize * HAND_DRAWN_CIRCLE_STROKE_FONT_RATIO)
+  ctx.lineWidth = targetStroke / Math.max(scaleX, scaleY)
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
   ctx.stroke(path)
