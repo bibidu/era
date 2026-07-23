@@ -141,6 +141,7 @@
     ];
 
     const EDGE_HIT_PX = 10; // screen pixels for edge hit
+    const SNAP_PX = 8; // screen pixels: 靠近画布边缘时吸附
 
     const STORAGE_KEY = 'era-slice-tool:v1'
 
@@ -265,16 +266,12 @@
       state.imageKey = key;
       const cached = loadCache(key);
       if (cached && cached.regions.length) {
-        state.regions = cached.regions.map((r) => ({
-          x: clamp(+r.x || 0, 0, state.naturalW - 1),
-          y: clamp(+r.y || 0, 0, state.naturalH - 1),
-          w: clamp(+r.w || 1, 1, state.naturalW),
-          h: clamp(+r.h || 1, 1, state.naturalH),
-        })).map((r) => {
-          if (r.x + r.w > state.naturalW) r.w = state.naturalW - r.x;
-          if (r.y + r.h > state.naturalH) r.h = state.naturalH - r.y;
-          return r;
-        });
+        state.regions = cached.regions.map((r) => normalizeRegion({
+          x: +r.x || 0,
+          y: +r.y || 0,
+          w: +r.w || 1,
+          h: +r.h || 1,
+        }));
         state.active = Number.isInteger(cached.active) ? cached.active : (state.regions.length ? 0 : -1);
         if (state.active >= state.regions.length) state.active = state.regions.length - 1;
       } else {
@@ -303,23 +300,44 @@
 
     function setScale(s) {
       state.scale = s;
-      const w = state.naturalW * s;
-      const h = state.naturalH * s;
+      // 显示尺寸取整，避免 canvas/CSS 不一致导致贴边有缝
+      const w = Math.max(1, Math.round(state.naturalW * s));
+      const h = Math.max(1, Math.round(state.naturalH * s));
       els.img.style.width = w + 'px';
       els.img.style.height = h + 'px';
-      els.overlay.width = Math.round(w);
-      els.overlay.height = Math.round(h);
+      els.overlay.width = w;
+      els.overlay.height = h;
       draw();
     }
 
     function toImageXY(evt) {
       const rect = els.overlay.getBoundingClientRect();
-      const x = (evt.clientX - rect.left) / state.scale;
-      const y = (evt.clientY - rect.top) / state.scale;
+      // 按实际渲染矩形比例映射，保证拖到可视最边缘时能到 0 / naturalW
+      const x = ((evt.clientX - rect.left) / Math.max(1, rect.width)) * state.naturalW;
+      const y = ((evt.clientY - rect.top) / Math.max(1, rect.height)) * state.naturalH;
       return {
         x: clamp(x, 0, state.naturalW),
         y: clamp(y, 0, state.naturalH),
       };
+    }
+
+    function snapCoord(v, max) {
+      const thr = SNAP_PX / Math.max(state.scale, 1e-6);
+      if (v <= thr) return 0;
+      if (v >= max - thr) return max;
+      return v;
+    }
+
+    function normalizeRegion(r) {
+      let x = clamp(r.x, 0, state.naturalW);
+      let y = clamp(r.y, 0, state.naturalH);
+      let w = clamp(r.w, 1, state.naturalW);
+      let h = clamp(r.h, 1, state.naturalH);
+      if (x + w > state.naturalW) w = state.naturalW - x;
+      if (y + h > state.naturalH) h = state.naturalH - y;
+      if (w < 1) { w = 1; x = Math.min(x, state.naturalW - 1); }
+      if (h < 1) { h = 1; y = Math.min(y, state.naturalH - 1); }
+      return { x, y, w, h };
     }
 
     function cursorForHandle(handle) {
@@ -377,13 +395,20 @@
       state.regions.forEach((r, i) => {
         const color = COLORS[i % COLORS.length];
         const active = i === state.active;
+        const lw = active ? 3 : 2;
+        // 线宽向内收，贴边时不会看起来留一圈缝
+        const inset = lw / 2;
+        const sx = r.x * s + inset;
+        const sy = r.y * s + inset;
+        const sw = Math.max(0, r.w * s - lw);
+        const sh = Math.max(0, r.h * s - lw);
         ctx.save();
         ctx.strokeStyle = color;
-        ctx.lineWidth = active ? 3 : 2;
+        ctx.lineWidth = lw;
         ctx.setLineDash(active ? [] : [6, 4]);
-        ctx.strokeRect(r.x * s, r.y * s, r.w * s, r.h * s);
+        ctx.strokeRect(sx, sy, sw, sh);
         ctx.fillStyle = color + '22';
-        ctx.fillRect(r.x * s, r.y * s, r.w * s, r.h * s);
+        ctx.fillRect(sx, sy, sw, sh);
 
         ctx.setLineDash([]);
         ctx.fillStyle = color;
@@ -467,14 +492,12 @@
       if (!state.regions[i]) return;
       let v = +t.value;
       if (!Number.isFinite(v)) return;
-      if (k === 'x') v = clamp(v, 0, state.naturalW - 1);
-      if (k === 'y') v = clamp(v, 0, state.naturalH - 1);
+      if (k === 'x') v = clamp(v, 0, state.naturalW);
+      if (k === 'y') v = clamp(v, 0, state.naturalH);
       if (k === 'w') v = clamp(v, 1, state.naturalW);
       if (k === 'h') v = clamp(v, 1, state.naturalH);
       state.regions[i][k] = v;
-      const r = state.regions[i];
-      if (r.x + r.w > state.naturalW) r.w = state.naturalW - r.x;
-      if (r.y + r.h > state.naturalH) r.h = state.naturalH - r.y;
+      state.regions[i] = normalizeRegion(state.regions[i]);
       draw();
       saveCache();
     });
@@ -529,7 +552,11 @@
       e.preventDefault();
 
       if (state.drag.type === 'create') {
-        const rect = normRect(state.drag.startX, state.drag.startY, p.x, p.y);
+        let x0 = snapCoord(state.drag.startX, state.naturalW);
+        let y0 = snapCoord(state.drag.startY, state.naturalH);
+        let x1 = snapCoord(p.x, state.naturalW);
+        let y1 = snapCoord(p.y, state.naturalH);
+        const rect = normalizeRegion(normRect(x0, y0, x1, y1));
         if (state.drag.tempIndex == null) {
           state.regions.push(rect);
           state.drag.tempIndex = state.regions.length - 1;
@@ -547,16 +574,24 @@
       const dy = p.y - state.drag.startY;
 
       if (state.drag.type === 'move') {
-        r.x = clamp(o.x + dx, 0, state.naturalW - o.w);
-        r.y = clamp(o.y + dy, 0, state.naturalH - o.h);
+        const thr = SNAP_PX / Math.max(state.scale, 1e-6);
+        let nx = clamp(o.x + dx, 0, state.naturalW - o.w);
+        let ny = clamp(o.y + dy, 0, state.naturalH - o.h);
+        if (nx <= thr) nx = 0;
+        if (ny <= thr) ny = 0;
+        if (nx >= state.naturalW - o.w - thr) nx = state.naturalW - o.w;
+        if (ny >= state.naturalH - o.h - thr) ny = state.naturalH - o.h;
+        r.x = nx;
+        r.y = ny;
       } else if (state.drag.type === 'resize') {
         let x0 = o.x, y0 = o.y, x1 = o.x + o.w, y1 = o.y + o.h;
         const hdl = state.drag.handle || '';
-        if (hdl.includes('w')) x0 = clamp(o.x + dx, 0, x1 - 2);
-        if (hdl.includes('e')) x1 = clamp(o.x + o.w + dx, x0 + 2, state.naturalW);
-        if (hdl.includes('n')) y0 = clamp(o.y + dy, 0, y1 - 2);
-        if (hdl.includes('s')) y1 = clamp(o.y + o.h + dy, y0 + 2, state.naturalH);
-        Object.assign(r, normRect(x0, y0, x1, y1));
+        const minSize = 2;
+        if (hdl.includes('w')) x0 = clamp(snapCoord(o.x + dx, state.naturalW), 0, x1 - minSize);
+        if (hdl.includes('e')) x1 = clamp(snapCoord(o.x + o.w + dx, state.naturalW), x0 + minSize, state.naturalW);
+        if (hdl.includes('n')) y0 = clamp(snapCoord(o.y + dy, state.naturalH), 0, y1 - minSize);
+        if (hdl.includes('s')) y1 = clamp(snapCoord(o.y + o.h + dy, state.naturalH), y0 + minSize, state.naturalH);
+        Object.assign(r, normalizeRegion(normRect(x0, y0, x1, y1)));
       }
       draw();
     }
