@@ -12,6 +12,7 @@ import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
 import {
   buildCircleHighlightColorRuns,
   HAND_DRAWN_CIRCLE_PATH,
+  HAND_DRAWN_CIRCLE_STROKE_WIDTH,
   HAND_DRAWN_CIRCLE_VIEWBOX,
 } from './circleHighlight'
 import { buildHandUnderlineColorRuns } from './handDrawnUnderlinePath'
@@ -314,7 +315,7 @@ function CircleHighlightWrap({
           d={HAND_DRAWN_CIRCLE_PATH}
           fill="none"
           stroke={themeColor}
-          strokeWidth={4}
+          strokeWidth={HAND_DRAWN_CIRCLE_STROKE_WIDTH}
           vectorEffect="non-scaling-stroke"
           strokeLinecap="round"
           strokeLinejoin="round"
