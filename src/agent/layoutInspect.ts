@@ -291,10 +291,14 @@ export function inspectGraphicLayout(
   const titleHasCircle = titleIds.some((id) =>
     Object.keys(circleMap).some((key) => key.startsWith(`${id}:`)),
   )
-  if (titleIds.length > 0 && !titleHasCircle) {
+  const titleHasPrimaryColor = Boolean(
+    typeof config.titlePrimaryColor === 'string' && config.titlePrimaryColor.trim(),
+  )
+  // 允许用标题首句着色代替画圈（用户明确禁止画圈时）
+  if (titleIds.length > 0 && !titleHasCircle && !titleHasPrimaryColor) {
     warnings.push({
       code: 'title_missing_circle',
-      message: '标题必须至少有一处画圈高亮',
+      message: '标题必须至少有一处画圈高亮（或设置 titlePrimaryColor）',
       pageIndex: 0,
       blockId: titleIds[0],
     })

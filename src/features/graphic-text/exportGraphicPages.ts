@@ -475,6 +475,12 @@ async function drawPage(
       ctx.fillRect(safeX, y, barWidth, lineHeight)
     }
 
+    const titlePrimary =
+      styleType === 'title' &&
+      (block.titleSentenceIndex ?? 0) === 0 &&
+      config.titlePrimaryColor
+        ? config.titlePrimaryColor
+        : null
     drawStyledLine(
       ctx,
       block.text,
@@ -489,9 +495,11 @@ async function drawPage(
       y,
       spec.size,
       enableHighlight,
-      styleType === 'code' ? CODE_TEXT_COLOR : '#171717',
+      styleType === 'code'
+        ? CODE_TEXT_COLOR
+        : titlePrimary || '#171717',
       circleLineWidth,
-      styleType === 'title',
+      false,
     )
     y += lineHeight
 

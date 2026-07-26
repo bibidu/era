@@ -127,11 +127,16 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
   const marginBottom = blockEndMargin(block, config)
 
   if (styleType === 'title') {
+    const primaryColor =
+      (block.titleSentenceIndex ?? 0) === 0 && config.titlePrimaryColor
+        ? config.titlePrimaryColor
+        : undefined
     return {
       fontFamily,
       fontSize: titleSize,
       lineHeight: config.titleLineHeight,
       fontWeight: 700,
+      color: primaryColor,
       marginTop:
         block.type === 'title' ? `calc(${titleSize} * ${config.titleMarginTop})` : undefined,
       marginBottom,

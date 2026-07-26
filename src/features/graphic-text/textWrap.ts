@@ -159,8 +159,8 @@ export function wrapPlainTextLinesByWidth(
   }
 
   flush()
-  # 避免独行标点：把仅含标点的行并回上一行
-  merged: string[] = []
+  // 避免独行标点：把仅含标点的行并回上一行
+  const merged: string[] = []
   for (const line of lines) {
     if (
       merged.length &&
