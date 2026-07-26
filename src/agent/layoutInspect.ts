@@ -352,9 +352,13 @@ export function inspectGraphicLayout(
 
       const styleType = block.styleType ?? block.type
       const { fontFamily } = getFontConfigForStyleType(config, styleType)
+      const titleSize =
+        (block.titleSentenceIndex ?? 0) > 0
+          ? (config.titleSecondaryFontSize ?? config.titleFontSize)
+          : config.titleFontSize
       const fontSize =
         styleType === 'title'
-          ? config.titleFontSize * layout.exportScale
+          ? titleSize * layout.exportScale
           : styleType === 'heading'
             ? Math.round(config.headingFontSize * layout.exportScale)
             : styleType === 'code'

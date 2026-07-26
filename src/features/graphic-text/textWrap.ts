@@ -159,5 +159,18 @@ export function wrapPlainTextLinesByWidth(
   }
 
   flush()
-  return lines.length ? lines : ['']
+  # 避免独行标点：把仅含标点的行并回上一行
+  merged: string[] = []
+  for (const line of lines) {
+    if (
+      merged.length &&
+      line.length > 0 &&
+      /^[\s。．.？！!?，、；;：:\])}》」』】]+$/.test(line)
+    ) {
+      merged[merged.length - 1] += line
+    } else {
+      merged.push(line)
+    }
+  }
+  return merged.length ? merged : ['']
 }

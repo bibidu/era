@@ -90,7 +90,11 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
   const styleType = resolveStyleType(block)
   const bodyUnit = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const codeUnit = `${(config.codeFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
-  const titleUnit = `${(config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
+  const titleFontPx =
+    (block.titleSentenceIndex ?? 0) > 0
+      ? (config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72))
+      : config.titleFontSize
+  const titleUnit = `${(titleFontPx / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const headingUnit = `${(config.headingFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const gap = '1.1cqw'
 
@@ -112,7 +116,11 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
 function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSProperties {
   const styleType = resolveStyleType(block)
   const { fontFamily } = getFontConfigForStyleType(config, styleType)
-  const titleSize = `${(config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
+  const titleFontPx =
+    (block.titleSentenceIndex ?? 0) > 0
+      ? (config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72))
+      : config.titleFontSize
+  const titleSize = `${(titleFontPx / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const headingSize = `${(config.headingFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const bodySize = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const codeSize = `${(config.codeFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
@@ -297,14 +305,21 @@ function HandUnderlineAwareSegments({
 
 function CircleHighlightWrap({
   themeColor,
+  colorizeText = false,
   children,
 }: {
   themeColor: string
+  colorizeText?: boolean
   children: ReactNode
 }) {
   return (
     <span className="graphic-circle-highlight">
-      <span className="graphic-circle-highlight-text">{children}</span>
+      <span
+        className="graphic-circle-highlight-text"
+        style={colorizeText ? { color: themeColor } : undefined}
+      >
+        {children}
+      </span>
       <svg
         className="graphic-circle-highlight-svg"
         viewBox={HAND_DRAWN_CIRCLE_VIEWBOX}
@@ -348,6 +363,7 @@ function StyledHighlightedText({
   const charOffset = block.charOffset ?? 0
   const plain = stripHighlightMarkers(text)
   const circleRuns = buildCircleHighlightColorRuns(plain, blockId, charOffset, circleColors)
+  const colorizeCircledTitle = (block.styleType ?? block.type) === 'title'
   const parts: ReactNode[] = []
   let index = 0
   let runCursor = 0
@@ -356,7 +372,11 @@ function StyledHighlightedText({
     const run = circleRuns[runCursor]
     if (run && index === run.start) {
       parts.push(
-        <CircleHighlightWrap key={`circle-${index}`} themeColor={run.color}>
+        <CircleHighlightWrap
+          key={`circle-${index}`}
+          themeColor={run.color}
+          colorizeText={colorizeCircledTitle}
+        >
           <HandUnderlineAwareSegments
             text={run.text}
             blockId={blockId}

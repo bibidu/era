@@ -83,6 +83,7 @@ function drawStyledLine(
   enableHighlight: boolean,
   textColor: string,
   circleLineWidth: number,
+  colorizeCircledText = false,
 ) {
   const paddingX = 4
   const plainText = stripHighlightMarkers(text)
@@ -106,8 +107,31 @@ function drawStyledLine(
     }
   }
 
-  ctx.fillStyle = textColor
-  ctx.fillText(plainText, x, baselineY)
+  if (enableHighlight && colorizeCircledText) {
+    const circleRuns = buildCircleHighlightColorRuns(plainText, blockId, charOffset, circleColors)
+    let cursor = 0
+    let drawX = x
+    for (const run of circleRuns) {
+      if (run.start > cursor) {
+        const plain = plainText.slice(cursor, run.start)
+        ctx.fillStyle = textColor
+        ctx.fillText(plain, drawX, baselineY)
+        drawX += ctx.measureText(plain).width
+      }
+      ctx.fillStyle = run.color
+      ctx.fillText(run.text, drawX, baselineY)
+      drawX += ctx.measureText(run.text).width
+      cursor = run.end
+    }
+    if (cursor < plainText.length) {
+      const rest = plainText.slice(cursor)
+      ctx.fillStyle = textColor
+      ctx.fillText(rest, drawX, baselineY)
+    }
+  } else {
+    ctx.fillStyle = textColor
+    ctx.fillText(plainText, x, baselineY)
+  }
 
   if (enableHighlight) {
     const circleRuns = buildCircleHighlightColorRuns(plainText, blockId, charOffset, circleColors)
@@ -170,8 +194,12 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
   const styleType = resolveStyleType(block)
   const { fontFamily } = getFontConfigForStyleType(config, styleType)
   if (styleType === 'title') {
+    const titleSize =
+      (block.titleSentenceIndex ?? 0) > 0
+        ? (config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72))
+        : config.titleFontSize
     return {
-      size: config.titleFontSize * exportScale,
+      size: titleSize * exportScale,
       weight: 700,
       lineHeight: config.titleLineHeight,
       spacing: config.titleMarginBottom,
@@ -463,6 +491,7 @@ async function drawPage(
       enableHighlight,
       styleType === 'code' ? CODE_TEXT_COLOR : '#171717',
       circleLineWidth,
+      styleType === 'title',
     )
     y += lineHeight
 

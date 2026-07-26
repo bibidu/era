@@ -58,9 +58,18 @@ interface LayoutLine {
   spacingAfter: number
   sourceBlockId: string
   charOffset: number
+  titleSentenceIndex?: number
   imageUrl?: string
   imageWidth?: number
   imageHeight?: number
+}
+
+/** 按句末标点切开标题，使第二句可换行并用次级字号 */
+export function splitTitleSentences(text: string): string[] {
+  const plain = text.trim()
+  if (!plain) return ['']
+  const parts = plain.split(/(?<=[？！。!?])/).map((part) => part.trim()).filter(Boolean)
+  return parts.length ? parts : [plain]
 }
 
 function parseAspectRatio(ratio: GraphicAspectRatio) {
@@ -184,9 +193,15 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
   return blocks
 }
 
+function resolveTitleFontSize(block: MarkdownBlock, config: GraphicTextConfig) {
+  const secondary = (block.titleSentenceIndex ?? 0) > 0
+  const secondarySize = config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72)
+  return secondary ? secondarySize : config.titleFontSize
+}
+
 function blockFontSize(block: MarkdownBlock, config: GraphicTextConfig, exportScale: number) {
   const type = resolveStyleType(block)
-  if (type === 'title') return config.titleFontSize * exportScale
+  if (type === 'title') return resolveTitleFontSize(block, config) * exportScale
   if (type === 'heading') {
     return Math.round(config.headingFontSize * exportScale)
   }
@@ -249,6 +264,76 @@ function blockToLayoutLines(
 ): LayoutLine[] {
   const styleType = resolveStyleType(block)
   const plainText = stripHighlightMarkers(block.text)
+  const { fontFamily } = getFontConfigForStyleType(config, styleType)
+  const fontWeight = styleType === 'title' || styleType === 'heading' ? 700 : 400
+
+  if (styleType === 'title') {
+    const sentences = splitTitleSentences(plainText)
+    const lines: LayoutLine[] = []
+    let charOffset = 0
+    let lineIndex = 0
+
+    for (let sentenceIndex = 0; sentenceIndex < sentences.length; sentenceIndex += 1) {
+      const sentence = sentences[sentenceIndex]
+      const sentenceBlock: MarkdownBlock = { ...block, titleSentenceIndex: sentenceIndex }
+      const size = blockFontSize(sentenceBlock, config, layout.exportScale)
+      const availableWidth = layout.pageWidth - layout.safeX * 2
+      const wrapped = wrapPlainTextLinesByWidth(
+        sentence,
+        fontFamily,
+        size,
+        fontWeight,
+        availableWidth,
+      )
+      const lineHeight = blockLineHeight(sentenceBlock, config, layout.exportScale)
+
+      for (let wrapIndex = 0; wrapIndex < wrapped.length; wrapIndex += 1) {
+        const lineText = wrapped[wrapIndex]
+        const isFirstLine = lineIndex === 0
+        const isLastLine =
+          sentenceIndex === sentences.length - 1 && wrapIndex === wrapped.length - 1
+        lines.push({
+          id: `${block.id}-l${lineIndex}`,
+          type: isFirstLine ? block.type : 'paragraph',
+          styleType,
+          text:
+            sentences.length === 1 && wrapped.length === 1 ? block.text : lineText,
+          lineHeight,
+          spacingBefore: blockSpacingBefore(block, config, layout.exportScale, isFirstLine),
+          spacingAfter: blockSpacingAfter(
+            sentenceBlock,
+            config,
+            layout.exportScale,
+            layout,
+            isLastLine,
+          ),
+          sourceBlockId: block.id,
+          charOffset,
+          titleSentenceIndex: sentenceIndex,
+        })
+        charOffset += [...lineText].length
+        lineIndex += 1
+      }
+    }
+
+    return lines.length
+      ? lines
+      : [
+          {
+            id: `${block.id}-l0`,
+            type: block.type,
+            styleType,
+            text: block.text,
+            lineHeight: blockLineHeight(block, config, layout.exportScale),
+            spacingBefore: blockSpacingBefore(block, config, layout.exportScale, true),
+            spacingAfter: blockSpacingAfter(block, config, layout.exportScale, layout, true),
+            sourceBlockId: block.id,
+            charOffset: 0,
+            titleSentenceIndex: 0,
+          },
+        ]
+  }
+
   const size = blockFontSize(block, config, layout.exportScale)
   const inset =
     block.type === 'list'
@@ -259,8 +344,6 @@ function blockToLayoutLines(
           ? size * CODE_HORIZONTAL_PADDING_SCALE * 2
           : 0
   const availableWidth = layout.pageWidth - layout.safeX * 2 - inset
-  const { fontFamily } = getFontConfigForStyleType(config, styleType)
-  const fontWeight = styleType === 'title' || styleType === 'heading' ? 700 : 400
   const wrappedLines =
     block.type === 'code' || styleType === 'code'
       ? wrapCodeTextLines(
@@ -311,6 +394,7 @@ function layoutLinesToBlocks(lines: LayoutLine[]): MarkdownBlock[] {
     isBlockEnd: line.spacingAfter > 0,
     sourceBlockId: line.sourceBlockId,
     charOffset: line.charOffset,
+    titleSentenceIndex: line.titleSentenceIndex,
     imageUrl: line.imageUrl,
     imageWidth: line.imageWidth,
     imageHeight: line.imageHeight,
