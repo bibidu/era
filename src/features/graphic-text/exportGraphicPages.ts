@@ -18,7 +18,11 @@ import {
   drawPageGridOverlay,
   resolvePageBaseFillColor,
 } from './pageBackground'
-import { drawPageFengshuiOverlay } from './pageFengshuiTokens'
+import {
+  drawPageFengshuiOverlay,
+  FENGSHUI_TOP_BAR_LINE_COLOR,
+  FENGSHUI_TOP_BAR_TEXT_COLOR,
+} from './pageFengshuiTokens'
 import { drawPageGradientBackground } from './pageGradientTokens'
 import { drawPagePixelOverlay } from './pagePixelTokens'
 import { drawPageWiremeshOverlay } from './pageWiremeshTokens'
@@ -319,14 +323,18 @@ async function drawPage(
   const edgeWidth = width - safeX * 2
   const underlineY = topBarY + topBarHeight - 6
 
-  ctx.strokeStyle = '#D4D4D4'
+  const isFengshui = config.pageOverlay === 'fengshui'
+  const topBarLineColor = isFengshui ? FENGSHUI_TOP_BAR_LINE_COLOR : '#D4D4D4'
+  const topBarTextColor = isFengshui ? FENGSHUI_TOP_BAR_TEXT_COLOR : '#525252'
+
+  ctx.strokeStyle = topBarLineColor
   ctx.lineWidth = 2
   ctx.beginPath()
   ctx.moveTo(edgeX, underlineY)
   ctx.lineTo(edgeX + edgeWidth, underlineY)
   ctx.stroke()
 
-  ctx.fillStyle = '#525252'
+  ctx.fillStyle = topBarTextColor
   const topBarFontSize = Math.round(TOP_BAR_FONT_SIZE_PX * exportScale)
   ctx.font = `400 ${topBarFontSize}px ${config.bodyFontFamily}`
   ctx.textBaseline = 'bottom'
@@ -351,9 +359,9 @@ async function drawPage(
     const customWidth = ctx.measureText(customText).width
     ctx.fillText(customText, edgeX, topBarTextY)
     const dividerX = edgeX + customWidth + gap
-    ctx.fillStyle = '#D4D4D4'
+    ctx.fillStyle = topBarLineColor
     ctx.fillRect(dividerX, topBarMidY - dividerHeight / 2, dividerWidth, dividerHeight)
-    ctx.fillStyle = '#525252'
+    ctx.fillStyle = topBarTextColor
     ctx.fillText(topBar.countText, dividerX + gap + dividerWidth, topBarTextY)
   } else if (topBar.custom) {
     ctx.fillText(topBar.custom, edgeX, topBarTextY, edgeWidth)

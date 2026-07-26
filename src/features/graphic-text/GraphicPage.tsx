@@ -32,6 +32,7 @@ import { PagePixelOverlay } from './PagePixelOverlay'
 import { PageWiremeshOverlay } from './PageWiremeshOverlay'
 import { shouldDrawPageOverlay } from './pageLayering'
 import { resolveTopBarParts } from './topBar'
+import { FENGSHUI_TOP_BAR_LINE_COLOR, FENGSHUI_TOP_BAR_TEXT_COLOR } from './pageFengshuiTokens'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 
 interface GraphicPageProps {
@@ -573,45 +574,77 @@ export function GraphicPage({
         config.overlayStacked && <PageGradientOverlay variant={config.gradientVariant} />}
 
       <div
-        className="absolute z-10 flex min-w-0 items-center gap-2 border-b border-neutral-300"
+        className={`absolute z-10 flex min-w-0 items-center gap-2 border-b ${
+          config.pageOverlay === 'fengshui' ? '' : 'border-neutral-300'
+        }`}
         style={{
           left: `${percent.safeX}%`,
           right: `${percent.safeX}%`,
           top: `${percent.topBarTop}%`,
           height: `${percent.topBarHeight}%`,
           paddingBottom: '6px',
+          borderBottomColor:
+            config.pageOverlay === 'fengshui' ? FENGSHUI_TOP_BAR_LINE_COLOR : undefined,
         }}
       >
         {topBar.custom && topBar.countText ? (
           <>
             <span
-              className="min-w-0 truncate font-normal text-neutral-600"
-              style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px` }}
+              className={`min-w-0 truncate font-normal ${
+                config.pageOverlay === 'fengshui' ? '' : 'text-neutral-600'
+              }`}
+              style={{
+                fontSize: `${TOP_BAR_FONT_SIZE_PX}px`,
+                color:
+                  config.pageOverlay === 'fengshui' ? FENGSHUI_TOP_BAR_TEXT_COLOR : undefined,
+              }}
             >
               {topBar.custom}
             </span>
             <span
-              className="h-3 w-px shrink-0 self-center bg-neutral-300"
+              className={`h-3 w-px shrink-0 self-center ${
+                config.pageOverlay === 'fengshui' ? '' : 'bg-neutral-300'
+              }`}
+              style={{
+                backgroundColor:
+                  config.pageOverlay === 'fengshui' ? FENGSHUI_TOP_BAR_LINE_COLOR : undefined,
+              }}
               aria-hidden
             />
             <span
-              className="shrink-0 font-normal text-neutral-600"
-              style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px` }}
+              className={`shrink-0 font-normal ${
+                config.pageOverlay === 'fengshui' ? '' : 'text-neutral-600'
+              }`}
+              style={{
+                fontSize: `${TOP_BAR_FONT_SIZE_PX}px`,
+                color:
+                  config.pageOverlay === 'fengshui' ? FENGSHUI_TOP_BAR_TEXT_COLOR : undefined,
+              }}
             >
               {topBar.countText}
             </span>
           </>
         ) : topBar.custom ? (
           <span
-            className="truncate font-normal text-neutral-600"
-            style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px` }}
+            className={`truncate font-normal ${
+              config.pageOverlay === 'fengshui' ? '' : 'text-neutral-600'
+            }`}
+            style={{
+              fontSize: `${TOP_BAR_FONT_SIZE_PX}px`,
+              color: config.pageOverlay === 'fengshui' ? FENGSHUI_TOP_BAR_TEXT_COLOR : undefined,
+            }}
           >
             {topBar.custom}
           </span>
         ) : topBar.countText ? (
           <span
-            className="truncate font-normal text-neutral-600"
-            style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px` }}
+            className={`truncate font-normal ${
+              config.pageOverlay === 'fengshui' ? '' : 'text-neutral-600'
+            }`}
+            style={{
+              fontSize: `${TOP_BAR_FONT_SIZE_PX}px`,
+              color: config.pageOverlay === 'fengshui' ? FENGSHUI_TOP_BAR_TEXT_COLOR : undefined,
+            }}
           >
             {topBar.countText}
           </span>
