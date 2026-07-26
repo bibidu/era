@@ -15,8 +15,8 @@ export const TITLE_LINE_HEIGHT_MAX = 1.12
 /** 单篇文章高亮颜色种类上限 */
 export const MAX_HIGHLIGHT_COLORS = 3
 
-/** 单页高亮片段上限（极个别可放宽，默认检测按此阈值） */
-export const MAX_HIGHLIGHTS_PER_PAGE = 4
+/** 单页计入密度的高亮片段上限（li 子标题整组不计；极个别可放宽） */
+export const MAX_HIGHLIGHTS_PER_PAGE = 3
 
 function highlightMaps(config: GraphicTextConfig) {
   return [
@@ -34,28 +34,54 @@ function charHasHighlight(config: GraphicTextConfig, blockId: string, charIndex:
 }
 
 /**
- * 统计每页「高亮片段」数量：同一 sourceBlock 内连续被高亮的字符算 1 处；
+ * 统计每页「计入密度」的高亮片段：同一 sourceBlock 内连续被高亮的字符算 1 处；
  * 跨 style（brush/underline 叠加同一字符）仍只算一次连续片段。
+ * **例外**：列表项「子标题：说明」中仅覆盖冒号前子标题的高亮整段不计（见 skill li 连同规则）。
  */
+function isListSubtitleOnlyHighlight(
+  blockType: string | undefined,
+  text: string,
+  coveredIndexes: number[],
+): boolean {
+  if (blockType !== 'list') return false
+  const plain = stripHighlightMarkers(text)
+  const colon = plain.search(/[：:]/)
+  if (colon <= 0) return false
+  if (!coveredIndexes.length) return false
+  const min = Math.min(...coveredIndexes)
+  const max = Math.max(...coveredIndexes)
+  // 高亮完全落在冒号前子标题内
+  return min >= 0 && max < colon
+}
+
 function countHighlightRunsPerPage(
   pages: ReturnType<typeof paginateDocument>,
   config: GraphicTextConfig,
 ): number[] {
   return pages.map((page) => {
     let runs = 0
-    const bySource = new Map<string, { offset: number; text: string }[]>()
+    const bySource = new Map<
+      string,
+      { offset: number; text: string; type?: string }[]
+    >()
     for (const block of page.blocks) {
       if (block.type === 'image') continue
       const sourceId = block.sourceBlockId ?? block.id
       const offset = block.charOffset ?? 0
       const text = stripHighlightMarkers(block.text)
       const list = bySource.get(sourceId) ?? []
-      list.push({ offset, text })
+      list.push({ offset, text, type: block.type })
       bySource.set(sourceId, list)
     }
 
     for (const [sourceId, lines] of bySource) {
       const covered = new Set<number>()
+      const blockType = lines[0]?.type
+      const fullText = lines
+        .slice()
+        .sort((a, b) => a.offset - b.offset)
+        .map((line) => line.text)
+        .join('')
       for (const line of lines) {
         const chars = [...line.text]
         for (let i = 0; i < chars.length; i += 1) {
@@ -65,6 +91,7 @@ function countHighlightRunsPerPage(
       }
       const indexes = [...covered].sort((a, b) => a - b)
       if (!indexes.length) continue
+      if (isListSubtitleOnlyHighlight(blockType, fullText, indexes)) continue
       runs += 1
       for (let i = 1; i < indexes.length; i += 1) {
         if (indexes[i] !== indexes[i - 1] + 1) runs += 1
