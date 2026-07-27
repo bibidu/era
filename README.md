@@ -29,6 +29,25 @@ npm run dev
 
 技术方案：[docs/agent-mcp-design.md](./docs/agent-mcp-design.md)
 
+## 封面 Skill（单张社媒封面）
+
+瑞士/技术编辑风的 **9:16** 封面，走 skill **封面skill**（`.agents/skills/fengmian/SKILL.md`）：
+
+- 对话里说 **「封面skill」** 即可触发（也可用 `/fengmian`）
+- 字段：大标题（可多行、可指定颜色）、小标题、描述、多个标签、多个二级标题、主题色（可省略随机）
+- 本地渲染：
+
+```bash
+node scripts/generate-cover.mjs \
+  --bigTitle "SEEDANCE" \
+  --smallTitle "AI 视频导演流" \
+  --description "不是堆词，是导演工作流" \
+  --tags "分镜叙事,镜头控制" \
+  --secondaryTitles "导演模式,镜头语言,成片导出" \
+  --themeColor "#6D28D9" \
+  --out output/cover.png
+```
+
 ## 本地 Agent / MCP（可选，不影响普通使用）
 
 ### 启动
