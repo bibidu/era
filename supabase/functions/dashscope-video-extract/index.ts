@@ -28,11 +28,17 @@ interface DashScopeResponse {
 }
 
 interface ExtractRequest {
-  apiKey?: string
   model?: string
+  media?: MediaInput[]
   video?: string
   fps?: number
   prompt?: string
+}
+
+interface MediaInput {
+  type?: 'image' | 'video'
+  url?: string
+  fps?: number
 }
 
 function jsonResponse(body: unknown, init: ResponseInit = {}) {
@@ -90,6 +96,32 @@ function parseDashScopeResponse(text: string) {
   }
 }
 
+function normalizeMedia(body: ExtractRequest, defaultFps: number) {
+  const inputs = Array.isArray(body.media)
+    ? body.media
+    : body.video
+      ? [{ type: 'video' as const, url: body.video, fps: defaultFps }]
+      : []
+
+  return inputs
+    .map((item) => {
+      const url = item.url?.trim()
+      if (!url) {
+        return null
+      }
+
+      if (item.type === 'image') {
+        return { image: url }
+      }
+
+      return {
+        video: url,
+        fps: Number.isFinite(item.fps) && item.fps && item.fps > 0 ? item.fps : defaultFps,
+      }
+    })
+    .filter((item): item is { image: string } | { video: string; fps: number } => Boolean(item))
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: CORS_HEADERS })
@@ -101,16 +133,16 @@ Deno.serve(async (request) => {
 
   try {
     const body = (await request.json()) as ExtractRequest
-    const apiKey = body.apiKey?.trim() || Deno.env.get('DASHSCOPE_API_KEY')?.trim()
+    const apiKey = Deno.env.get('DASHSCOPE_API_KEY')?.trim()
     const model = body.model?.trim() || 'qwen3.7-flash'
-    const video = body.video?.trim()
     const prompt = body.prompt?.trim()
-    const fps = Number.isFinite(body.fps) && body.fps && body.fps > 0 ? body.fps : 2
+    const fps = Number.isFinite(body.fps) && body.fps && body.fps > 0 ? body.fps : 1
+    const mediaContent = normalizeMedia(body, fps)
 
     if (!apiKey) {
-      return jsonResponse({ error: 'Missing DashScope API key' }, { status: 400 })
+      return jsonResponse({ error: 'Server missing DashScope API key' }, { status: 500 })
     }
-    if (!video) {
+    if (mediaContent.length === 0) {
       return jsonResponse({ error: 'Missing video input' }, { status: 400 })
     }
     if (!prompt) {
@@ -130,10 +162,7 @@ Deno.serve(async (request) => {
             {
               role: 'user',
               content: [
-                {
-                  video,
-                  fps,
-                },
+                ...mediaContent,
                 {
                   text: prompt,
                 },

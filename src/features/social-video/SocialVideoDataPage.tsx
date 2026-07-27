@@ -4,6 +4,9 @@ const SUPABASE_PROXY_ENDPOINT =
   'https://kzoxyextxjwscrpjowud.functions.supabase.co/dashscope-video-extract'
 
 const DEFAULT_MODEL = 'qwen3.7-flash'
+const DEFAULT_FPS = '1'
+const MAX_FRAME_COUNT = 24
+const FRAME_MAX_WIDTH = 640
 
 const NETWORK_ERROR_MARKERS = ['failed to fetch', 'networkerror', 'load failed', 'type error']
 
@@ -25,19 +28,100 @@ interface SocialVideoProxyResponse {
   requestId?: string | null
 }
 
-function fileToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result)
-      } else {
-        reject(new Error('视频读取失败，请重新选择文件。'))
-      }
+interface MediaInput {
+  type: 'image' | 'video'
+  url: string
+  fps?: number
+}
+
+function waitForVideoEvent(
+  video: HTMLVideoElement,
+  eventName: 'loadedmetadata' | 'loadeddata' | 'seeked',
+) {
+  return new Promise<void>((resolve, reject) => {
+    const cleanup = () => {
+      video.removeEventListener(eventName, handleEvent)
+      video.removeEventListener('error', handleError)
     }
-    reader.onerror = () => reject(new Error('视频读取失败，请重新选择文件。'))
-    reader.readAsDataURL(file)
+    const handleEvent = () => {
+      cleanup()
+      resolve()
+    }
+    const handleError = () => {
+      cleanup()
+      reject(new Error('视频解析失败，请换一个视频或使用公网视频 URL。'))
+    }
+
+    video.addEventListener(eventName, handleEvent, { once: true })
+    video.addEventListener('error', handleError, { once: true })
   })
+}
+
+async function waitForVideoFrame(video: HTMLVideoElement) {
+  if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+    return
+  }
+
+  await waitForVideoEvent(video, 'loadeddata')
+}
+
+async function seekVideo(video: HTMLVideoElement, time: number) {
+  const targetTime = Math.min(Math.max(time, 0), Math.max(video.duration - 0.05, 0))
+
+  if (Math.abs(video.currentTime - targetTime) < 0.01) {
+    return
+  }
+
+  const seeked = waitForVideoEvent(video, 'seeked')
+  video.currentTime = targetTime
+  await seeked
+}
+
+async function extractVideoFrames(file: File, fps: number) {
+  const objectUrl = URL.createObjectURL(file)
+  const video = document.createElement('video')
+  video.muted = true
+  video.playsInline = true
+  video.preload = 'metadata'
+  video.src = objectUrl
+
+  try {
+    await waitForVideoEvent(video, 'loadedmetadata')
+    await waitForVideoFrame(video)
+
+    const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 1
+    const frameCount = Math.max(1, Math.min(MAX_FRAME_COUNT, Math.ceil(duration * fps)))
+    const times =
+      frameCount === 1
+        ? [0]
+        : Array.from({ length: frameCount }, (_, index) => (duration * index) / (frameCount - 1))
+
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d')
+    if (!context) {
+      throw new Error('当前浏览器无法抽取视频帧。')
+    }
+
+    const frames: string[] = []
+
+    for (const time of times) {
+      await seekVideo(video, time)
+
+      if (!video.videoWidth || !video.videoHeight) {
+        throw new Error('无法读取视频画面尺寸。')
+      }
+
+      const scale = Math.min(1, FRAME_MAX_WIDTH / video.videoWidth)
+      canvas.width = Math.max(1, Math.round(video.videoWidth * scale))
+      canvas.height = Math.max(1, Math.round(video.videoHeight * scale))
+      context.drawImage(video, 0, 0, canvas.width, canvas.height)
+      frames.push(canvas.toDataURL('image/jpeg', 0.72))
+    }
+
+    return frames
+  } finally {
+    URL.revokeObjectURL(objectUrl)
+  }
 }
 
 function formatBytes(bytes: number) {
@@ -53,40 +137,26 @@ function isLikelyNetworkOrCorsError(message: string) {
 }
 
 export function SocialVideoDataPage() {
-  const [apiKey, setApiKey] = useState('')
   const [model, setModel] = useState(DEFAULT_MODEL)
   const [videoUrl, setVideoUrl] = useState('')
   const [videoFile, setVideoFile] = useState<File | null>(null)
-  const [fps, setFps] = useState('2')
+  const [fps, setFps] = useState(DEFAULT_FPS)
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT)
   const [markdown, setMarkdown] = useState('')
   const [status, setStatus] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   const canSubmit = useMemo(() => {
-    return apiKey.trim() && model.trim() && prompt.trim() && (videoFile || videoUrl.trim())
-  }, [apiKey, model, prompt, videoFile, videoUrl])
+    return model.trim() && prompt.trim() && (videoFile || videoUrl.trim())
+  }, [model, prompt, videoFile, videoUrl])
 
   const videoSizeHint = useMemo(() => {
     if (!videoFile) {
       return ''
     }
     const size = formatBytes(videoFile.size)
-    if (videoFile.size > 7 * 1024 * 1024) {
-      return `${size}；Base64 会放大请求体，较大文件建议改用公网视频 URL。`
-    }
-    return size
+    return `${size}；本地上传会先抽取最多 ${MAX_FRAME_COUNT} 帧，避免完整视频触发代理资源限制。`
   }, [videoFile])
-
-  async function pasteApiKey() {
-    try {
-      const text = await navigator.clipboard.readText()
-      setApiKey(text.trim())
-      setStatus('已从剪贴板填入 API Key。')
-    } catch {
-      setStatus('读取剪贴板失败，请确认浏览器授权后重试。')
-    }
-  }
 
   async function copyMarkdown() {
     if (!markdown) {
@@ -104,27 +174,36 @@ export function SocialVideoDataPage() {
 
   async function submit() {
     if (!canSubmit) {
-      setStatus('请先填写 API Key、模型、提示词，并上传视频或填写视频 URL。')
+      setStatus('请先填写模型、提示词，并上传视频或填写视频 URL。')
       return
     }
 
     setIsLoading(true)
     setMarkdown('')
-    setStatus(videoFile ? '正在读取本地视频并调用模型...' : '正在调用模型...')
+    setStatus(videoFile ? '正在抽取本地视频帧...' : '正在调用模型...')
 
     try {
-      const videoSource = videoFile ? await fileToDataUrl(videoFile) : videoUrl.trim()
       const parsedFps = Number.parseFloat(fps)
+      const normalizedFps = Number.isFinite(parsedFps) && parsedFps > 0 ? parsedFps : 1
+      let media: MediaInput[]
+
+      if (videoFile) {
+        const frames = await extractVideoFrames(videoFile, normalizedFps)
+        media = frames.map((url) => ({ type: 'image', url }))
+        setStatus(`已抽取 ${frames.length} 帧，正在调用模型...`)
+      } else {
+        media = [{ type: 'video', url: videoUrl.trim(), fps: normalizedFps }]
+      }
+
       const response = await fetch(SUPABASE_PROXY_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          apiKey: apiKey.trim(),
           model: model.trim(),
-          video: videoSource,
-          fps: Number.isFinite(parsedFps) && parsedFps > 0 ? parsedFps : 2,
+          media,
+          fps: normalizedFps,
           prompt: prompt.trim(),
         }),
       })
@@ -164,8 +243,8 @@ export function SocialVideoDataPage() {
                 社媒视频完整数据提取
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-300">
-                上传本地视频或填写公网视频 URL，使用你自己的 DashScope API Key 调用
-                Qwen 多模态模型，结果以 Markdown 显示并可一键复制。
+                上传本地视频或填写公网视频 URL，通过 Supabase 服务端代理调用 Qwen
+                多模态模型，结果以 Markdown 显示并可一键复制。
               </p>
             </div>
             <a
@@ -179,29 +258,10 @@ export function SocialVideoDataPage() {
 
         <section className="grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
           <div className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/[0.06] p-4">
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-neutral-200">DashScope API Key</span>
-              <div className="flex gap-2">
-                <input
-                  className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition placeholder:text-neutral-500 focus:border-cyan-300"
-                  type="password"
-                  value={apiKey}
-                  placeholder="sk-..."
-                  autoComplete="off"
-                  onChange={(event) => setApiKey(event.target.value)}
-                />
-                <button
-                  className="shrink-0 rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-semibold text-neutral-950 transition hover:bg-cyan-200"
-                  type="button"
-                  onClick={pasteApiKey}
-                >
-                  粘贴
-                </button>
-              </div>
-              <span className="text-xs leading-5 text-neutral-500">
-                API Key 只会随本次请求发给 Supabase 代理函数，不会写入仓库或部署产物。
-              </span>
-            </label>
+            <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-sm leading-6 text-cyan-50">
+              DashScope API Key 已托管在 Supabase Edge Function 环境变量中，前端不会展示或传输密钥。
+              本地上传会先在浏览器端按 FPS 抽帧，最多 {MAX_FRAME_COUNT} 帧；如需包含音频或完整视频时序，请填写公网视频 URL。
+            </div>
 
             <div className="grid gap-3 sm:grid-cols-[1fr_7rem]">
               <label className="flex flex-col gap-2">
