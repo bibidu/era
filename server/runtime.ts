@@ -29,10 +29,10 @@ interface PendingBridgeCall {
 }
 
 const DEFAULT_CONFIG = {
-  titleFontId: 'song',
-  titleFontFamily: '"Noto Serif SC", serif',
-  headingFontId: 'song',
-  headingFontFamily: '"Noto Serif SC", serif',
+  titleFontId: 'shuheiti',
+  titleFontFamily: '"Alimama ShuHeiTi", sans-serif',
+  headingFontId: 'shuheiti',
+  headingFontFamily: '"Alimama ShuHeiTi", sans-serif',
   bodyFontId: 'song',
   bodyFontFamily: '"Noto Serif SC", serif',
   codeFontId: 'menlo',

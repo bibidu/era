@@ -30,7 +30,9 @@ description: >-
 
 **模板**：默认优先使用 **像素模板**（`pageOverlay: 'pixel'`），除非用户明确指定其它纹理。
 
-**风水风格特例**：若用户提到「风水」「风水风格」「风水质感」等，**直接**使用风水模板（`pageOverlay: 'fengshui'`），并**固定抖音尺寸**（`aspectRatio: '9:16'`），同时 **关闭「全文 xxx 字」**（`showWordCount: false`），无需再问导出平台（除非用户另指定小红书）。
+**字体（非风水默认）**：非风水生成时，**一级标题（`#` / title）与二级标题（`##` / heading）默认使用阿里妈妈数黑体**（`titleFontId` / `headingFontId`: `shuheiti`，`titleFontFamily` / `headingFontFamily`: `"Alimama ShuHeiTi", sans-serif`）。正文等其它层级保持工程默认（通常为宋体），除非用户另指定。建工程或改模板时用 `era_update_config` / `era_create_project` 的 `config` 一并写入。
+
+**风水风格特例**：若用户提到「风水」「风水风格」「风水质感」等，**直接**使用风水模板（`pageOverlay: 'fengshui'`），并**固定抖音尺寸**（`aspectRatio: '9:16'`），同时 **关闭「全文 xxx 字」**（`showWordCount: false`），无需再问导出平台（除非用户另指定小红书）。风水风格**不要**套用数黑体，标题保持宋体等风水默认字体。
 
 ---
 
@@ -47,7 +49,7 @@ description: >-
 2. 展示全文后**明确询问**：是否继续？
 3. 用户提出修改 → 改完后再展示，并再次询问是否继续。
 4. 只有用户明确说继续 / 确认正文后，才进入标题阶段。
-5. 确认后：`era_create_project` / `era_set_markdown` 写入工程（默认 `pageOverlay: 'pixel'`；若用户已指定风水风格则用 `pageOverlay: 'fengshui'` + `aspectRatio: '9:16'` + `showWordCount: false`）。
+5. 确认后：`era_create_project` / `era_set_markdown` 写入工程（默认 `pageOverlay: 'pixel'`，并写入数黑体一级/二级标题字体：`titleFontId`/`headingFontId`=`shuheiti`；若用户已指定风水风格则用 `pageOverlay: 'fengshui'` + `aspectRatio: '9:16'` + `showWordCount: false`，标题保持宋体、**不**写 `shuheiti`）。
 
 ---
 
@@ -133,7 +135,7 @@ description: >-
 
 对每个目标 `aspectRatio` 分别：
 
-1. `era_update_config` 设 `aspectRatio`（保持当前模板：默认 `pageOverlay: 'pixel'`，风水风格用 `fengshui` 且 `showWordCount: false`；`titleLineHeight` 不过松）
+1. `era_update_config` 设 `aspectRatio`（保持当前模板：默认 `pageOverlay: 'pixel'` + 一级/二级标题 `shuheiti`；风水风格用 `fengshui` 且 `showWordCount: false`、标题不用数黑体；`titleLineHeight` 不过松）
 2. `era_preview_layout`
 3. 若有告警必须先修再导出，包括：
    - 单行溢出、孤行、独行标点
@@ -168,7 +170,7 @@ description: >-
 | 建工程 | `era_create_project` · `POST /v1/projects` |
 | 写正文 | `era_set_markdown` · `PUT .../markdown` |
 | 写标题 | `era_set_title` · `PUT .../title` |
-| 画幅/模板 | `era_update_config` · `PATCH .../config`（优先 `pageOverlay: 'pixel'`；风水风格用 `fengshui` + `9:16` + `showWordCount: false`） |
+| 画幅/模板 | `era_update_config` · `PATCH .../config`（优先 `pageOverlay: 'pixel'` + 标题/二级标题 `shuheiti`；风水风格用 `fengshui` + `9:16` + `showWordCount: false`，标题保持宋体） |
 | 顶部文案 | `era_update_config` · `PATCH .../config`（`topText` 自定义；`showWordCount: false` 隐藏「全文 xxx 字」） |
 | 高亮 | `era_apply_highlights` · `POST .../highlights`（可带 `replace: true`） |
 | 高亮设置分享 | `era_create_highlight_setup_share` · `POST .../highlight-setup-share` → GitHub Pages `url` |

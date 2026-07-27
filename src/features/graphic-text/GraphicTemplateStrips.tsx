@@ -6,6 +6,24 @@ import { WiremeshPreviewArt } from './WiremeshPreviewArt'
 import { createRandomGradientVariant } from './pageGradientTokens'
 import type { GraphicPageOverlay, GraphicTextConfig } from './types'
 
+const SHUHEITI_TITLE_FONTS: Partial<GraphicTextConfig> = {
+  titleFontId: 'shuheiti',
+  titleFontFamily: '"Alimama ShuHeiTi", sans-serif',
+  headingFontId: 'shuheiti',
+  headingFontFamily: '"Alimama ShuHeiTi", sans-serif',
+}
+
+const SONG_TITLE_FONTS: Partial<GraphicTextConfig> = {
+  titleFontId: 'song',
+  titleFontFamily: '"Noto Serif SC", serif',
+  headingFontId: 'song',
+  headingFontFamily: '"Noto Serif SC", serif',
+}
+
+function titleFontsForOverlay(overlay: GraphicPageOverlay): Partial<GraphicTextConfig> {
+  return overlay === 'fengshui' ? SONG_TITLE_FONTS : SHUHEITI_TITLE_FONTS
+}
+
 function StripShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="graphic-toolbar-strip">
@@ -114,17 +132,18 @@ export function GraphicTemplateTextureStrip({
               }`}
               onClick={() => {
                 if (config.pageOverlay === option.id) {
-                  onUpdate({ pageOverlay: 'none' })
+                  onUpdate({ pageOverlay: 'none', ...SHUHEITI_TITLE_FONTS })
                   return
                 }
                 if (option.id === 'gradient') {
                   onUpdate({
                     pageOverlay: 'gradient',
                     gradientVariant: createRandomGradientVariant(),
+                    ...titleFontsForOverlay('gradient'),
                   })
                   return
                 }
-                onUpdate({ pageOverlay: option.id })
+                onUpdate({ pageOverlay: option.id, ...titleFontsForOverlay(option.id) })
               }}
             >
               <TemplatePreviewSquare
