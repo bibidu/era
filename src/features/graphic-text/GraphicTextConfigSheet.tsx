@@ -17,6 +17,7 @@ export interface HighlightPreviewDraft {
   brushHighlightColors: GraphicTextConfig['brushHighlightColors']
   quoteHighlightColors: GraphicTextConfig['quoteHighlightColors']
   circleHighlightColors: GraphicTextConfig['circleHighlightColors']
+  colorHighlightColors: GraphicTextConfig['colorHighlightColors']
   highlightPickerColor: GraphicTextConfig['highlightPickerColor']
 }
 
@@ -50,6 +51,7 @@ export function createHighlightPreviewDraft(
     brushHighlightColors: config.brushHighlightColors ?? {},
     quoteHighlightColors: config.quoteHighlightColors,
     circleHighlightColors: config.circleHighlightColors,
+    colorHighlightColors: config.colorHighlightColors ?? {},
     highlightPickerColor: config.highlightPickerColor,
   }
 }
@@ -176,6 +178,7 @@ export function GraphicTextConfigSheet({
         brushHighlightColors: highlightDraft.brushHighlightColors,
         quoteHighlightColors: highlightDraft.quoteHighlightColors,
         circleHighlightColors: highlightDraft.circleHighlightColors,
+        colorHighlightColors: highlightDraft.colorHighlightColors,
         highlightPickerColor: highlightDraft.highlightPickerColor,
       })
     }
@@ -194,6 +197,7 @@ export function GraphicTextConfigSheet({
       brushHighlightColors={highlightDraft.brushHighlightColors}
       quoteHighlightColors={highlightDraft.quoteHighlightColors}
       circleHighlightColors={highlightDraft.circleHighlightColors}
+      colorHighlightColors={highlightDraft.colorHighlightColors}
       highlightPickerColor={highlightDraft.highlightPickerColor}
       hideHeader
       onUnderlineChange={(colors) =>
@@ -210,6 +214,9 @@ export function GraphicTextConfigSheet({
       }
       onCircleChange={(colors) =>
         onHighlightDraftChange({ ...highlightDraft, circleHighlightColors: colors })
+      }
+      onColorChange={(colors) =>
+        onHighlightDraftChange({ ...highlightDraft, colorHighlightColors: colors })
       }
       onPickerColorChange={(highlightPickerColor) =>
         onHighlightDraftChange({ ...highlightDraft, highlightPickerColor })

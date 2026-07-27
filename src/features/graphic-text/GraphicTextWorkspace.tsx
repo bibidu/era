@@ -182,6 +182,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
       brushHighlightColors: highlightPreview.brushHighlightColors ?? {},
       quoteHighlightColors: highlightPreview.quoteHighlightColors,
       circleHighlightColors: highlightPreview.circleHighlightColors,
+      colorHighlightColors: highlightPreview.colorHighlightColors ?? {},
       highlightPickerColor: highlightPreview.highlightPickerColor,
     }
   }, [config, configPanel, highlightPreview])

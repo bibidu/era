@@ -47,6 +47,7 @@ import {
 const STYLE_TABS: { id: InteractiveHighlightStyle; label: string; disabled?: boolean }[] = [
   { id: 'underline', label: '下划线' },
   { id: 'brush', label: '刷子' },
+  { id: 'color', label: '文字色' },
   { id: 'circle', label: '线圈' },
   { id: 'quote', label: '引用' },
   { id: 'handUnderline', label: '手绘线', disabled: true },
@@ -74,6 +75,7 @@ function draftToMaps(draft: HighlightPreviewDraft): HighlightMaps {
     brushHighlightColors: draft.brushHighlightColors,
     quoteHighlightColors: draft.quoteHighlightColors,
     circleHighlightColors: draft.circleHighlightColors,
+    colorHighlightColors: draft.colorHighlightColors ?? {},
   }
 }
 
@@ -102,6 +104,10 @@ function mergeConfig(
     circleHighlightColors: {
       ...DEFAULT_GRAPHIC_TEXT_CONFIG.circleHighlightColors,
       ...((raw as GraphicTextConfig | undefined)?.circleHighlightColors ?? {}),
+    },
+    colorHighlightColors: {
+      ...DEFAULT_GRAPHIC_TEXT_CONFIG.colorHighlightColors,
+      ...((raw as GraphicTextConfig | undefined)?.colorHighlightColors ?? {}),
     },
   }
 }
@@ -242,6 +248,7 @@ export function HighlightSetupPage({
       brushHighlightColors: draft.brushHighlightColors,
       quoteHighlightColors: draft.quoteHighlightColors,
       circleHighlightColors: draft.circleHighlightColors,
+      colorHighlightColors: draft.colorHighlightColors,
       highlightPickerColor: draft.highlightPickerColor,
     }),
     [baseConfig, draft],
@@ -276,7 +283,9 @@ export function HighlightSetupPage({
               ? 'brushHighlightColors'
               : style === 'quote'
                 ? 'quoteHighlightColors'
-                : 'circleHighlightColors'
+                : style === 'color'
+                  ? 'colorHighlightColors'
+                  : 'circleHighlightColors'
         const nextMap = { ...prev[mapKey] }
         if (mode === 'remove') delete nextMap[key]
         else nextMap[key] = color

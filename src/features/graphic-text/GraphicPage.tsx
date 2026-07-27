@@ -181,12 +181,14 @@ function BrushUnderlineSegments({
   charOffset,
   brushColors,
   underlineColors,
+  textColors = {},
 }: {
   text: string
   blockId: string
   charOffset: number
   brushColors: Readonly<Record<string, string>>
   underlineColors: Readonly<Record<string, string>>
+  textColors?: Readonly<Record<string, string>>
 }) {
   const segments = buildMergedThemeHighlightSegments(
     text,
@@ -195,12 +197,13 @@ function BrushUnderlineSegments({
     underlineColors,
     {},
     charOffset,
+    textColors,
   )
 
   return (
     <>
       {segments.map((segment, index) => {
-        if (!segment.brushColor && !segment.underlineColor) {
+        if (!segment.brushColor && !segment.underlineColor && !segment.textColor) {
           return <span key={`${index}-${segment.text}`}>{segment.text}</span>
         }
 
@@ -220,6 +223,7 @@ function BrushUnderlineSegments({
               ...(segment.underlineColor
                 ? { ['--graphic-highlight-underline' as string]: segment.underlineColor }
                 : null),
+              ...(segment.textColor ? { color: segment.textColor } : null),
             }}
           >
             {segment.text}
@@ -237,6 +241,7 @@ function HandUnderlineAwareSegments({
   brushColors,
   underlineColors,
   handUnderlineColors,
+  textColors = {},
 }: {
   text: string
   blockId: string
@@ -244,6 +249,7 @@ function HandUnderlineAwareSegments({
   brushColors: Readonly<Record<string, string>>
   underlineColors: Readonly<Record<string, string>>
   handUnderlineColors: Readonly<Record<string, string>>
+  textColors?: Readonly<Record<string, string>>
 }) {
   const plain = stripHighlightMarkers(text)
   const handRuns = buildHandUnderlineColorRuns(plain, blockId, charOffset, handUnderlineColors)
@@ -256,6 +262,7 @@ function HandUnderlineAwareSegments({
         charOffset={charOffset}
         brushColors={brushColors}
         underlineColors={underlineColors}
+        textColors={textColors}
       />
     )
   }
@@ -275,6 +282,7 @@ function HandUnderlineAwareSegments({
             charOffset={charOffset + run.start}
             brushColors={brushColors}
             underlineColors={underlineColors}
+            textColors={textColors}
           />
         </HandDrawnUnderline>,
       )
@@ -293,6 +301,7 @@ function HandUnderlineAwareSegments({
         charOffset={charOffset + index}
         brushColors={brushColors}
         underlineColors={underlineColors}
+        textColors={textColors}
       />,
     )
     index = end
@@ -338,6 +347,7 @@ function StyledHighlightedText({
   underlineColors,
   handUnderlineColors,
   circleColors,
+  textColors = {},
   enableHighlight,
 }: {
   text: string
@@ -346,6 +356,7 @@ function StyledHighlightedText({
   underlineColors: Readonly<Record<string, string>>
   handUnderlineColors: Readonly<Record<string, string>>
   circleColors: Readonly<Record<string, string>>
+  textColors?: Readonly<Record<string, string>>
   enableHighlight: boolean
 }) {
   if (!enableHighlight) return <>{text}</>
@@ -370,6 +381,7 @@ function StyledHighlightedText({
             brushColors={brushColors}
             underlineColors={underlineColors}
             handUnderlineColors={handUnderlineColors}
+            textColors={textColors}
           />
         </CircleHighlightWrap>,
       )
@@ -389,6 +401,7 @@ function StyledHighlightedText({
         brushColors={brushColors}
         underlineColors={underlineColors}
         handUnderlineColors={handUnderlineColors}
+        textColors={textColors}
       />,
     )
     index = end
@@ -423,6 +436,7 @@ function renderBlockText(
   handUnderlineColors: Readonly<Record<string, string>>,
   quoteColors: Readonly<Record<string, string>>,
   circleColors: Readonly<Record<string, string>>,
+  textColors: Readonly<Record<string, string>>,
   highlightInteraction?: InteractiveHighlightHandlers,
 ) {
   const showQuoteBar = blockHasHighlightInMap(block, quoteColors)
@@ -436,6 +450,7 @@ function renderBlockText(
       underlineColors={underlineColors}
       circleColors={circleColors}
       quoteColors={quoteColors}
+      textColors={textColors}
       interaction={highlightInteraction}
     />
   ) : (
@@ -446,6 +461,7 @@ function renderBlockText(
       underlineColors={underlineColors}
       handUnderlineColors={handUnderlineColors}
       circleColors={circleColors}
+      textColors={textColors}
       enableHighlight
     />
   )
@@ -534,6 +550,7 @@ export function GraphicPage({
   const handUnderlineColors = config.handUnderlineHighlightColors ?? {}
   const quoteColors = config.quoteHighlightColors
   const circleColors = config.circleHighlightColors
+  const textColors = config.colorHighlightColors ?? {}
   const accentColor = config.highlightPickerColor
 
   const backgroundStyle: CSSProperties = resolvePageBackgroundStyle(config)
@@ -688,6 +705,7 @@ export function GraphicPage({
                               underlineColors={underlineColors}
                               circleColors={circleColors}
                               quoteColors={quoteColors}
+                              textColors={textColors}
                               interaction={highlightInteraction}
                             />
                           ) : (
@@ -698,6 +716,7 @@ export function GraphicPage({
                               underlineColors={underlineColors}
                               handUnderlineColors={handUnderlineColors}
                               circleColors={circleColors}
+                              textColors={textColors}
                               enableHighlight
                             />
                           )}
@@ -718,6 +737,7 @@ export function GraphicPage({
                   handUnderlineColors,
                   quoteColors,
                   circleColors,
+                  textColors,
                   highlightInteraction,
                 )}
               </div>

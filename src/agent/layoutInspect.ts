@@ -40,6 +40,7 @@ function collectHighlightColors(config: GraphicTextConfig): string[] {
     config.brushHighlightColors,
     config.quoteHighlightColors,
     config.circleHighlightColors,
+    config.colorHighlightColors,
   ]) {
     for (const color of Object.values(map ?? {})) {
       if (color) colors.add(color.toUpperCase())
@@ -218,13 +219,18 @@ export function inspectGraphicLayout(
 
   const titleIds = titleSourceIds(pages)
   const circleMap = config.circleHighlightColors ?? {}
+  const colorMap = config.colorHighlightColors ?? {}
   const titleHasCircle = titleIds.some((id) =>
     Object.keys(circleMap).some((key) => key.startsWith(`${id}:`)),
   )
-  if (titleIds.length > 0 && !titleHasCircle) {
+  const titleHasTextColor = titleIds.some((id) =>
+    Object.keys(colorMap).some((key) => key.startsWith(`${id}:`)),
+  )
+  // 用户明确不要画圈时，可用文字色（color）代替标题画圈要求
+  if (titleIds.length > 0 && !titleHasCircle && !titleHasTextColor) {
     warnings.push({
       code: 'title_missing_circle',
-      message: '标题必须至少有一处画圈高亮',
+      message: '标题必须至少有一处画圈高亮（或文字色 color）',
       pageIndex: 0,
       blockId: titleIds[0],
     })

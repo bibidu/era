@@ -3,7 +3,13 @@
 export const ERA_AGENT_DEFAULT_PORT = 3847
 export const ERA_AGENT_DEFAULT_HOST = '127.0.0.1'
 
-export type HighlightStyle = 'underline' | 'handUnderline' | 'brush' | 'quote' | 'circle'
+export type HighlightStyle =
+  | 'underline'
+  | 'handUnderline'
+  | 'brush'
+  | 'quote'
+  | 'circle'
+  | 'color'
 
 export interface HighlightRange {
   style: HighlightStyle
@@ -80,6 +86,7 @@ export const HIGHLIGHT_STYLES: { id: HighlightStyle; label: string }[] = [
   { id: 'brush', label: '笔刷高亮' },
   { id: 'quote', label: '引用条高亮' },
   { id: 'circle', label: '手绘圈高亮' },
+  { id: 'color', label: '文字色' },
 ]
 
 export const ASPECT_RATIO_HINTS = {

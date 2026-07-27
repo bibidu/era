@@ -27,7 +27,13 @@ const BRUSH_TAB_PREVIEW_BG = '#F0F0F0'
 const COLOR_POPOVER_EDGE_MARGIN = 12
 const COLOR_POPOVER_TRIGGER_GAP = 8
 
-export type HighlightStyleTab = 'underline' | 'handUnderline' | 'brush' | 'quote' | 'circle'
+export type HighlightStyleTab =
+  | 'underline'
+  | 'handUnderline'
+  | 'brush'
+  | 'quote'
+  | 'circle'
+  | 'color'
 
 const HIGHLIGHT_STYLE_TABS: {
   id: HighlightStyleTab
@@ -37,6 +43,7 @@ const HIGHLIGHT_STYLE_TABS: {
   { id: 'underline', label: '下划线' },
   { id: 'handUnderline', label: '手绘线', disabled: true },
   { id: 'brush', label: '刷子' },
+  { id: 'color', label: '文字色' },
   { id: 'quote', label: '引用' },
   { id: 'circle', label: '线圈' },
 ]
@@ -102,6 +109,17 @@ function HighlightStyleTabLabel({
         style={{ backgroundColor: brushPreviewBg }}
       >
         刷子
+      </span>
+    )
+  }
+
+  if (tab === 'color') {
+    return (
+      <span
+        className={`text-xs font-medium ${disabled ? textClass : ''}`}
+        style={disabled ? undefined : { color: previewColor }}
+      >
+        文字色
       </span>
     )
   }
@@ -282,12 +300,14 @@ interface GraphicHighlightEditorProps {
   brushHighlightColors: HighlightColorMap
   quoteHighlightColors: HighlightColorMap
   circleHighlightColors: HighlightColorMap
+  colorHighlightColors: HighlightColorMap
   highlightPickerColor: string
   onUnderlineChange: (colors: HighlightColorMap) => void
   onHandUnderlineChange: (colors: HighlightColorMap) => void
   onBrushChange: (colors: HighlightColorMap) => void
   onQuoteChange: (colors: HighlightColorMap) => void
   onCircleChange: (colors: HighlightColorMap) => void
+  onColorChange: (colors: HighlightColorMap) => void
   onPickerColorChange: (color: string) => void
   onConfirm: () => void
   onBack: () => void
@@ -345,7 +365,10 @@ function HighlightTokenButton({
           aria-hidden
         />
       )}
-      <span className={`relative z-[1] ${selected && styleTab === 'quote' ? 'pl-1' : ''}`}>
+      <span
+        className={`relative z-[1] ${selected && styleTab === 'quote' ? 'pl-1' : ''}`}
+        style={selected && styleTab === 'color' ? { color: previewColor } : undefined}
+      >
         {isWhitespace ? '␣' : token.char}
       </span>
       {selected && styleTab === 'underline' && (
@@ -585,12 +608,14 @@ export function GraphicHighlightEditor({
   brushHighlightColors,
   quoteHighlightColors,
   circleHighlightColors,
+  colorHighlightColors,
   highlightPickerColor,
   onUnderlineChange,
   onHandUnderlineChange,
   onBrushChange,
   onQuoteChange,
   onCircleChange,
+  onColorChange,
   onPickerColorChange,
   onConfirm,
   onBack,
@@ -689,7 +714,9 @@ export function GraphicHighlightEditor({
           ? brushHighlightColors
           : activeStyleTab === 'quote'
             ? quoteHighlightColors
-            : circleHighlightColors
+            : activeStyleTab === 'color'
+              ? colorHighlightColors
+              : circleHighlightColors
   const onActiveChange =
     activeStyleTab === 'underline'
       ? onUnderlineChange
@@ -699,7 +726,9 @@ export function GraphicHighlightEditor({
           ? onBrushChange
           : activeStyleTab === 'quote'
             ? onQuoteChange
-            : onCircleChange
+            : activeStyleTab === 'color'
+              ? onColorChange
+              : onCircleChange
 
   activeColorMapRef.current = activeColorMap
   onActiveChangeRef.current = onActiveChange

@@ -123,6 +123,7 @@ export interface ThemeHighlightSegment {
   brushColor: string | null
   underlineColor: string | null
   handUnderlineColor: string | null
+  textColor: string | null
 }
 
 export function buildMergedThemeHighlightSegments(
@@ -132,6 +133,7 @@ export function buildMergedThemeHighlightSegments(
   underlineColors: Readonly<Record<string, string>>,
   handUnderlineColors: Readonly<Record<string, string>>,
   charOffset = 0,
+  textColors: Readonly<Record<string, string>> = {},
 ): ThemeHighlightSegment[] {
   const plain = stripHighlightMarkers(text)
   const segments: ThemeHighlightSegment[] = []
@@ -139,6 +141,7 @@ export function buildMergedThemeHighlightSegments(
   let currentBrush: string | null = null
   let currentUnderline: string | null = null
   let currentHandUnderline: string | null = null
+  let currentTextColor: string | null = null
 
   const flush = () => {
     if (!currentText) return
@@ -147,6 +150,7 @@ export function buildMergedThemeHighlightSegments(
       brushColor: currentBrush,
       underlineColor: currentUnderline,
       handUnderlineColor: currentHandUnderline,
+      textColor: currentTextColor,
     })
     currentText = ''
   }
@@ -156,11 +160,13 @@ export function buildMergedThemeHighlightSegments(
     const brushColor = brushColors[key] ?? null
     const underlineColor = underlineColors[key] ?? null
     const handUnderlineColor = handUnderlineColors[key] ?? null
+    const textColor = textColors[key] ?? null
 
     if (
       brushColor === currentBrush &&
       underlineColor === currentUnderline &&
-      handUnderlineColor === currentHandUnderline
+      handUnderlineColor === currentHandUnderline &&
+      textColor === currentTextColor
     ) {
       currentText += plain[index]
       continue
@@ -170,11 +176,20 @@ export function buildMergedThemeHighlightSegments(
     currentBrush = brushColor
     currentUnderline = underlineColor
     currentHandUnderline = handUnderlineColor
+    currentTextColor = textColor
     currentText = plain[index] ?? ''
   }
 
   flush()
   return segments.length
     ? segments
-    : [{ text: plain, brushColor: null, underlineColor: null, handUnderlineColor: null }]
+    : [
+        {
+          text: plain,
+          brushColor: null,
+          underlineColor: null,
+          handUnderlineColor: null,
+          textColor: null,
+        },
+      ]
 }
