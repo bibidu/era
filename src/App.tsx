@@ -4,13 +4,21 @@ import { TopModeTabs, type AppMode } from './components/TopModeTabs'
 import { GraphicTextWorkspace } from './features/graphic-text/GraphicTextWorkspace'
 import { HighlightSetupPage } from './features/graphic-text/HighlightSetupPage'
 import { PosterWorkspace } from './features/poster/PosterWorkspace'
+import { SocialVideoDataPage } from './features/social-video/SocialVideoDataPage'
 import { SliceToolWorkspace } from './features/test/SliceToolWorkspace'
 import { usePosterEditor } from './features/poster/usePosterEditor'
 
 function App() {
   const highlightSetup = useMemo(() => readHighlightSetupQuery(), [])
+  const socialVideoTool = useMemo(() => {
+    return new URLSearchParams(window.location.search).get('tool') === 'social-video'
+  }, [])
   const [mode, setMode] = useState<AppMode>('graphic')
   const poster = usePosterEditor()
+
+  if (socialVideoTool) {
+    return <SocialVideoDataPage />
+  }
 
   if (highlightSetup.enabled) {
     if (!highlightSetup.shareId && !highlightSetup.projectId) {

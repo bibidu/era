@@ -4,10 +4,13 @@
 
 在线预览：https://bibidu.github.io/era/
 
+社媒视频完整数据提取页：https://bibidu.github.io/era/?tool=social-video
+
 ## 功能
 
 - 上传固定海报底图，添加文本素材并导出
 - 图文模式：Markdown 分页、字体/纸色/高亮、多页导出
+- 社媒视频数据提取：上传视频或填写视频 URL，调用 DashScope 多模态模型返回 Markdown
 - 画幅：`3:4` 小红书风格；`9:16` 抖音风格
 
 ## 开发（前端）
