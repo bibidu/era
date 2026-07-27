@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 
-const DASHSCOPE_ENDPOINT =
-  'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation'
+const SUPABASE_PROXY_ENDPOINT =
+  'https://kzoxyextxjwscrpjowud.functions.supabase.co/dashscope-video-extract'
 
 const DEFAULT_MODEL = 'qwen3.7-flash'
 
@@ -19,25 +19,10 @@ const DEFAULT_PROMPT = `请从这个社媒视频中提取尽可能完整的数�
 7. 商业/账号信息：品牌、产品、价格、优惠、账号定位、受众画像；无法判断请写“未识别”。
 8. 数据化总结：用表格汇总所有可观察事实，不要编造看不见的信息。`
 
-type DashScopeContentBlock =
-  | string
-  | {
-      text?: string
-      [key: string]: unknown
-    }
-
-interface DashScopeResponse {
-  output?: {
-    text?: string
-    choices?: Array<{
-      message?: {
-        content?: string | DashScopeContentBlock[]
-      }
-    }>
-  }
-  message?: string
-  code?: string
-  request_id?: string
+interface SocialVideoProxyResponse {
+  markdown?: string
+  error?: string
+  requestId?: string | null
 }
 
 function fileToDataUrl(file: File) {
@@ -60,38 +45,6 @@ function formatBytes(bytes: number) {
     return `${(bytes / 1024).toFixed(1)} KB`
   }
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-}
-
-function extractMarkdownFromResponse(data: DashScopeResponse) {
-  const choiceContent = data.output?.choices?.[0]?.message?.content
-
-  if (typeof choiceContent === 'string') {
-    return choiceContent
-  }
-
-  if (Array.isArray(choiceContent)) {
-    const parts = choiceContent
-      .map((block) => {
-        if (typeof block === 'string') {
-          return block
-        }
-        if (typeof block.text === 'string') {
-          return block.text
-        }
-        return JSON.stringify(block, null, 2)
-      })
-      .filter(Boolean)
-
-    if (parts.length > 0) {
-      return parts.join('\n\n')
-    }
-  }
-
-  if (typeof data.output?.text === 'string') {
-    return data.output.text
-  }
-
-  return JSON.stringify(data, null, 2)
 }
 
 function isLikelyNetworkOrCorsError(message: string) {
@@ -162,48 +115,35 @@ export function SocialVideoDataPage() {
     try {
       const videoSource = videoFile ? await fileToDataUrl(videoFile) : videoUrl.trim()
       const parsedFps = Number.parseFloat(fps)
-      const response = await fetch(DASHSCOPE_ENDPOINT, {
+      const response = await fetch(SUPABASE_PROXY_ENDPOINT, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${apiKey.trim()}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          apiKey: apiKey.trim(),
           model: model.trim(),
-          input: {
-            messages: [
-              {
-                role: 'user',
-                content: [
-                  {
-                    video: videoSource,
-                    fps: Number.isFinite(parsedFps) && parsedFps > 0 ? parsedFps : 2,
-                  },
-                  {
-                    text: prompt.trim(),
-                  },
-                ],
-              },
-            ],
-          },
+          video: videoSource,
+          fps: Number.isFinite(parsedFps) && parsedFps > 0 ? parsedFps : 2,
+          prompt: prompt.trim(),
         }),
       })
 
       const text = await response.text()
-      const data = text ? (JSON.parse(text) as DashScopeResponse) : {}
+      const data = text ? (JSON.parse(text) as SocialVideoProxyResponse) : {}
 
       if (!response.ok) {
-        const message = data.message || text || `HTTP ${response.status}`
+        const message = data.error || text || `HTTP ${response.status}`
         throw new Error(message)
       }
 
-      setMarkdown(extractMarkdownFromResponse(data))
-      setStatus(`提取完成。Request ID：${data.request_id || '未返回'}`)
+      setMarkdown(data.markdown || JSON.stringify(data, null, 2))
+      setStatus(`提取完成。Request ID：${data.requestId || '未返回'}`)
     } catch (error) {
       const message = error instanceof Error ? error.message : '未知错误'
       setStatus(
         isLikelyNetworkOrCorsError(message)
-          ? '调用失败：浏览器无法直接访问 DashScope，通常是 CORS/跨域或网络限制。GitHub Pages 是纯静态页面，若 DashScope 未允许浏览器跨域直连，需要改用你自己的服务端代理转发请求；把 API Key 写死到前端也不能解决该问题。'
+          ? '调用失败：浏览器无法访问 Supabase 代理函数，通常是网络或代理部署状态问题。请稍后重试。'
           : `调用失败：${message}`,
       )
     } finally {
@@ -259,8 +199,7 @@ export function SocialVideoDataPage() {
                 </button>
               </div>
               <span className="text-xs leading-5 text-neutral-500">
-                API Key 只保存在当前页面状态中，不会写入仓库或部署环境。公开页面中写死 Key
-                会泄露密钥，也无法绕过浏览器跨域限制。
+                API Key 只会随本次请求发给 Supabase 代理函数，不会写入仓库或部署产物。
               </span>
             </label>
 
