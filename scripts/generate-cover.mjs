@@ -211,21 +211,21 @@ function footerIcon(i) {
 function buildHtml(cfg, theme) {
   const lines = bigTitleLines(cfg.bigTitle, cfg)
   const lineCount = lines.length
-  // 从过大版收回一档，保持冲击力但不再撑满
+  // 再收一档
   const titleSize =
-    lineCount <= 1 ? 360 : lineCount === 2 ? 300 : lineCount === 3 ? 260 : 220
-  const titleLh = 0.95
-  const titleLineGap = lineCount <= 1 ? 0 : lineCount === 2 ? 8 : 12
-  const smallTitleSize = 72
+    lineCount <= 1 ? 280 : lineCount === 2 ? 220 : lineCount === 3 ? 190 : 160
+  const titleLh = 0.96
+  const titleLineGap = lineCount <= 1 ? 0 : lineCount === 2 ? 10 : 14
+  const smallTitleSize = 56
 
-  // 装饰圆：适中尺寸；右上 / 右下随机
+  // 装饰圆：再略收；右上 / 右下随机
   const blobCorner =
     cfg.blobCorner === 'top-right' || cfg.blobCorner === 'bottom-right'
       ? cfg.blobCorner
       : Math.random() < 0.5
         ? 'top-right'
         : 'bottom-right'
-  const blobSize = 840
+  const blobSize = 680
   const blobOut = Math.round(blobSize * 0.32)
   const blobPos =
     blobCorner === 'top-right'
