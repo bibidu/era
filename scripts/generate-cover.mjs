@@ -406,7 +406,7 @@ function buildHtml(cfg, theme) {
     font-weight: 700;
     letter-spacing: 0.04em;
     padding: 8px 18px;
-    border-radius: 10px;
+    border-radius: 0;
     line-height: 1;
     text-transform: lowercase;
   }
