@@ -57,6 +57,7 @@ Agent（严格执行 era skill）
 | `era_set_title` | 设置/更新一级标题 |
 | `era_update_config` | 部分更新配置（含 `aspectRatio`） |
 | `era_apply_highlights` | 按 range 批量高亮 |
+| `era_create_highlight_setup_share` | 上传正文到 Supabase，返回 GitHub Pages 高亮设置页 URL |
 | `era_preview_layout` | 分页预览 + 异常检测（需浏览器） |
 | `era_export_images` | 导出各页 PNG + 纵向拼图 `graphic-review-sheet.png`（需浏览器）；skill 要求先发拼图确认、再发分图 |
 
