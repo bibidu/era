@@ -207,10 +207,10 @@ function footerIcon(i) {
 function buildHtml(cfg, theme) {
   const lines = bigTitleLines(cfg.bigTitle, cfg)
   const lineCount = lines.length
-  // 行数越多字号略收，仍尽量占满核心区上半视觉重量
+  // 行数越多字号略收；Anton 字腔紧，行高需显式放宽
   const titleSize =
-    lineCount <= 1 ? 196 : lineCount === 2 ? 152 : lineCount === 3 ? 118 : 100
-  const titleLh = lineCount <= 2 ? 0.98 : 1.02
+    lineCount <= 1 ? 208 : lineCount === 2 ? 164 : lineCount === 3 ? 132 : 112
+  const titleLh = lineCount <= 2 ? 1.08 : 1.14
 
   const tagsHtml =
     cfg.tags.length > 0
