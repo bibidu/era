@@ -19,6 +19,10 @@ const ROOT = path.resolve(__dirname, '..')
 
 const WIDTH = 1080
 const HEIGHT = 1920
+/** 个人主页预览裁切：左右铺满、上下居中的 3:4 核心区 */
+const CORE_WIDTH = WIDTH
+const CORE_HEIGHT = Math.round((CORE_WIDTH * 4) / 3) // 1440
+const CORE_TOP = Math.round((HEIGHT - CORE_HEIGHT) / 2) // 240
 
 /** 适合社媒的主题色池（未指定时随机） */
 const THEME_COLORS = [
@@ -206,10 +210,37 @@ function buildHtml(cfg, theme) {
     overflow: hidden;
   }
 
-  /* 技术网格 */
+  /*
+   * 全画布仅保留：背景色 + 正方形网格。
+   * 其余全部落入上下居中、左右铺满的 3:4 核心区（社媒主页预览裁切区）。
+   */
+  .hatch {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, ${theme.hex} 12%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, ${theme.hex} 12%, transparent) 1px, transparent 1px);
+    background-size: 72px 72px;
+    background-position: 0 0;
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .core {
+    position: absolute;
+    top: ${CORE_TOP}px;
+    left: 0;
+    width: ${CORE_WIDTH}px;
+    height: ${CORE_HEIGHT}px;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  /* 核心区内技术边框 / 十字线 */
   .grid {
     position: absolute;
-    inset: 48px;
+    inset: 40px;
     border: 1.5px solid color-mix(in srgb, ${theme.hex} 35%, transparent);
     pointer-events: none;
   }
@@ -225,18 +256,6 @@ function buildHtml(cfg, theme) {
   .grid::after {
     top: 42%; left: 0; right: 0; height: 1px;
   }
-  .hatch {
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(to right, color-mix(in srgb, ${theme.hex} 12%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in srgb, ${theme.hex} 12%, transparent) 1px, transparent 1px);
-    background-size: 72px 72px;
-    background-position: 48px 48px;
-    opacity: 0.55;
-    pointer-events: none;
-    mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 78%);
-  }
 
   .dots {
     position: absolute;
@@ -246,24 +265,24 @@ function buildHtml(cfg, theme) {
     background-size: 14px 14px;
     opacity: 0.55;
   }
-  .dots.tr { top: 72px; right: 72px; }
-  .dots.bl { bottom: 220px; left: 64px; width: 56px; height: 56px; opacity: 0.4; }
+  .dots.tr { top: 56px; right: 56px; }
+  .dots.bl { bottom: 160px; left: 56px; width: 56px; height: 56px; opacity: 0.4; }
 
   .blob {
     position: absolute;
     right: -180px;
-    bottom: -120px;
-    width: 620px;
-    height: 620px;
+    bottom: -140px;
+    width: 560px;
+    height: 560px;
     border-radius: 50%;
     background: ${theme.hex};
   }
   .arc-lines {
     position: absolute;
-    right: 40px;
-    bottom: 360px;
-    width: 220px;
-    height: 220px;
+    right: 36px;
+    bottom: 280px;
+    width: 200px;
+    height: 200px;
     border: 1.5px solid color-mix(in srgb, ${theme.hex} 55%, transparent);
     border-radius: 50%;
     opacity: 0.7;
@@ -271,7 +290,7 @@ function buildHtml(cfg, theme) {
   .arc-lines::before {
     content: "";
     position: absolute;
-    inset: 28px;
+    inset: 26px;
     border: 1.5px solid color-mix(in srgb, ${theme.hex} 40%, transparent);
     border-radius: 50%;
   }
@@ -280,7 +299,7 @@ function buildHtml(cfg, theme) {
     position: relative;
     z-index: 2;
     height: 100%;
-    padding: 88px 72px 72px;
+    padding: 72px 64px 64px;
     display: flex;
     flex-direction: column;
   }
@@ -394,23 +413,25 @@ function buildHtml(cfg, theme) {
 </head>
 <body>
   <div class="cover" id="cover">
-    <div class="hatch"></div>
-    <div class="grid"></div>
-    <div class="dots tr"></div>
-    <div class="dots bl"></div>
-    <div class="blob"></div>
-    <div class="arc-lines"></div>
-    <div class="content">
-      <div class="badge">${escapeHtml(cfg.badge || 'skill')}</div>
-      <h1 class="big-title">${lines.map((l) => `<span>${escapeHtml(l)}</span>`).join('')}</h1>
-      <div class="info">
-        <div class="accent-line"></div>
-        ${smallTitleHtml}
-        ${descHtml}
-        ${tagsHtml}
+    <div class="hatch" aria-hidden="true"></div>
+    <div class="core">
+      <div class="grid"></div>
+      <div class="dots tr"></div>
+      <div class="dots bl"></div>
+      <div class="blob"></div>
+      <div class="arc-lines"></div>
+      <div class="content">
+        <div class="badge">${escapeHtml(cfg.badge || 'skill')}</div>
+        <h1 class="big-title">${lines.map((l) => `<span>${escapeHtml(l)}</span>`).join('')}</h1>
+        <div class="info">
+          <div class="accent-line"></div>
+          ${smallTitleHtml}
+          ${descHtml}
+          ${tagsHtml}
+        </div>
+        <div class="spacer"></div>
+        ${footerHtml}
       </div>
-      <div class="spacer"></div>
-      ${footerHtml}
     </div>
   </div>
 </body>
@@ -513,7 +534,17 @@ Usage:
     path: outPath,
     themeColor: theme.hex,
     themeName: theme.name,
-    size: { width: WIDTH, height: HEIGHT, aspectRatio: '9:16' },
+    size: {
+      width: WIDTH,
+      height: HEIGHT,
+      aspectRatio: '9:16',
+      core: {
+        width: CORE_WIDTH,
+        height: CORE_HEIGHT,
+        top: CORE_TOP,
+        aspectRatio: '3:4',
+      },
+    },
   }
   console.log(JSON.stringify(result, null, 2))
 }
