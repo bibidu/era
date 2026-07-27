@@ -207,10 +207,11 @@ function footerIcon(i) {
 function buildHtml(cfg, theme) {
   const lines = bigTitleLines(cfg.bigTitle, cfg)
   const lineCount = lines.length
-  // 行数越多字号略收；Anton 字腔紧，行高需显式放宽
+  // 行数越多字号略收；多行额外拉开间距
   const titleSize =
-    lineCount <= 1 ? 208 : lineCount === 2 ? 164 : lineCount === 3 ? 132 : 112
-  const titleLh = lineCount <= 2 ? 1.08 : 1.14
+    lineCount <= 1 ? 228 : lineCount === 2 ? 180 : lineCount === 3 ? 152 : 128
+  const titleLh = lineCount <= 2 ? 1.18 : 1.28
+  const titleLineGap = lineCount <= 1 ? 0 : lineCount === 2 ? 10 : 16
 
   const tagsHtml =
     cfg.tags.length > 0
@@ -385,7 +386,7 @@ function buildHtml(cfg, theme) {
   }
 
   .big-title {
-    margin-top: 36px;
+    margin-top: 28px;
     font-family: "Anton", "Noto Sans SC", "Impact", "Arial Narrow", sans-serif;
     font-weight: 400;
     font-size: ${titleSize}px;
@@ -393,10 +394,11 @@ function buildHtml(cfg, theme) {
     letter-spacing: -0.02em;
     text-transform: uppercase;
     color: ${normalizeHex(cfg.bigTitleColor, '#111111')};
-    max-width: 960px;
+    max-width: 980px;
     word-break: break-word;
   }
   .big-title .line { display: block; }
+  .big-title .line + .line { margin-top: ${titleLineGap}px; }
   .big-title .line.cjk {
     font-family: "Noto Sans SC", "PingFang SC", "Helvetica Neue", sans-serif;
     font-weight: 900;
