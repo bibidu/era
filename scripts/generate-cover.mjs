@@ -42,6 +42,7 @@ const DEFAULTS = {
   bigTitle: 'COVER SKILL',
   bigTitleColor: '#111111',
   bigTitleLineColors: null,
+  blobCorner: null,
   smallTitle: '',
   description: '',
   tags: [],
@@ -97,6 +98,9 @@ function parseArgs(argv) {
         break
       case '--themeColor':
         out.themeColor = next()
+        break
+      case '--blobCorner':
+        out.blobCorner = next()
         break
       case '--badge':
         out.badge = next()
@@ -207,11 +211,34 @@ function footerIcon(i) {
 function buildHtml(cfg, theme) {
   const lines = bigTitleLines(cfg.bigTitle, cfg)
   const lineCount = lines.length
-  // 行数越多字号略收；多行用 gap 拉开（比 line-height 更可控）
+  // 相对上一版放大约一倍；多行用 gap 拉开
   const titleSize =
-    lineCount <= 1 ? 240 : lineCount === 2 ? 188 : lineCount === 3 ? 160 : 136
+    lineCount <= 1 ? 480 : lineCount === 2 ? 376 : lineCount === 3 ? 320 : 272
   const titleLh = 1.05
-  const titleLineGap = lineCount <= 1 ? 0 : lineCount === 2 ? 18 : 28
+  const titleLineGap = lineCount <= 1 ? 0 : lineCount === 2 ? 28 : 40
+  const smallTitleSize = 88
+
+  // 装饰圆：放大 0.5 倍（560→840）；右上 / 右下随机
+  const blobCorner =
+    cfg.blobCorner === 'top-right' || cfg.blobCorner === 'bottom-right'
+      ? cfg.blobCorner
+      : Math.random() < 0.5
+        ? 'top-right'
+        : 'bottom-right'
+  const blobSize = 840
+  const blobOut = Math.round(blobSize * 0.32)
+  const blobPos =
+    blobCorner === 'top-right'
+      ? `top:-${blobOut}px;right:-${blobOut}px;bottom:auto;left:auto;`
+      : `bottom:-${Math.round(blobSize * 0.25)}px;right:-${blobOut}px;top:auto;left:auto;`
+  const arcPos =
+    blobCorner === 'top-right'
+      ? 'top:48px;right:28px;bottom:auto;'
+      : 'bottom:300px;right:28px;top:auto;'
+  const dotsTrExtra =
+    blobCorner === 'top-right' ? 'top:auto;bottom:56px;right:56px;' : ''
+  const dotsBlExtra =
+    blobCorner === 'bottom-right' ? 'bottom:auto;top:56px;left:56px;' : ''
 
   const tagsHtml =
     cfg.tags.length > 0
@@ -244,7 +271,7 @@ function buildHtml(cfg, theme) {
     })
     .join('')
 
-  return `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8" />
@@ -333,32 +360,30 @@ function buildHtml(cfg, theme) {
     background-size: 14px 14px;
     opacity: 0.55;
   }
-  .dots.tr { top: 56px; right: 56px; }
-  .dots.bl { bottom: 160px; left: 56px; width: 56px; height: 56px; opacity: 0.4; }
+  .dots.tr { top: 56px; right: 56px; ${dotsTrExtra} }
+  .dots.bl { bottom: 160px; left: 56px; width: 56px; height: 56px; opacity: 0.4; ${dotsBlExtra} }
 
   .blob {
     position: absolute;
-    right: -180px;
-    bottom: -140px;
-    width: 560px;
-    height: 560px;
+    width: ${blobSize}px;
+    height: ${blobSize}px;
     border-radius: 50%;
     background: ${theme.hex};
+    ${blobPos}
   }
   .arc-lines {
     position: absolute;
-    right: 36px;
-    bottom: 280px;
-    width: 200px;
-    height: 200px;
+    width: 300px;
+    height: 300px;
     border: 1.5px solid color-mix(in srgb, ${theme.hex} 55%, transparent);
     border-radius: 50%;
     opacity: 0.7;
+    ${arcPos}
   }
   .arc-lines::before {
     content: "";
     position: absolute;
-    inset: 26px;
+    inset: 36px;
     border: 1.5px solid color-mix(in srgb, ${theme.hex} 40%, transparent);
     border-radius: 50%;
   }
@@ -367,7 +392,7 @@ function buildHtml(cfg, theme) {
     position: relative;
     z-index: 2;
     height: 100%;
-    padding: 72px 64px 64px;
+    padding: 56px 48px 56px;
     display: flex;
     flex-direction: column;
   }
@@ -386,7 +411,7 @@ function buildHtml(cfg, theme) {
   }
 
   .big-title {
-    margin-top: 24px;
+    margin-top: 20px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -398,30 +423,32 @@ function buildHtml(cfg, theme) {
     letter-spacing: -0.02em;
     text-transform: uppercase;
     color: ${normalizeHex(cfg.bigTitleColor, '#111111')};
-    max-width: 1000px;
+    max-width: 100%;
+    width: max-content;
     word-break: break-word;
+    transform-origin: left top;
   }
-  .big-title .line { display: block; }
+  .big-title .line { display: block; white-space: nowrap; }
   .big-title .line.cjk {
     font-family: "Noto Sans SC", "PingFang SC", "Helvetica Neue", sans-serif;
     font-weight: 900;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     text-transform: none;
   }
 
   .info {
-    margin-top: 48px;
-    max-width: 720px;
+    margin-top: 96px;
+    max-width: 920px;
   }
   .accent-line {
-    width: 56px;
-    height: 5px;
+    width: 72px;
+    height: 6px;
     background: ${theme.hex};
-    margin-bottom: 22px;
+    margin-bottom: 36px;
     border-radius: 2px;
   }
   .small-title {
-    font-size: 44px;
+    font-size: ${smallTitleSize}px;
     font-weight: 900;
     letter-spacing: 0.01em;
     line-height: 1.25;
@@ -515,6 +542,8 @@ function buildHtml(cfg, theme) {
   </div>
 </body>
 </html>`
+
+  return { html, meta: { blobCorner, blobSize, titleSize, smallTitleSize } }
 }
 
 async function loadConfig(cli) {
@@ -586,7 +615,7 @@ Usage:
   }
 
   const theme = pickTheme(cfg.themeColor)
-  const html = buildHtml(cfg, theme)
+  const { html, meta } = buildHtml(cfg, theme)
   const outPath = path.resolve(cfg.out)
   await mkdir(path.dirname(outPath), { recursive: true })
 
@@ -604,7 +633,20 @@ Usage:
     await page.evaluate(async () => {
       if (document.fonts?.ready) await document.fonts.ready
     })
-    await page.waitForTimeout(400)
+    // 主标题按内容区宽度等比缩放，避免加倍字号后溢出裁切
+    await page.evaluate(() => {
+      const title = document.querySelector('.big-title')
+      const content = document.querySelector('.content')
+      if (!title || !content) return
+      const maxW = content.clientWidth
+      const need = title.scrollWidth
+      if (need > maxW && need > 0) {
+        const s = maxW / need
+        title.style.transform = `scale(${s})`
+        title.style.marginBottom = `${Math.round(title.offsetHeight * (s - 1))}px`
+      }
+    })
+    await page.waitForTimeout(300)
     await page.locator('#cover').screenshot({ path: outPath, type: 'png' })
   } finally {
     await browser.close()
@@ -621,6 +663,9 @@ Usage:
     path: outPath,
     themeColor: theme.hex,
     themeName: theme.name,
+    blobCorner: meta.blobCorner,
+    titleSize: meta.titleSize,
+    smallTitleSize: meta.smallTitleSize,
     size: {
       width: WIDTH,
       height: HEIGHT,
