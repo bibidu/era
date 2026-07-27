@@ -214,8 +214,8 @@ function buildHtml(cfg, theme) {
   // 再放大 50%；多行间距略收
   const titleSize =
     lineCount <= 1 ? 720 : lineCount === 2 ? 564 : lineCount === 3 ? 480 : 408
-  const titleLh = 1.02
-  const titleLineGap = lineCount <= 1 ? 0 : lineCount === 2 ? 12 : 16
+  const titleLh = 0.92
+  const titleLineGap = lineCount <= 1 ? 0 : lineCount === 2 ? 4 : 6
   const smallTitleSize = 132
 
   // 装饰圆：再放大 50%（840→1260）；右上 / 右下随机
@@ -436,6 +436,11 @@ function buildHtml(cfg, theme) {
     letter-spacing: -0.04em;
     text-transform: none;
   }
+  /* 彩色标题压在主题色块上时保持可读 */
+  .big-title .line[style*="color:#"],
+  .big-title .line[style*="color: #"] {
+    -webkit-text-stroke: 1px rgba(246, 244, 239, 0.35);
+  }
 
   .info {
     margin-top: 192px;
@@ -455,8 +460,11 @@ function buildHtml(cfg, theme) {
     font-size: ${smallTitleSize}px;
     font-weight: 900;
     letter-spacing: 0.01em;
-    line-height: 1.25;
+    line-height: 1.15;
     color: #111;
+    white-space: nowrap;
+    width: max-content;
+    max-width: none;
   }
   .desc {
     margin-top: 14px;
@@ -672,7 +680,18 @@ Usage:
       title.style.height = `${scaledH}px`
       title.style.width = `${scaledW}px`
 
-      const used = badgeH + scaledH + infoH + footerH
+      // 小标题过宽时同步缩放，避免换行裁切
+      const small = info.querySelector('.small-title')
+      if (small && small.scrollWidth > innerW) {
+        const ss = innerW / small.scrollWidth
+        small.style.transformOrigin = 'left top'
+        small.style.transform = `scale(${ss})`
+        small.style.height = `${small.offsetHeight * ss}px`
+        small.style.width = `${small.scrollWidth * ss}px`
+      }
+
+      const infoH2 = info.getBoundingClientRect().height
+      const used = badgeH + scaledH + infoH2 + footerH
       const gap = Math.max(minGap, Math.min(targetGap, innerH - used - 8))
       info.style.marginTop = `${Math.round(gap)}px`
     })
