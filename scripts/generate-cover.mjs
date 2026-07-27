@@ -41,6 +41,7 @@ const THEME_COLORS = [
 const DEFAULTS = {
   bigTitle: 'COVER SKILL',
   bigTitleColor: '#111111',
+  bigTitleLineColors: null,
   smallTitle: '',
   description: '',
   tags: [],
@@ -69,6 +70,12 @@ function parseArgs(argv) {
         break
       case '--bigTitleColor':
         out.bigTitleColor = next()
+        break
+      case '--bigTitleLineColors':
+        out.bigTitleLineColors = next()
+          .split(/[,，|]/)
+          .map((s) => s.trim())
+          .filter(Boolean)
         break
       case '--smallTitle':
         out.smallTitle = next()
@@ -127,14 +134,56 @@ function escapeHtml(s) {
     .replaceAll('"', '&quot;')
 }
 
-function bigTitleLines(raw) {
-  const text = String(raw ?? '').trim()
-  if (!text) return ['TITLE']
-  // 支持 \n / 字面量 \\n / 中文顿号式换行标记
-  return text
-    .split(/\r?\n|\\n/)
-    .map((l) => l.trim())
-    .filter(Boolean)
+function normalizeHex(color, fallback = '#111111') {
+  if (!color || typeof color !== 'string') return fallback
+  const c = color.trim()
+  if (/^#[0-9a-fA-F]{6}$/.test(c)) return c
+  if (/^[0-9a-fA-F]{6}$/.test(c)) return `#${c}`
+  return fallback
+}
+
+/**
+ * 解析大标题行。支持：
+ * - 字符串（\\n 分行）
+ * - 字符串数组
+ * - { text, color? } 数组（单行可指定颜色）
+ * - 配合 bigTitleLineColors / bigTitleColor
+ */
+function bigTitleLines(raw, cfg) {
+  const defaultColor = normalizeHex(cfg.bigTitleColor, '#111111')
+  const lineColors = Array.isArray(cfg.bigTitleLineColors)
+    ? cfg.bigTitleLineColors
+    : typeof cfg.bigTitleLineColors === 'string'
+      ? cfg.bigTitleLineColors.split(/[,，|]/).map((s) => s.trim()).filter(Boolean)
+      : []
+
+  let items = []
+  if (Array.isArray(raw)) {
+    items = raw.map((item) => {
+      if (item && typeof item === 'object') {
+        return {
+          text: String(item.text ?? item.title ?? '').trim(),
+          color: item.color ? normalizeHex(item.color, defaultColor) : null,
+        }
+      }
+      return { text: String(item ?? '').trim(), color: null }
+    })
+  } else {
+    const text = String(raw ?? '').trim()
+    items = text
+      ? text
+          .split(/\r?\n|\\n/)
+          .map((l) => ({ text: l.trim(), color: null }))
+          .filter((l) => l.text)
+      : []
+  }
+
+  if (!items.length) items = [{ text: 'TITLE', color: null }]
+
+  return items.map((item, i) => ({
+    text: item.text,
+    color: item.color || normalizeHex(lineColors[i], defaultColor) || defaultColor,
+  }))
 }
 
 function footerIcon(i) {
@@ -156,12 +205,12 @@ function footerIcon(i) {
 }
 
 function buildHtml(cfg, theme) {
-  const lines = bigTitleLines(cfg.bigTitle)
+  const lines = bigTitleLines(cfg.bigTitle, cfg)
   const lineCount = lines.length
   // 行数越多字号略收，保证大标题仍占上半区视觉重量
   const titleSize =
-    lineCount <= 1 ? 168 : lineCount === 2 ? 128 : lineCount === 3 ? 102 : 88
-  const titleLh = lineCount <= 2 ? 0.88 : 0.92
+    lineCount <= 1 ? 168 : lineCount === 2 ? 128 : lineCount === 3 ? 96 : 84
+  const titleLh = lineCount <= 2 ? 0.88 : 0.9
 
   const tagsHtml =
     cfg.tags.length > 0
@@ -185,6 +234,14 @@ function buildHtml(cfg, theme) {
   const descHtml = cfg.description
     ? `<p class="desc">${escapeHtml(cfg.description)}</p>`
     : ''
+
+  const titleHtml = lines
+    .map((l) => {
+      const hasCjk = /[\u3400-\u9FFF]/.test(l.text)
+      const cls = hasCjk ? 'line cjk' : 'line'
+      return `<span class="${cls}" style="color:${escapeHtml(l.color)}">${escapeHtml(l.text)}</span>`
+    })
+    .join('')
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -329,17 +386,23 @@ function buildHtml(cfg, theme) {
 
   .big-title {
     margin-top: 36px;
-    font-family: "Anton", "Impact", "Arial Narrow", sans-serif;
+    font-family: "Anton", "Noto Sans SC", "Impact", "Arial Narrow", sans-serif;
     font-weight: 400;
     font-size: ${titleSize}px;
     line-height: ${titleLh};
     letter-spacing: -0.02em;
     text-transform: uppercase;
-    color: ${cfg.bigTitleColor};
-    max-width: 920px;
+    color: ${normalizeHex(cfg.bigTitleColor, '#111111')};
+    max-width: 960px;
     word-break: break-word;
   }
-  .big-title span { display: block; }
+  .big-title .line { display: block; }
+  .big-title .line.cjk {
+    font-family: "Noto Sans SC", "PingFang SC", "Helvetica Neue", sans-serif;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    text-transform: none;
+  }
 
   .info {
     margin-top: 48px;
@@ -432,7 +495,7 @@ function buildHtml(cfg, theme) {
       <div class="arc-lines"></div>
       <div class="content">
         <div class="badge">${escapeHtml(cfg.badge || 'skill')}</div>
-        <h1 class="big-title">${lines.map((l) => `<span>${escapeHtml(l)}</span>`).join('')}</h1>
+        <h1 class="big-title">${titleHtml}</h1>
         <div class="info">
           <div class="accent-line"></div>
           ${smallTitleHtml}
@@ -467,6 +530,11 @@ async function loadConfig(cli) {
         : typeof json.secondaryTitles === 'string'
           ? json.secondaryTitles.split(/[,，|]/).map((s) => s.trim()).filter(Boolean)
           : data.secondaryTitles,
+      bigTitleLineColors: Array.isArray(json.bigTitleLineColors)
+        ? json.bigTitleLineColors
+        : typeof json.bigTitleLineColors === 'string'
+          ? json.bigTitleLineColors.split(/[,，|]/).map((s) => s.trim()).filter(Boolean)
+          : data.bigTitleLineColors,
       out: cli.out !== DEFAULTS.out ? cli.out : json.out ? path.resolve(json.out) : data.out,
     }
   }
@@ -504,7 +572,10 @@ Usage:
   }
 
   const cfg = await loadConfig(cli)
-  if (!cfg.bigTitle?.trim()) {
+  const titleCheck = Array.isArray(cfg.bigTitle)
+    ? cfg.bigTitle.length > 0
+    : Boolean(cfg.bigTitle?.toString?.().trim?.())
+  if (!titleCheck) {
     console.error('缺少 bigTitle')
     process.exit(1)
   }
