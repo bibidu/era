@@ -5,6 +5,8 @@ const DASHSCOPE_ENDPOINT =
 
 const DEFAULT_MODEL = 'qwen3.7-flash'
 
+const NETWORK_ERROR_MARKERS = ['failed to fetch', 'networkerror', 'load failed', 'type error']
+
 const DEFAULT_PROMPT = `请从这个社媒视频中提取尽可能完整的数据，并严格用 Markdown 返回。
 
 需要包含：
@@ -90,6 +92,11 @@ function extractMarkdownFromResponse(data: DashScopeResponse) {
   }
 
   return JSON.stringify(data, null, 2)
+}
+
+function isLikelyNetworkOrCorsError(message: string) {
+  const normalized = message.toLowerCase()
+  return NETWORK_ERROR_MARKERS.some((marker) => normalized.includes(marker))
 }
 
 export function SocialVideoDataPage() {
@@ -195,8 +202,8 @@ export function SocialVideoDataPage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : '未知错误'
       setStatus(
-        message === 'Failed to fetch'
-          ? '调用失败：浏览器无法直接访问 DashScope，可能是网络或跨域限制。请确认 API Key、网络环境，或改用公网视频 URL 后重试。'
+        isLikelyNetworkOrCorsError(message)
+          ? '调用失败：浏览器无法直接访问 DashScope，通常是 CORS/跨域或网络限制。GitHub Pages 是纯静态页面，若 DashScope 未允许浏览器跨域直连，需要改用你自己的服务端代理转发请求；把 API Key 写死到前端也不能解决该问题。'
           : `调用失败：${message}`,
       )
     } finally {
@@ -252,7 +259,8 @@ export function SocialVideoDataPage() {
                 </button>
               </div>
               <span className="text-xs leading-5 text-neutral-500">
-                API Key 只保存在当前页面状态中，不会写入仓库或部署环境。
+                API Key 只保存在当前页面状态中，不会写入仓库或部署环境。公开页面中写死 Key
+                会泄露密钥，也无法绕过浏览器跨域限制。
               </span>
             </label>
 
