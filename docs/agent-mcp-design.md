@@ -80,15 +80,18 @@ Agent（严格执行 era skill）
 
 ### 高亮设置页
 
-前端入口（本仓库）：
+云端流程：
 
-```
-http://127.0.0.1:5173/era/?highlightSetup=1&projectId=<PROJECT_ID>
-```
+1. `POST /v1/projects/:id/highlight-setup-share`（或 MCP `era_create_highlight_setup_share`）把正文/标题写入 Supabase，返回 `shareId` + GitHub Pages `url`
+2. 用户打开：
+   ```
+   https://bibidu.github.io/era/?highlightSetup=1&shareId=<SHARE_ID>
+   ```
+3. 用户点选/滑动后点「复制并应用」：写回 Supabase `result_ranges`，并复制 `ERA_HIGHLIGHT_SETUP_V1` JSON 给 Agent
 
-用户在页内点选/滑动设置高亮后，点「复制并应用」会：
-1. 以 `replace: true` 写入工程；
-2. 复制 `ERA_HIGHLIGHT_SETUP_V1` 标记的 JSON（含 `ranges`）到剪贴板，供粘贴给 Agent。
+本机调试仍可用 `?highlightSetup=1&projectId=<id>` 直连 Agent。
+
+`POST /v1/projects/:id/highlights` 可带 `replace: true`（先清空再写入）。
 
 标题高亮**禁止**使用 `quote`（由 era skill 约束）。
 

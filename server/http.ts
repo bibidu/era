@@ -90,6 +90,37 @@ export function createAgentApp() {
   )
 
   app.post(
+    '/v1/projects/:projectId/highlight-setup-share',
+    asyncHandler(async (req, res) => {
+      res.status(201).json(await runtime.createHighlightSetupShare(req.params.projectId))
+    }),
+  )
+
+  app.post(
+    '/v1/highlight-setup-shares',
+    asyncHandler(async (req, res) => {
+      const { createHighlightSetupShare } = await import('../src/agent/supabaseHighlightSetup.ts')
+      const markdown = String(req.body?.markdown ?? '')
+      if (!markdown.trim()) {
+        res.status(400).json({ error: 'markdown 不能为空' })
+        return
+      }
+      const shared = await createHighlightSetupShare({
+        projectId: req.body?.projectId ? String(req.body.projectId) : undefined,
+        title: req.body?.title ? String(req.body.title) : undefined,
+        markdown,
+        document: req.body?.document,
+        config: (req.body?.config ?? {}) as Record<string, unknown>,
+      })
+      res.status(201).json({
+        shareId: shared.shareId,
+        url: shared.url,
+        expiresAt: shared.record.expires_at,
+      })
+    }),
+  )
+
+  app.post(
     '/v1/projects/:projectId/preview-layout',
     asyncHandler(async (req, res) => {
       res.json(await runtime.previewLayout(req.params.projectId))

@@ -178,6 +178,21 @@ async function main() {
   )
 
   server.tool(
+    'era_create_highlight_setup_share',
+    '把当前工程正文/标题上传到 Supabase，返回 GitHub Pages 高亮设置页 URL（含 shareId）',
+    { projectId: z.string() },
+    async ({ projectId }) => {
+      try {
+        return ok(
+          await api('POST', `/v1/projects/${projectId}/highlight-setup-share`, {}),
+        )
+      } catch (error) {
+        return fail(error)
+      }
+    },
+  )
+
+  server.tool(
     'era_preview_layout',
     '浏览器内分页预览并检测：单行溢出、孤行、独行标点（需已打开本地 Era）',
     { projectId: z.string() },

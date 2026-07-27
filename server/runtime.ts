@@ -14,6 +14,7 @@ import {
   type HighlightRange,
 } from '../src/agent/protocol.ts'
 import { applyHighlightRanges, emptyHighlightMaps } from '../src/agent/highlightRanges.ts'
+import { createHighlightSetupShare } from '../src/agent/supabaseHighlightSetup.ts'
 
 export interface StoredProject {
   id: string
@@ -339,6 +340,39 @@ export class EraAgentRuntime {
     project.updatedAt = new Date().toISOString()
     void this.pushSync(projectId)
     return { projectId, applied, errors, maps, replace: Boolean(options?.replace) }
+  }
+
+  async createHighlightSetupShare(projectId: string) {
+    const project = this.requireProject(projectId)
+    const document = project.snapshot.document as {
+      blocks: { id: string; kind: string; text?: string }[]
+      assets?: Record<string, unknown>
+    }
+    const config = (project.snapshot.config ?? {}) as Record<string, unknown>
+    const markdown = getDocumentMarkdown(document)
+    const title =
+      (project.snapshot.meta?.title ?? '').trim() ||
+      markdown
+        .split('\n')
+        .find((line) => line.startsWith('# '))
+        ?.replace(/^#\s+/, '')
+        .trim() ||
+      ''
+
+    const shared = await createHighlightSetupShare({
+      projectId,
+      title,
+      markdown,
+      document,
+      config,
+    })
+
+    return {
+      projectId,
+      shareId: shared.shareId,
+      url: shared.url,
+      expiresAt: shared.record.expires_at,
+    }
   }
 
   listFonts() {

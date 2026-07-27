@@ -73,22 +73,26 @@ description: >-
 ### 4.1.1 高亮设置页（必做）
 
 1. 确认已有 `projectId`（正文 + 标题已写入）。
-2. 拼出 URL（端口以实际为准，默认前端 `5173`）：
+2. **创建云端分享**（把正文/标题存到 Supabase，避免 URL 过长）：
+   - MCP：`era_create_highlight_setup_share`（`projectId`）
+   - 或 REST：`POST /v1/projects/:projectId/highlight-setup-share`
+   - 返回字段：`shareId`、`url`（GitHub Pages 链接）
+3. **主动把返回的 `url` 发给用户**（形如）：
    ```
-   http://127.0.0.1:${ERA_DEV_PORT:-5173}/era/?highlightSetup=1&projectId=<PROJECT_ID>
+   https://bibidu.github.io/era/?highlightSetup=1&shareId=<SHARE_ID>
    ```
-   也可从 `ensure-era-ready.sh` 输出的 `HIGHLIGHT_SETUP_URL_TEMPLATE` 替换 `<PROJECT_ID>`。
-3. **主动把该 URL 发给用户**，并说明操作：
+   云端 Agent **必须**发 GitHub Pages 链接，不要发 `127.0.0.1`。
+4. 说明操作：
    - 打开链接 → 顶部选样式/颜色 → 在标题与正文上**点击或滑动**标记；
    - 底部可**翻页**查看各页；
-   - 完成后点底部 **「复制并应用高亮配置」**（会真实写入工程，并把配置复制到剪贴板）；
+   - 完成后点底部 **「复制并应用高亮配置」**（会写回 Supabase，并把配置复制到剪贴板）；
    - **把剪贴板已复制的内容粘贴发回给 AI**。
-4. 收到用户粘贴后：
+5. 收到用户粘贴后：
    - 识别标记 `ERA_HIGHLIGHT_SETUP_V1` / `"type":"era_highlight_setup"`；
    - 解析 JSON 中的 `projectId` 与 `ranges`；
    - 调用 `era_apply_highlights`，传入 `ranges` 且 **`replace: true`**；
    - 简要确认已应用（可复述几处关键词），再进入导出平台询问。
-5. 若用户迟迟未回传、或说不会操作：可改用自动高亮（§4.2–4.3），并说明你在代为设置。
+6. 若用户迟迟未回传、或说不会操作：可改用自动高亮（§4.2–4.3），并说明你在代为设置。
 
 ### 4.2 配色
 
@@ -168,7 +172,8 @@ description: >-
 | 画幅/模板 | `era_update_config` · `PATCH .../config`（优先 `pageOverlay: 'pixel'`；风水风格用 `fengshui` + `9:16` + `showWordCount: false`） |
 | 顶部文案 | `era_update_config` · `PATCH .../config`（`topText` 自定义；`showWordCount: false` 隐藏「全文 xxx 字」） |
 | 高亮 | `era_apply_highlights` · `POST .../highlights`（可带 `replace: true`） |
-| 高亮设置页 | `http://127.0.0.1:${ERA_DEV_PORT:-5173}/era/?highlightSetup=1&projectId=<id>` |
+| 高亮设置分享 | `era_create_highlight_setup_share` · `POST .../highlight-setup-share` → GitHub Pages `url` |
+| 高亮设置页 | `https://bibidu.github.io/era/?highlightSetup=1&shareId=<id>` |
 | 校验 | `era_preview_layout` · `POST .../preview-layout` |
 | 导出 | `era_export_images` · `POST .../export`（含拼图 `sheetPath`） |
 | 通道 | `era_bridge_status` · `GET /v1/bridge/status` |

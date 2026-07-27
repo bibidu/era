@@ -11,6 +11,7 @@ import {
   type HighlightMaps,
 } from '../../agent/highlightRanges'
 import {
+  createDocumentFromMarkdown,
   getDocumentMarkdown,
   normalizeDocument,
   parseScopedMarkdown,
@@ -26,6 +27,10 @@ import {
   DEFAULT_GRAPHIC_TEXT_CONFIG,
   type GraphicTextConfig,
 } from './types'
+import {
+  fetchHighlightSetupShare,
+  saveHighlightSetupResult,
+} from '../../agent/supabaseHighlightSetup'
 
 function plainTextByBlockIdFromDocument(document: GraphicDocument): Record<string, string> {
   const result: Record<string, string> = {}
@@ -93,7 +98,13 @@ async function copyText(text: string) {
   document.body.removeChild(area)
 }
 
-export function HighlightSetupPage({ projectId }: { projectId: string }) {
+export function HighlightSetupPage({
+  projectId,
+  shareId,
+}: {
+  projectId?: string | null
+  shareId?: string | null
+}) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [document, setDocument] = useState<GraphicDocument | null>(null)
@@ -101,15 +112,36 @@ export function HighlightSetupPage({ projectId }: { projectId: string }) {
   const [draft, setDraft] = useState<HighlightPreviewDraft>(() =>
     createHighlightPreviewDraft(DEFAULT_GRAPHIC_TEXT_CONFIG),
   )
+  const [resolvedProjectId, setResolvedProjectId] = useState(projectId ?? '')
+  const [resolvedShareId, setResolvedShareId] = useState(shareId ?? '')
   const [pageCount, setPageCount] = useState(1)
   const [currentPage, setCurrentPage] = useState(1)
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const loadProject = useCallback(async () => {
+  const loadContent = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
+      if (shareId) {
+        const record = await fetchHighlightSetupShare(shareId)
+        const nextDocument = record.document
+          ? normalizeDocument(record.document as GraphicDocument)
+          : createDocumentFromMarkdown(record.markdown || '')
+        const nextConfig = mergeConfig(record.config)
+        setDocument(nextDocument)
+        setConfig(nextConfig)
+        setDraft(createHighlightPreviewDraft(nextConfig))
+        setResolvedShareId(record.id)
+        setResolvedProjectId(record.project_id ?? projectId ?? record.id)
+        setCurrentPage(1)
+        return
+      }
+
+      if (!projectId) {
+        throw new Error('缺少 shareId 或 projectId')
+      }
+
       const res = await fetch(`${agentHttpBase()}/v1/projects/${encodeURIComponent(projectId)}`)
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null
@@ -130,6 +162,8 @@ export function HighlightSetupPage({ projectId }: { projectId: string }) {
       setDocument(nextDocument)
       setConfig(nextConfig)
       setDraft(createHighlightPreviewDraft(nextConfig))
+      setResolvedProjectId(projectId)
+      setResolvedShareId('')
       setCurrentPage(1)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -137,11 +171,11 @@ export function HighlightSetupPage({ projectId }: { projectId: string }) {
     } finally {
       setLoading(false)
     }
-  }, [projectId])
+  }, [projectId, shareId])
 
   useEffect(() => {
-    void loadProject()
-  }, [loadProject])
+    void loadContent()
+  }, [loadContent])
 
   useEffect(() => {
     setCurrentPage((page) => Math.min(Math.max(1, page), Math.max(1, pageCount)))
@@ -159,23 +193,34 @@ export function HighlightSetupPage({ projectId }: { projectId: string }) {
     try {
       const maps = draftToMaps(draft)
       const ranges = highlightMapsToRanges(maps, plainTextByBlockIdFromDocument(document))
-      const payload = buildHighlightSetupPayload(projectId, ranges)
+      const payload = buildHighlightSetupPayload(resolvedProjectId || resolvedShareId, ranges)
       const clipboardText = serializeHighlightSetup(payload)
 
-      const res = await fetch(
-        `${agentHttpBase()}/v1/projects/${encodeURIComponent(projectId)}/highlights`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ranges: toApplyHighlightRanges(ranges),
-            replace: true,
-          }),
-        },
-      )
-      if (!res.ok) {
-        const body = (await res.json().catch(() => null)) as { error?: string } | null
-        throw new Error(body?.error || `写入高亮失败（${res.status}）`)
+      let appliedLocally = false
+      if (projectId && !shareId) {
+        const res = await fetch(
+          `${agentHttpBase()}/v1/projects/${encodeURIComponent(projectId)}/highlights`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ranges: toApplyHighlightRanges(ranges),
+              replace: true,
+            }),
+          },
+        )
+        if (!res.ok) {
+          const body = (await res.json().catch(() => null)) as { error?: string } | null
+          throw new Error(body?.error || `写入高亮失败（${res.status}）`)
+        }
+        appliedLocally = true
+      }
+
+      if (resolvedShareId) {
+        await saveHighlightSetupResult(resolvedShareId, {
+          resultRanges: ranges,
+          resultClipboard: clipboardText,
+        })
       }
 
       await copyText(clipboardText)
@@ -185,7 +230,9 @@ export function HighlightSetupPage({ projectId }: { projectId: string }) {
         highlightPickerColor: draft.highlightPickerColor,
       }))
       setStatus(
-        `已写入工程并复制 ${ranges.length} 处高亮配置。请把剪贴板内容粘贴发给 AI。`,
+        appliedLocally
+          ? `已写入工程并复制 ${ranges.length} 处高亮配置。请把剪贴板内容粘贴发给 AI。`
+          : `已保存并复制 ${ranges.length} 处高亮配置。请把剪贴板内容粘贴发给 AI。`,
       )
     } catch (err) {
       setStatus(err instanceof Error ? err.message : String(err))
@@ -193,6 +240,10 @@ export function HighlightSetupPage({ projectId }: { projectId: string }) {
       setBusy(false)
     }
   }
+
+  const idLabel = resolvedShareId
+    ? `share: ${resolvedShareId}`
+    : `project: ${resolvedProjectId || projectId || '-'}`
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden bg-white">
@@ -202,13 +253,13 @@ export function HighlightSetupPage({ projectId }: { projectId: string }) {
           选择样式后，在标题/正文上点击或滑动标记。翻页查看各页，完成后点底部「复制并应用」，再把剪贴板内容发给
           AI。
         </p>
-        <p className="truncate font-mono text-[11px] text-neutral-400">project: {projectId}</p>
+        <p className="truncate font-mono text-[11px] text-neutral-400">{idLabel}</p>
       </header>
 
       {loading ? (
         <div className="flex flex-1 items-center justify-center gap-2 text-sm text-neutral-500">
           <LoaderCircle className="size-4 animate-spin" />
-          加载工程中…
+          加载内容中…
         </div>
       ) : error ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
@@ -216,7 +267,7 @@ export function HighlightSetupPage({ projectId }: { projectId: string }) {
           <button
             type="button"
             className="rounded-full border border-neutral-300 px-4 py-2 text-sm"
-            onClick={() => void loadProject()}
+            onClick={() => void loadContent()}
           >
             重试
           </button>
@@ -300,7 +351,7 @@ export function HighlightSetupPage({ projectId }: { projectId: string }) {
               <p className="mt-2 text-center text-xs leading-5 text-neutral-500">{status}</p>
             ) : (
               <p className="mt-2 text-center text-xs leading-5 text-neutral-400">
-                点击后会真实写入工程，并把 AI 可识别的配置复制到剪贴板
+                点击后会保存配置到云端，并把 AI 可识别的内容复制到剪贴板
               </p>
             )}
           </footer>
