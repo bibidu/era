@@ -5,7 +5,6 @@ import { GraphicTextWorkspace } from './features/graphic-text/GraphicTextWorkspa
 import { HighlightSetupPage } from './features/graphic-text/HighlightSetupPage'
 import { PosterWorkspace } from './features/poster/PosterWorkspace'
 import { SocialVideoDataPage } from './features/social-video/SocialVideoDataPage'
-import { SliceToolWorkspace } from './features/test/SliceToolWorkspace'
 import { usePosterEditor } from './features/poster/usePosterEditor'
 
 function App() {
@@ -43,11 +42,7 @@ function App() {
   }
 
   return (
-    <div
-      className={`mx-auto flex h-dvh w-full flex-col overflow-hidden bg-white ${
-        mode === 'test' ? 'max-w-6xl' : 'max-w-lg'
-      }`}
-    >
+    <div className="mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden bg-white">
       <header className="flex shrink-0 items-center justify-center border-b border-neutral-200 px-4 py-2">
         <TopModeTabs
           value={mode}
@@ -60,8 +55,6 @@ function App() {
 
       {mode === 'poster' ? (
         <PosterWorkspace editor={poster} />
-      ) : mode === 'test' ? (
-        <SliceToolWorkspace />
       ) : (
         <GraphicTextWorkspace defaultBackgroundUrl={poster.posterUrl} />
       )}
