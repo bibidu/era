@@ -1,0 +1,11 @@
+{
+  "bigTitle": "WEBNOVEL\nWRITER",
+  "bigTitleColor": "#111111",
+  "smallTitle": "AI 长篇网文系统",
+  "description": "先建世界，再写几十章",
+  "tags": ["世界观", "地域", "力量体系", "长期记忆"],
+  "secondaryTitles": ["写作合约", "审查闸门", "章节提交"],
+  "themeColor": "#E85D04",
+  "badge": "skill",
+  "out": "output/cover-example.png"
+}
