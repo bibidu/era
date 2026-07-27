@@ -14,6 +14,7 @@ export type InteractiveHighlightStyle =
   | 'brush'
   | 'quote'
   | 'circle'
+  | 'color'
 
 export interface InteractiveHighlightHandlers {
   activeStyle: InteractiveHighlightStyle
@@ -33,12 +34,14 @@ function InteractiveChar({
   charKeyValue,
   brushColor,
   underlineColor,
+  textColor,
   onPointerDown,
 }: {
   char: string
   charKeyValue: string
   brushColor: string | null
   underlineColor: string | null
+  textColor: string | null
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void
 }) {
   const style: CSSProperties = {
@@ -46,6 +49,7 @@ function InteractiveChar({
     ...(underlineColor
       ? { ['--graphic-highlight-underline' as string]: underlineColor }
       : null),
+    ...(textColor ? { color: textColor } : null),
   }
 
   const className = [
@@ -76,6 +80,7 @@ export function InteractiveHighlightedChars({
   underlineColors,
   circleColors,
   quoteColors,
+  textColors = {},
   interaction,
 }: {
   text: string
@@ -84,6 +89,7 @@ export function InteractiveHighlightedChars({
   underlineColors: Readonly<Record<string, string>>
   circleColors: Readonly<Record<string, string>>
   quoteColors: Readonly<Record<string, string>>
+  textColors?: Readonly<Record<string, string>>
   interaction: InteractiveHighlightHandlers
 }): ReactNode {
   const blockId = block.sourceBlockId ?? block.id
@@ -102,6 +108,7 @@ export function InteractiveHighlightedChars({
     const brushColor = brushColors[key] ?? null
     const underlineColor = underlineColors[key] ?? null
     const quoteColor = quoteColors[key] ?? null
+    const textColor = textColors[key] ?? null
 
     let activeForStyle = false
     switch (interaction.activeStyle) {
@@ -118,18 +125,20 @@ export function InteractiveHighlightedChars({
       case 'quote':
         activeForStyle = Boolean(quoteColor)
         break
+      case 'color':
+        activeForStyle = Boolean(textColor)
+        break
     }
 
     return (
       <InteractiveChar
         key={key}
-        char={plain[relativeIndex]!}
+        char={plain[relativeIndex] ?? ''}
         charKeyValue={key}
         brushColor={brushColor}
         underlineColor={underlineColor}
-        onPointerDown={(event) => {
-          interaction.onCharPointerDown(key, activeForStyle, event)
-        }}
+        textColor={textColor}
+        onPointerDown={(event) => interaction.onCharPointerDown(key, activeForStyle, event)}
       />
     )
   }
@@ -142,7 +151,7 @@ export function InteractiveHighlightedChars({
         chars.push(makeChar(i, true))
       }
       parts.push(
-        <span key={`circle-run-${run.start}`} className="graphic-circle-highlight">
+        <span key={`circle-${index}`} className="graphic-circle-highlight">
           <span className="graphic-circle-highlight-text">{chars}</span>
           <svg
             className="graphic-circle-highlight-svg"
@@ -155,9 +164,9 @@ export function InteractiveHighlightedChars({
               fill="none"
               stroke={run.color}
               strokeWidth={HAND_DRAWN_CIRCLE_STROKE_WIDTH}
-              vectorEffect="non-scaling-stroke"
               strokeLinecap="round"
               strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
             />
           </svg>
         </span>,
@@ -167,11 +176,12 @@ export function InteractiveHighlightedChars({
       continue
     }
 
-    const nextStart = run?.start ?? plain.length
-    while (index < nextStart) {
-      parts.push(makeChar(index, false))
-      index += 1
+    const nextCircleStart = run?.start ?? plain.length
+    const end = Math.min(nextCircleStart, plain.length)
+    for (let i = index; i < end; i += 1) {
+      parts.push(makeChar(i, false))
     }
+    index = end
   }
 
   return <>{parts}</>

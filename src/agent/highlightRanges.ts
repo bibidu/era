@@ -8,6 +8,7 @@ export interface HighlightMaps {
   brushHighlightColors: HighlightColorMap
   quoteHighlightColors: HighlightColorMap
   circleHighlightColors: HighlightColorMap
+  colorHighlightColors: HighlightColorMap
 }
 
 export type HighlightRangeWithText = HighlightRange & { text?: string }
@@ -18,6 +19,7 @@ const HIGHLIGHT_STYLE_ORDER: HighlightStyle[] = [
   'brush',
   'quote',
   'circle',
+  'color',
 ]
 
 function mapKeyForStyle(style: HighlightStyle): keyof HighlightMaps {
@@ -32,6 +34,8 @@ function mapKeyForStyle(style: HighlightStyle): keyof HighlightMaps {
       return 'quoteHighlightColors'
     case 'circle':
       return 'circleHighlightColors'
+    case 'color':
+      return 'colorHighlightColors'
   }
 }
 
@@ -42,6 +46,7 @@ export function emptyHighlightMaps(): HighlightMaps {
     brushHighlightColors: {},
     quoteHighlightColors: {},
     circleHighlightColors: {},
+    colorHighlightColors: {},
   }
 }
 
@@ -142,6 +147,7 @@ export function applyHighlightRanges(
         brushHighlightColors: { ...maps.brushHighlightColors },
         quoteHighlightColors: { ...maps.quoteHighlightColors },
         circleHighlightColors: { ...maps.circleHighlightColors },
+        colorHighlightColors: { ...maps.colorHighlightColors },
       }
   const errors: string[] = []
   let applied = 0

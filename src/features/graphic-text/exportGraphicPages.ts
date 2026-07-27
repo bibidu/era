@@ -83,6 +83,7 @@ function drawStyledLine(
   enableHighlight: boolean,
   textColor: string,
   circleLineWidth: number,
+  textColorSegments: LineSegment[] = [],
 ) {
   const paddingX = 4
   const plainText = stripHighlightMarkers(text)
@@ -106,8 +107,18 @@ function drawStyledLine(
     }
   }
 
-  ctx.fillStyle = textColor
-  ctx.fillText(plainText, x, baselineY)
+  if (enableHighlight && textColorSegments.some((segment) => segment.color)) {
+    let drawX = x
+    for (const segment of textColorSegments) {
+      if (!segment.text) continue
+      ctx.fillStyle = segment.color || textColor
+      ctx.fillText(segment.text, drawX, baselineY)
+      drawX += ctx.measureText(segment.text).width
+    }
+  } else {
+    ctx.fillStyle = textColor
+    ctx.fillText(plainText, x, baselineY)
+  }
 
   if (enableHighlight) {
     const circleRuns = buildCircleHighlightColorRuns(plainText, blockId, charOffset, circleColors)
@@ -239,6 +250,7 @@ async function drawPage(
   const handUnderlineColors = config.handUnderlineHighlightColors ?? {}
   const quoteColors = config.quoteHighlightColors
   const circleColors = config.circleHighlightColors
+  const textColors = config.colorHighlightColors ?? {}
   const accentColor = config.highlightPickerColor
   const topBar = resolveTopBarParts(config, markdown)
   const canvas = document.createElement('canvas')
@@ -404,6 +416,9 @@ async function drawPage(
     const underlineSegments = enableHighlight
       ? buildCharHighlightColorSegments(block.text, blockId, underlineColors, charOffset)
       : [{ text: plainText, color: null }]
+    const textColorSegments = enableHighlight
+      ? buildCharHighlightColorSegments(block.text, blockId, textColors, charOffset)
+      : [{ text: plainText, color: null }]
     const lineHeight = spec.size * spec.lineHeight
     const textMetrics = ctx.measureText(plainText || '文')
     const ascent = textMetrics.actualBoundingBoxAscent ?? spec.size * 0.88
@@ -463,6 +478,7 @@ async function drawPage(
       enableHighlight,
       styleType === 'code' ? CODE_TEXT_COLOR : '#171717',
       circleLineWidth,
+      textColorSegments,
     )
     y += lineHeight
 

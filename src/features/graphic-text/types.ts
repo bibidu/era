@@ -53,6 +53,8 @@ export interface GraphicTextConfig {
   brushHighlightColors: Record<string, string>
   quoteHighlightColors: Record<string, string>
   circleHighlightColors: Record<string, string>
+  /** 文字本身着色（非笔刷底色） */
+  colorHighlightColors: Record<string, string>
   highlightPickerColor: string
 }
 
@@ -117,6 +119,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   brushHighlightColors: {},
   quoteHighlightColors: {},
   circleHighlightColors: {},
+  colorHighlightColors: {},
   highlightPickerColor: '#FACC15',
 }
 
