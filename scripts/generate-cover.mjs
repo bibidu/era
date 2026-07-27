@@ -373,8 +373,8 @@ function buildHtml(cfg, theme) {
   }
   .arc-lines {
     position: absolute;
-    width: 300px;
-    height: 300px;
+    width: 450px;
+    height: 450px;
     border: 1.5px solid color-mix(in srgb, ${theme.hex} 55%, transparent);
     border-radius: 50%;
     opacity: 0.7;
@@ -383,7 +383,7 @@ function buildHtml(cfg, theme) {
   .arc-lines::before {
     content: "";
     position: absolute;
-    inset: 36px;
+    inset: 52px;
     border: 1.5px solid color-mix(in srgb, ${theme.hex} 40%, transparent);
     border-radius: 50%;
   }
@@ -637,39 +637,44 @@ Usage:
     await page.evaluate(async () => {
       if (document.fonts?.ready) await document.fonts.ready
     })
-    // 按可用宽高最大化缩放主标题（避免只按宽度回缩导致“怎么加都一样大”，并防止小标题被裁切）
+    // 最大化主标题，同时保证小标题/标签完整可见，并把剩余空间分给小标题上间距
     await page.evaluate(() => {
       const title = document.querySelector('.big-title')
       const content = document.querySelector('.content')
       const info = document.querySelector('.info')
       const badge = document.querySelector('.badge')
       const footer = document.querySelector('.footer')
-      if (!title || !content) return
+      if (!title || !content || !info) return
 
-      const cs = getComputedStyle(content)
-      const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)
-      const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)
-      const maxW = content.clientWidth // already excludes padding in clientWidth... actually clientWidth includes content box only
-      // content.clientWidth is width minus scrollbar, includes content area inside padding
       const innerW = content.clientWidth
       const innerH = content.clientHeight
-
       const badgeH = badge ? badge.getBoundingClientRect().height + 16 : 0
-      const infoStyle = info ? getComputedStyle(info) : null
-      const infoMargin = infoStyle ? parseFloat(infoStyle.marginTop) || 0 : 0
-      const infoH = info ? info.getBoundingClientRect().height : 0
       const footerH = footer ? footer.getBoundingClientRect().height + 24 : 0
-      const availH = Math.max(120, innerH - badgeH - infoMargin - infoH - footerH - 8)
+
+      // 先清空 transform 以便测原始尺寸
+      title.style.transform = 'none'
+      title.style.height = 'auto'
+      title.style.width = 'max-content'
+
       const needW = Math.max(title.scrollWidth, 1)
       const needH = Math.max(title.scrollHeight, 1)
-      // 允许轻微出血（1.08），让视觉字号尽量接近目标
-      const s = Math.min(1, (innerW * 1.08) / needW, availH / needH)
-      if (s < 0.999) {
-        title.style.transform = `scale(${s})`
-        title.style.height = `${needH * s}px`
-        title.style.width = `${needW * s}px`
-        title.style.overflow = 'visible'
-      }
+      const infoH = info.getBoundingClientRect().height
+      const minGap = 96
+      const targetGap = 192
+      const reserved = badgeH + infoH + footerH + minGap + 8
+      const availForTitle = Math.max(160, innerH - reserved)
+      const s = Math.min(1, (innerW * 1.12) / needW, availForTitle / needH)
+
+      title.style.transformOrigin = 'left top'
+      title.style.transform = `scale(${s})`
+      const scaledH = needH * s
+      const scaledW = needW * s
+      title.style.height = `${scaledH}px`
+      title.style.width = `${scaledW}px`
+
+      const used = badgeH + scaledH + infoH + footerH
+      const gap = Math.max(minGap, Math.min(targetGap, innerH - used - 8))
+      info.style.marginTop = `${Math.round(gap)}px`
     })
     await page.waitForTimeout(300)
     await page.locator('#cover').screenshot({ path: outPath, type: 'png' })
