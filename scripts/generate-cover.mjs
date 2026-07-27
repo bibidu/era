@@ -211,21 +211,21 @@ function footerIcon(i) {
 function buildHtml(cfg, theme) {
   const lines = bigTitleLines(cfg.bigTitle, cfg)
   const lineCount = lines.length
-  // 再放大 50%；多行间距略收
+  // 从过大版收回一档，保持冲击力但不再撑满
   const titleSize =
-    lineCount <= 1 ? 720 : lineCount === 2 ? 564 : lineCount === 3 ? 480 : 408
-  const titleLh = 0.92
-  const titleLineGap = lineCount <= 1 ? 0 : lineCount === 2 ? 4 : 6
-  const smallTitleSize = 132
+    lineCount <= 1 ? 360 : lineCount === 2 ? 300 : lineCount === 3 ? 260 : 220
+  const titleLh = 0.95
+  const titleLineGap = lineCount <= 1 ? 0 : lineCount === 2 ? 8 : 12
+  const smallTitleSize = 72
 
-  // 装饰圆：再放大 50%（840→1260）；右上 / 右下随机
+  // 装饰圆：适中尺寸；右上 / 右下随机
   const blobCorner =
     cfg.blobCorner === 'top-right' || cfg.blobCorner === 'bottom-right'
       ? cfg.blobCorner
       : Math.random() < 0.5
         ? 'top-right'
         : 'bottom-right'
-  const blobSize = 1260
+  const blobSize = 840
   const blobOut = Math.round(blobSize * 0.32)
   const blobPos =
     blobCorner === 'top-right'
@@ -443,17 +443,17 @@ function buildHtml(cfg, theme) {
   }
 
   .info {
-    margin-top: 192px;
+    margin-top: 140px;
     max-width: 920px;
     flex: 0 0 auto;
     position: relative;
     z-index: 2;
   }
   .accent-line {
-    width: 72px;
-    height: 6px;
+    width: 64px;
+    height: 5px;
     background: ${theme.hex};
-    margin-bottom: 40px;
+    margin-bottom: 28px;
     border-radius: 2px;
   }
   .small-title {
@@ -667,8 +667,8 @@ Usage:
       const needW = Math.max(title.scrollWidth, 1)
       const needH = Math.max(title.scrollHeight, 1)
       const infoH = info.getBoundingClientRect().height
-      const minGap = 96
-      const targetGap = 192
+      const minGap = 80
+      const targetGap = 140
       const reserved = badgeH + infoH + footerH + minGap + 8
       const availForTitle = Math.max(160, innerH - reserved)
       const s = Math.min(1, (innerW * 1.12) / needW, availForTitle / needH)
