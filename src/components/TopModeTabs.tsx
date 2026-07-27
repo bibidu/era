@@ -1,4 +1,4 @@
-export type AppMode = 'poster' | 'graphic'
+export type AppMode = 'poster' | 'graphic' | 'data'
 
 interface TopModeTabsProps {
   value: AppMode
@@ -8,11 +8,12 @@ interface TopModeTabsProps {
 const TABS: { id: AppMode; label: string }[] = [
   { id: 'poster', label: '海报' },
   { id: 'graphic', label: '图文' },
+  { id: 'data', label: '数据分析' },
 ]
 
 export function TopModeTabs({ value, onChange }: TopModeTabsProps) {
   return (
-    <div className="grid w-full max-w-56 grid-cols-2 rounded-xl bg-neutral-100 p-1">
+    <div className="grid w-full max-w-80 grid-cols-3 rounded-xl bg-neutral-100 p-1">
       {TABS.map((tab) => (
         <button
           key={tab.id}

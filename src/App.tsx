@@ -42,7 +42,11 @@ function App() {
   }
 
   return (
-    <div className="mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden bg-white">
+    <div
+      className={`mx-auto flex h-dvh w-full flex-col overflow-hidden bg-white ${
+        mode === 'data' ? 'max-w-5xl' : 'max-w-lg'
+      }`}
+    >
       <header className="flex shrink-0 items-center justify-center border-b border-neutral-200 px-4 py-2">
         <TopModeTabs
           value={mode}
@@ -55,6 +59,8 @@ function App() {
 
       {mode === 'poster' ? (
         <PosterWorkspace editor={poster} />
+      ) : mode === 'data' ? (
+        <SocialVideoDataPage embedded />
       ) : (
         <GraphicTextWorkspace defaultBackgroundUrl={poster.posterUrl} />
       )}

@@ -4,7 +4,7 @@
 
 在线预览：https://bibidu.github.io/era/
 
-社媒视频完整数据提取页：https://bibidu.github.io/era/?tool=social-video
+社媒视频完整数据提取页：顶部「数据分析」Tab，或直达 https://bibidu.github.io/era/?tool=social-video
 
 ## 功能
 

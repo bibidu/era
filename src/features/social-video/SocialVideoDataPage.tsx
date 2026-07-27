@@ -11,17 +11,65 @@ const VIDEO_EVENT_TIMEOUT_MS = 10000
 
 const NETWORK_ERROR_MARKERS = ['failed to fetch', 'networkerror', 'load failed', 'type error']
 
-const DEFAULT_PROMPT = `请从这个社媒视频中提取尽可能完整的数据，并严格用 Markdown 返回。
+const DEFAULT_PROMPT = `你只需要提取以下信息，并最终按照同样的格式补充数据，如果没有发现该数据则空着不填。
 
-需要包含：
-1. 基础信息：时长、画幅、语言/地区、平台风格、视频类型。
-2. 一句话总结：这个视频讲了什么。
-3. 时间轴分镜：按时间顺序列出画面、人物/物体、动作、字幕/屏幕文字、旁白/音频、关键信息。
-4. 文案结构：开头钩子、铺垫、主体卖点/知识点、转折、结尾 CTA。
-5. 可复用素材：标题、封面文案、口播稿、评论区引导、标签/关键词。
-6. 视觉与声音：镜头、构图、剪辑节奏、BGM/音效、情绪。
-7. 商业/账号信息：品牌、产品、价格、优惠、账号定位、受众画像；无法判断请写“未识别”。
-8. 数据化总结：用表格汇总所有可观察事实，不要编造看不见的信息。`
+#总览
+作品名称
+作品话题/标签(以 # 开头）
+发布日期
+作品诊断？
+
+#流量 
+播放量
+点赞量
+评论量
+分享量
+收藏量
+划走率
+文案展开率
+平均浏览图片数
+
+#粉丝 
+涨粉量
+脱粉量
+粉丝播放占比
+
+#观众参与度 
+点赞率
+评论率
+下载率
+收藏率
+分享率
+不感兴趣率
+
+#流量来源
+推荐页
+个人主页
+朋友页
+搜索
+消息页
+其他
+平台扶持流量
+
+#观众数据
+吸粉量
+吸粉率
+脱粉量
+脱粉率
+不感兴趣量
+不感兴趣率
+
+#观众偏好
+观众兴趣
+观众喜欢/关注的同类作者(名称-粉丝量)
+观众常搜的搜索词(名称)
+观众喜欢的话题(名称)
+
+#观众画像
+观众特征总结
+观众性别-男性占比(百分比)
+观众年龄最多分布(年龄区间)
+观众职业占比(职业及百分比)`
 
 interface SocialVideoProxyResponse {
   markdown?: string
@@ -149,7 +197,11 @@ function isLikelyNetworkOrCorsError(message: string) {
   return NETWORK_ERROR_MARKERS.some((marker) => normalized.includes(marker))
 }
 
-export function SocialVideoDataPage() {
+interface SocialVideoDataPageProps {
+  embedded?: boolean
+}
+
+export function SocialVideoDataPage({ embedded = false }: SocialVideoDataPageProps) {
   const [model, setModel] = useState(DEFAULT_MODEL)
   const [videoUrl, setVideoUrl] = useState('')
   const [videoFile, setVideoFile] = useState<File | null>(null)
@@ -244,7 +296,7 @@ export function SocialVideoDataPage() {
   }
 
   return (
-    <div className="h-dvh overflow-y-auto bg-neutral-950 text-neutral-100">
+    <div className={`${embedded ? 'min-h-0 flex-1' : 'h-dvh'} overflow-y-auto bg-neutral-950 text-neutral-100`}>
       <main className="mx-auto flex min-h-full w-full max-w-5xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
         <section className="rounded-3xl border border-white/10 bg-white/[0.06] p-5 shadow-2xl shadow-black/30">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -260,12 +312,14 @@ export function SocialVideoDataPage() {
                 多模态模型，结果以 Markdown 显示并可一键复制。
               </p>
             </div>
-            <a
-              className="inline-flex h-10 items-center justify-center rounded-full border border-white/15 px-4 text-sm font-medium text-neutral-200 transition hover:bg-white/10"
-              href="/era/"
-            >
-              返回 Era
-            </a>
+            {embedded ? null : (
+              <a
+                className="inline-flex h-10 items-center justify-center rounded-full border border-white/15 px-4 text-sm font-medium text-neutral-200 transition hover:bg-white/10"
+                href="/era/"
+              >
+                返回 Era
+              </a>
+            )}
           </div>
         </section>
 
