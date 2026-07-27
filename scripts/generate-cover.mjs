@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
  * 封面skill 渲染器：按瑞士/技术编辑风生成 9:16 社媒封面 PNG。
+ * 画布 9:16；背景色+正方形网格铺满全图；其余核心内容落在上下居中、
+ * 左右铺满的 3:4 区域（1080×1440），对齐社媒主页预览裁切。
  *
  * 用法：
  *   node scripts/generate-cover.mjs --input cover.json --out output/cover.png
@@ -237,11 +239,19 @@ function buildHtml(cfg, theme) {
     z-index: 1;
   }
 
-  /* 核心区内技术边框 / 十字线 */
+  /* 3:4 核心区外框（贴齐核心边界，方便识别主页预览裁切区） */
+  .core-frame {
+    position: absolute;
+    inset: 0;
+    border: 2px solid color-mix(in srgb, ${theme.hex} 55%, transparent);
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  /* 核心区内技术十字线 */
   .grid {
     position: absolute;
-    inset: 40px;
-    border: 1.5px solid color-mix(in srgb, ${theme.hex} 35%, transparent);
+    inset: 0;
     pointer-events: none;
   }
   .grid::before, .grid::after {
@@ -432,6 +442,7 @@ function buildHtml(cfg, theme) {
         <div class="spacer"></div>
         ${footerHtml}
       </div>
+      <div class="core-frame" aria-hidden="true"></div>
     </div>
   </div>
 </body>
