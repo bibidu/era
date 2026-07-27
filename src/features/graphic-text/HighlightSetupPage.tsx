@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, ClipboardCopy, LoaderCircle } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { agentHttpBase } from '../../agent/agentHttp'
 import {
   buildHighlightSetupPayload,
@@ -11,14 +11,22 @@ import {
   type HighlightMaps,
 } from '../../agent/highlightRanges'
 import {
+  fetchHighlightSetupShare,
+  saveHighlightSetupResult,
+} from '../../agent/supabaseHighlightSetup'
+import {
   createDocumentFromMarkdown,
   getDocumentMarkdown,
   normalizeDocument,
   parseScopedMarkdown,
   type GraphicDocument,
 } from './document'
-import { GraphicHighlightEditor } from './GraphicHighlightEditor'
+import { GraphicPage } from './GraphicPage'
+import { computeGraphicPageDisplaySize } from './graphicPreviewLayout'
+import { THEME_COLORS } from './highlightColors'
+import type { InteractiveHighlightStyle } from './InteractiveHighlightedText'
 import { stripHighlightMarkers } from './inlineHighlight'
+import { getGraphicLayout, paginateDocument } from './layout'
 import {
   createHighlightPreviewDraft,
   type HighlightPreviewDraft,
@@ -27,10 +35,14 @@ import {
   DEFAULT_GRAPHIC_TEXT_CONFIG,
   type GraphicTextConfig,
 } from './types'
-import {
-  fetchHighlightSetupShare,
-  saveHighlightSetupResult,
-} from '../../agent/supabaseHighlightSetup'
+
+const STYLE_TABS: { id: InteractiveHighlightStyle; label: string; disabled?: boolean }[] = [
+  { id: 'underline', label: '下划线' },
+  { id: 'brush', label: '刷子' },
+  { id: 'circle', label: '线圈' },
+  { id: 'quote', label: '引用' },
+  { id: 'handUnderline', label: '手绘线', disabled: true },
+]
 
 function plainTextByBlockIdFromDocument(document: GraphicDocument): Record<string, string> {
   const result: Record<string, string> = {}
@@ -107,17 +119,26 @@ export function HighlightSetupPage({
 }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [document, setDocument] = useState<GraphicDocument | null>(null)
-  const [config, setConfig] = useState<GraphicTextConfig>(DEFAULT_GRAPHIC_TEXT_CONFIG)
+  const [doc, setDoc] = useState<GraphicDocument | null>(null)
+  const [baseConfig, setBaseConfig] = useState<GraphicTextConfig>(DEFAULT_GRAPHIC_TEXT_CONFIG)
   const [draft, setDraft] = useState<HighlightPreviewDraft>(() =>
     createHighlightPreviewDraft(DEFAULT_GRAPHIC_TEXT_CONFIG),
   )
   const [resolvedProjectId, setResolvedProjectId] = useState(projectId ?? '')
   const [resolvedShareId, setResolvedShareId] = useState(shareId ?? '')
-  const [pageCount, setPageCount] = useState(1)
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState(0)
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [activeStyle, setActiveStyle] = useState<InteractiveHighlightStyle>('brush')
+  const [previewWidth, setPreviewWidth] = useState<number | undefined>(undefined)
+  const previewHostRef = useRef<HTMLDivElement>(null)
+  const paintRef = useRef<{ mode: 'add' | 'remove' } | null>(null)
+  const paintKeysRef = useRef<Set<string>>(new Set())
+  const draftRef = useRef(draft)
+  const activeStyleRef = useRef(activeStyle)
+
+  draftRef.current = draft
+  activeStyleRef.current = activeStyle
 
   const loadContent = useCallback(async () => {
     setLoading(true)
@@ -129,18 +150,16 @@ export function HighlightSetupPage({
           ? normalizeDocument(record.document as GraphicDocument)
           : createDocumentFromMarkdown(record.markdown || '')
         const nextConfig = mergeConfig(record.config)
-        setDocument(nextDocument)
-        setConfig(nextConfig)
+        setDoc(nextDocument)
+        setBaseConfig(nextConfig)
         setDraft(createHighlightPreviewDraft(nextConfig))
         setResolvedShareId(record.id)
         setResolvedProjectId(record.project_id ?? projectId ?? record.id)
-        setCurrentPage(1)
+        setCurrentPage(0)
         return
       }
 
-      if (!projectId) {
-        throw new Error('缺少 shareId 或 projectId')
-      }
+      if (!projectId) throw new Error('缺少 shareId 或 projectId')
 
       const res = await fetch(`${agentHttpBase()}/v1/projects/${encodeURIComponent(projectId)}`)
       if (!res.ok) {
@@ -159,15 +178,15 @@ export function HighlightSetupPage({
       const nextConfig = mergeConfig(
         data.snapshot?.config as Partial<GraphicTextConfig> | undefined,
       )
-      setDocument(nextDocument)
-      setConfig(nextConfig)
+      setDoc(nextDocument)
+      setBaseConfig(nextConfig)
       setDraft(createHighlightPreviewDraft(nextConfig))
       setResolvedProjectId(projectId)
       setResolvedShareId('')
-      setCurrentPage(1)
+      setCurrentPage(0)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
-      setDocument(null)
+      setDoc(null)
     } finally {
       setLoading(false)
     }
@@ -178,21 +197,120 @@ export function HighlightSetupPage({
   }, [loadContent])
 
   useEffect(() => {
-    setCurrentPage((page) => Math.min(Math.max(1, page), Math.max(1, pageCount)))
+    const host = previewHostRef.current
+    if (!host) return
+
+    const measure = () => {
+      const rect = host.getBoundingClientRect()
+      const aspect = getGraphicLayout(baseConfig).aspectRatio
+      const size = computeGraphicPageDisplaySize(
+        aspect,
+        Math.max(120, rect.width - 16),
+        Math.max(160, rect.height - 16),
+      )
+      setPreviewWidth(size?.width)
+    }
+
+    measure()
+    const observer = new ResizeObserver(() => measure())
+    observer.observe(host)
+    return () => observer.disconnect()
+  }, [baseConfig, loading, doc])
+
+  const previewConfig = useMemo<GraphicTextConfig>(
+    () => ({
+      ...baseConfig,
+      underlineHighlightColors: draft.underlineHighlightColors,
+      handUnderlineHighlightColors: draft.handUnderlineHighlightColors,
+      brushHighlightColors: draft.brushHighlightColors,
+      quoteHighlightColors: draft.quoteHighlightColors,
+      circleHighlightColors: draft.circleHighlightColors,
+      highlightPickerColor: draft.highlightPickerColor,
+    }),
+    [baseConfig, draft],
+  )
+
+  const markdown = useMemo(() => (doc ? getDocumentMarkdown(doc) : ''), [doc])
+  const pages = useMemo(
+    () => (doc ? paginateDocument(doc, previewConfig) : []),
+    [doc, previewConfig],
+  )
+  const pageCount = Math.max(1, pages.length)
+  const safePageIndex = Math.min(currentPage, pageCount - 1)
+  const activePage = pages[safePageIndex]
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(Math.max(0, page), Math.max(0, pageCount - 1)))
   }, [pageCount])
 
-  const markdown = useMemo(
-    () => (document ? getDocumentMarkdown(document) : ''),
-    [document],
+  const applyPaintKey = useCallback(
+    (key: string, mode: 'add' | 'remove') => {
+      const stamp = `${mode}:${key}`
+      if (paintKeysRef.current.has(stamp)) return
+      paintKeysRef.current.add(stamp)
+
+      const style = activeStyleRef.current
+      const color = draftRef.current.highlightPickerColor
+      setDraft((prev) => {
+        const mapKey =
+          style === 'underline' || style === 'handUnderline'
+            ? 'underlineHighlightColors'
+            : style === 'brush'
+              ? 'brushHighlightColors'
+              : style === 'quote'
+                ? 'quoteHighlightColors'
+                : 'circleHighlightColors'
+        const nextMap = { ...prev[mapKey] }
+        if (mode === 'remove') delete nextMap[key]
+        else nextMap[key] = color
+        return { ...prev, [mapKey]: nextMap }
+      })
+    },
+    [],
+  )
+
+  useEffect(() => {
+    const onPointerMove = (event: PointerEvent) => {
+      if (!paintRef.current) return
+      const el = globalThis.document.elementFromPoint(event.clientX, event.clientY)
+      const tokenEl = el?.closest?.('[data-highlight-token]') as HTMLElement | null
+      const key = tokenEl?.dataset.highlightToken
+      if (!key) return
+      applyPaintKey(key, paintRef.current.mode)
+    }
+    const endPaint = () => {
+      paintRef.current = null
+      paintKeysRef.current.clear()
+    }
+    window.addEventListener('pointermove', onPointerMove)
+    window.addEventListener('pointerup', endPaint)
+    window.addEventListener('pointercancel', endPaint)
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', endPaint)
+      window.removeEventListener('pointercancel', endPaint)
+    }
+  }, [applyPaintKey])
+
+  const handleCharPointerDown = useCallback(
+    (key: string, activeForStyle: boolean, event: React.PointerEvent<HTMLElement>) => {
+      event.preventDefault()
+      event.stopPropagation()
+      const mode: 'add' | 'remove' = activeForStyle ? 'remove' : 'add'
+      paintRef.current = { mode }
+      paintKeysRef.current.clear()
+      applyPaintKey(key, mode)
+    },
+    [applyPaintKey],
   )
 
   const handleCopyAndApply = async () => {
-    if (!document) return
+    if (!doc) return
     setBusy(true)
     setStatus(null)
     try {
       const maps = draftToMaps(draft)
-      const ranges = highlightMapsToRanges(maps, plainTextByBlockIdFromDocument(document))
+      const ranges = highlightMapsToRanges(maps, plainTextByBlockIdFromDocument(doc))
       const payload = buildHighlightSetupPayload(resolvedProjectId || resolvedShareId, ranges)
       const clipboardText = serializeHighlightSetup(payload)
 
@@ -224,15 +342,10 @@ export function HighlightSetupPage({
       }
 
       await copyText(clipboardText)
-      setConfig((prev) => ({
-        ...prev,
-        ...maps,
-        highlightPickerColor: draft.highlightPickerColor,
-      }))
       setStatus(
         appliedLocally
-          ? `已写入工程并复制 ${ranges.length} 处高亮配置。请把剪贴板内容粘贴发给 AI。`
-          : `已保存并复制 ${ranges.length} 处高亮配置。请把剪贴板内容粘贴发给 AI。`,
+          ? `已写入工程并复制 ${ranges.length} 处高亮。请把剪贴板内容发给 AI。`
+          : `已保存并复制 ${ranges.length} 处高亮。请把剪贴板内容发给 AI。`,
       )
     } catch (err) {
       setStatus(err instanceof Error ? err.message : String(err))
@@ -246,14 +359,58 @@ export function HighlightSetupPage({
     : `project: ${resolvedProjectId || projectId || '-'}`
 
   return (
-    <div className="mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden bg-white">
-      <header className="flex shrink-0 flex-col gap-1 border-b border-neutral-200 px-4 py-3">
-        <p className="text-sm font-semibold text-neutral-900">高亮设置</p>
-        <p className="text-xs leading-5 text-neutral-500">
-          选择样式后，在标题/正文上点击或滑动标记。翻页查看各页，完成后点底部「复制并应用」，再把剪贴板内容发给
-          AI。
-        </p>
-        <p className="truncate font-mono text-[11px] text-neutral-400">{idLabel}</p>
+    <div className="mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden bg-neutral-100">
+      <header className="flex shrink-0 flex-col gap-2 border-b border-neutral-200 bg-white px-4 py-3">
+        <div>
+          <p className="text-sm font-semibold text-neutral-900">高亮设置</p>
+          <p className="mt-1 text-xs leading-5 text-neutral-500">
+            在下方真实预览文字上点击或滑动标记；效果即时显示。
+          </p>
+          <p className="mt-1 truncate font-mono text-[11px] text-neutral-400">{idLabel}</p>
+        </div>
+
+        <div className="flex items-center gap-2 overflow-x-auto">
+          {THEME_COLORS.map((color) => {
+            const selected = draft.highlightPickerColor === color
+            return (
+              <button
+                key={color}
+                type="button"
+                aria-label={`颜色 ${color}`}
+                className={`size-7 shrink-0 rounded-full border-2 ${
+                  selected ? 'border-neutral-900 scale-110' : 'border-transparent'
+                }`}
+                style={{ backgroundColor: color }}
+                onClick={() => setDraft((prev) => ({ ...prev, highlightPickerColor: color }))}
+              />
+            )
+          })}
+        </div>
+
+        <div className="flex gap-1 overflow-x-auto">
+          {STYLE_TABS.map((tab) => {
+            const selected = activeStyle === tab.id
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                disabled={tab.disabled}
+                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium ${
+                  tab.disabled
+                    ? 'cursor-not-allowed text-neutral-300'
+                    : selected
+                      ? 'bg-neutral-900 text-white'
+                      : 'bg-neutral-100 text-neutral-600'
+                }`}
+                onClick={() => {
+                  if (!tab.disabled) setActiveStyle(tab.id)
+                }}
+              >
+                {tab.label}
+              </button>
+            )
+          })}
+        </div>
       </header>
 
       {loading ? (
@@ -266,69 +423,48 @@ export function HighlightSetupPage({
           <p className="text-sm text-red-500">{error}</p>
           <button
             type="button"
-            className="rounded-full border border-neutral-300 px-4 py-2 text-sm"
+            className="rounded-full border border-neutral-300 bg-white px-4 py-2 text-sm"
             onClick={() => void loadContent()}
           >
             重试
           </button>
         </div>
-      ) : document ? (
+      ) : doc && activePage ? (
         <>
-          <GraphicHighlightEditor
-            markdown={markdown}
-            document={document}
-            config={config}
-            underlineHighlightColors={draft.underlineHighlightColors}
-            handUnderlineHighlightColors={draft.handUnderlineHighlightColors}
-            brushHighlightColors={draft.brushHighlightColors}
-            quoteHighlightColors={draft.quoteHighlightColors}
-            circleHighlightColors={draft.circleHighlightColors}
-            highlightPickerColor={draft.highlightPickerColor}
-            hideHeader
-            visiblePage={currentPage}
-            onPageCountChange={setPageCount}
-            onUnderlineChange={(colors) =>
-              setDraft((prev) => ({ ...prev, underlineHighlightColors: colors }))
-            }
-            onHandUnderlineChange={(colors) =>
-              setDraft((prev) => ({ ...prev, handUnderlineHighlightColors: colors }))
-            }
-            onBrushChange={(colors) =>
-              setDraft((prev) => ({ ...prev, brushHighlightColors: colors }))
-            }
-            onQuoteChange={(colors) =>
-              setDraft((prev) => ({ ...prev, quoteHighlightColors: colors }))
-            }
-            onCircleChange={(colors) =>
-              setDraft((prev) => ({ ...prev, circleHighlightColors: colors }))
-            }
-            onPickerColorChange={(highlightPickerColor) =>
-              setDraft((prev) => ({ ...prev, highlightPickerColor }))
-            }
-            onConfirm={() => void handleCopyAndApply()}
-            onBack={() => undefined}
-          />
+          <div ref={previewHostRef} className="flex min-h-0 flex-1 items-center justify-center p-2">
+            <GraphicPage
+              page={activePage}
+              config={previewConfig}
+              markdown={markdown}
+              displayWidth={previewWidth}
+              className="rounded-xl shadow-lg"
+              highlightInteraction={{
+                activeStyle,
+                onCharPointerDown: handleCharPointerDown,
+              }}
+            />
+          </div>
 
           <footer className="shrink-0 border-t border-neutral-200 bg-white px-4 py-3">
             <div className="mb-3 flex items-center justify-between gap-3">
               <button
                 type="button"
                 aria-label="上一页"
-                disabled={currentPage <= 1}
+                disabled={safePageIndex <= 0}
                 className="flex size-10 items-center justify-center rounded-full border border-neutral-200 disabled:opacity-30"
-                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                onClick={() => setCurrentPage((page) => Math.max(0, page - 1))}
               >
                 <ChevronLeft size={18} />
               </button>
               <p className="text-sm font-medium text-neutral-800">
-                第 {currentPage} / {Math.max(1, pageCount)} 页
+                第 {safePageIndex + 1} / {pageCount} 页
               </p>
               <button
                 type="button"
                 aria-label="下一页"
-                disabled={currentPage >= pageCount}
+                disabled={safePageIndex >= pageCount - 1}
                 className="flex size-10 items-center justify-center rounded-full border border-neutral-200 disabled:opacity-30"
-                onClick={() => setCurrentPage((page) => Math.min(pageCount, page + 1))}
+                onClick={() => setCurrentPage((page) => Math.min(pageCount - 1, page + 1))}
               >
                 <ChevronRight size={18} />
               </button>
@@ -351,7 +487,7 @@ export function HighlightSetupPage({
               <p className="mt-2 text-center text-xs leading-5 text-neutral-500">{status}</p>
             ) : (
               <p className="mt-2 text-center text-xs leading-5 text-neutral-400">
-                点击后会保存配置到云端，并把 AI 可识别的内容复制到剪贴板
+                当前页即导出预览；点选后效果会立刻出现在文字上
               </p>
             )}
           </footer>

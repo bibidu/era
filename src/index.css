@@ -1479,6 +1479,25 @@ body.is-dragging {
   pointer-events: none;
 }
 
+.graphic-page--interactive {
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.graphic-interactive-char {
+  position: relative;
+  display: inline;
+  border-radius: 0.12em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.graphic-interactive-circle {
+  vertical-align: baseline;
+}
+
 .graphic-highlight-tab-scroll {
   min-width: 0;
   flex: 1;

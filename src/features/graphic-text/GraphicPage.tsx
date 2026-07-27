@@ -22,6 +22,10 @@ import {
   themeAlpha,
 } from './inlineHighlight'
 import {
+  InteractiveHighlightedChars,
+  type InteractiveHighlightHandlers,
+} from './InteractiveHighlightedText'
+import {
   blockHasHighlightInMap,
   resolveBlockHighlightColor,
 } from './highlightColors'
@@ -42,6 +46,8 @@ interface GraphicPageProps {
   showSafeArea?: boolean
   displayWidth?: number
   onCopyContent?: () => void
+  /** 高亮设置页：在渲染文字上点选/滑动，并即时预览效果 */
+  highlightInteraction?: InteractiveHighlightHandlers
 }
 
 function resolveStyleType(block: MarkdownBlock) {
@@ -417,11 +423,22 @@ function renderBlockText(
   handUnderlineColors: Readonly<Record<string, string>>,
   quoteColors: Readonly<Record<string, string>>,
   circleColors: Readonly<Record<string, string>>,
+  highlightInteraction?: InteractiveHighlightHandlers,
 ) {
   const showQuoteBar = blockHasHighlightInMap(block, quoteColors)
   const quoteColor = resolveBlockHighlightColor(block, quoteColors)
 
-  const textNode = (
+  const textNode = highlightInteraction ? (
+    <InteractiveHighlightedChars
+      text={block.text}
+      block={block}
+      brushColors={brushColors}
+      underlineColors={underlineColors}
+      circleColors={circleColors}
+      quoteColors={quoteColors}
+      interaction={highlightInteraction}
+    />
+  ) : (
     <StyledHighlightedText
       text={block.text}
       block={block}
@@ -507,6 +524,7 @@ export function GraphicPage({
   showSafeArea = false,
   displayWidth,
   onCopyContent,
+  highlightInteraction,
 }: GraphicPageProps) {
   const layout = getGraphicLayout(config)
   const { percent, aspectRatio } = layout
@@ -522,7 +540,9 @@ export function GraphicPage({
 
   return (
     <article
-      className={`graphic-page relative isolate overflow-hidden bg-[#fbf7ed] text-neutral-950 ${className}`}
+      className={`graphic-page relative isolate overflow-hidden bg-[#fbf7ed] text-neutral-950 ${
+        highlightInteraction ? 'graphic-page--interactive' : ''
+      } ${className}`}
       style={
         {
           ...backgroundStyle,
@@ -660,15 +680,27 @@ export function GraphicPage({
                     >
                       {unit.blocks.map((block) => (
                         <div key={block.id} className="whitespace-pre">
-                          <StyledHighlightedText
-                            text={block.text}
-                            block={block}
-                            brushColors={brushColors}
-                            underlineColors={underlineColors}
-                            handUnderlineColors={handUnderlineColors}
-                            circleColors={circleColors}
-                            enableHighlight
-                          />
+                          {highlightInteraction ? (
+                            <InteractiveHighlightedChars
+                              text={block.text}
+                              block={block}
+                              brushColors={brushColors}
+                              underlineColors={underlineColors}
+                              circleColors={circleColors}
+                              quoteColors={quoteColors}
+                              interaction={highlightInteraction}
+                            />
+                          ) : (
+                            <StyledHighlightedText
+                              text={block.text}
+                              block={block}
+                              brushColors={brushColors}
+                              underlineColors={underlineColors}
+                              handUnderlineColors={handUnderlineColors}
+                              circleColors={circleColors}
+                              enableHighlight
+                            />
+                          )}
                         </div>
                       ))}
                     </div>
@@ -679,7 +711,15 @@ export function GraphicPage({
               const block = unit.block
               return (
               <div key={block.id} className="graphic-text-line" style={blockStyle(block, config)}>
-                {renderBlockText(block, brushColors, underlineColors, handUnderlineColors, quoteColors, circleColors)}
+                {renderBlockText(
+                  block,
+                  brushColors,
+                  underlineColors,
+                  handUnderlineColors,
+                  quoteColors,
+                  circleColors,
+                  highlightInteraction,
+                )}
               </div>
               )
             })
