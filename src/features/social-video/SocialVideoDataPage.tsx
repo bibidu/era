@@ -7,6 +7,7 @@ const DEFAULT_MODEL = 'qwen3.7-flash'
 const DEFAULT_FPS = '1'
 const MAX_FRAME_COUNT = 24
 const FRAME_MAX_WIDTH = 640
+const VIDEO_EVENT_TIMEOUT_MS = 10000
 
 const NETWORK_ERROR_MARKERS = ['failed to fetch', 'networkerror', 'load failed', 'type error']
 
@@ -37,9 +38,11 @@ interface MediaInput {
 function waitForVideoEvent(
   video: HTMLVideoElement,
   eventName: 'loadedmetadata' | 'loadeddata' | 'seeked',
+  timeoutMs = VIDEO_EVENT_TIMEOUT_MS,
 ) {
   return new Promise<void>((resolve, reject) => {
     const cleanup = () => {
+      window.clearTimeout(timeout)
       video.removeEventListener(eventName, handleEvent)
       video.removeEventListener('error', handleError)
     }
@@ -51,6 +54,10 @@ function waitForVideoEvent(
       cleanup()
       reject(new Error('视频解析失败，请换一个视频或使用公网视频 URL。'))
     }
+    const timeout = window.setTimeout(() => {
+      cleanup()
+      reject(new Error('视频抽帧超时，请换一个视频或使用公网视频 URL。'))
+    }, timeoutMs)
 
     video.addEventListener(eventName, handleEvent, { once: true })
     video.addEventListener('error', handleError, { once: true })
@@ -62,13 +69,18 @@ async function waitForVideoFrame(video: HTMLVideoElement) {
     return
   }
 
-  await waitForVideoEvent(video, 'loadeddata')
+  try {
+    await waitForVideoEvent(video, 'loadeddata', 3000)
+  } catch {
+    // Some mobile browsers do not fire loadeddata for object URLs until seeking.
+  }
 }
 
 async function seekVideo(video: HTMLVideoElement, time: number) {
-  const targetTime = Math.min(Math.max(time, 0), Math.max(video.duration - 0.05, 0))
+  const targetTime = Math.min(Math.max(time, 0.001), Math.max(video.duration - 0.05, 0.001))
 
   if (Math.abs(video.currentTime - targetTime) < 0.01) {
+    await waitForVideoFrame(video)
     return
   }
 
@@ -82,8 +94,9 @@ async function extractVideoFrames(file: File, fps: number) {
   const video = document.createElement('video')
   video.muted = true
   video.playsInline = true
-  video.preload = 'metadata'
+  video.preload = 'auto'
   video.src = objectUrl
+  video.load()
 
   try {
     await waitForVideoEvent(video, 'loadedmetadata')
