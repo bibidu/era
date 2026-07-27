@@ -392,9 +392,10 @@ function buildHtml(cfg, theme) {
     position: relative;
     z-index: 2;
     height: 100%;
-    padding: 56px 48px 56px;
+    padding: 48px 28px 48px;
     display: flex;
     flex-direction: column;
+    min-height: 0;
   }
 
   .badge {
@@ -411,7 +412,7 @@ function buildHtml(cfg, theme) {
   }
 
   .big-title {
-    margin-top: 20px;
+    margin-top: 16px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -423,22 +424,25 @@ function buildHtml(cfg, theme) {
     letter-spacing: -0.02em;
     text-transform: uppercase;
     color: ${normalizeHex(cfg.bigTitleColor, '#111111')};
-    max-width: 100%;
+    max-width: none;
     width: max-content;
-    word-break: break-word;
+    flex: 0 0 auto;
     transform-origin: left top;
   }
   .big-title .line { display: block; white-space: nowrap; }
   .big-title .line.cjk {
     font-family: "Noto Sans SC", "PingFang SC", "Helvetica Neue", sans-serif;
     font-weight: 900;
-    letter-spacing: 0.01em;
+    letter-spacing: -0.04em;
     text-transform: none;
   }
 
   .info {
     margin-top: 192px;
     max-width: 920px;
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 2;
   }
   .accent-line {
     width: 72px;
@@ -633,17 +637,38 @@ Usage:
     await page.evaluate(async () => {
       if (document.fonts?.ready) await document.fonts.ready
     })
-    // 主标题按内容区宽度等比缩放，避免加倍字号后溢出裁切
+    // 按可用宽高最大化缩放主标题（避免只按宽度回缩导致“怎么加都一样大”，并防止小标题被裁切）
     await page.evaluate(() => {
       const title = document.querySelector('.big-title')
       const content = document.querySelector('.content')
+      const info = document.querySelector('.info')
+      const badge = document.querySelector('.badge')
+      const footer = document.querySelector('.footer')
       if (!title || !content) return
-      const maxW = content.clientWidth
-      const need = title.scrollWidth
-      if (need > maxW && need > 0) {
-        const s = maxW / need
+
+      const cs = getComputedStyle(content)
+      const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)
+      const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)
+      const maxW = content.clientWidth // already excludes padding in clientWidth... actually clientWidth includes content box only
+      // content.clientWidth is width minus scrollbar, includes content area inside padding
+      const innerW = content.clientWidth
+      const innerH = content.clientHeight
+
+      const badgeH = badge ? badge.getBoundingClientRect().height + 16 : 0
+      const infoStyle = info ? getComputedStyle(info) : null
+      const infoMargin = infoStyle ? parseFloat(infoStyle.marginTop) || 0 : 0
+      const infoH = info ? info.getBoundingClientRect().height : 0
+      const footerH = footer ? footer.getBoundingClientRect().height + 24 : 0
+      const availH = Math.max(120, innerH - badgeH - infoMargin - infoH - footerH - 8)
+      const needW = Math.max(title.scrollWidth, 1)
+      const needH = Math.max(title.scrollHeight, 1)
+      // 允许轻微出血（1.08），让视觉字号尽量接近目标
+      const s = Math.min(1, (innerW * 1.08) / needW, availH / needH)
+      if (s < 0.999) {
         title.style.transform = `scale(${s})`
-        title.style.marginBottom = `${Math.round(title.offsetHeight * (s - 1))}px`
+        title.style.height = `${needH * s}px`
+        title.style.width = `${needW * s}px`
+        title.style.overflow = 'visible'
       }
     })
     await page.waitForTimeout(300)
