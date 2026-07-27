@@ -311,25 +311,34 @@ export class EraAgentRuntime {
     }
   }
 
-  applyHighlights(projectId: string, ranges: HighlightRange[]) {
+  applyHighlights(
+    projectId: string,
+    ranges: HighlightRange[],
+    options?: { replace?: boolean },
+  ) {
     const project = this.requireProject(projectId)
     const config = project.snapshot.config as Record<string, unknown>
     const current = {
       underlineHighlightColors: {
         ...((config.underlineHighlightColors as Record<string, string>) ?? {}),
       },
+      handUnderlineHighlightColors: {
+        ...((config.handUnderlineHighlightColors as Record<string, string>) ?? {}),
+      },
       brushHighlightColors: { ...((config.brushHighlightColors as Record<string, string>) ?? {}) },
       quoteHighlightColors: { ...((config.quoteHighlightColors as Record<string, string>) ?? {}) },
       circleHighlightColors: { ...((config.circleHighlightColors as Record<string, string>) ?? {}) },
     }
-    const { maps, applied, errors } = applyHighlightRanges(current, ranges)
+    const { maps, applied, errors } = applyHighlightRanges(current, ranges, {
+      replace: Boolean(options?.replace),
+    })
     project.snapshot = {
       ...project.snapshot,
       config: { ...config, ...maps },
     }
     project.updatedAt = new Date().toISOString()
     void this.pushSync(projectId)
-    return { projectId, applied, errors, maps }
+    return { projectId, applied, errors, maps, replace: Boolean(options?.replace) }
   }
 
   listFonts() {

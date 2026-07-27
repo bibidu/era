@@ -84,7 +84,8 @@ export function createAgentApp() {
     '/v1/projects/:projectId/highlights',
     asyncHandler(async (req, res) => {
       const ranges = (req.body?.ranges ?? []) as HighlightRange[]
-      res.json(runtime.applyHighlights(req.params.projectId, ranges))
+      const replace = Boolean(req.body?.replace)
+      res.json(runtime.applyHighlights(req.params.projectId, ranges, { replace }))
     }),
   )
 

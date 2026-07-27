@@ -6,3 +6,5 @@
 - `.agents/skills/tuwen/SKILL.md`（兼容副本）
 
 云端 Agent 与本机 Agent 在执行「图文skill / 用标题生成图文 / 小红书·抖音出图」类任务时，必须遵循该 skill 的逐步确认流程，并先通过 `scripts/ensure-era-ready.sh` 确认服务就绪。
+
+高亮步骤须主动发送设置页 URL：`/era/?highlightSetup=1&projectId=<id>`，引导用户点选后点「复制并应用」，再把剪贴板内容发回 Agent。

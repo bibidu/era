@@ -292,6 +292,9 @@ interface GraphicHighlightEditorProps {
   onConfirm: () => void
   onBack: () => void
   hideHeader?: boolean
+  /** 仅显示指定页（1-based）；不传则展示全文并显示页码轨 */
+  visiblePage?: number | null
+  onPageCountChange?: (pageCount: number) => void
 }
 
 function isRowFullySelected(tokens: HighlightCharToken[], highlightedSet: Set<string>) {
@@ -303,13 +306,13 @@ function HighlightTokenButton({
   selected,
   styleTab,
   highlightColor,
-  onToggle,
+  onPointerDownToken,
 }: {
   token: HighlightCharToken
   selected: boolean
   styleTab: HighlightStyleTab
   highlightColor?: string
-  onToggle: (key: string) => void
+  onPointerDownToken: (key: string, selected: boolean, event: React.PointerEvent) => void
 }) {
   const isWhitespace = token.char.trim() === ''
   const previewColor = highlightColor ?? TAB_PREVIEW_COLOR
@@ -320,10 +323,13 @@ function HighlightTokenButton({
       data-highlight-token={token.key}
       aria-label={isWhitespace ? '空格' : `高亮 ${token.char}`}
       aria-pressed={selected}
-      className={`relative inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-neutral-300 bg-white px-2 text-sm transition-colors ${
+      className={`relative inline-flex min-h-9 min-w-9 touch-none items-center justify-center rounded-lg border border-neutral-300 bg-white px-2 text-sm transition-colors select-none ${
         selected ? 'font-medium text-neutral-900' : 'text-neutral-700'
       } ${isWhitespace ? 'text-neutral-300' : ''}`}
-      onClick={() => onToggle(token.key)}
+      onPointerDown={(event) => {
+        event.preventDefault()
+        onPointerDownToken(token.key, selected, event)
+      }}
     >
       {selected && styleTab === 'quote' && (
         <span
@@ -427,7 +433,8 @@ function HighlightParagraphRows({
   activeColorMap,
   activeStyleTab,
   charPageMap,
-  onToggleToken,
+  hidePageRail,
+  onPointerDownToken,
   onToggleRow,
 }: {
   tokens: HighlightCharToken[]
@@ -435,7 +442,8 @@ function HighlightParagraphRows({
   activeColorMap: HighlightColorMap
   activeStyleTab: HighlightStyleTab
   charPageMap: Map<string, number>
-  onToggleToken: (key: string) => void
+  hidePageRail?: boolean
+  onPointerDownToken: (key: string, selected: boolean, event: React.PointerEvent) => void
   onToggleRow: (rowTokens: HighlightCharToken[]) => void
 }) {
   const paragraphRef = useRef<HTMLDivElement>(null)
@@ -554,7 +562,7 @@ function HighlightParagraphRows({
                     selected={highlightedSet.has(token.key)}
                     styleTab={activeStyleTab}
                     highlightColor={activeColorMap[token.key]}
-                    onToggle={onToggleToken}
+                    onPointerDownToken={onPointerDownToken}
                   />
                 ))}
               </div>
@@ -563,7 +571,7 @@ function HighlightParagraphRows({
         )
       })}
 
-      <HighlightPageRail segments={pageBarSegments} />
+      {!hidePageRail && <HighlightPageRail segments={pageBarSegments} />}
     </div>
   )
 }
@@ -587,12 +595,19 @@ export function GraphicHighlightEditor({
   onConfirm,
   onBack,
   hideHeader = false,
+  visiblePage = null,
+  onPageCountChange,
 }: GraphicHighlightEditorProps) {
   const [activeStyleTab, setActiveStyleTab] = useState<HighlightStyleTab>('underline')
   const activeTabIndex = HIGHLIGHT_STYLE_TABS.findIndex((tab) => tab.id === activeStyleTab)
   const tabGroupRef = useRef<HTMLDivElement>(null)
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
   const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 })
+  const paintRef = useRef<{ mode: 'add' | 'remove' } | null>(null)
+  const paintKeysRef = useRef<Set<string>>(new Set())
+  const activeColorMapRef = useRef<HighlightColorMap>({})
+  const onActiveChangeRef = useRef<(colors: HighlightColorMap) => void>(() => {})
+  const pickerColorRef = useRef(highlightPickerColor)
 
   const updateTabIndicator = useCallback(() => {
     const tab = tabRefs.current[activeTabIndex]
@@ -634,6 +649,37 @@ export function GraphicHighlightEditor({
     [document, markdown, config],
   )
 
+  const pageCount = useMemo(() => {
+    let max = 1
+    for (const page of charPageMap.values()) {
+      if (page > max) max = page
+    }
+    return max
+  }, [charPageMap])
+
+  useEffect(() => {
+    onPageCountChange?.(pageCount)
+  }, [onPageCountChange, pageCount])
+
+  const visibleLines = useMemo(() => {
+    if (visiblePage == null) return displayLines
+    const filtered: HighlightDisplayLine[] = []
+    for (const line of displayLines) {
+      if (line.isParagraphBreak) {
+        if (filtered.length && !filtered[filtered.length - 1]?.isParagraphBreak) {
+          filtered.push(line)
+        }
+        continue
+      }
+      const tokens = line.tokens.filter((token) => charPageMap.get(token.key) === visiblePage)
+      if (!tokens.length) continue
+      filtered.push({ ...line, tokens })
+    }
+    while (filtered.length && filtered[0]?.isParagraphBreak) filtered.shift()
+    while (filtered.length && filtered[filtered.length - 1]?.isParagraphBreak) filtered.pop()
+    return filtered
+  }, [charPageMap, displayLines, visiblePage])
+
   const activeColorMap =
     activeStyleTab === 'underline'
       ? underlineHighlightColors
@@ -654,15 +700,59 @@ export function GraphicHighlightEditor({
           : activeStyleTab === 'quote'
             ? onQuoteChange
             : onCircleChange
-  const activePickerColor = highlightPickerColor
+
+  activeColorMapRef.current = activeColorMap
+  onActiveChangeRef.current = onActiveChange
+  pickerColorRef.current = highlightPickerColor
 
   const highlightedSet = useMemo(() => new Set(Object.keys(activeColorMap)), [activeColorMap])
 
-  const toggleToken = (key: string) => {
-    const next = { ...activeColorMap }
-    if (next[key]) delete next[key]
-    else next[key] = activePickerColor
-    onActiveChange(next)
+  const applyPaintKey = useCallback((key: string, mode: 'add' | 'remove') => {
+    if (paintKeysRef.current.has(`${mode}:${key}`)) return
+    paintKeysRef.current.add(`${mode}:${key}`)
+    const next = { ...activeColorMapRef.current }
+    if (mode === 'remove') {
+      if (!next[key]) return
+      delete next[key]
+    } else {
+      next[key] = pickerColorRef.current
+    }
+    activeColorMapRef.current = next
+    onActiveChangeRef.current(next)
+  }, [])
+
+  useEffect(() => {
+    const onPointerMove = (event: PointerEvent) => {
+      if (!paintRef.current) return
+      const el = globalThis.document.elementFromPoint(event.clientX, event.clientY)
+      const tokenEl = el?.closest?.('[data-highlight-token]') as HTMLElement | null
+      const key = tokenEl?.dataset.highlightToken
+      if (!key) return
+      applyPaintKey(key, paintRef.current.mode)
+    }
+    const endPaint = () => {
+      paintRef.current = null
+      paintKeysRef.current.clear()
+    }
+    window.addEventListener('pointermove', onPointerMove)
+    window.addEventListener('pointerup', endPaint)
+    window.addEventListener('pointercancel', endPaint)
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', endPaint)
+      window.removeEventListener('pointercancel', endPaint)
+    }
+  }, [applyPaintKey])
+
+  const handleTokenPointerDown = (
+    key: string,
+    selected: boolean,
+    _event: React.PointerEvent,
+  ) => {
+    const mode: 'add' | 'remove' = selected ? 'remove' : 'add'
+    paintRef.current = { mode }
+    paintKeysRef.current.clear()
+    applyPaintKey(key, mode)
   }
 
   const toggleRow = (rowTokens: HighlightCharToken[]) => {
@@ -677,14 +767,14 @@ export function GraphicHighlightEditor({
       })
     } else {
       rowTokens.forEach((token) => {
-        next[token.key] = activePickerColor
+        next[token.key] = highlightPickerColor
       })
     }
 
     onActiveChange(next)
   }
 
-  const hasContent = displayLines.some((line) => line.tokens.length > 0)
+  const hasContent = visibleLines.some((line) => line.tokens.length > 0)
 
   const renderLine = (line: HighlightDisplayLine, lineIndex: number) => {
     if (line.isParagraphBreak) return null
@@ -698,7 +788,8 @@ export function GraphicHighlightEditor({
         activeColorMap={activeColorMap}
         activeStyleTab={activeStyleTab}
         charPageMap={charPageMap}
-        onToggleToken={toggleToken}
+        hidePageRail={visiblePage != null}
+        onPointerDownToken={handleTokenPointerDown}
         onToggleRow={toggleRow}
       />
     )
@@ -779,13 +870,16 @@ export function GraphicHighlightEditor({
             </div>
           </div>
         </div>
+        <p className="mt-2 text-[11px] leading-4 text-neutral-400">
+          先选样式与颜色，再在文字上点击或滑动选中；同一位置可叠多种样式。
+        </p>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
         {!hasContent ? (
           <p className="py-8 text-center text-sm text-neutral-400">暂无文字内容</p>
         ) : (
-          <div className="flex flex-col">{displayLines.map(renderLine)}</div>
+          <div className="flex flex-col">{visibleLines.map(renderLine)}</div>
         )}
       </div>
     </div>

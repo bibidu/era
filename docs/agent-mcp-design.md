@@ -76,6 +76,20 @@ Agent（严格执行 era skill）
 }
 ```
 
+`POST /v1/projects/:id/highlights` 可带 `replace: true`（先清空再写入）。
+
+### 高亮设置页
+
+前端入口（本仓库）：
+
+```
+http://127.0.0.1:5173/era/?highlightSetup=1&projectId=<PROJECT_ID>
+```
+
+用户在页内点选/滑动设置高亮后，点「复制并应用」会：
+1. 以 `replace: true` 写入工程；
+2. 复制 `ERA_HIGHLIGHT_SETUP_V1` 标记的 JSON（含 `ranges`）到剪贴板，供粘贴给 Agent。
+
 标题高亮**禁止**使用 `quote`（由 era skill 约束）。
 
 ## 布局异常检测

@@ -157,14 +157,20 @@ async function main() {
 
   server.tool(
     'era_apply_highlights',
-    '按字符 range 批量应用高亮（blockId + start/end，end 不含）',
+    '按字符 range 批量应用高亮（blockId + start/end，end 不含）。replace=true 时先清空再写入。',
     {
       projectId: z.string(),
       ranges: z.array(highlightRangeSchema),
+      replace: z.boolean().optional(),
     },
-    async ({ projectId, ranges }) => {
+    async ({ projectId, ranges, replace }) => {
       try {
-        return ok(await api('POST', `/v1/projects/${projectId}/highlights`, { ranges }))
+        return ok(
+          await api('POST', `/v1/projects/${projectId}/highlights`, {
+            ranges,
+            replace: Boolean(replace),
+          }),
+        )
       } catch (error) {
         return fail(error)
       }

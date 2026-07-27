@@ -1,13 +1,13 @@
 ---
 name: tuwen
 description: >-
-  【图文skill】用 Era 根据用户提供的标题/大纲生成社媒图文（小红书 3:4 / 抖音 9:16），含正文确认、5 个标题候选、自动高亮、布局校验与导出发图。
+  【图文skill】用 Era 根据用户提供的标题/大纲生成社媒图文（小红书 3:4 / 抖音 9:16），含正文确认、5 个标题候选、高亮设置页引导、布局校验与导出发图。
   当用户说「图文skill」、图文、小红书/抖音出图、用标题生成图文、导出海报长图时必须使用本 skill。
 ---
 
 # 图文 Skill（Era 图文生成）
 
-严格按下列流程执行。任何一步未获用户明确「继续 / 确认」前，不得跳步（**高亮步骤除外：见 §4，默认自动生成**）。
+严格按下列流程执行。任何一步未获用户明确「继续 / 确认」前，不得跳步（**高亮步骤见 §4：须主动发设置页 URL，等用户回传剪贴板配置**）。
 
 ## 0. 前置：确认 Era 服务可用
 
@@ -61,13 +61,34 @@ description: >-
 
 ---
 
-## 4. 高亮（默认自动生成，不再先征求确认）
+## 4. 高亮（优先引导用户用设置页，不再静默自动生成）
 
-### 4.1 何时生成
+### 4.1 何时进入高亮
 
-- 标题确认并「继续」后：**自动生成并写入高亮**，然后进入导出平台询问。
-- **仅当用户在生成高亮之前主动说明**偏好/禁忌时，才按其要求生成。
-- **否则**：必须等用户看到导出图片后，才能按「二次修改」更新高亮逻辑；不要在出图前反复让用户确认高亮方案。
+- 标题确认并「继续」后：进入高亮步骤。
+- **必须主动发送高亮设置页 URL**（见 §4.1.1），引导用户在页面上点选/滑动设置，再把剪贴板内容发回给你。
+- **仅当用户明确说「你来自动高亮 / 按默认方案」**时，才可跳过设置页，由你按 §4.2–4.3 自动生成并 `era_apply_highlights`。
+- 用户已通过设置页写入后，仍应用 `era_apply_highlights`（`replace: true`）按粘贴内容再写一遍，确保与用户配置一致。
+
+### 4.1.1 高亮设置页（必做）
+
+1. 确认已有 `projectId`（正文 + 标题已写入）。
+2. 拼出 URL（端口以实际为准，默认前端 `5173`）：
+   ```
+   http://127.0.0.1:${ERA_DEV_PORT:-5173}/era/?highlightSetup=1&projectId=<PROJECT_ID>
+   ```
+   也可从 `ensure-era-ready.sh` 输出的 `HIGHLIGHT_SETUP_URL_TEMPLATE` 替换 `<PROJECT_ID>`。
+3. **主动把该 URL 发给用户**，并说明操作：
+   - 打开链接 → 顶部选样式/颜色 → 在标题与正文上**点击或滑动**标记；
+   - 底部可**翻页**查看各页；
+   - 完成后点底部 **「复制并应用高亮配置」**（会真实写入工程，并把配置复制到剪贴板）；
+   - **把剪贴板已复制的内容粘贴发回给 AI**。
+4. 收到用户粘贴后：
+   - 识别标记 `ERA_HIGHLIGHT_SETUP_V1` / `"type":"era_highlight_setup"`；
+   - 解析 JSON 中的 `projectId` 与 `ranges`；
+   - 调用 `era_apply_highlights`，传入 `ranges` 且 **`replace: true`**；
+   - 简要确认已应用（可复述几处关键词），再进入导出平台询问。
+5. 若用户迟迟未回传、或说不会操作：可改用自动高亮（§4.2–4.3），并说明你在代为设置。
 
 ### 4.2 配色
 
@@ -79,7 +100,7 @@ description: >-
   - 2 色：明黄 `#FACC15` + 深灰 `#525252`
   - 3 色：明黄 `#FACC15` + 警示红 `#EF4444` + 深灰 `#525252`
 
-### 4.3 密度与语义（最重要）
+### 4.3 密度与语义（自动高亮或代改时最重要）
 
 - **宁少勿多**：不要整页刷满；每页有点睛即可，避免密集。
 - **一页最多 4 处高亮**（一处 = 一个连续高亮片段/range；含 brush/underline/circle 任一）。极个别页面信息密度极高时才可略放宽，并在说明里写明原因。
@@ -91,7 +112,7 @@ description: >-
 - **标题字号不能太小**：封面/正文一级标题区域应**至少占据图片内容高度的二分之一**；过小则调大字号（可偏大、勿过小，一般 ≥48），必要时缩短标题文案或收紧 `titleLineHeight`（≤ 1.12）。
 - **画圈词语不可折行**（`circle_wrapped` / `title_circle_wrapped`）。折行则调字号并收紧 `titleLineHeight`（同上）。
 
-写入：`era_apply_highlights`（可先清空旧 map 再写入）。
+写入：`era_apply_highlights`（用户设置页回传或自动生成时均建议 `replace: true` 先清空再写入）。
 
 ---
 
@@ -146,7 +167,8 @@ description: >-
 | 写标题 | `era_set_title` · `PUT .../title` |
 | 画幅/模板 | `era_update_config` · `PATCH .../config`（优先 `pageOverlay: 'pixel'`；风水风格用 `fengshui` + `9:16` + `showWordCount: false`） |
 | 顶部文案 | `era_update_config` · `PATCH .../config`（`topText` 自定义；`showWordCount: false` 隐藏「全文 xxx 字」） |
-| 高亮 | `era_apply_highlights` · `POST .../highlights` |
+| 高亮 | `era_apply_highlights` · `POST .../highlights`（可带 `replace: true`） |
+| 高亮设置页 | `http://127.0.0.1:${ERA_DEV_PORT:-5173}/era/?highlightSetup=1&projectId=<id>` |
 | 校验 | `era_preview_layout` · `POST .../preview-layout` |
 | 导出 | `era_export_images` · `POST .../export`（含拼图 `sheetPath`） |
 | 通道 | `era_bridge_status` · `GET /v1/bridge/status` |

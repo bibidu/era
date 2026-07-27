@@ -136,3 +136,4 @@ fi
 echo "ERA_READY=1"
 echo "OPEN_URL=http://${DEV_HOST}:${DEV_PORT}/era/"
 echo "AGENT_URL=http://${HOST}:${PORT}"
+echo "HIGHLIGHT_SETUP_URL_TEMPLATE=http://${DEV_HOST}:${DEV_PORT}/era/?highlightSetup=1&projectId=<PROJECT_ID>"
