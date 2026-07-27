@@ -25,8 +25,9 @@ description: >-
 
 | 字段 | 必填 | 说明 |
 | --- | --- | --- |
-| `bigTitle` | ✅ | 大标题；可多行（`\\n` 换行）；英文建议全大写、可叠行 |
-| `bigTitleColor` | | 大标题颜色，默认 `#111111`（黑色） |
+| `bigTitle` | ✅ | 大标题；可多行（`\\n` 换行，或 JSON 数组）；英文建议全大写、可叠行 |
+| `bigTitleColor` | | 大标题默认颜色，默认 `#111111`（黑色） |
+| `bigTitleLineColors` | | 按行覆盖颜色（数组/逗号分隔）；也可用 `bigTitle: [{text, color}]` 指定单行颜色 |
 | `smallTitle` | 建议 | 中文小标题 |
 | `description` | 建议 | 一行短描述 |
 | `tags` | 建议 | 多个标签（数组或逗号分隔） |
