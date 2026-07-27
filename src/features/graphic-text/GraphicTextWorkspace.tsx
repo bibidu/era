@@ -50,21 +50,14 @@ import {
 const PAGER_PAGE_PADDING = 32
 const PAGER_SHEET_PADDING = PAGER_PAGE_PADDING / 2
 
-interface GraphicTextWorkspaceProps {
-  defaultBackgroundUrl: string | null
-}
-
 function isTextAdjustTarget(nav: FontSizeNav): nav is FontSizeTarget {
   return nav === 'title' || nav === 'heading' || nav === 'body' || nav === 'code'
 }
 
-export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorkspaceProps) {
+export function GraphicTextWorkspace() {
   const [document, setDocument] = useState<GraphicDocument>(() => normalizeDocument(createDefaultDocument()))
   const markdown = useMemo(() => getDocumentMarkdown(document), [document])
-  const [config, setConfig] = useState<GraphicTextConfig>(() => ({
-    ...DEFAULT_GRAPHIC_TEXT_CONFIG,
-    backgroundUrl: defaultBackgroundUrl,
-  }))
+  const [config, setConfig] = useState<GraphicTextConfig>(() => DEFAULT_GRAPHIC_TEXT_CONFIG)
   const [configPanel, setConfigPanel] = useState<GraphicConfigPanel | null>(null)
   const [toolbarStrip, setToolbarStrip] = useState<ToolbarStrip | null>(null)
   const [templateNav, setTemplateNav] = useState<TemplateNav>(null)
@@ -105,14 +98,6 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     [],
   )
   const { connected: agentConnected } = useEraAgentBridge(agentController)
-
-  useEffect(() => {
-    if (!defaultBackgroundUrl) return
-    setConfig((current) => {
-      if (current.backgroundType !== 'reference') return current
-      return { ...current, backgroundUrl: defaultBackgroundUrl }
-    })
-  }, [defaultBackgroundUrl])
 
   useEffect(() => {
     for (const fontId of collectGraphicFontIds(config)) {

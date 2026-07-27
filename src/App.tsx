@@ -3,9 +3,7 @@ import { readHighlightSetupQuery } from './agent/agentHttp'
 import { TopModeTabs, type AppMode } from './components/TopModeTabs'
 import { GraphicTextWorkspace } from './features/graphic-text/GraphicTextWorkspace'
 import { HighlightSetupPage } from './features/graphic-text/HighlightSetupPage'
-import { PosterWorkspace } from './features/poster/PosterWorkspace'
 import { SocialVideoDataPage } from './features/social-video/SocialVideoDataPage'
-import { usePosterEditor } from './features/poster/usePosterEditor'
 
 function App() {
   const highlightSetup = useMemo(() => readHighlightSetupQuery(), [])
@@ -13,7 +11,6 @@ function App() {
     return new URLSearchParams(window.location.search).get('tool') === 'social-video'
   }, [])
   const [mode, setMode] = useState<AppMode>('graphic')
-  const poster = usePosterEditor()
 
   if (socialVideoTool) {
     return <SocialVideoDataPage />
@@ -48,21 +45,13 @@ function App() {
       }`}
     >
       <header className="flex shrink-0 items-center justify-center border-b border-neutral-200 px-4 py-2">
-        <TopModeTabs
-          value={mode}
-          onChange={(nextMode) => {
-            setMode(nextMode)
-            poster.closeOverlays()
-          }}
-        />
+        <TopModeTabs value={mode} onChange={setMode} />
       </header>
 
-      {mode === 'poster' ? (
-        <PosterWorkspace editor={poster} />
-      ) : mode === 'data' ? (
+      {mode === 'data' ? (
         <SocialVideoDataPage embedded />
       ) : (
-        <GraphicTextWorkspace defaultBackgroundUrl={poster.posterUrl} />
+        <GraphicTextWorkspace />
       )}
     </div>
   )
