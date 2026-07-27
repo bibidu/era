@@ -1,4 +1,12 @@
-import { ChevronLeft, ChevronRight, ClipboardCopy, LoaderCircle } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  ClipboardCopy,
+  LoaderCircle,
+  RotateCcw,
+  ZoomIn,
+  ZoomOut,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { agentHttpBase } from '../../agent/agentHttp'
 import {
@@ -43,6 +51,10 @@ const STYLE_TABS: { id: InteractiveHighlightStyle; label: string; disabled?: boo
   { id: 'quote', label: '引用' },
   { id: 'handUnderline', label: '手绘线', disabled: true },
 ]
+
+const ZOOM_MIN = 1
+const ZOOM_MAX = 2.5
+const ZOOM_STEP = 0.25
 
 function plainTextByBlockIdFromDocument(document: GraphicDocument): Record<string, string> {
   const result: Record<string, string> = {}
@@ -130,7 +142,8 @@ export function HighlightSetupPage({
   const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [activeStyle, setActiveStyle] = useState<InteractiveHighlightStyle>('brush')
-  const [previewWidth, setPreviewWidth] = useState<number | undefined>(undefined)
+  const [basePreviewWidth, setBasePreviewWidth] = useState<number | undefined>(undefined)
+  const [zoom, setZoom] = useState(1)
   const previewHostRef = useRef<HTMLDivElement>(null)
   const paintRef = useRef<{ mode: 'add' | 'remove' } | null>(null)
   const paintKeysRef = useRef<Set<string>>(new Set())
@@ -203,12 +216,13 @@ export function HighlightSetupPage({
     const measure = () => {
       const rect = host.getBoundingClientRect()
       const aspect = getGraphicLayout(baseConfig).aspectRatio
+      // 以 zoom=1 的适配宽度为基准；放大后由滚动容器承接溢出
       const size = computeGraphicPageDisplaySize(
         aspect,
-        Math.max(120, rect.width - 16),
-        Math.max(160, rect.height - 16),
+        Math.max(120, rect.width - 24),
+        Math.max(160, rect.height - 24),
       )
-      setPreviewWidth(size?.width)
+      setBasePreviewWidth(size?.width)
     }
 
     measure()
@@ -216,6 +230,9 @@ export function HighlightSetupPage({
     observer.observe(host)
     return () => observer.disconnect()
   }, [baseConfig, loading, doc])
+
+  const previewWidth =
+    basePreviewWidth != null ? Math.round(basePreviewWidth * zoom) : undefined
 
   const previewConfig = useMemo<GraphicTextConfig>(
     () => ({
@@ -364,27 +381,63 @@ export function HighlightSetupPage({
         <div>
           <p className="text-sm font-semibold text-neutral-900">高亮设置</p>
           <p className="mt-1 text-xs leading-5 text-neutral-500">
-            在下方真实预览文字上点击或滑动标记；效果即时显示。
+            在下方真实预览文字上点击或滑动标记；字太小时可放大后滚动操作。
           </p>
           <p className="mt-1 truncate font-mono text-[11px] text-neutral-400">{idLabel}</p>
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto">
-          {THEME_COLORS.map((color) => {
-            const selected = draft.highlightPickerColor === color
-            return (
-              <button
-                key={color}
-                type="button"
-                aria-label={`颜色 ${color}`}
-                className={`size-7 shrink-0 rounded-full border-2 ${
-                  selected ? 'border-neutral-900 scale-110' : 'border-transparent'
-                }`}
-                style={{ backgroundColor: color }}
-                onClick={() => setDraft((prev) => ({ ...prev, highlightPickerColor: color }))}
-              />
-            )
-          })}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto">
+            {THEME_COLORS.map((color) => {
+              const selected = draft.highlightPickerColor === color
+              return (
+                <button
+                  key={color}
+                  type="button"
+                  aria-label={`颜色 ${color}`}
+                  className={`size-7 shrink-0 rounded-full border-2 ${
+                    selected ? 'border-neutral-900 scale-110' : 'border-transparent'
+                  }`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => setDraft((prev) => ({ ...prev, highlightPickerColor: color }))}
+                />
+              )
+            })}
+          </div>
+
+          <div className="flex shrink-0 items-center gap-1 rounded-full border border-neutral-200 bg-neutral-50 p-1">
+            <button
+              type="button"
+              aria-label="缩小"
+              disabled={zoom <= ZOOM_MIN}
+              className="flex size-8 items-center justify-center rounded-full disabled:opacity-30"
+              onClick={() => setZoom((value) => Math.max(ZOOM_MIN, Number((value - ZOOM_STEP).toFixed(2))))}
+            >
+              <ZoomOut size={16} />
+            </button>
+            <span className="min-w-12 text-center text-xs font-medium text-neutral-700">
+              {Math.round(zoom * 100)}%
+            </span>
+            <button
+              type="button"
+              aria-label="放大"
+              disabled={zoom >= ZOOM_MAX}
+              className="flex size-8 items-center justify-center rounded-full disabled:opacity-30"
+              onClick={() => setZoom((value) => Math.min(ZOOM_MAX, Number((value + ZOOM_STEP).toFixed(2))))}
+            >
+              <ZoomIn size={16} />
+            </button>
+            <button
+              type="button"
+              aria-label="重置比例"
+              disabled={zoom === 1}
+              className="flex size-8 items-center justify-center rounded-full disabled:opacity-30"
+              onClick={() => setZoom(1)}
+              title="重置比例"
+            >
+              <RotateCcw size={15} />
+            </button>
+          </div>
         </div>
 
         <div className="flex gap-1 overflow-x-auto">
@@ -431,18 +484,37 @@ export function HighlightSetupPage({
         </div>
       ) : doc && activePage ? (
         <>
-          <div ref={previewHostRef} className="flex min-h-0 flex-1 items-center justify-center p-2">
-            <GraphicPage
-              page={activePage}
-              config={previewConfig}
-              markdown={markdown}
-              displayWidth={previewWidth}
-              className="rounded-xl shadow-lg"
-              highlightInteraction={{
-                activeStyle,
-                onCharPointerDown: handleCharPointerDown,
+          <div
+            ref={previewHostRef}
+            className="highlight-setup-preview-scroll min-h-0 flex-1 overflow-auto overscroll-contain"
+          >
+            <div
+              className="flex justify-center px-3 py-3"
+              style={{
+                minWidth: '100%',
+                minHeight: '100%',
+                alignItems: zoom > 1 ? 'flex-start' : 'center',
               }}
-            />
+            >
+              <div
+                className="shrink-0"
+                style={{
+                  width: previewWidth ? `${previewWidth}px` : undefined,
+                }}
+              >
+                <GraphicPage
+                  page={activePage}
+                  config={previewConfig}
+                  markdown={markdown}
+                  displayWidth={previewWidth}
+                  className="rounded-xl shadow-lg"
+                  highlightInteraction={{
+                    activeStyle,
+                    onCharPointerDown: handleCharPointerDown,
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
           <footer className="shrink-0 border-t border-neutral-200 bg-white px-4 py-3">
@@ -487,7 +559,7 @@ export function HighlightSetupPage({
               <p className="mt-2 text-center text-xs leading-5 text-neutral-500">{status}</p>
             ) : (
               <p className="mt-2 text-center text-xs leading-5 text-neutral-400">
-                当前页即导出预览；点选后效果会立刻出现在文字上
+                可放大预览后滚动点选；连续画圈会合并成一圈
               </p>
             )}
           </footer>

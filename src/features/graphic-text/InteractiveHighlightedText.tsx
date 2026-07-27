@@ -3,6 +3,7 @@ import {
   HAND_DRAWN_CIRCLE_PATH,
   HAND_DRAWN_CIRCLE_STROKE_WIDTH,
   HAND_DRAWN_CIRCLE_VIEWBOX,
+  buildCircleHighlightColorRuns,
 } from './circleHighlight'
 import { themeAlpha, stripHighlightMarkers } from './inlineHighlight'
 import type { MarkdownBlock } from './types'
@@ -32,14 +33,12 @@ function InteractiveChar({
   charKeyValue,
   brushColor,
   underlineColor,
-  circleColor,
   onPointerDown,
 }: {
   char: string
   charKeyValue: string
   brushColor: string | null
   underlineColor: string | null
-  circleColor: string | null
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void
 }) {
   const style: CSSProperties = {
@@ -57,7 +56,7 @@ function InteractiveChar({
     .filter(Boolean)
     .join(' ')
 
-  const inner = (
+  return (
     <span
       data-highlight-token={charKeyValue}
       className={className}
@@ -67,33 +66,9 @@ function InteractiveChar({
       {char === ' ' ? '\u00a0' : char}
     </span>
   )
-
-  if (!circleColor) return inner
-
-  return (
-    <span className="graphic-circle-highlight graphic-interactive-circle">
-      <span className="graphic-circle-highlight-text">{inner}</span>
-      <svg
-        className="graphic-circle-highlight-svg"
-        viewBox={HAND_DRAWN_CIRCLE_VIEWBOX}
-        preserveAspectRatio="none"
-        aria-hidden
-      >
-        <path
-          d={HAND_DRAWN_CIRCLE_PATH}
-          fill="none"
-          stroke={circleColor}
-          strokeWidth={HAND_DRAWN_CIRCLE_STROKE_WIDTH}
-          vectorEffect="non-scaling-stroke"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </span>
-  )
 }
 
-/** 在真实排版文字上逐字渲染：可点选/滑动，并即时显示高亮效果 */
+/** 在真实排版文字上逐字渲染：可点选/滑动；连续同色画圈合并为一圈 */
 export function InteractiveHighlightedChars({
   text,
   block,
@@ -116,47 +91,88 @@ export function InteractiveHighlightedChars({
   const plain = stripHighlightMarkers(text)
   if (!plain) return null
 
-  return (
-    <>
-      {[...plain].map((char, index) => {
-        const absolute = charOffset + index
-        const key = charKey(blockId, absolute)
-        const brushColor = brushColors[key] ?? null
-        const underlineColor = underlineColors[key] ?? null
-        const circleColor = circleColors[key] ?? null
-        const quoteColor = quoteColors[key] ?? null
+  const circleRuns = buildCircleHighlightColorRuns(plain, blockId, charOffset, circleColors)
+  const parts: ReactNode[] = []
+  let index = 0
+  let runCursor = 0
 
-        let activeForStyle = false
-        switch (interaction.activeStyle) {
-          case 'brush':
-            activeForStyle = Boolean(brushColor)
-            break
-          case 'underline':
-          case 'handUnderline':
-            activeForStyle = Boolean(underlineColor)
-            break
-          case 'circle':
-            activeForStyle = Boolean(circleColor)
-            break
-          case 'quote':
-            activeForStyle = Boolean(quoteColor)
-            break
-        }
+  const makeChar = (relativeIndex: number, circled: boolean) => {
+    const absolute = charOffset + relativeIndex
+    const key = charKey(blockId, absolute)
+    const brushColor = brushColors[key] ?? null
+    const underlineColor = underlineColors[key] ?? null
+    const quoteColor = quoteColors[key] ?? null
 
-        return (
-          <InteractiveChar
-            key={key}
-            char={char}
-            charKeyValue={key}
-            brushColor={brushColor}
-            underlineColor={underlineColor}
-            circleColor={circleColor}
-            onPointerDown={(event) => {
-              interaction.onCharPointerDown(key, activeForStyle, event)
-            }}
-          />
-        )
-      })}
-    </>
-  )
+    let activeForStyle = false
+    switch (interaction.activeStyle) {
+      case 'brush':
+        activeForStyle = Boolean(brushColor)
+        break
+      case 'underline':
+      case 'handUnderline':
+        activeForStyle = Boolean(underlineColor)
+        break
+      case 'circle':
+        activeForStyle = circled
+        break
+      case 'quote':
+        activeForStyle = Boolean(quoteColor)
+        break
+    }
+
+    return (
+      <InteractiveChar
+        key={key}
+        char={plain[relativeIndex]!}
+        charKeyValue={key}
+        brushColor={brushColor}
+        underlineColor={underlineColor}
+        onPointerDown={(event) => {
+          interaction.onCharPointerDown(key, activeForStyle, event)
+        }}
+      />
+    )
+  }
+
+  while (index < plain.length) {
+    const run = circleRuns[runCursor]
+    if (run && index === run.start) {
+      const chars: ReactNode[] = []
+      for (let i = run.start; i < run.end; i += 1) {
+        chars.push(makeChar(i, true))
+      }
+      parts.push(
+        <span key={`circle-run-${run.start}`} className="graphic-circle-highlight">
+          <span className="graphic-circle-highlight-text">{chars}</span>
+          <svg
+            className="graphic-circle-highlight-svg"
+            viewBox={HAND_DRAWN_CIRCLE_VIEWBOX}
+            preserveAspectRatio="none"
+            aria-hidden
+          >
+            <path
+              d={HAND_DRAWN_CIRCLE_PATH}
+              fill="none"
+              stroke={run.color}
+              strokeWidth={HAND_DRAWN_CIRCLE_STROKE_WIDTH}
+              vectorEffect="non-scaling-stroke"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>,
+      )
+      index = run.end
+      runCursor += 1
+      continue
+    }
+
+    const nextStart = run?.start ?? plain.length
+    while (index < nextStart) {
+      parts.push(makeChar(index, false))
+      index += 1
+    }
+  }
+
+  return <>{parts}</>
 }

@@ -1498,6 +1498,16 @@ body.is-dragging {
   vertical-align: baseline;
 }
 
+.highlight-setup-preview-scroll {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  background:
+    linear-gradient(to right, rgb(245 245 245), transparent 12px),
+    linear-gradient(to left, rgb(245 245 245), transparent 12px),
+    rgb(243 244 246);
+  background-attachment: local, local, scroll;
+}
+
 .graphic-highlight-tab-scroll {
   min-width: 0;
   flex: 1;
