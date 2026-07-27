@@ -211,21 +211,21 @@ function footerIcon(i) {
 function buildHtml(cfg, theme) {
   const lines = bigTitleLines(cfg.bigTitle, cfg)
   const lineCount = lines.length
-  // 相对上一版放大约一倍；多行用 gap 拉开
+  // 再放大 50%；多行间距略收
   const titleSize =
-    lineCount <= 1 ? 480 : lineCount === 2 ? 376 : lineCount === 3 ? 320 : 272
-  const titleLh = 1.05
-  const titleLineGap = lineCount <= 1 ? 0 : lineCount === 2 ? 28 : 40
-  const smallTitleSize = 88
+    lineCount <= 1 ? 720 : lineCount === 2 ? 564 : lineCount === 3 ? 480 : 408
+  const titleLh = 1.02
+  const titleLineGap = lineCount <= 1 ? 0 : lineCount === 2 ? 12 : 16
+  const smallTitleSize = 132
 
-  // 装饰圆：放大 0.5 倍（560→840）；右上 / 右下随机
+  // 装饰圆：再放大 50%（840→1260）；右上 / 右下随机
   const blobCorner =
     cfg.blobCorner === 'top-right' || cfg.blobCorner === 'bottom-right'
       ? cfg.blobCorner
       : Math.random() < 0.5
         ? 'top-right'
         : 'bottom-right'
-  const blobSize = 840
+  const blobSize = 1260
   const blobOut = Math.round(blobSize * 0.32)
   const blobPos =
     blobCorner === 'top-right'
@@ -437,14 +437,14 @@ function buildHtml(cfg, theme) {
   }
 
   .info {
-    margin-top: 96px;
+    margin-top: 192px;
     max-width: 920px;
   }
   .accent-line {
     width: 72px;
     height: 6px;
     background: ${theme.hex};
-    margin-bottom: 36px;
+    margin-bottom: 40px;
     border-radius: 2px;
   }
   .small-title {
