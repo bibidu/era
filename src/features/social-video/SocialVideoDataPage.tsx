@@ -529,7 +529,8 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
                   ) : null}
 
                   <button
-                    className="h-11 rounded-2xl bg-cyan-300 text-sm font-bold text-neutral-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="h-12 rounded-2xl text-sm font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                    style={{ background: 'var(--era-button)', color: 'var(--era-button-fg)' }}
                     type="button"
                     disabled={isSaving}
                     onClick={saveRecord}

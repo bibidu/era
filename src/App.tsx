@@ -43,13 +43,23 @@ function App() {
 
   return (
     <div
-      className={`mx-auto flex h-dvh w-full flex-col overflow-hidden ${
+      className={`relative mx-auto flex h-dvh w-full flex-col overflow-hidden ${
         mode === 'data' ? 'max-w-5xl' : 'max-w-lg'
       }`}
       style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}
     >
+      {/* Safari 26+ samples fixed edge backgrounds for toolbar tint. */}
+      <div
+        id="era-safari-tint"
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 top-0 z-[10000]"
+        style={{
+          height: 'max(8px, env(safe-area-inset-top, 0px))',
+          backgroundColor: 'var(--era-header)',
+        }}
+      />
       <header
-        className="flex shrink-0 items-center justify-center border-b px-4 py-2"
+        className="sticky top-0 z-40 flex shrink-0 items-center justify-center border-b px-4 py-2"
         style={{
           borderColor: 'var(--era-border)',
           background: 'var(--era-header)',

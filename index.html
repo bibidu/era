@@ -22,11 +22,22 @@
           document.documentElement.dataset.theme = theme
           document.documentElement.style.colorScheme = theme
           document.documentElement.style.backgroundColor = color
+          document.documentElement.style.setProperty('--era-header', color)
           document.querySelectorAll('meta[name="theme-color"]').forEach(function (node) {
             node.setAttribute('content', color)
           })
           var statusBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
           if (statusBar) statusBar.setAttribute('content', 'black-translucent')
+          // Safari 26+ samples first-paint edge/body color; bake tint before React mounts.
+          var boot = document.createElement('style')
+          boot.setAttribute('data-era-theme-boot', '1')
+          boot.textContent =
+            'html,body,#root{background:' + color + '!important;}' +
+            '#era-safari-tint{background:' + color + '!important;}'
+          document.head.appendChild(boot)
+          document.addEventListener('DOMContentLoaded', function () {
+            document.body.style.backgroundColor = color
+          })
         } catch (e) {}
       })()
     </script>
