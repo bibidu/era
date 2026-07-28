@@ -50,6 +50,14 @@ async function main() {
 
 ${card.markdown}
 
+## 官网示例
+
+${magazine.markdown}
+
+${swiss.markdown}
+
+官网内置 **20+ 种风格模板**（杂志风、瑞士栅格、毛玻璃 SaaS、孟菲斯波普、Risograph 等），支持丰富的**页间转场**与**入场 / 强调动画**，还能根据**参考图、PDF 或网页**生成整套可编辑 .pptx，并在 PowerPoint 里继续改母版与数据。
+
 ## 它解决什么问题
 
 做 PPT 最烦的不是「写不出来」。
@@ -75,14 +83,6 @@ README 里强调的核心差异是「原生深度」：幻灯片母版、数据�
 - 原生深度：幻灯片母版、数据图表、过渡动画，不是文本框堆叠；支持按模板出稿
 - 本地生成：材料在你机器上跑，不绑平台、不锁模型，数据不出本机
 - Agent 工作流：丢一份 PDF、网页或主题，按步骤出完整 .pptx，可继续手工精修
-
-## 官网示例
-
-${magazine.markdown}
-
-${swiss.markdown}
-
-官网内置 **20+ 种风格模板**（杂志风、瑞士栅格、毛玻璃 SaaS、孟菲斯波普、Risograph 等），支持丰富的**页间转场**与**入场 / 强调动画**，还能根据**参考图、PDF 或网页**生成整套可编辑 .pptx，并在 PowerPoint 里继续改母版与数据。
 
 ## 适合谁
 
@@ -133,7 +133,7 @@ ${swiss.markdown}
   // 封面
   const coverPath = path.join(OUT, 'cover.png')
   execSync(
-    `node scripts/generate-cover.mjs --bigTitle "PPT\\nMASTER" --smallTitle "AI 生成可编辑 PPT" --description "开源 Skill：文档变原生 PowerPoint" --tags "Agent,开源,可编辑,.pptx" --secondaryTitles "原生图表,本地生成,Skill工作流" --themeColor "#22C55E" --out "${coverPath}"`,
+    `node scripts/generate-cover.mjs --bigTitle "PPT\\nMASTER" --smallTitle "AI 生成可编辑 PPT" --description "开源 Skill：文档变原生 PowerPoint" --tags "Agent,开源,可编辑,.pptx" --secondaryTitles "原生图表,本地生成,Skill工作流" --themeColor "#c6ecd5" --out "${coverPath}"`,
     { cwd: ROOT, stdio: 'inherit' },
   )
 
