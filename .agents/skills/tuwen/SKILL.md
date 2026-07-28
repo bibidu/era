@@ -26,7 +26,13 @@ description: >-
 
 云端 Agent：同样在本仓库拉起上述服务；导出后的发图规则见对应流程的「发图」步骤。
 
-画幅约定：`3:4` = 小红书；`9:16` = 抖音。**模板**：默认优先使用 **像素模板**（`pageOverlay: 'pixel'`），除非用户明确指定其它纹理。
+画幅约定：`3:4` = 小红书；`9:16` = 抖音。
+
+**模板**：默认优先使用 **像素模板**（`pageOverlay: 'pixel'`），除非用户明确指定其它纹理。
+
+**字体（非风水默认）**：非风水生成时，**二级标题（`##` / heading）默认使用阿里妈妈数黑体**（`headingFontId`: `shuheiti`，`headingFontFamily`: `"Alimama ShuHeiTi", sans-serif`）。一级标题与正文保持工程默认（通常为宋体），除非用户另指定。建工程或改模板时用 `era_update_config` / `era_create_project` 的 `config` 一并写入。
+
+**风水风格特例**：若用户提到「风水」「风水风格」「风水质感」等，**直接**使用风水模板（`pageOverlay: 'fengshui'`），并**固定抖音尺寸**（`aspectRatio: '9:16'`），同时 **关闭「全文 xxx 字」**（`showWordCount: false`），无需再问导出平台（除非用户另指定小红书）。风水风格**不要**套用数黑体，二级标题保持宋体。
 
 ---
 
@@ -42,7 +48,7 @@ description: >-
 固定 **风水模板**（`pageOverlay: 'fengshui'`）+ **抖音尺寸**（`aspectRatio: '9:16'`）+ **关闭「全文 xxx 字」**（`showWordCount: false`）；标题随内容图一起出，无需另用封面 skill；除非用户另指定小红书，否则跳过导出平台询问。
 
 1. **收集选题**：用户未给标题/大纲 → 主动询问，拿到前不要写正文。
-2. **正文（多轮确认）**：据标题/大纲写含 `#` 一级标题与适量 `##` 的 Markdown，展示后明确询问是否继续；改完再展示再问；确认后 `era_create_project` / `era_set_markdown`（`pageOverlay: 'fengshui'` + `9:16` + `showWordCount: false`）。
+2. **正文（多轮确认）**：据标题/大纲写含 `#` 一级标题与适量 `##` 的 Markdown，展示后明确询问是否继续；改完再展示再问；确认后 `era_create_project` / `era_set_markdown`（`pageOverlay: 'fengshui'` + `9:16` + `showWordCount: false`，**不写** `shuheiti`）。
 3. **社媒标题（5 个 + 确认）**：给 5 个抓眼球、贴合正文的标题；技术名词首字母大写（`Memory`/`Agent`/`Token`）；用户选定后 `era_set_title`。
 4. **高亮**：按 **§高亮** 流程（优先设置页）。
 5. **校验与导出**：按 **§校验与导出**。
@@ -64,7 +70,7 @@ description: >-
 
 ### B2. 根据大纲生成内容（多轮确认）
 
-1. 依据大纲写 Markdown 内容，可含：`##` 二级标题、正文段落、`-` 列表、代码块、以及必要的图片占位（见 §图片混排）。
+1. 依据大纲写 Markdown 内容，可含：`##` 二级标题、正文段落、`-` 列表、代码块、以及必要的图片占位（见 §图片混排、§GitHub 仓库图文）。
 2. 心里保留一个一级标题（供后续封面用），但**内容正文可不含 H1**；展示内容全文后**明确询问**：是否继续？
 3. 用户提出修改 → 改完再展示、再询问，直到用户确认内容。
 
@@ -95,7 +101,37 @@ description: >-
 
 - Era 工程的 markdown **不要写 `# 一级标题`**，从二级标题 / 正文开始，避免内容图出现标题。
 - 画幅：默认像素模板 `pageOverlay: 'pixel'` + 用户选定的 `3:4`（小红书）/ `9:16`（抖音，默认优先）。
+- 建工程时写入二级标题数黑体：`headingFontId`=`shuheiti`，`headingFontFamily`=`"Alimama ShuHeiTi", sans-serif`。
 - 因内容图无一级标题，`title_missing_circle` / `title_circle_wrapped` / `title_*` 等标题类校验**不适用于内容图**；标题相关规则改由封面 skill 负责。其余布局告警仍须修复（见 §校验与导出）。
+
+---
+
+## §GitHub 仓库图文（介绍开源项目时必做）
+
+当正文主题是**介绍某个 GitHub 仓库**（如 `hugohe3/ppt-master`）时，除常规 B 流程外，内容图须包含以下两块：
+
+### 1. 仓库首页预览卡片图
+
+1. 运行仓库卡片脚本（拉取 GitHub 社交预览图 + Star 数，裁剪为 Era 内容区宽度）：
+   ```bash
+   node scripts/generate-github-repo-card.mjs --repo <owner>/<name> --out output/<name>-repo-card.png --dataurl-out output/<name>-repo-card.json
+   ```
+2. 从 JSON 读取 `markdown` 字段（内含 dataURL 与 `=宽x高` 尺寸提示），**插入内容靠前位置**（通常紧跟首个 `##` 二级标题之后，或放在「仓库信息」段上方）。
+3. 卡片图须展示：**完整仓库名**（`owner/repo`）与 **Star 数**；不要只用纯文字代替。
+
+### 2. 仓库信息说明段
+
+正文中须有独立段落说明仓库归属，推荐结构：
+
+```markdown
+## 仓库信息
+
+本文介绍的仓库为 **hugohe3/ppt-master**（作者/仓库名），可在 GitHub 搜索该全名直达项目主页。
+```
+
+- `## 仓库信息` 使用二级标题（会渲染为数黑体）。
+- 文中至少一次以 `作者/仓库名` 格式写出全名（如 `abc/efg`），并简要说明作者与仓库名的对应关系。
+- 若用户给了具体仓库链接或全名，以用户提供的为准，不要臆造 owner。
 
 ---
 
@@ -153,7 +189,7 @@ description: >-
 
 对每个目标 `aspectRatio` 分别：
 
-1. `era_update_config` 设 `aspectRatio`（保持当前模板；`titleLineHeight` 不过松）
+1. `era_update_config` 设 `aspectRatio`（保持当前模板：默认 `pageOverlay: 'pixel'` + 二级标题 `shuheiti`；风水风格用 `fengshui` 且 `showWordCount: false`、二级标题不用数黑体；`titleLineHeight` 不过松）
 2. `era_preview_layout`
 3. 若有告警必须先修再导出（非风水内容图忽略标题类告警）：单行溢出、孤行、独行标点、画圈跨行、高亮颜色超 3 种、行高过松、字号过小等
 4. 通过后再 `era_export_images`（写出各页 PNG + 横向拼图 `graphic-review-sheet.png`，返回 `sheetPath` / `reviewSheet`）
@@ -189,8 +225,9 @@ description: >-
 | 建工程 | `era_create_project` · `POST /v1/projects` |
 | 写正文（内容图去掉 H1） | `era_set_markdown` · `PUT .../markdown` |
 | 写标题（风水流程） | `era_set_title` · `PUT .../title` |
-| 画幅/模板 | `era_update_config` · `PATCH .../config`（`pageOverlay: 'pixel'`；风水 `fengshui` + `9:16` + `showWordCount: false`） |
+| 画幅/模板/字体 | `era_update_config` · `PATCH .../config`（`pageOverlay: 'pixel'` + 二级标题 `shuheiti`；风水 `fengshui` + `9:16` + `showWordCount: false`，二级标题保持宋体） |
 | 图片混排 | markdown 整行 `![alt](url =宽x高)`（url 支持远程或 dataURL） |
+| GitHub 仓库卡片 | `node scripts/generate-github-repo-card.mjs --repo owner/name` |
 | 高亮 | `era_apply_highlights` · `POST .../highlights`（可带 `replace: true`） |
 | 高亮设置分享 | `era_create_highlight_setup_share` · `POST .../highlight-setup-share` → GitHub Pages `url` |
 | 校验 | `era_preview_layout` · `POST .../preview-layout` |

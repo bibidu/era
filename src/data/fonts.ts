@@ -38,6 +38,14 @@ export const TEXT_FONT_OPTIONS: FontOption[] = [
     source: 'cdn',
     cdnUrl: 'https://cdn.jsdelivr.net/npm/lxgw-wenkai-gb-web@1.521.0/lxgwwenkaigb-regular/result.css',
   },
+  {
+    id: 'shuheiti',
+    label: '阿里妈妈数黑体',
+    fontFamily: '"Alimama ShuHeiTi", sans-serif',
+    sample: '数黑体',
+    source: 'cdn',
+    cdnUrl: '/era/fonts/alimama-shuheiti.css',
+  },
 ]
 
 /** 代码块可选等宽字体 */

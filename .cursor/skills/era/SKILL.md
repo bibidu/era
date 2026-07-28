@@ -1,8 +1,8 @@
 ---
-name: era
+name: tuwen
 description: >-
-  用 Era 根据用户提供的标题/大纲生成社媒图文（小红书 3:4 / 抖音 9:16），含正文确认、5 个标题候选、高亮设置页引导、布局校验与导出发图。
-  在用户提到 era、图文、小红书/抖音出图、用标题生成图文、导出海报长图时必须使用本 skill。
+  【图文skill】用 Era 根据用户提供的标题/大纲生成社媒图文（小红书 3:4 / 抖音 9:16），含正文确认、5 个标题候选、高亮设置页引导、布局校验与导出发图。
+  当用户说「图文skill」、图文、小红书/抖音出图、用标题生成图文、导出海报长图时必须使用本 skill。
 ---
 
 # 图文 Skill（Era 图文生成）
@@ -26,7 +26,17 @@ description: >-
 
 云端 Agent：同样在本仓库拉起上述服务；导出后的发图规则见对应流程的「发图」步骤。
 
+<<<<<<< HEAD
 画幅约定：`3:4` = 小红书；`9:16` = 抖音。**模板**：默认优先使用 **像素模板**（`pageOverlay: 'pixel'`），除非用户明确指定其它纹理。
+=======
+画幅约定：`3:4` = 小红书；`9:16` = 抖音。
+
+**模板**：默认优先使用 **像素模板**（`pageOverlay: 'pixel'`），除非用户明确指定其它纹理。
+
+**字体（非风水默认）**：非风水生成时，**一级标题（`#` / title）与二级标题（`##` / heading）默认使用阿里妈妈数黑体**（`titleFontId` / `headingFontId`: `shuheiti`，`titleFontFamily` / `headingFontFamily`: `"Alimama ShuHeiTi", sans-serif`）。正文等其它层级保持工程默认（通常为宋体），除非用户另指定。建工程或改模板时用 `era_update_config` / `era_create_project` 的 `config` 一并写入。
+
+**风水风格特例**：若用户提到「风水」「风水风格」「风水质感」等，**直接**使用风水模板（`pageOverlay: 'fengshui'`），并**固定抖音尺寸**（`aspectRatio: '9:16'`），同时 **关闭「全文 xxx 字」**（`showWordCount: false`），无需再问导出平台（除非用户另指定小红书）。风水风格**不要**套用数黑体，标题保持宋体等风水默认字体。
+>>>>>>> ab1fdc2 (docs(skill): 非风水默认一级/二级标题用阿里妈妈数黑体)
 
 ---
 
@@ -39,6 +49,7 @@ description: >-
 
 ## §A 风水流程（保持原样）
 
+<<<<<<< HEAD
 固定 **风水模板**（`pageOverlay: 'fengshui'`）+ **抖音尺寸**（`aspectRatio: '9:16'`）+ **关闭「全文 xxx 字」**（`showWordCount: false`）；标题随内容图一起出，无需另用封面 skill；除非用户另指定小红书，否则跳过导出平台询问。
 
 1. **收集选题**：用户未给标题/大纲 → 主动询问，拿到前不要写正文。
@@ -47,6 +58,13 @@ description: >-
 4. **高亮**：按 **§高亮** 流程（优先设置页）。
 5. **校验与导出**：按 **§校验与导出**。
 6. **发图**：按 **§发图（先拼图确认，再发分图）**。
+=======
+1. 根据标题/大纲写一版 Markdown 正文（含 `#` 一级标题与适量 `##`）。
+2. 展示全文后**明确询问**：是否继续？
+3. 用户提出修改 → 改完后再展示，并再次询问是否继续。
+4. 只有用户明确说继续 / 确认正文后，才进入标题阶段。
+5. 确认后：`era_create_project` / `era_set_markdown` 写入工程（默认 `pageOverlay: 'pixel'`，并写入数黑体一级/二级标题字体：`titleFontId`/`headingFontId`=`shuheiti`；若用户已指定风水风格则用 `pageOverlay: 'fengshui'` + `aspectRatio: '9:16'` + `showWordCount: false`，标题保持宋体、**不**写 `shuheiti`）。
+>>>>>>> ab1fdc2 (docs(skill): 非风水默认一级/二级标题用阿里妈妈数黑体)
 
 ---
 
@@ -153,7 +171,11 @@ description: >-
 
 对每个目标 `aspectRatio` 分别：
 
+<<<<<<< HEAD
 1. `era_update_config` 设 `aspectRatio`（保持当前模板；`titleLineHeight` 不过松）
+=======
+1. `era_update_config` 设 `aspectRatio`（保持当前模板：默认 `pageOverlay: 'pixel'` + 一级/二级标题 `shuheiti`；风水风格用 `fengshui` 且 `showWordCount: false`、标题不用数黑体；`titleLineHeight` 不过松）
+>>>>>>> ab1fdc2 (docs(skill): 非风水默认一级/二级标题用阿里妈妈数黑体)
 2. `era_preview_layout`
 3. 若有告警必须先修再导出（非风水内容图忽略标题类告警）：单行溢出、孤行、独行标点、画圈跨行、高亮颜色超 3 种、行高过松、字号过小等
 4. 通过后再 `era_export_images`（写出各页 PNG + 横向拼图 `graphic-review-sheet.png`，返回 `sheetPath` / `reviewSheet`）
@@ -187,10 +209,17 @@ description: >-
 | 动作 | MCP / REST |
 | --- | --- |
 | 建工程 | `era_create_project` · `POST /v1/projects` |
+<<<<<<< HEAD
 | 写正文（内容图去掉 H1） | `era_set_markdown` · `PUT .../markdown` |
 | 写标题（风水流程） | `era_set_title` · `PUT .../title` |
 | 画幅/模板 | `era_update_config` · `PATCH .../config`（`pageOverlay: 'pixel'`；风水 `fengshui` + `9:16` + `showWordCount: false`） |
 | 图片混排 | markdown 整行 `![alt](url =宽x高)`（url 支持远程或 dataURL） |
+=======
+| 写正文 | `era_set_markdown` · `PUT .../markdown` |
+| 写标题 | `era_set_title` · `PUT .../title` |
+| 画幅/模板 | `era_update_config` · `PATCH .../config`（优先 `pageOverlay: 'pixel'` + 标题/二级标题 `shuheiti`；风水风格用 `fengshui` + `9:16` + `showWordCount: false`，标题保持宋体） |
+| 顶部文案 | `era_update_config` · `PATCH .../config`（`topText` 自定义；`showWordCount: false` 隐藏「全文 xxx 字」） |
+>>>>>>> ab1fdc2 (docs(skill): 非风水默认一级/二级标题用阿里妈妈数黑体)
 | 高亮 | `era_apply_highlights` · `POST .../highlights`（可带 `replace: true`） |
 | 高亮设置分享 | `era_create_highlight_setup_share` · `POST .../highlight-setup-share` → GitHub Pages `url` |
 | 校验 | `era_preview_layout` · `POST .../preview-layout` |

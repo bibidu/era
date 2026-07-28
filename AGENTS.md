@@ -9,6 +9,8 @@
 
 云端 Agent 与本机 Agent 在执行「图文skill / 用标题生成图文 / 小红书·抖音出图」类任务时，必须遵循该 skill 的逐步确认流程，并先通过 `scripts/ensure-era-ready.sh` 确认服务就绪。
 
+非风水默认：二级标题（`##`）用阿里妈妈数黑体（`headingFontId`: `shuheiti`）；风水风格不要套用数黑体。
+
 高亮步骤：先用 `era_create_highlight_setup_share` 上传正文到 Supabase，再把返回的 GitHub Pages URL（`?highlightSetup=1&shareId=...`）发给用户；用户复制配置发回后 `era_apply_highlights(replace: true)`。
 
 出图步骤：导出并经用户确认拼图后，必须用 `era_create_export_share` 把最终图上传 Supabase / GitHub Pages，并把预览/下载页 URL（`?exportShare=1&shareId=...`）发给用户，供其在线预览并下载原图。
