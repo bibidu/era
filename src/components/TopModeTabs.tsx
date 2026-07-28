@@ -1,7 +1,7 @@
 import { Moon, Sun } from 'lucide-react'
 import type { EraTheme } from '../theme/theme'
 
-export type AppMode = 'graphic' | 'title-adjust' | 'data'
+export type AppMode = 'graphic' | 'data' | 'title-adjust'
 
 interface TopModeTabsProps {
   value: AppMode
@@ -12,8 +12,8 @@ interface TopModeTabsProps {
 
 const TABS: { id: AppMode; label: string }[] = [
   { id: 'graphic', label: '图文' },
-  { id: 'title-adjust', label: '标题调整' },
   { id: 'data', label: '数据分析' },
+  { id: 'title-adjust', label: '标题调整' },
 ]
 
 export function TopModeTabs({ value, onChange, theme, onToggleTheme }: TopModeTabsProps) {
