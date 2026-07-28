@@ -14,7 +14,10 @@ import {
   type HighlightRange,
 } from '../src/agent/protocol.ts'
 import { applyHighlightRanges, emptyHighlightMaps } from '../src/agent/highlightRanges.ts'
-import { createHighlightSetupShare } from '../src/agent/supabaseHighlightSetup.ts'
+import {
+  createExportShare,
+  createHighlightSetupShare,
+} from '../src/agent/supabaseHighlightSetup.ts'
 
 export interface StoredProject {
   id: string
@@ -440,7 +443,7 @@ export class EraAgentRuntime {
     return response.data
   }
 
-  async exportImages(projectId: string, pages?: number[], outDir?: string) {
+  private async runBridgeExport(projectId: string, pages?: number[]) {
     this.requireProject(projectId)
     const response = await this.callBridge({
       type: 'export_images',
@@ -448,9 +451,13 @@ export class EraAgentRuntime {
       payload: { pages },
     })
     if (!response.ok) throw new Error(response.error ?? 'export_images 失败')
-
     const images = (response.data?.images as { name: string; base64: string }[]) ?? []
     const sheet = response.data?.sheet as { name: string; base64: string } | undefined
+    return { images, sheet }
+  }
+
+  async exportImages(projectId: string, pages?: number[], outDir?: string) {
+    const { images, sheet } = await this.runBridgeExport(projectId, pages)
     const targetDir = path.resolve(outDir ?? path.join(this.outputDir, projectId))
     await fs.mkdir(targetDir, { recursive: true })
     const paths: string[] = []
@@ -474,6 +481,40 @@ export class EraAgentRuntime {
       sheetPath,
       /** 审阅用拼图；发分图前应先把 sheetPath 给用户确认 */
       reviewSheet: sheetPath,
+    }
+  }
+
+  /** 导出各页 PNG + 拼图并上传 Supabase，返回 GitHub Pages 预览/下载页 URL（供用户在线预览并下载原图） */
+  async createExportShare(projectId: string, pages?: number[]) {
+    const project = this.requireProject(projectId)
+    const { images, sheet } = await this.runBridgeExport(projectId, pages)
+    const shareImages = images.map((image) => ({
+      name: image.name,
+      dataUrl: `data:image/png;base64,${image.base64}`,
+    }))
+    const shareSheet = sheet?.base64
+      ? {
+          name: sheet.name || 'graphic-review-sheet.png',
+          dataUrl: `data:image/png;base64,${sheet.base64}`,
+        }
+      : null
+    const config = (project.snapshot.config ?? {}) as Record<string, unknown>
+    const aspectRatio =
+      typeof config.aspectRatio === 'string' ? (config.aspectRatio as string) : undefined
+    const title = (project.snapshot.meta?.title ?? '').trim()
+    const shared = await createExportShare({
+      projectId,
+      title,
+      aspectRatio,
+      images: shareImages,
+      sheet: shareSheet,
+    })
+    return {
+      projectId,
+      shareId: shared.shareId,
+      url: shared.url,
+      count: shareImages.length,
+      expiresAt: shared.record.expires_at,
     }
   }
 
