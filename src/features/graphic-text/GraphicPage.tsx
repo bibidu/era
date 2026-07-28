@@ -305,10 +305,12 @@ function BrushUnderlineSegments({
                     transform: `scale(${emphasis.scaleX}, ${emphasis.scaleY})`,
                     transformOrigin: 'center center',
                     display: 'inline-block',
-                    width: '1em',
-                    marginLeft: `${(emphasis.scaleX - 1) / 2}em`,
-                    marginRight: `${(emphasis.scaleX - 1) / 2}em`,
+                    width: `${emphasis.scaleX}em`,
+                    paddingLeft: '0.28em',
+                    paddingRight: '0.28em',
+                    boxSizing: 'content-box',
                     textAlign: 'center' as const,
+                    verticalAlign: 'baseline',
                   }
                 : null),
             }}

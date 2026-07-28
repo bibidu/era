@@ -8,9 +8,14 @@ export interface GlyphEmphasisStyle {
 
 export const DEFAULT_GLYPH_EMPHASIS: GlyphEmphasisStyle = {
   fontFamily: '"Alimama ShuHeiTi", sans-serif',
-  scaleX: 0.72,
-  scaleY: 1.15,
+  scaleX: 0.7,
+  /** 纵向拉高，需一眼能看出变高 */
+  scaleY: 1.65,
 }
+
+/** 强调字两侧额外空隙（相对字号）；含与邻字的呼吸距离 */
+export const GLYPH_EMPHASIS_SIDE_GAP_RATIO = 0.28
+
 
 /** 序列化：fontFamily||scaleX||scaleY */
 export function encodeGlyphEmphasis(style: GlyphEmphasisStyle): string {

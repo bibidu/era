@@ -8,7 +8,7 @@ import { DEFAULT_IMAGE_MARGIN, parseScopedMarkdown } from './document'
 import { getFontConfigForStyleType } from './graphicTextFonts'
 import { measureImageLayoutSize } from './imageAsset'
 import { stripHighlightMarkers } from './inlineHighlight'
-import { stripTitleBreakMarkers, titlePlainText } from './glyphEmphasis'
+import { stripTitleBreakMarkers, titlePlainText, parseGlyphEmphasis, GLYPH_EMPHASIS_SIDE_GAP_RATIO } from './glyphEmphasis'
 import {
   CODE_HORIZONTAL_PADDING_SCALE,
   estimateCodeLineWidth,
@@ -377,16 +377,38 @@ function blockToLayoutLines(
       let size = blockFontSize(sentenceBlock, config, layout.exportScale)
 
       // 显式换行：禁止再按宽度折行；若超宽则缩小该行字号以单行放下
+      // 测量须计入 glyphEmphasis 的 scaleX + 侧向空隙，否则缩完仍会挤在一起
       let wrapped: string[]
       if (explicitBreaks) {
         if (typeof document !== 'undefined') {
           const ctx = document.createElement('canvas').getContext('2d')
           if (ctx) {
             const primary = fontFamily.replace(/"/g, '').split(',')[0].trim()
+            const emphasisMap = config.glyphEmphasis ?? {}
+            const measureLine = (fitPx: number) => {
+              let total = 0
+              const chars = [...sentence]
+              for (let i = 0; i < chars.length; i += 1) {
+                const key = `${block.id}:${charOffset + i}`
+                const emphasis = parseGlyphEmphasis(emphasisMap[key])
+                if (emphasis) {
+                  ctx.font = `${fontWeight} ${fitPx}px ${emphasis.fontFamily}`
+                  let natural = ctx.measureText(chars[i]).width
+                  if (!(natural > 1)) {
+                    ctx.font = `${fontWeight} ${fitPx}px ${primary}`
+                    natural = ctx.measureText(chars[i]).width || fitPx
+                  }
+                  total += natural * emphasis.scaleX + fitPx * GLYPH_EMPHASIS_SIDE_GAP_RATIO * 2
+                } else {
+                  ctx.font = `${fontWeight} ${fitPx}px ${primary}`
+                  total += ctx.measureText(chars[i]).width
+                }
+              }
+              return total
+            }
             let fit = size
             while (fit > 24 * layout.exportScale) {
-              ctx.font = `${fontWeight} ${fit}px ${primary}`
-              if (ctx.measureText(sentence).width <= availableWidth + 6) break
+              if (measureLine(fit) <= availableWidth + 6) break
               fit -= layout.exportScale
             }
             if (fit < size) {

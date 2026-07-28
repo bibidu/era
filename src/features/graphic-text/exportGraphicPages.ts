@@ -19,7 +19,7 @@ import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { getFontById } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
 import { buildCharHighlightColorSegments, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
-import { parseGlyphEmphasis } from './glyphEmphasis'
+import { parseGlyphEmphasis, GLYPH_EMPHASIS_SIDE_GAP_RATIO } from './glyphEmphasis'
 import { blockHasHighlightInMap, resolveBlockHighlightColor } from './highlightColors'
 import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
 import {
@@ -82,20 +82,32 @@ interface LineSegment {
 function measureGlyphAdvance(
   ctx: CanvasRenderingContext2D,
   char: string,
-  baseFont: string,
+  fontSize: number,
   emphasisRaw: string | undefined,
 ) {
   const emphasis = parseGlyphEmphasis(emphasisRaw)
   if (!emphasis) return ctx.measureText(char).width
+
   const prev = ctx.font
-  // baseFont like `700 56px "Noto Serif SC", serif`
-  const weightSize = prev.match(/^(\d+)\s+([\d.]+)px\s+/) 
+  const weightSize = prev.match(/^(\d+)\s+([\d.]+)px\s+/)
   const weight = weightSize?.[1] ?? '700'
-  const size = weightSize?.[2] ?? '56'
-  ctx.font = `${weight} ${size}px ${emphasis.fontFamily}`
-  const w = ctx.measureText(char).width * emphasis.scaleX
+  const sizePx = Number(weightSize?.[2] ?? fontSize)
+
+  // 先用强调字体量自然宽；失败（字体未就绪常为 0）则回退到当前字体 / 字号
+  ctx.font = `${weight} ${sizePx}px ${emphasis.fontFamily}`
+  let natural = ctx.measureText(char).width
+  if (!(natural > 1)) {
+    ctx.font = prev
+    natural = ctx.measureText(char).width
+  }
+  if (!(natural > 1)) {
+    natural = sizePx // CJK 全角近似
+  }
   ctx.font = prev
-  return w
+
+  const visual = natural * emphasis.scaleX
+  const sideGap = sizePx * GLYPH_EMPHASIS_SIDE_GAP_RATIO
+  return visual + sideGap * 2
 }
 
 function drawStyledLine(
@@ -130,9 +142,8 @@ function drawStyledLine(
   const baseFont = ctx.font
 
   const charAdvances = chars.map((char, i) =>
-    measureGlyphAdvance(ctx, char, baseFont, glyphEmphasis[`${blockId}:${charOffset + i}`]),
+    measureGlyphAdvance(ctx, char, fontSize, glyphEmphasis[`${blockId}:${charOffset + i}`]),
   )
-  const totalWidth = charAdvances.reduce((a, b) => a + b, 0)
 
   if (enableHighlight) {
     // brush backgrounds: walk chars for accurate emphasis widths
@@ -156,10 +167,7 @@ function drawStyledLine(
 
   // Draw text char-by-char when emphasis or per-char colors present
   if (hasEmphasis || (enableHighlight && textColorSegments.some((segment) => segment.color))) {
-    const colorAt: (string | null)[] = chars.map((_, i) => {
-      // rebuild from segments
-      return null
-    })
+    const colorAt: (string | null)[] = chars.map(() => null)
     let ci = 0
     for (const segment of textColorSegments) {
       for (const _ch of segment.text) {
@@ -174,23 +182,28 @@ function drawStyledLine(
       const emphasis = parseGlyphEmphasis(glyphEmphasis[key])
       const fill = (enableHighlight && colorAt[i]) || textColor
       ctx.fillStyle = fill
+      const advance = charAdvances[i]
       if (emphasis) {
         const weightSize = baseFont.match(/^(\d+)\s+([\d.]+)px\s+/)
         const weight = weightSize?.[1] ?? '700'
         const sizePx = Number(weightSize?.[2] ?? fontSize)
+        const sideGap = sizePx * GLYPH_EMPHASIS_SIDE_GAP_RATIO
+        const visualCenterX = drawX + sideGap + (advance - sideGap * 2) / 2
         ctx.save()
-        ctx.translate(drawX + (charAdvances[i] / 2), baselineY)
+        ctx.translate(visualCenterX, baselineY)
         ctx.scale(emphasis.scaleX, emphasis.scaleY)
         ctx.font = `${weight} ${sizePx}px ${emphasis.fontFamily}`
         ctx.textAlign = 'center'
+        ctx.textBaseline = 'alphabetic'
         ctx.fillText(char, 0, 0)
         ctx.restore()
         ctx.font = baseFont
         ctx.textAlign = 'left'
+        ctx.textBaseline = 'alphabetic'
       } else {
         ctx.fillText(char, drawX, baselineY)
       }
-      drawX += charAdvances[i]
+      drawX += advance
     }
   } else {
     ctx.fillStyle = textColor
@@ -610,11 +623,17 @@ export async function exportGraphicPages(
 ) {
   const fontIds = collectGraphicFontIds(config)
   const sample = pages.flatMap((page) => page.blocks.map((block) => block.text)).join('')
+  const emphasisSample = '买房租房错选楼层'
   for (const fontId of fontIds) {
     const font = getFontById(fontId)
     if (font.source !== 'system') {
-      await ensureFontReady(font, sample || font.sample)
+      await ensureFontReady(font, `${sample}${emphasisSample}` || font.sample)
     }
+  }
+  // 强调字常用数黑体：再确保一次 glyph 可用，避免 measureText 得到 0 导致叠字
+  const shuheiti = getFontById('shuheiti')
+  if (shuheiti?.source !== 'system') {
+    await ensureFontReady(shuheiti, emphasisSample)
   }
 
   const blobs: Blob[] = []

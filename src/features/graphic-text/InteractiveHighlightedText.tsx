@@ -60,11 +60,13 @@ function InteractiveChar({
           transform: `scale(${emphasis.scaleX}, ${emphasis.scaleY})`,
           transformOrigin: 'center center',
           display: 'inline-block',
-          // 布局宽按未缩放字宽，再用负 margin 收回 scaleX 多出的空隙，避免压到后字
-          width: '1em',
-          marginLeft: `${(emphasis.scaleX - 1) / 2}em`,
-          marginRight: `${(emphasis.scaleX - 1) / 2}em`,
+          // transform 不占布局：用 width≈视觉宽 + 左右 padding 留出字距
+          width: `${emphasis.scaleX}em`,
+          paddingLeft: '0.28em',
+          paddingRight: '0.28em',
+          boxSizing: 'content-box',
           textAlign: 'center' as const,
+          verticalAlign: 'baseline',
         }
       : null),
   }
