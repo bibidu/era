@@ -9,6 +9,7 @@
 - 上传固定海报底图，添加文本素材并导出
 - 图文模式：Markdown 分页、字体/纸色/高亮、多页导出
 - 画幅：`3:4` 小红书风格；`9:16` 抖音风格
+- 导出图预览/下载页：出图后上传 GitHub Pages（`?exportShare=1&shareId=...`），可在线逐页预览并下载原图（MCP `era_create_export_share`）
 
 ## 开发（前端）
 

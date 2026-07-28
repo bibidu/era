@@ -19,3 +19,4 @@ alwaysApply: true
 
 高亮步骤：创建 Supabase share 后发送 GitHub Pages URL（`shareId`），引导用户复制配置发回。
 导出后必须先发拼图总览供确认，用户确认后再发各页独立图片。
+出图后必须用 `era_create_export_share` 把最终图上传 GitHub Pages，并把预览/下载页 URL（`?exportShare=1&shareId=...`）发给用户，供其在线预览并下载原图；不要只发聊天图或本机路径。

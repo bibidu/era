@@ -61,6 +61,7 @@ Agent（严格执行 era skill）
 | `era_create_highlight_setup_share` | 上传正文到 Supabase，返回 GitHub Pages 高亮设置页 URL |
 | `era_preview_layout` | 分页预览 + 异常检测（需浏览器） |
 | `era_export_images` | 导出各页 PNG + 纵向拼图 `graphic-review-sheet.png`（需浏览器）；skill 要求先发拼图确认、再发分图 |
+| `era_create_export_share` | 导出各页 PNG + 拼图并上传 Supabase，返回 GitHub Pages 预览/下载页 URL（`?exportShare=1&shareId=...`），供用户在线预览并下载原图 |
 
 | `era_list_fonts` | 可选字体 |
 | `era_list_highlight_styles` | 高亮样式枚举 |
@@ -92,6 +93,18 @@ Agent（严格执行 era skill）
 3. 用户点选/滑动后点「复制并应用」：写回 Supabase `result_ranges`，并复制 `ERA_HIGHLIGHT_SETUP_V1` JSON 给 Agent
 
 本机调试仍可用 `?highlightSetup=1&projectId=<id>` 直连 Agent。
+
+### 导出图预览/下载页
+
+出图后把最终图上传，让用户在线预览并下载原图：
+
+1. `POST /v1/projects/:id/export-share`（或 MCP `era_create_export_share`）会导出各页 PNG + 拼图，作为 dataURL 写入 Supabase 表 `era_export_shares`，返回 `shareId` + GitHub Pages `url`
+2. 用户打开：
+   ```
+   https://bibidu.github.io/era/?exportShare=1&shareId=<SHARE_ID>
+   ```
+   页面逐页在线预览，可「下载」单页或「下载全部」原图
+3. 实现要点：图片体积大，写库用显式 `id` + `Prefer: return=minimal`，避免回显整行导致网关超时
 
 `POST /v1/projects/:id/highlights` 可带 `replace: true`（先清空再写入）。
 
