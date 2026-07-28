@@ -35,7 +35,7 @@ const titleAdjust = {
       chars: [
         { ch: '9', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 44, scaleX: 1, scaleY: 1, widthEm: 0.56, color: '#111111' },
         { ch: '9', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 44, scaleX: 1, scaleY: 1, widthEm: 0.56, color: '#111111' },
-        { ch: '%', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 44, scaleX: 1, scaleY: 1, widthEm: 0.9, color: '#111111' },
+        { ch: '%', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 36, scaleX: 1, scaleY: 1, widthEm: 0.9, color: '#111111' },
         { ch: '的', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 44, scaleX: 1, scaleY: 1, widthEm: 0.88, color: '#111111' },
         { ch: '人', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 44, scaleX: 1, scaleY: 1, widthEm: 0.88, color: '#111111' },
         { ch: '都', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 44, scaleX: 1, scaleY: 1, widthEm: 0.88, color: '#111111' },
@@ -46,10 +46,10 @@ const titleAdjust = {
     },
     {
       chars: [
-        { ch: '「', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 52, scaleX: 1, scaleY: 1, widthEm: 1, color: '#111111' },
-        { ch: '上', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 52, scaleX: 1, scaleY: 1, widthEm: 1, color: '#111111' },
-        { ch: '篇', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 52, scaleX: 1, scaleY: 1, widthEm: 1, color: '#111111' },
-        { ch: '」', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 52, scaleX: 1, scaleY: 1, widthEm: 1, color: '#111111' },
+        { ch: '「', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 42, scaleX: 1, scaleY: 1, widthEm: 1, color: '#111111' },
+        { ch: '上', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 42, scaleX: 1, scaleY: 1, widthEm: 1, color: '#111111' },
+        { ch: '篇', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 42, scaleX: 1, scaleY: 1, widthEm: 1, color: '#111111' },
+        { ch: '」', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 42, scaleX: 1, scaleY: 1, widthEm: 1, color: '#111111' },
       ],
     },
   ],
