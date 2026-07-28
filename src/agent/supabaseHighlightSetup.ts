@@ -83,6 +83,15 @@ export function highlightSetupPagesUrl(shareId: string, pagesBase = ERA_GITHUB_P
   return url.toString()
 }
 
+function shareDocumentForStorage(document?: unknown): unknown | null {
+  if (!document || typeof document !== 'object') return null
+  const blocks = (document as { blocks?: { kind?: string; text?: string }[] }).blocks
+  const hasContent = blocks?.some(
+    (block) => block.kind === 'markdown' && String(block.text ?? '').trim().length > 0,
+  )
+  return hasContent ? document : null
+}
+
 async function supabaseRest<T>(
   config: { url: string; anonKey: string },
   path: string,
@@ -122,7 +131,7 @@ export async function createHighlightSetupShare(
         project_id: input.projectId ?? null,
         title: input.title ?? '',
         markdown: input.markdown,
-        document: input.document ?? null,
+        document: shareDocumentForStorage(input.document),
         config: input.config ?? {},
       }),
     },
