@@ -19,7 +19,7 @@ import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { getFontById } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
 import { buildCharHighlightColorSegments, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
-import { parseGlyphEmphasis, GLYPH_EMPHASIS_SIDE_GAP_RATIO } from './glyphEmphasis'
+import { parseGlyphEmphasis, resolveGlyphSizePx, measureEmphasisAdvance } from './glyphEmphasis'
 import { blockHasHighlightInMap, resolveBlockHighlightColor } from './highlightColors'
 import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
 import {
@@ -84,6 +84,7 @@ function measureGlyphAdvance(
   char: string,
   fontSize: number,
   emphasisRaw: string | undefined,
+  exportScale: number,
 ) {
   const emphasis = parseGlyphEmphasis(emphasisRaw)
   if (!emphasis) return ctx.measureText(char).width
@@ -91,9 +92,8 @@ function measureGlyphAdvance(
   const prev = ctx.font
   const weightSize = prev.match(/^(\d+)\s+([\d.]+)px\s+/)
   const weight = weightSize?.[1] ?? '700'
-  const sizePx = Number(weightSize?.[2] ?? fontSize)
+  const sizePx = resolveGlyphSizePx(emphasis, fontSize, exportScale)
 
-  // 先用强调字体量自然宽；失败（字体未就绪常为 0）则回退到当前字体 / 字号
   ctx.font = `${weight} ${sizePx}px ${emphasis.fontFamily}`
   let natural = ctx.measureText(char).width
   if (!(natural > 1)) {
@@ -105,9 +105,7 @@ function measureGlyphAdvance(
   }
   ctx.font = prev
 
-  const visual = natural * emphasis.scaleX
-  const sideGap = sizePx * GLYPH_EMPHASIS_SIDE_GAP_RATIO
-  return visual + sideGap * 2
+  return measureEmphasisAdvance(natural, emphasis, sizePx)
 }
 
 function drawStyledLine(
@@ -128,6 +126,7 @@ function drawStyledLine(
   circleLineWidth: number,
   textColorSegments: LineSegment[] = [],
   glyphEmphasis: Readonly<Record<string, string>> = {},
+  exportScale = 1,
 ) {
   const paddingX = 4
   const plainText = stripHighlightMarkers(text)
@@ -142,7 +141,13 @@ function drawStyledLine(
   const baseFont = ctx.font
 
   const charAdvances = chars.map((char, i) =>
-    measureGlyphAdvance(ctx, char, fontSize, glyphEmphasis[`${blockId}:${charOffset + i}`]),
+    measureGlyphAdvance(
+      ctx,
+      char,
+      fontSize,
+      glyphEmphasis[`${blockId}:${charOffset + i}`],
+      exportScale,
+    ),
   )
 
   if (enableHighlight) {
@@ -186,9 +191,10 @@ function drawStyledLine(
       if (emphasis) {
         const weightSize = baseFont.match(/^(\d+)\s+([\d.]+)px\s+/)
         const weight = weightSize?.[1] ?? '700'
-        const sizePx = Number(weightSize?.[2] ?? fontSize)
-        const sideGap = sizePx * GLYPH_EMPHASIS_SIDE_GAP_RATIO
-        const visualCenterX = drawX + sideGap + (advance - sideGap * 2) / 2
+        const sizePx = resolveGlyphSizePx(emphasis, fontSize, exportScale)
+        const fillColor = (enableHighlight && colorAt[i]) || emphasis.color || textColor
+        ctx.fillStyle = fillColor
+        const visualCenterX = drawX + advance / 2
         ctx.save()
         ctx.translate(visualCenterX, baselineY)
         ctx.scale(emphasis.scaleX, emphasis.scaleY)
@@ -527,7 +533,10 @@ async function drawPage(
     const textColorSegments = enableHighlight
       ? buildCharHighlightColorSegments(block.text, blockId, textColors, charOffset)
       : [{ text: plainText, color: null }]
-    const lineHeight = spec.size * spec.lineHeight
+    const lineHeight =
+      typeof block.lineHeightOverride === 'number' && block.lineHeightOverride > 0
+        ? block.lineHeightOverride
+        : spec.size * spec.lineHeight
     const textMetrics = ctx.measureText(plainText || '文')
     const ascent = textMetrics.actualBoundingBoxAscent ?? spec.size * 0.88
 
@@ -594,6 +603,7 @@ async function drawPage(
       circleLineWidth,
       textColorSegments,
       glyphEmphasis,
+      exportScale,
     )
     y += lineHeight
 

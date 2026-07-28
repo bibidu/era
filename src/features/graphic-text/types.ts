@@ -34,6 +34,11 @@ export interface GraphicTextConfig {
   bodyFontSize: number
   codeFontSize: number
   titleLineHeight: number
+  /**
+   * 标题行距（em，相对该行最大字号）。来自 ERA_TITLE_ADJUST_V1.lineGapEm。
+   * 有值时，显式换行标题行之间用此间距，不再只靠 titleLineHeight。
+   */
+  titleLineGapEm?: number
   bodyLineHeight: number
   headingLineHeight: number
   codeLineHeight: number
@@ -61,7 +66,7 @@ export interface GraphicTextConfig {
   colorHighlightColors: Record<string, string>
   /**
    * 逐字字形强调（标题混排数黑体等）。
-   * key=`${blockId}:${charIndex}`，value=`fontFamily||scaleX||scaleY`
+   * key=`${blockId}:${charIndex}`，value=`fontFamily||scaleX||scaleY[||fontSize||widthEm||color]`
    */
   glyphEmphasis: Record<string, string>
   highlightPickerColor: string
@@ -81,6 +86,8 @@ export interface MarkdownBlock {
   titleSentenceIndex?: number
   /** 显式换行标题行：按行适配后的字号（导出坐标） */
   titleFontSizeOverride?: number
+  /** 布局算出的行盒高度（含强调字 scaleY / 行距）；导出优先使用 */
+  lineHeightOverride?: number
   imageUrl?: string
   imageWidth?: number
   imageHeight?: number

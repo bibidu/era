@@ -1,5 +1,7 @@
 /** 标题调整页：可复制给 Agent 的配置协议 */
 
+import { encodeGlyphEmphasis } from '../graphic-text/glyphEmphasis'
+
 export const TITLE_ADJUST_CLIPBOARD_TYPE = 'era_title_adjust' as const
 export const TITLE_ADJUST_CLIPBOARD_VERSION = 1 as const
 
@@ -87,5 +89,47 @@ export function tryParseTitleAdjustClipboard(text: string): TitleAdjustConfig | 
     return parsed
   } catch {
     return null
+  }
+}
+
+/** 把标题调整配置落到 Era 工程：标题文本 + glyphEmphasis + 文字色 + 行距 */
+export function titleAdjustToGraphicPatch(
+  config: TitleAdjustConfig,
+  titleBlockId: string,
+): {
+  title: string
+  glyphEmphasis: Record<string, string>
+  colorHighlightColors: Record<string, string>
+  titleLineGapEm: number
+} {
+  const glyphEmphasis: Record<string, string> = {}
+  const colorHighlightColors: Record<string, string> = {}
+  let index = 0
+  const titleLines: string[] = []
+
+  for (const line of config.lines) {
+    titleLines.push(line.chars.map((c) => c.ch).join(''))
+    for (const char of line.chars) {
+      const key = `${titleBlockId}:${index}`
+      glyphEmphasis[key] = encodeGlyphEmphasis({
+        fontFamily: char.fontFamily,
+        scaleX: char.scaleX,
+        scaleY: char.scaleY,
+        fontSize: char.fontSize,
+        widthEm: char.widthEm,
+        color: char.color,
+      })
+      if (char.color && char.color.toLowerCase() !== '#111111') {
+        colorHighlightColors[key] = char.color
+      }
+      index += 1
+    }
+  }
+
+  return {
+    title: titleLines.join('|'),
+    glyphEmphasis,
+    colorHighlightColors,
+    titleLineGapEm: config.lineGapEm,
   }
 }

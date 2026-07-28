@@ -154,6 +154,13 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
       config.titlePrimaryColor
         ? config.titlePrimaryColor
         : undefined
+    const continuedTitleGap =
+      typeof config.titleLineGapEm === 'number' &&
+      Number.isFinite(config.titleLineGapEm) &&
+      (block.styleType ?? block.type) === 'title' &&
+      !block.isBlockEnd
+        ? `calc(${titleSize} * ${config.titleLineGapEm})`
+        : marginBottom
     return {
       fontFamily,
       fontSize: titleSize,
@@ -162,7 +169,7 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
       color: primaryColor,
       marginTop:
         block.type === 'title' ? `calc(${titleSize} * ${config.titleMarginTop})` : undefined,
-      marginBottom,
+      marginBottom: continuedTitleGap,
     }
   }
   if (styleType === 'heading') {
@@ -295,18 +302,39 @@ function BrushUnderlineSegments({
                 : null),
               ...(textColor ? { color: textColor } : null),
               ...(emphasis
-                ? {
-                    fontFamily: emphasis.fontFamily,
-                    transform: `scale(${emphasis.scaleX}, ${emphasis.scaleY})`,
-                    transformOrigin: 'center center',
-                    display: 'inline-block',
-                    width: `${emphasis.scaleX}em`,
-                    paddingLeft: '0.28em',
-                    paddingRight: '0.28em',
-                    boxSizing: 'content-box',
-                    textAlign: 'center' as const,
-                    verticalAlign: 'baseline',
-                  }
+                ? emphasis.widthEm != null
+                  ? {
+                      fontFamily: emphasis.fontFamily,
+                      fontSize:
+                        emphasis.fontSize != null
+                          ? `${(emphasis.fontSize / 360) * 100}cqw`
+                          : undefined,
+                      color: emphasis.color || undefined,
+                      transform: `scale(${emphasis.scaleX}, ${emphasis.scaleY})`,
+                      transformOrigin: 'center center',
+                      display: 'inline-block',
+                      width: `${emphasis.widthEm}em`,
+                      boxSizing: 'content-box',
+                      textAlign: 'center' as const,
+                      verticalAlign: 'baseline',
+                    }
+                  : {
+                      fontFamily: emphasis.fontFamily,
+                      fontSize:
+                        emphasis.fontSize != null
+                          ? `${(emphasis.fontSize / 360) * 100}cqw`
+                          : undefined,
+                      color: emphasis.color || undefined,
+                      transform: `scale(${emphasis.scaleX}, ${emphasis.scaleY})`,
+                      transformOrigin: 'center center',
+                      display: 'inline-block',
+                      width: `${emphasis.scaleX}em`,
+                      paddingLeft: '0.28em',
+                      paddingRight: '0.28em',
+                      boxSizing: 'content-box',
+                      textAlign: 'center' as const,
+                      verticalAlign: 'baseline',
+                    }
                 : null),
             }}
           >

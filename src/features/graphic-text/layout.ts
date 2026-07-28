@@ -8,7 +8,7 @@ import { DEFAULT_IMAGE_MARGIN, parseScopedMarkdown } from './document'
 import { getFontConfigForStyleType } from './graphicTextFonts'
 import { measureImageLayoutSize } from './imageAsset'
 import { stripHighlightMarkers } from './inlineHighlight'
-import { stripTitleBreakMarkers, titlePlainText, parseGlyphEmphasis, GLYPH_EMPHASIS_SIDE_GAP_RATIO } from './glyphEmphasis'
+import { stripTitleBreakMarkers, titlePlainText, parseGlyphEmphasis, resolveGlyphSizePx, measureEmphasisAdvance } from './glyphEmphasis'
 import {
   CODE_HORIZONTAL_PADDING_SCALE,
   estimateCodeLineWidth,
@@ -385,20 +385,29 @@ function blockToLayoutLines(
           if (ctx) {
             const primary = fontFamily.replace(/"/g, '').split(',')[0].trim()
             const emphasisMap = config.glyphEmphasis ?? {}
+            const hasWidthEm = [...sentence].some((_, i) => {
+              const emph = parseGlyphEmphasis(emphasisMap[`${block.id}:${charOffset + i}`])
+              return emph?.widthEm != null
+            })
             const measureLine = (fitPx: number) => {
               let total = 0
               const chars = [...sentence]
+              // fitPx 是整行缩放后的主字号；有 widthEm 时按设计字号*当前缩放比测量
+              const scaleRatio = size > 0 ? fitPx / size : 1
               for (let i = 0; i < chars.length; i += 1) {
                 const key = `${block.id}:${charOffset + i}`
                 const emphasis = parseGlyphEmphasis(emphasisMap[key])
                 if (emphasis) {
-                  ctx.font = `${fontWeight} ${fitPx}px ${emphasis.fontFamily}`
+                  const sizePx = emphasis.fontSize != null
+                    ? emphasis.fontSize * layout.exportScale * scaleRatio
+                    : fitPx
+                  ctx.font = `${fontWeight} ${sizePx}px ${emphasis.fontFamily}`
                   let natural = ctx.measureText(chars[i]).width
                   if (!(natural > 1)) {
-                    ctx.font = `${fontWeight} ${fitPx}px ${primary}`
-                    natural = ctx.measureText(chars[i]).width || fitPx
+                    ctx.font = `${fontWeight} ${sizePx}px ${primary}`
+                    natural = ctx.measureText(chars[i]).width || sizePx
                   }
-                  total += natural * emphasis.scaleX + fitPx * GLYPH_EMPHASIS_SIDE_GAP_RATIO * 2
+                  total += measureEmphasisAdvance(natural, emphasis, sizePx)
                 } else {
                   ctx.font = `${fontWeight} ${fitPx}px ${primary}`
                   total += ctx.measureText(chars[i]).width
@@ -406,15 +415,18 @@ function blockToLayoutLines(
               }
               return total
             }
-            let fit = size
-            while (fit > 24 * layout.exportScale) {
-              if (measureLine(fit) <= availableWidth + 6) break
-              fit -= layout.exportScale
-            }
-            if (fit < size) {
-              const override = fit / layout.exportScale
-              sentenceBlock = { ...sentenceBlock, titleFontSizeOverride: override }
-              size = fit
+            // TitleAdjust 已手调宽度：不再整体压字号
+            if (!hasWidthEm) {
+              let fit = size
+              while (fit > 24 * layout.exportScale) {
+                if (measureLine(fit) <= availableWidth + 6) break
+                fit -= layout.exportScale
+              }
+              if (fit < size) {
+                const override = fit / layout.exportScale
+                sentenceBlock = { ...sentenceBlock, titleFontSizeOverride: override }
+                size = fit
+              }
             }
           }
         }
@@ -428,13 +440,42 @@ function blockToLayoutLines(
           availableWidth,
         )
       }
-      const lineHeight = blockLineHeight(sentenceBlock, config, layout.exportScale)
+      let lineHeight = blockLineHeight(sentenceBlock, config, layout.exportScale)
+      const emphasisMapForLine = config.glyphEmphasis ?? {}
+      const sentenceChars = [...sentence]
+      let maxGlyphHeight = 0
+      let maxGlyphSize = size
+      for (let i = 0; i < sentenceChars.length; i += 1) {
+        const emph = parseGlyphEmphasis(emphasisMapForLine[`${block.id}:${charOffset + i}`])
+        if (!emph) continue
+        const gSize = resolveGlyphSizePx(emph, size, layout.exportScale)
+        maxGlyphSize = Math.max(maxGlyphSize, gSize)
+        maxGlyphHeight = Math.max(maxGlyphHeight, gSize * Math.max(emph.scaleY, 1))
+      }
+      if (maxGlyphHeight > 0) {
+        lineHeight = Math.max(lineHeight, maxGlyphHeight)
+      }
 
       for (let wrapIndex = 0; wrapIndex < wrapped.length; wrapIndex += 1) {
         const lineText = wrapped[wrapIndex]
         const isFirstLine = lineIndex === 0
         const isLastLine =
           sentenceIndex === sentences.length - 1 && wrapIndex === wrapped.length - 1
+        const spacingAfter = blockSpacingAfter(
+          sentenceBlock,
+          config,
+          layout.exportScale,
+          layout,
+          isLastLine,
+        )
+        let boxHeight = lineHeight
+        if (
+          !isLastLine &&
+          typeof config.titleLineGapEm === 'number' &&
+          Number.isFinite(config.titleLineGapEm)
+        ) {
+          boxHeight = lineHeight + maxGlyphSize * config.titleLineGapEm
+        }
         lines.push({
           id: `${block.id}-l${lineIndex}`,
           type: isFirstLine ? block.type : 'paragraph',
@@ -443,15 +484,9 @@ function blockToLayoutLines(
             sentences.length === 1 && wrapped.length === 1
               ? stripTitleBreakMarkers(block.text)
               : lineText,
-          lineHeight,
+          lineHeight: boxHeight,
           spacingBefore: blockSpacingBefore(block, config, layout.exportScale, isFirstLine),
-          spacingAfter: blockSpacingAfter(
-            sentenceBlock,
-            config,
-            layout.exportScale,
-            layout,
-            isLastLine,
-          ),
+          spacingAfter,
           sourceBlockId: block.id,
           charOffset,
           titleSentenceIndex: effectiveSentenceIndex,
@@ -547,6 +582,7 @@ function layoutLinesToBlocks(lines: LayoutLine[]): MarkdownBlock[] {
     charOffset: line.charOffset,
     titleFontSizeOverride: line.titleFontSizeOverride,
     titleSentenceIndex: line.titleSentenceIndex,
+    lineHeightOverride: line.lineHeight,
     imageUrl: line.imageUrl,
     imageWidth: line.imageWidth,
     imageHeight: line.imageHeight,

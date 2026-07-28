@@ -48,26 +48,46 @@ function InteractiveChar({
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void
 }) {
   const emphasis = parseGlyphEmphasis(emphasisRaw)
+  const emphasisColor = emphasis?.color
   const style: CSSProperties = {
     ...(brushColor ? { backgroundColor: themeAlpha(brushColor, 0.28) } : null),
     ...(underlineColor
       ? { ['--graphic-highlight-underline' as string]: underlineColor }
       : null),
-    ...(textColor ? { color: textColor } : null),
+    ...(textColor || emphasisColor ? { color: textColor || emphasisColor } : null),
     ...(emphasis
-      ? {
-          fontFamily: emphasis.fontFamily,
-          transform: `scale(${emphasis.scaleX}, ${emphasis.scaleY})`,
-          transformOrigin: 'center center',
-          display: 'inline-block',
-          // transform 不占布局：用 width≈视觉宽 + 左右 padding 留出字距
-          width: `${emphasis.scaleX}em`,
-          paddingLeft: '0.28em',
-          paddingRight: '0.28em',
-          boxSizing: 'content-box',
-          textAlign: 'center' as const,
-          verticalAlign: 'baseline',
-        }
+      ? emphasis.widthEm != null
+        ? {
+            fontFamily: emphasis.fontFamily,
+            fontSize:
+              emphasis.fontSize != null
+                ? `${(emphasis.fontSize / 360) * 100}cqw`
+                : undefined,
+            transform: `scale(${emphasis.scaleX}, ${emphasis.scaleY})`,
+            transformOrigin: 'center center',
+            display: 'inline-block',
+            width: `${emphasis.widthEm}em`,
+            boxSizing: 'content-box',
+            textAlign: 'center' as const,
+            verticalAlign: 'baseline',
+          }
+        : {
+            fontFamily: emphasis.fontFamily,
+            fontSize:
+              emphasis.fontSize != null
+                ? `${(emphasis.fontSize / 360) * 100}cqw`
+                : undefined,
+            transform: `scale(${emphasis.scaleX}, ${emphasis.scaleY})`,
+            transformOrigin: 'center center',
+            display: 'inline-block',
+            // transform 不占布局：用 width≈视觉宽 + 左右 padding 留出字距
+            width: `${emphasis.scaleX}em`,
+            paddingLeft: '0.28em',
+            paddingRight: '0.28em',
+            boxSizing: 'content-box',
+            textAlign: 'center' as const,
+            verticalAlign: 'baseline',
+          }
       : null),
   }
 
