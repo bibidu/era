@@ -77,6 +77,8 @@ export interface MarkdownBlock {
   imageUrl?: string
   imageWidth?: number
   imageHeight?: number
+  /** 为 true 时该块首行从新页开始（由 <!-- era:page-break --> 触发） */
+  pageBreakBefore?: boolean
 }
 
 export interface GraphicTextPage {

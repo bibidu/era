@@ -50,31 +50,7 @@ async function main() {
 
 ${card.markdown}
 
-## 它解决什么问题
-
-做 PPT 最烦的不是「写不出来」。
-
-而是 AI 给你一堆截图式页面——看着像，改不了。
-
-改一个字要重新生成，图表动不了，动画更是奢望。
-
-PPT Master 走另一条路：让 Agent 按 Skill 工作流，直接生成**可编辑的原生 PowerPoint**。
-
-形状、图表、过渡动画都在 PPT 里，而不是一张扁平长图。
-
-你拿到的是标准 .pptx，能在 PowerPoint / Keynote 里继续改母版、调数据、加备注。
-
-README 里强调的核心差异是「原生深度」：幻灯片母版、数据图表、过渡动画，不是文本框堆叠。
-
-同时它也点明：**可编辑只是及格线，真正拉开差距的是原生深度**。
-
-母版、原生形状、数据驱动的图表与表格，不是文本框堆叠，也不是套模板填空的结果。
-
-## 三个值得关注的点
-
-- 原生深度：幻灯片母版、数据图表、过渡动画，不是文本框堆叠；支持按模板出稿
-- 本地生成：材料在你机器上跑，不绑平台、不锁模型，数据不出本机
-- Agent 工作流：丢一份 PDF、网页或主题，按步骤出完整 .pptx，可继续手工精修
+<!-- era:page-break -->
 
 ## 官网示例
 
@@ -83,6 +59,12 @@ ${magazine.markdown}
 ${swiss.markdown}
 
 官网内置 **20+ 种风格模板**（杂志风、瑞士栅格、毛玻璃 SaaS、孟菲斯波普、Risograph 等），支持丰富的**页间转场**与**入场 / 强调动画**，还能根据**参考图、PDF 或网页**生成整套可编辑 .pptx，并在 PowerPoint 里继续改母版与数据。
+
+## 三个值得关注的点
+
+- 原生深度：幻灯片母版、数据图表、过渡动画，不是文本框堆叠；支持按模板出稿
+- 本地生成：材料在你机器上跑，不绑平台、不锁模型，数据不出本机
+- Agent 工作流：丢一份 PDF、网页或主题，按步骤出完整 .pptx，可继续手工精修
 
 ## 适合谁
 
@@ -133,7 +115,7 @@ ${swiss.markdown}
   // 封面
   const coverPath = path.join(OUT, 'cover.png')
   execSync(
-    `node scripts/generate-cover.mjs --bigTitle "PPT\\nMASTER" --smallTitle "AI 生成可编辑 PPT" --description "开源 Skill：文档变原生 PowerPoint" --tags "Agent,开源,可编辑,.pptx" --secondaryTitles "原生图表,本地生成,Skill工作流" --themeColor "#1D4ED8" --out "${coverPath}"`,
+    `node scripts/generate-cover.mjs --bigTitle "PPT\\nMASTER" --smallTitle "AI 生成可编辑 PPT" --description "开源 Skill：文档变原生 PowerPoint" --tags "Agent,开源,可编辑,.pptx" --secondaryTitles "原生图表,本地生成,Skill工作流" --themeColor "#22C55E" --out "${coverPath}"`,
     { cwd: ROOT, stdio: 'inherit' },
   )
 
@@ -148,7 +130,9 @@ ${swiss.markdown}
     JSON.stringify({ projectId, charCount, coverPath, sheetPath, pagePaths, exported }, null, 2),
   )
 
-  const share = await api('POST', `/v1/projects/${projectId}/export-share`, {})
+  const share = await api('POST', `/v1/projects/${projectId}/export-share`, {
+    coverPath: path.join(OUT, 'cover.png'),
+  })
   console.log('gallery preview:', share.url)
 }
 

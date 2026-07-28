@@ -35,6 +35,7 @@ import { THEME_COLORS } from './highlightColors'
 import type { InteractiveHighlightStyle } from './InteractiveHighlightedText'
 import { stripHighlightMarkers } from './inlineHighlight'
 import { getGraphicLayout, paginateDocument } from './layout'
+import { isPageBreakMarker } from './pageBreak'
 import {
   createHighlightPreviewDraft,
   type HighlightPreviewDraft,
@@ -61,6 +62,7 @@ function plainTextByBlockIdFromDocument(document: GraphicDocument): Record<strin
   const result: Record<string, string> = {}
   for (const block of document.blocks) {
     if (block.kind !== 'markdown') continue
+    if (isPageBreakMarker(block.text)) continue
     for (const md of parseScopedMarkdown(block.id, block.text)) {
       result[md.id] = stripHighlightMarkers(md.text)
     }
@@ -128,6 +130,29 @@ async function copyText(text: string) {
   document.body.removeChild(area)
 }
 
+function documentFromHighlightShareRecord(
+  record: { markdown?: string; document?: unknown },
+): GraphicDocument {
+  const markdown = record.markdown?.trim() ?? ''
+  const rawDocument = record.document as GraphicDocument | null | undefined
+  const hasDocumentBlocks = Boolean(
+    rawDocument?.blocks?.some(
+      (block) => block.kind === 'markdown' && String(block.text ?? '').trim().length > 0,
+    ),
+  )
+
+  if (markdown && !hasDocumentBlocks) {
+    return createDocumentFromMarkdown(markdown)
+  }
+  if (rawDocument?.blocks?.length) {
+    return normalizeDocument(rawDocument)
+  }
+  if (markdown) {
+    return createDocumentFromMarkdown(markdown)
+  }
+  return { blocks: [], assets: {} }
+}
+
 export function HighlightSetupPage({
   projectId,
   shareId,
@@ -165,9 +190,7 @@ export function HighlightSetupPage({
     try {
       if (shareId) {
         const record = await fetchHighlightSetupShare(shareId)
-        const nextDocument = record.document
-          ? normalizeDocument(record.document as GraphicDocument)
-          : createDocumentFromMarkdown(record.markdown || '')
+        const nextDocument = documentFromHighlightShareRecord(record)
         const nextConfig = mergeConfig(record.config)
         setDoc(nextDocument)
         setBaseConfig(nextConfig)

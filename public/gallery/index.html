@@ -374,12 +374,12 @@ function buildLibraryImages() {
 
 function buildPreviewImages(record) {
   const list = [];
-  if (record.sheet?.dataUrl) {
-    list.push({ src: record.sheet.dataUrl, file: record.sheet.name || 'graphic-review-sheet.png', blob: null });
-  }
   (record.images || []).forEach((img) => {
     list.push({ src: img.dataUrl, file: img.name, blob: null });
   });
+  if (record.sheet?.dataUrl && !(record.images || []).some((img) => img.name === 'cover.png')) {
+    list.push({ src: record.sheet.dataUrl, file: record.sheet.name || 'graphic-review-sheet.png', blob: null });
+  }
   return list;
 }
 
@@ -393,6 +393,26 @@ function renderCarousel(images) {
     return;
   }
 
+  const loadedIndexes = new Set();
+
+  function mountSlideSrc(index) {
+    if (index < 0 || index >= images.length || loadedIndexes.has(index)) return;
+    const slide = carouselEl.children[index];
+    if (!slide) return;
+    const img = slide.querySelector('img');
+    const pendingSrc = img?.dataset.src;
+    if (!img || !pendingSrc || img.dataset.loaded === '1') return;
+    img.src = pendingSrc;
+    img.dataset.loaded = '1';
+    loadedIndexes.add(index);
+  }
+
+  function preloadAround(index) {
+    mountSlideSrc(index);
+    mountSlideSrc(index - 1);
+    mountSlideSrc(index + 1);
+  }
+
   images.forEach(({ src, file }, i) => {
     const slide = document.createElement('div');
     slide.className = 'slide';
@@ -402,7 +422,8 @@ function renderCarousel(images) {
 
     const img = document.createElement('img');
     img.alt = `第 ${i + 1} 页`;
-    img.loading = i === 0 ? 'eager' : 'lazy';
+    img.decoding = 'async';
+    img.dataset.src = src;
 
     function sizeSkeleton() {
       const sh = carouselEl.clientHeight - 24;
@@ -418,27 +439,35 @@ function renderCarousel(images) {
       skel.style.display = 'none';
       img.style.display = 'block';
     });
-    img.src = src;
+    img.addEventListener('error', () => {
+      skel.style.display = 'none';
+      img.style.display = 'block';
+    });
 
     const dlBtn = document.createElement('button');
     dlBtn.className = 'slide-dl';
     dlBtn.innerHTML = `${isIOS ? '分享' : '下载'}`;
     dlBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
+      mountSlideSrc(i);
+      const activeSrc = img.src || src;
       if (isIOS) {
-        await shareBlob(await resolveBlob(src, file), file);
+        await shareBlob(await resolveBlob(activeSrc, file), file);
         return;
       }
       dlBtn.textContent = '…';
       try {
-        const blob = await resolveBlob(src, file);
+        const blob = await resolveBlob(activeSrc, file);
         triggerDownload(blob, file);
       } finally {
         dlBtn.textContent = '下载';
       }
     });
 
-    img.addEventListener('click', () => openLb(i));
+    img.addEventListener('click', () => {
+      mountSlideSrc(i);
+      openLb(i);
+    });
 
     slide.appendChild(skel);
     slide.appendChild(img);
@@ -446,16 +475,36 @@ function renderCarousel(images) {
     carouselEl.appendChild(slide);
   });
 
+  preloadAround(0);
+
+  const preloadRest = (deadline) => {
+    for (let i = 0; i < images.length; i += 1) {
+      mountSlideSrc(i);
+      if (deadline && deadline.timeRemaining && deadline.timeRemaining() < 4) {
+        requestIdleCallback(preloadRest, { timeout: 3000 });
+        return;
+      }
+    }
+  };
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(preloadRest, { timeout: 3000 });
+  } else {
+    window.setTimeout(() => preloadRest(), 300);
+  }
+
   dots = images.map((_, i) => {
     const d = document.createElement('div');
     d.className = `dot${i === 0 ? ' active' : ''}`;
     d.addEventListener('click', () => {
       carouselEl.scrollTo({ left: i * carouselEl.clientWidth, behavior: 'smooth' });
+      preloadAround(i);
     });
     dotsEl.appendChild(d);
     return d;
   });
   updateDots(0);
+
+  carouselEl._preloadAround = preloadAround;
 }
 
 function updateDots(idx) {
@@ -547,6 +596,7 @@ async function downloadZip() {
 }
 
 function openLb(i) {
+  if (carouselEl._preloadAround) carouselEl._preloadAround(i);
   lbCurrent = i;
   lbImg.src = allImages[i].src;
   lb.classList.add('open');
@@ -561,7 +611,7 @@ async function loadGallery() {
   badgeEl.textContent = 'Era 图文库';
 
   if (shareId) {
-    showStatus('加载中…');
+    showStatus('正在加载图文数据（约数 MB）…');
     try {
       const record = await fetchExportShare(shareId);
       shareTitle = record.title?.trim() || 'Era 导出图';
@@ -600,6 +650,7 @@ carouselEl.addEventListener('scroll', () => {
   scrollTimer = setTimeout(() => {
     const idx = Math.round(carouselEl.scrollLeft / carouselEl.clientWidth);
     updateDots(idx);
+    if (carouselEl._preloadAround) carouselEl._preloadAround(idx);
   }, 60);
 });
 

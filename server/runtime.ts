@@ -18,6 +18,15 @@ import {
   createExportShare,
   createHighlightSetupShare,
 } from '../src/agent/supabaseHighlightSetup.ts'
+import {
+  ERA_PAGE_BREAK_MARKER,
+  isPageBreakMarker,
+} from '../src/features/graphic-text/pageBreak.ts'
+import {
+  getDocumentMarkdownForShare,
+  normalizeDocument,
+  type GraphicDocument,
+} from '../src/features/graphic-text/document.ts'
 
 export interface StoredProject {
   id: string
@@ -78,18 +87,31 @@ function splitMarkdownToBlocks(markdown: string) {
   // 与前端 createDocumentFromMarkdown 一致：按解析后的块拆成 content blocks
   // 此处做轻量拆分：按空行分段，标题/列表行单独成块
   const lines = text.replace(/\r\n/g, '\n').split('\n')
-  const chunks: string[] = []
+  const chunks: { text: string; pageBreakBefore?: boolean }[] = []
   let paragraph: string[] = []
   let inCode = false
   let code: string[] = []
+  let pendingPageBreak = false
 
   const flushParagraph = () => {
     const joined = paragraph.join('\n').trim()
-    if (joined) chunks.push(joined)
+    if (joined) {
+      chunks.push({
+        text: joined,
+        ...(pendingPageBreak ? { pageBreakBefore: true } : {}),
+      })
+      pendingPageBreak = false
+    }
     paragraph = []
   }
   const flushCode = () => {
-    if (code.length) chunks.push(['```', ...code, '```'].join('\n'))
+    if (code.length) {
+      chunks.push({
+        text: ['```', ...code, '```'].join('\n'),
+        ...(pendingPageBreak ? { pageBreakBefore: true } : {}),
+      })
+      pendingPageBreak = false
+    }
     code = []
   }
 
@@ -113,6 +135,11 @@ function splitMarkdownToBlocks(markdown: string) {
       flushParagraph()
       continue
     }
+    if (line.trim() === ERA_PAGE_BREAK_MARKER) {
+      flushParagraph()
+      pendingPageBreak = true
+      continue
+    }
     if (
       line.startsWith('# ') ||
       /^#{2,6}\s/.test(line) ||
@@ -121,7 +148,12 @@ function splitMarkdownToBlocks(markdown: string) {
       /^!\[[^\]]*\]\(.+\)$/.test(line.trim())
     ) {
       flushParagraph()
-      chunks.push(line.trim())
+      const content = line.trim()
+      chunks.push({
+        text: content,
+        ...(pendingPageBreak ? { pageBreakBefore: true } : {}),
+      })
+      pendingPageBreak = false
       continue
     }
     paragraph.push(line)
@@ -132,7 +164,8 @@ function splitMarkdownToBlocks(markdown: string) {
   return chunks.map((chunk) => ({
     id: createBlockId(),
     kind: 'markdown' as const,
-    text: chunk,
+    text: chunk.text,
+    ...(chunk.pageBreakBefore ? { pageBreakBefore: true } : {}),
   }))
 }
 
@@ -152,6 +185,7 @@ export function summarizeContentBlocks(document: {
 
   for (const block of document.blocks) {
     if (block.kind !== 'markdown' || typeof block.text !== 'string') continue
+    if (isPageBreakMarker(block.text)) continue
     const lines = block.text.replace(/\r\n/g, '\n').split('\n')
     // 简化：每个 content block 通常已是单段；仍按 markdown 规则标 type
     let type = 'paragraph'
@@ -350,12 +384,14 @@ export class EraAgentRuntime {
 
   async createHighlightSetupShare(projectId: string) {
     const project = this.requireProject(projectId)
-    const document = project.snapshot.document as {
-      blocks: { id: string; kind: string; text?: string }[]
-      assets?: Record<string, unknown>
-    }
+    const document = normalizeDocument(
+      (project.snapshot.document as GraphicDocument | undefined) ?? {
+        blocks: [],
+        assets: {},
+      },
+    )
     const config = (project.snapshot.config ?? {}) as Record<string, unknown>
-    const markdown = getDocumentMarkdown(document)
+    const markdown = getDocumentMarkdownForShare(document)
     const title =
       (project.snapshot.meta?.title ?? '').trim() ||
       markdown
@@ -364,12 +400,10 @@ export class EraAgentRuntime {
         ?.replace(/^#\s+/, '')
         .trim() ||
       ''
-
     const shared = await createHighlightSetupShare({
       projectId,
       title,
       markdown,
-      document,
       config,
     })
 
@@ -486,20 +520,51 @@ export class EraAgentRuntime {
     }
   }
 
+  private async readShareImageFromPath(
+    coverPath: string,
+    name = 'cover.png',
+  ): Promise<{ name: string; dataUrl: string } | null> {
+    try {
+      const resolved = path.resolve(coverPath)
+      const buf = await fs.readFile(resolved)
+      return {
+        name,
+        dataUrl: `data:image/png;base64,${buf.toString('base64')}`,
+      }
+    } catch {
+      return null
+    }
+  }
+
   /** 导出各页 PNG + 拼图并上传 Supabase，返回 GitHub Pages 预览/下载页 URL（供用户在线预览并下载原图） */
-  async createExportShare(projectId: string, pages?: number[]) {
+  async createExportShare(
+    projectId: string,
+    options?: { pages?: number[]; coverPath?: string },
+  ) {
     const project = this.requireProject(projectId)
+    const pages = options?.pages
     const { images, sheet } = await this.runBridgeExport(projectId, pages)
     const shareImages = images.map((image) => ({
       name: image.name,
       dataUrl: `data:image/png;base64,${image.base64}`,
     }))
-    const shareSheet = sheet?.base64
-      ? {
-          name: sheet.name || 'graphic-review-sheet.png',
-          dataUrl: `data:image/png;base64,${sheet.base64}`,
-        }
+    const meta = (project.snapshot.meta ?? {}) as Record<string, unknown>
+    const resolvedCoverPath =
+      options?.coverPath ??
+      (typeof meta.coverPath === 'string' ? meta.coverPath : undefined)
+    const shareCover = resolvedCoverPath
+      ? await this.readShareImageFromPath(resolvedCoverPath)
       : null
+    const shareSheet =
+      sheet?.base64 && !resolvedCoverPath
+        ? {
+            name: sheet.name || 'graphic-review-sheet.png',
+            dataUrl: `data:image/png;base64,${sheet.base64}`,
+          }
+        : null
+    if (shareCover) {
+      shareImages.unshift({ name: shareCover.name, dataUrl: shareCover.dataUrl })
+    }
     const config = (project.snapshot.config ?? {}) as Record<string, unknown>
     const aspectRatio =
       typeof config.aspectRatio === 'string' ? (config.aspectRatio as string) : undefined
@@ -516,6 +581,7 @@ export class EraAgentRuntime {
       shareId: shared.shareId,
       url: shared.url,
       count: shareImages.length,
+      hasCover: Boolean(shareCover),
       expiresAt: shared.record.expires_at,
     }
   }

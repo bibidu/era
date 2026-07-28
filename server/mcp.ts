@@ -198,10 +198,14 @@ async function main() {
     {
       projectId: z.string(),
       pages: z.array(z.number().int().nonnegative()).optional().describe('0-based 页码，默认全部'),
+      coverPath: z
+        .string()
+        .optional()
+        .describe('非风水流程封面 PNG 绝对路径；省略时尝试工程 meta.coverPath'),
     },
-    async ({ projectId, pages }) => {
+    async ({ projectId, pages, coverPath }) => {
       try {
-        return ok(await api('POST', `/v1/projects/${projectId}/export-share`, { pages }))
+        return ok(await api('POST', `/v1/projects/${projectId}/export-share`, { pages, coverPath }))
       } catch (error) {
         return fail(error)
       }
