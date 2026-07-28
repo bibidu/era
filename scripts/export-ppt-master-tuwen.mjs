@@ -148,7 +148,9 @@ ${swiss.markdown}
     JSON.stringify({ projectId, charCount, coverPath, sheetPath, pagePaths, exported }, null, 2),
   )
 
-  const share = await api('POST', `/v1/projects/${projectId}/export-share`, {})
+  const share = await api('POST', `/v1/projects/${projectId}/export-share`, {
+    coverPath: path.join(OUT, 'cover.png'),
+  })
   console.log('gallery preview:', share.url)
 }
 

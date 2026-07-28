@@ -486,20 +486,51 @@ export class EraAgentRuntime {
     }
   }
 
+  private async readShareImageFromPath(
+    coverPath: string,
+    name = 'cover.png',
+  ): Promise<{ name: string; dataUrl: string } | null> {
+    try {
+      const resolved = path.resolve(coverPath)
+      const buf = await fs.readFile(resolved)
+      return {
+        name,
+        dataUrl: `data:image/png;base64,${buf.toString('base64')}`,
+      }
+    } catch {
+      return null
+    }
+  }
+
   /** 导出各页 PNG + 拼图并上传 Supabase，返回 GitHub Pages 预览/下载页 URL（供用户在线预览并下载原图） */
-  async createExportShare(projectId: string, pages?: number[]) {
+  async createExportShare(
+    projectId: string,
+    options?: { pages?: number[]; coverPath?: string },
+  ) {
     const project = this.requireProject(projectId)
+    const pages = options?.pages
     const { images, sheet } = await this.runBridgeExport(projectId, pages)
     const shareImages = images.map((image) => ({
       name: image.name,
       dataUrl: `data:image/png;base64,${image.base64}`,
     }))
-    const shareSheet = sheet?.base64
-      ? {
-          name: sheet.name || 'graphic-review-sheet.png',
-          dataUrl: `data:image/png;base64,${sheet.base64}`,
-        }
+    const meta = (project.snapshot.meta ?? {}) as Record<string, unknown>
+    const resolvedCoverPath =
+      options?.coverPath ??
+      (typeof meta.coverPath === 'string' ? meta.coverPath : undefined)
+    const shareCover = resolvedCoverPath
+      ? await this.readShareImageFromPath(resolvedCoverPath)
       : null
+    const shareSheet =
+      sheet?.base64 && !resolvedCoverPath
+        ? {
+            name: sheet.name || 'graphic-review-sheet.png',
+            dataUrl: `data:image/png;base64,${sheet.base64}`,
+          }
+        : null
+    if (shareCover) {
+      shareImages.unshift({ name: shareCover.name, dataUrl: shareCover.dataUrl })
+    }
     const config = (project.snapshot.config ?? {}) as Record<string, unknown>
     const aspectRatio =
       typeof config.aspectRatio === 'string' ? (config.aspectRatio as string) : undefined
@@ -516,6 +547,7 @@ export class EraAgentRuntime {
       shareId: shared.shareId,
       url: shared.url,
       count: shareImages.length,
+      hasCover: Boolean(shareCover),
       expiresAt: shared.record.expires_at,
     }
   }

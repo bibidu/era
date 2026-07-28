@@ -374,12 +374,12 @@ function buildLibraryImages() {
 
 function buildPreviewImages(record) {
   const list = [];
-  if (record.sheet?.dataUrl) {
-    list.push({ src: record.sheet.dataUrl, file: record.sheet.name || 'graphic-review-sheet.png', blob: null });
-  }
   (record.images || []).forEach((img) => {
     list.push({ src: img.dataUrl, file: img.name, blob: null });
   });
+  if (record.sheet?.dataUrl && !(record.images || []).some((img) => img.name === 'cover.png')) {
+    list.push({ src: record.sheet.dataUrl, file: record.sheet.name || 'graphic-review-sheet.png', blob: null });
+  }
   return list;
 }
 

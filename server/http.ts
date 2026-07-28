@@ -125,7 +125,12 @@ export function createAgentApp() {
     asyncHandler(async (req, res) => {
       res
         .status(201)
-        .json(await runtime.createExportShare(req.params.projectId, req.body?.pages))
+        .json(
+          await runtime.createExportShare(req.params.projectId, {
+            pages: req.body?.pages,
+            coverPath: req.body?.coverPath,
+          }),
+        )
     }),
   )
 

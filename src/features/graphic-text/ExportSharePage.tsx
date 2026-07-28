@@ -45,9 +45,10 @@ export function ExportSharePage({ shareId }: { shareId?: string | null }) {
   }, [load])
 
   const pages: ExportShareImage[] = record?.images ?? []
+  const hasCover = pages[0]?.name === 'cover.png'
 
   const handleDownloadAll = useCallback(async () => {
-    const list = record?.images ?? []
+    const list = pages
     if (!list.length) return
     setDownloadingAll(true)
     try {
@@ -59,7 +60,7 @@ export function ExportSharePage({ shareId }: { shareId?: string | null }) {
     } finally {
       setDownloadingAll(false)
     }
-  }, [record])
+  }, [pages])
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col gap-4 bg-neutral-100 px-4 py-6">
@@ -130,11 +131,13 @@ export function ExportSharePage({ shareId }: { shareId?: string | null }) {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {pages.map((image, index) => (
               <figure
-                key={image.name}
+                key={`${image.name}-${index}`}
                 className="flex flex-col gap-2 rounded-lg border border-neutral-200 bg-white p-3"
               >
                 <figcaption className="flex items-center justify-between text-xs text-neutral-500">
-                  <span>第 {index + 1} 页</span>
+                  <span>
+                    {hasCover && index === 0 ? '封面' : `第 ${hasCover ? index : index + 1} 页`}
+                  </span>
                   <button
                     type="button"
                     onClick={() => downloadDataUrl(image.name, image.dataUrl)}
