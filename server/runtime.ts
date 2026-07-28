@@ -53,7 +53,7 @@ const DEFAULT_CONFIG = {
   titleMarginTop: 1.2,
   titleMarginBottom: 0.32,
   headingMarginTop: 0.88,
-  headingMarginBottom: 0.32,
+  headingMarginBottom: 0.82,
   codeBackgroundColor: '#F2F2F2',
   paperColor: '#FBF7ED',
   aspectRatio: '9:16',

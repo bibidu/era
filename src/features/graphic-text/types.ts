@@ -114,7 +114,8 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   titleMarginTop: 1.2,
   titleMarginBottom: 0.32,
   headingMarginTop: 0.88,
-  headingMarginBottom: 0.32,
+  /** 相对二级标题字号；0.82 ≈ 在 1080 导出宽度下较 0.32 多 30px 下间距 */
+  headingMarginBottom: 0.82,
   codeBackgroundColor: '#F2F2F2',
   paperColor: '#FBF7ED',
   aspectRatio: '9:16',
