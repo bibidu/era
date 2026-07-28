@@ -275,6 +275,7 @@
 
 <div class="footer">Era 图文工具 · bibidu/era</div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 // ── Data ──────────────────────────────────────────────
 const DATES = [
@@ -403,22 +404,38 @@ document.addEventListener('keydown', e => {
 // ── Batch download / share ────────────────────────────
 document.getElementById('btnAll').addEventListener('click', async () => {
   if (isIOS) {
+    // iOS: share one by one via Web Share API
     for (const img of allImages) {
       const filename = img.split('/').pop();
       await shareImage(img, filename);
     }
     return;
   }
-  for (let i = 0; i < allImages.length; i++) {
-    await new Promise(resolve => {
-      const a = document.createElement('a');
-      a.href = allImages[i];
-      a.download = allImages[i].split('/').pop();
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(resolve, 400);
-    });
+
+  // Non-iOS: pack all images into a single ZIP and download
+  const btn = document.getElementById('btnAll');
+  const originalLabel = document.getElementById('btnAllLabel').textContent;
+  btn.disabled = true;
+  document.getElementById('btnAllLabel').textContent = '打包中，请稍候…';
+
+  try {
+    const zip = new JSZip();
+    await Promise.all(allImages.map(async src => {
+      const resp = await fetch(src);
+      const blob = await resp.blob();
+      zip.file(src.split('/').pop(), blob);
+    }));
+    const content = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(content);
+    a.download = 'era-gallery.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  } finally {
+    btn.disabled = false;
+    document.getElementById('btnAllLabel').textContent = originalLabel;
   }
 });
 </script>
