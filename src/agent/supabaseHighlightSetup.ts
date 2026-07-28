@@ -210,8 +210,8 @@ export interface CreateExportShareInput {
 
 export function exportSharePagesUrl(shareId: string, pagesBase = ERA_GITHUB_PAGES_BASE) {
   const base = pagesBase.endsWith('/') ? pagesBase : `${pagesBase}/`
-  const url = new URL(base)
-  url.searchParams.set('exportShare', '1')
+  const url = new URL('gallery/', base)
+  url.searchParams.set('tab', 'preview')
   url.searchParams.set('shareId', shareId)
   return url.toString()
 }
