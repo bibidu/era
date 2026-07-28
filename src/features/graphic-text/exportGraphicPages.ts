@@ -19,7 +19,7 @@ import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { getFontById } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
 import { buildCharHighlightColorSegments, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
-import { parseGlyphEmphasis, resolveGlyphSizePx, measureEmphasisAdvance } from './glyphEmphasis'
+import { parseGlyphEmphasis, resolveGlyphSizePx, measureEmphasisAdvance, measureEmphasisVisualAdvance } from './glyphEmphasis'
 import { blockHasHighlightInMap, resolveBlockHighlightColor } from './highlightColors'
 import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
 import {
@@ -85,14 +85,28 @@ function measureGlyphAdvance(
   fontSize: number,
   emphasisRaw: string | undefined,
   exportScale: number,
+  fitScale = 1,
+  visualForSafeFit = false,
 ) {
   const emphasis = parseGlyphEmphasis(emphasisRaw)
-  if (!emphasis) return ctx.measureText(char).width
+  if (!emphasis) {
+    const scaled = fontSize * (Number.isFinite(fitScale) && fitScale > 0 ? fitScale : 1)
+    if (Math.abs(scaled - fontSize) > 0.01) {
+      const prev = ctx.font
+      const weightSize = prev.match(/^(\d+)\s+([\d.]+)px\s+/)
+      const weight = weightSize?.[1] ?? '700'
+      ctx.font = `${weight} ${scaled}px ${prev.replace(/^\d+\s+[\d.]+px\s+/, '')}`
+      const w = ctx.measureText(char).width
+      ctx.font = prev
+      return w
+    }
+    return ctx.measureText(char).width
+  }
 
   const prev = ctx.font
   const weightSize = prev.match(/^(\d+)\s+([\d.]+)px\s+/)
   const weight = weightSize?.[1] ?? '700'
-  const sizePx = resolveGlyphSizePx(emphasis, fontSize, exportScale)
+  const sizePx = resolveGlyphSizePx(emphasis, fontSize, exportScale, fitScale)
 
   ctx.font = `${weight} ${sizePx}px ${emphasis.fontFamily}`
   let natural = ctx.measureText(char).width
@@ -105,7 +119,9 @@ function measureGlyphAdvance(
   }
   ctx.font = prev
 
-  return measureEmphasisAdvance(natural, emphasis, sizePx)
+  return visualForSafeFit
+    ? measureEmphasisVisualAdvance(natural, emphasis, sizePx)
+    : measureEmphasisAdvance(natural, emphasis, sizePx)
 }
 
 function drawStyledLine(
@@ -127,11 +143,13 @@ function drawStyledLine(
   textColorSegments: LineSegment[] = [],
   glyphEmphasis: Readonly<Record<string, string>> = {},
   exportScale = 1,
+  fitScale = 1,
 ) {
   const paddingX = 4
   const plainText = stripHighlightMarkers(text)
   const chars = [...plainText]
   const hasEmphasis = chars.some((_, i) => glyphEmphasis[`${blockId}:${charOffset + i}`])
+  const effectiveFit = Number.isFinite(fitScale) && fitScale > 0 ? fitScale : 1
   ctx.textBaseline = 'alphabetic'
   const textMetrics = ctx.measureText(plainText || '文')
   const ascent = textMetrics.actualBoundingBoxAscent ?? fontSize * 0.88
@@ -147,6 +165,7 @@ function drawStyledLine(
       fontSize,
       glyphEmphasis[`${blockId}:${charOffset + i}`],
       exportScale,
+      effectiveFit,
     ),
   )
 
@@ -191,7 +210,7 @@ function drawStyledLine(
       if (emphasis) {
         const weightSize = baseFont.match(/^(\d+)\s+([\d.]+)px\s+/)
         const weight = weightSize?.[1] ?? '700'
-        const sizePx = resolveGlyphSizePx(emphasis, fontSize, exportScale)
+        const sizePx = resolveGlyphSizePx(emphasis, fontSize, exportScale, effectiveFit)
         const fillColor = (enableHighlight && colorAt[i]) || emphasis.color || textColor
         ctx.fillStyle = fillColor
         const visualCenterX = drawX + advance / 2
@@ -484,6 +503,41 @@ async function drawPage(
     codeBlockFrame = null
   }
 
+  const titleContentWidth = width - safeX * 2
+  // 本页标题共用 fitScale：以最宽行压入安全区，再逐行水平居中
+  let pageTitleFitScale = 1
+  {
+    const prevFont = ctx.font
+    let maxTitleWidth = 0
+    for (const titleBlock of page.blocks) {
+      if (resolveStyleType(titleBlock) !== 'title') continue
+      const titleSpec = blockSpec(titleBlock, config, exportScale)
+      ctx.font = `${titleSpec.weight} ${titleSpec.size}px ${titleSpec.fontFamily}`
+      const titleBlockId = titleBlock.sourceBlockId ?? titleBlock.id
+      const titleOffset = titleBlock.charOffset ?? 0
+      const titlePlain = stripHighlightMarkers(titleBlock.text)
+      const lineWidth = [...titlePlain].reduce((sum, ch, i) => {
+        return (
+          sum +
+          measureGlyphAdvance(
+            ctx,
+            ch,
+            titleSpec.size,
+            glyphEmphasis[`${titleBlockId}:${titleOffset + i}`],
+            exportScale,
+            1,
+            true,
+          )
+        )
+      }, 0)
+      maxTitleWidth = Math.max(maxTitleWidth, lineWidth)
+    }
+    ctx.font = prevFont
+    if (maxTitleWidth > titleContentWidth && maxTitleWidth > 0) {
+      pageTitleFitScale = titleContentWidth / maxTitleWidth
+    }
+  }
+
   for (const block of page.blocks) {
     const styleType = resolveStyleType(block)
 
@@ -585,6 +639,45 @@ async function drawPage(
       config.titlePrimaryColor
         ? config.titlePrimaryColor
         : null
+    const titleFitScale = styleType === 'title' ? pageTitleFitScale : 1
+    let drawX = safeX + inset
+    if (styleType === 'title') {
+      const prevFont = ctx.font
+      ctx.font = `${spec.weight} ${spec.size}px ${spec.fontFamily}`
+      // 用视觉宽计算居中起点，避免 scale 后字形偏出安全区
+      const visualWidth = [...plainText].reduce((sum, ch, i) => {
+        return (
+          sum +
+          measureGlyphAdvance(
+            ctx,
+            ch,
+            spec.size,
+            glyphEmphasis[`${blockId}:${charOffset + i}`],
+            exportScale,
+            titleFitScale,
+            true,
+          )
+        )
+      }, 0)
+      // 实际排版仍按槽宽推进；先按视觉宽算居中，再微调到槽宽中心
+      const slotWidth = [...plainText].reduce((sum, ch, i) => {
+        return (
+          sum +
+          measureGlyphAdvance(
+            ctx,
+            ch,
+            spec.size,
+            glyphEmphasis[`${blockId}:${charOffset + i}`],
+            exportScale,
+            titleFitScale,
+            false,
+          )
+        )
+      }, 0)
+      const visualX = safeX + Math.max(0, (titleContentWidth - visualWidth) / 2)
+      drawX = visualX + Math.max(0, (visualWidth - slotWidth) / 2)
+      ctx.font = prevFont
+    }
     drawStyledLine(
       ctx,
       block.text,
@@ -595,7 +688,7 @@ async function drawPage(
       handUnderlineColors,
       HAND_DRAWN_UNDERLINE_TILE_WIDTH * exportScale,
       circleColors,
-      safeX + inset,
+      drawX,
       y,
       spec.size,
       enableHighlight,
@@ -604,6 +697,7 @@ async function drawPage(
       textColorSegments,
       glyphEmphasis,
       exportScale,
+      titleFitScale,
     )
     y += lineHeight
 

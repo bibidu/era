@@ -8,7 +8,7 @@ import { DEFAULT_IMAGE_MARGIN, parseScopedMarkdown } from './document'
 import { getFontConfigForStyleType } from './graphicTextFonts'
 import { measureImageLayoutSize } from './imageAsset'
 import { stripHighlightMarkers } from './inlineHighlight'
-import { stripTitleBreakMarkers, titlePlainText, parseGlyphEmphasis, resolveGlyphSizePx, measureEmphasisAdvance } from './glyphEmphasis'
+import { stripTitleBreakMarkers, titlePlainText, parseGlyphEmphasis, resolveGlyphSizePx, measureEmphasisAdvance, measureEmphasisVisualAdvance } from './glyphEmphasis'
 import {
   CODE_HORIZONTAL_PADDING_SCALE,
   estimateCodeLineWidth,
@@ -61,6 +61,7 @@ interface LayoutLine {
   charOffset: number
   titleSentenceIndex?: number
   titleFontSizeOverride?: number
+  titleFitScale?: number
   imageUrl?: string
   imageWidth?: number
   imageHeight?: number
@@ -357,6 +358,77 @@ function blockToLayoutLines(
     const explicitBreaks = /[|\n]/.test(rawPlain)
     const sentences = splitTitleSentences(rawPlain)
     const lines: LayoutLine[] = []
+    const availableWidth = layout.pageWidth - layout.safeX * 2
+    const emphasisMap = config.glyphEmphasis ?? {}
+    const primary = fontFamily.replace(/"/g, '').split(',')[0].trim()
+
+    const measureTitleSentenceWidth = (
+      sentence: string,
+      charOffset: number,
+      lineSizePx: number,
+      fitScale: number,
+      ctx: CanvasRenderingContext2D | null,
+    ) => {
+      if (!ctx) {
+        // 无 DOM 时按 widthEm/字号粗估
+        let total = 0
+        const chars = [...sentence]
+        for (let i = 0; i < chars.length; i += 1) {
+          const emphasis = parseGlyphEmphasis(emphasisMap[`${block.id}:${charOffset + i}`])
+          const sizePx = resolveGlyphSizePx(emphasis, lineSizePx, layout.exportScale, fitScale)
+          if (emphasis?.widthEm != null) {
+            const slot = emphasis.widthEm * sizePx
+            const visual = sizePx * Math.max(emphasis.scaleX, 1)
+            total += Math.max(slot, visual)
+          } else total += sizePx
+        }
+        return total
+      }
+      let total = 0
+      const chars = [...sentence]
+      for (let i = 0; i < chars.length; i += 1) {
+        const emphasis = parseGlyphEmphasis(emphasisMap[`${block.id}:${charOffset + i}`])
+        if (emphasis) {
+          const sizePx = resolveGlyphSizePx(emphasis, lineSizePx, layout.exportScale, fitScale)
+          ctx.font = `${fontWeight} ${sizePx}px ${emphasis.fontFamily}`
+          let natural = ctx.measureText(chars[i]).width
+          if (!(natural > 1)) {
+            ctx.font = `${fontWeight} ${sizePx}px ${primary}`
+            natural = ctx.measureText(chars[i]).width || sizePx
+          }
+          total += measureEmphasisVisualAdvance(natural, emphasis, sizePx)
+        } else {
+          const sizePx = lineSizePx * fitScale
+          ctx.font = `${fontWeight} ${sizePx}px ${primary}`
+          total += ctx.measureText(chars[i]).width
+        }
+      }
+      return total
+    }
+
+    // 显式换行标题：先量自然宽，再整段共用同一 fitScale，保证左右边距对称
+    let titleFitScale = 1
+    if (explicitBreaks) {
+      const ctx =
+        typeof document !== 'undefined' ? document.createElement('canvas').getContext('2d') : null
+      let offset = 0
+      let maxWidth = 0
+      for (const sentence of sentences) {
+        const effectiveSentenceIndex = /^[「（(]/.test(sentence.trim()) ? 1 : 0
+        const sentenceBlock: MarkdownBlock = {
+          ...block,
+          text: sentence,
+          titleSentenceIndex: effectiveSentenceIndex,
+        }
+        const size = blockFontSize(sentenceBlock, config, layout.exportScale)
+        maxWidth = Math.max(maxWidth, measureTitleSentenceWidth(sentence, offset, size, 1, ctx))
+        offset += [...sentence].length
+      }
+      if (maxWidth > availableWidth && maxWidth > 0) {
+        titleFitScale = availableWidth / maxWidth
+      }
+    }
+
     let charOffset = 0
     let lineIndex = 0
 
@@ -372,57 +444,38 @@ function blockToLayoutLines(
         ...block,
         text: sentence,
         titleSentenceIndex: effectiveSentenceIndex,
+        titleFitScale: explicitBreaks ? titleFitScale : undefined,
       }
-      const availableWidth = layout.pageWidth - layout.safeX * 2
       let size = blockFontSize(sentenceBlock, config, layout.exportScale)
 
-      // 显式换行：禁止再按宽度折行；若超宽则缩小该行字号以单行放下
-      // 测量须计入 glyphEmphasis 的 scaleX + 侧向空隙，否则缩完仍会挤在一起
+      // 显式换行：禁止再按宽度折行；无逐字 widthEm 时仍可单独压主字号兜底
       let wrapped: string[]
       if (explicitBreaks) {
-        if (typeof document !== 'undefined') {
+        if (titleFitScale >= 0.999 && typeof document !== 'undefined') {
           const ctx = document.createElement('canvas').getContext('2d')
           if (ctx) {
-            const primary = fontFamily.replace(/"/g, '').split(',')[0].trim()
-            const emphasisMap = config.glyphEmphasis ?? {}
-            const hasWidthEm = [...sentence].some((_, i) => {
-              const emph = parseGlyphEmphasis(emphasisMap[`${block.id}:${charOffset + i}`])
-              return emph?.widthEm != null
-            })
-            const measureLine = (fitPx: number) => {
-              let total = 0
-              const chars = [...sentence]
-              // fitPx 是整行缩放后的主字号；有 widthEm 时按设计字号*当前缩放比测量
-              const scaleRatio = size > 0 ? fitPx / size : 1
-              for (let i = 0; i < chars.length; i += 1) {
-                const key = `${block.id}:${charOffset + i}`
-                const emphasis = parseGlyphEmphasis(emphasisMap[key])
-                if (emphasis) {
-                  const sizePx = emphasis.fontSize != null
-                    ? emphasis.fontSize * layout.exportScale * scaleRatio
-                    : fitPx
-                  ctx.font = `${fontWeight} ${sizePx}px ${emphasis.fontFamily}`
-                  let natural = ctx.measureText(chars[i]).width
-                  if (!(natural > 1)) {
-                    ctx.font = `${fontWeight} ${sizePx}px ${primary}`
-                    natural = ctx.measureText(chars[i]).width || sizePx
-                  }
-                  total += measureEmphasisAdvance(natural, emphasis, sizePx)
-                } else {
-                  ctx.font = `${fontWeight} ${fitPx}px ${primary}`
-                  total += ctx.measureText(chars[i]).width
-                }
-              }
-              return total
-            }
-            // TitleAdjust 已手调宽度：不再整体压字号
-            if (!hasWidthEm) {
+            const natural = measureTitleSentenceWidth(sentence, charOffset, size, 1, ctx)
+            if (natural > availableWidth + 6) {
               let fit = size
               while (fit > 24 * layout.exportScale) {
-                if (measureLine(fit) <= availableWidth + 6) break
+                const w = measureTitleSentenceWidth(
+                  sentence,
+                  charOffset,
+                  fit,
+                  1,
+                  ctx,
+                )
+                // 当无 per-char fontSize 时，lineSize 变化即缩放
+                if (w <= availableWidth + 6) break
+                // 有 per-char fontSize 时改走 titleFitScale；此处再算一次比例
                 fit -= layout.exportScale
               }
-              if (fit < size) {
+              // 若该行仍超宽且尚未用 titleFitScale，回退到字号 override
+              const hasPerCharSize = [...sentence].some((_, i) => {
+                const emph = parseGlyphEmphasis(emphasisMap[`${block.id}:${charOffset + i}`])
+                return emph?.fontSize != null || emph?.widthEm != null
+              })
+              if (!hasPerCharSize && fit < size) {
                 const override = fit / layout.exportScale
                 sentenceBlock = { ...sentenceBlock, titleFontSizeOverride: override }
                 size = fit
@@ -440,15 +493,15 @@ function blockToLayoutLines(
           availableWidth,
         )
       }
-      let lineHeight = blockLineHeight(sentenceBlock, config, layout.exportScale)
-      const emphasisMapForLine = config.glyphEmphasis ?? {}
+      const fitScale = sentenceBlock.titleFitScale ?? 1
+      let lineHeight = blockLineHeight(sentenceBlock, config, layout.exportScale) * fitScale
       const sentenceChars = [...sentence]
       let maxGlyphHeight = 0
-      let maxGlyphSize = size
+      let maxGlyphSize = size * fitScale
       for (let i = 0; i < sentenceChars.length; i += 1) {
-        const emph = parseGlyphEmphasis(emphasisMapForLine[`${block.id}:${charOffset + i}`])
+        const emph = parseGlyphEmphasis(emphasisMap[`${block.id}:${charOffset + i}`])
         if (!emph) continue
-        const gSize = resolveGlyphSizePx(emph, size, layout.exportScale)
+        const gSize = resolveGlyphSizePx(emph, size, layout.exportScale, fitScale)
         maxGlyphSize = Math.max(maxGlyphSize, gSize)
         maxGlyphHeight = Math.max(maxGlyphHeight, gSize * Math.max(emph.scaleY, 1))
       }
@@ -491,6 +544,7 @@ function blockToLayoutLines(
           charOffset,
           titleSentenceIndex: effectiveSentenceIndex,
           titleFontSizeOverride: sentenceBlock.titleFontSizeOverride,
+          titleFitScale: sentenceBlock.titleFitScale,
         })
         charOffset += [...lineText].length
         lineIndex += 1
@@ -582,6 +636,7 @@ function layoutLinesToBlocks(lines: LayoutLine[]): MarkdownBlock[] {
     charOffset: line.charOffset,
     titleFontSizeOverride: line.titleFontSizeOverride,
     titleSentenceIndex: line.titleSentenceIndex,
+    titleFitScale: line.titleFitScale,
     lineHeightOverride: line.lineHeight,
     imageUrl: line.imageUrl,
     imageWidth: line.imageWidth,

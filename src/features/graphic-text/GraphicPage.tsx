@@ -159,17 +159,24 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
       Number.isFinite(config.titleLineGapEm) &&
       (block.styleType ?? block.type) === 'title' &&
       !block.isBlockEnd
-        ? `calc(${titleSize} * ${config.titleLineGapEm})`
+        ? `calc(${titleSize} * ${config.titleLineGapEm} * ${block.titleFitScale ?? 1})`
         : marginBottom
+    const fitScale =
+      typeof block.titleFitScale === 'number' && block.titleFitScale > 0
+        ? block.titleFitScale
+        : 1
     return {
       fontFamily,
-      fontSize: titleSize,
+      fontSize:
+        fitScale < 0.999 ? `calc(${titleSize} * ${fitScale})` : titleSize,
       lineHeight: config.titleLineHeight,
       fontWeight: 700,
       color: primaryColor,
+      textAlign: 'center' as const,
       marginTop:
         block.type === 'title' ? `calc(${titleSize} * ${config.titleMarginTop})` : undefined,
       marginBottom: continuedTitleGap,
+      ['--title-fit-scale' as string]: String(fitScale),
     }
   }
   if (styleType === 'heading') {
@@ -307,7 +314,7 @@ function BrushUnderlineSegments({
                       fontFamily: emphasis.fontFamily,
                       fontSize:
                         emphasis.fontSize != null
-                          ? `${(emphasis.fontSize / 360) * 100}cqw`
+                          ? `calc(${(emphasis.fontSize / 360) * 100}cqw * var(--title-fit-scale, 1))`
                           : undefined,
                       color: emphasis.color || undefined,
                       transform: `scale(${emphasis.scaleX}, ${emphasis.scaleY})`,
@@ -322,7 +329,7 @@ function BrushUnderlineSegments({
                       fontFamily: emphasis.fontFamily,
                       fontSize:
                         emphasis.fontSize != null
-                          ? `${(emphasis.fontSize / 360) * 100}cqw`
+                          ? `calc(${(emphasis.fontSize / 360) * 100}cqw * var(--title-fit-scale, 1))`
                           : undefined,
                       color: emphasis.color || undefined,
                       transform: `scale(${emphasis.scaleX}, ${emphasis.scaleY})`,

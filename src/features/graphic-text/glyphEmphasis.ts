@@ -64,14 +64,16 @@ export function resolveGlyphSizePx(
   emphasis: GlyphEmphasisStyle | null,
   lineFontSizePx: number,
   exportScale: number,
+  fitScale = 1,
 ) {
+  const scale = Number.isFinite(fitScale) && fitScale > 0 ? fitScale : 1
   if (emphasis?.fontSize != null && Number.isFinite(emphasis.fontSize)) {
-    return emphasis.fontSize * exportScale
+    return emphasis.fontSize * exportScale * scale
   }
-  return lineFontSizePx
+  return lineFontSizePx * scale
 }
 
-/** 单字占位前进宽度 */
+/** 单字占位前进宽度（排版槽）。有 widthEm 时以槽宽为准。 */
 export function measureEmphasisAdvance(
   naturalWidth: number,
   emphasis: GlyphEmphasisStyle,
@@ -83,6 +85,21 @@ export function measureEmphasisAdvance(
   const visual = naturalWidth * emphasis.scaleX
   const sideGap = sizePx * GLYPH_EMPHASIS_SIDE_GAP_RATIO
   return visual + sideGap * 2
+}
+
+/**
+ * 安全区适配用的视觉宽：scale 后字形可能宽于 widthEm 槽，
+ * 取槽宽与视觉宽的较大值，避免贴边时字形溢出安全区。
+ */
+export function measureEmphasisVisualAdvance(
+  naturalWidth: number,
+  emphasis: GlyphEmphasisStyle,
+  sizePx: number,
+) {
+  const slot = measureEmphasisAdvance(naturalWidth, emphasis, sizePx)
+  if (emphasis.widthEm == null) return slot
+  const visual = Math.max(naturalWidth, sizePx * 0.85) * emphasis.scaleX
+  return Math.max(slot, visual)
 }
 
 /** 标题强制换行标记（不计入高亮字符下标） */

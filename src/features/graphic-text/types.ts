@@ -86,6 +86,11 @@ export interface MarkdownBlock {
   titleSentenceIndex?: number
   /** 显式换行标题行：按行适配后的字号（导出坐标） */
   titleFontSizeOverride?: number
+  /**
+   * 标题落入安全区的等比缩放（≤1）。
+   * 有逐字 widthEm/fontSize 时，整段标题共用同一系数，保证左右边距一致。
+   */
+  titleFitScale?: number
   /** 布局算出的行盒高度（含强调字 scaleY / 行距）；导出优先使用 */
   lineHeightOverride?: number
   imageUrl?: string

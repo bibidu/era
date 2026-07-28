@@ -61,7 +61,7 @@ function InteractiveChar({
             fontFamily: emphasis.fontFamily,
             fontSize:
               emphasis.fontSize != null
-                ? `${(emphasis.fontSize / 360) * 100}cqw`
+                ? `calc(${(emphasis.fontSize / 360) * 100}cqw * var(--title-fit-scale, 1))`
                 : undefined,
             transform: `scale(${emphasis.scaleX}, ${emphasis.scaleY})`,
             transformOrigin: 'center center',
@@ -75,7 +75,7 @@ function InteractiveChar({
             fontFamily: emphasis.fontFamily,
             fontSize:
               emphasis.fontSize != null
-                ? `${(emphasis.fontSize / 360) * 100}cqw`
+                ? `calc(${(emphasis.fontSize / 360) * 100}cqw * var(--title-fit-scale, 1))`
                 : undefined,
             transform: `scale(${emphasis.scaleX}, ${emphasis.scaleY})`,
             transformOrigin: 'center center',
