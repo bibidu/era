@@ -32,7 +32,7 @@ description: >-
 
 **字体（非风水默认）**：非风水生成时，**二级标题（`##` / heading）默认使用阿里妈妈数黑体**（`headingFontId`: `shuheiti`，`headingFontFamily`: `"Alimama ShuHeiTi", sans-serif`）。一级标题与正文保持工程默认（通常为宋体），除非用户另指定。建工程或改模板时用 `era_update_config` / `era_create_project` 的 `config` 一并写入。
 
-**风水风格特例**：若用户提到「风水」「风水风格」「风水质感」等，**直接**使用风水模板（`pageOverlay: 'fengshui'`），并**固定抖音尺寸**（`aspectRatio: '9:16'`），同时 **关闭「全文 xxx 字」**（`showWordCount: false`），无需再问导出平台（除非用户另指定小红书）。风水风格**不要**套用数黑体，二级标题保持宋体。
+**风水风格特例**：若用户提到「风水」「风水风格」「风水质感」等，**直接**使用风水模板（`pageOverlay: 'fengshui'`），并**固定抖音尺寸**（`aspectRatio: '9:16'`），同时 **关闭「全文 xxx 字」**（`showWordCount: false`），**顶部文案固定为** `连续观看、点赞、关注，你也是地理风水达人（阳宅篇）`（写入 `topText`）；无需再问导出平台（除非用户另指定小红书）。风水风格**不要**套用数黑体，二级标题保持宋体。
 
 ---
 
@@ -48,7 +48,7 @@ description: >-
 固定 **风水模板**（`pageOverlay: 'fengshui'`）+ **抖音尺寸**（`aspectRatio: '9:16'`）+ **关闭「全文 xxx 字」**（`showWordCount: false`）；标题随内容图一起出，无需另用封面 skill；除非用户另指定小红书，否则跳过导出平台询问。
 
 1. **收集选题**：用户未给标题/大纲 → 主动询问，拿到前不要写正文。
-2. **正文（多轮确认）**：据标题/大纲写含 `#` 一级标题与适量 `##` 的 Markdown，展示后明确询问是否继续；改完再展示再问；确认后 `era_create_project` / `era_set_markdown`（`pageOverlay: 'fengshui'` + `9:16` + `showWordCount: false`，**不写** `shuheiti`）。
+2. **正文（多轮确认）**：据标题/大纲写含 `#` 一级标题与适量 `##` 的 Markdown，展示后明确询问是否继续；改完再展示再问；确认后 `era_create_project` / `era_set_markdown`（`pageOverlay: 'fengshui'` + `9:16` + `showWordCount: false` + `topText: '连续观看、点赞、关注，你也是地理风水达人（阳宅篇）'`，**不写** `shuheiti`）。
 3. **社媒标题（5 个 + 确认）**：给 5 个抓眼球、贴合正文的标题；技术名词首字母大写（`Memory`/`Agent`/`Token`）；用户选定后 `era_set_title`。
 4. **高亮**：按 **§高亮** 流程（优先设置页）。
 5. **校验与导出**：按 **§校验与导出**。
@@ -174,12 +174,14 @@ description: >-
 
 ### 密度与语义（自动高亮或代改时最重要）
 
-- **宁少勿多**：每页点睛即可，勿刷满。
+- **宁少勿多**：不要整页刷满；每页有点睛即可，避免密集。
+- **一页最多 3 处计入密度的高亮**（一处 = 一个连续高亮片段；含 brush/underline/circle 任一）。**列表 li 子标题整组高亮不计入**（见下条）。极个别页面信息密度极高时才可放宽。
 - **必须结合段落语义**选词：只标真正改变理解的关键词/结论句；禁止机械均匀撒点或只标收尾几字充数。
-- **二级标题（`##`）不要任何高亮**。
-- **列表 `li`**：如需高亮，**样式必须用笔刷（brush）**，全篇 li 高亮样式与颜色统一；**只刷「标题：说明」中冒号前的短标题**，冒号后的解释不刷；无冒号时只刷开头最短可辨认的专名/标签。
-- **一句话/两句话重点**：优先下划线；页面不密时可下划线 + 笔刷叠加（同色）。
-- （封面标题的画圈规则由封面 skill 负责；风水流程仍要求一级标题至少一处画圈。）
+- **二级标题（`##` / heading）不要任何高亮**。
+- **列表 `ul/li` 子标题连同规则**：同一小节下连续的「子标题：说明」列表，若要高亮须**整组同开同关**（样式与颜色完全一致）；只高亮冒号前子标题；整组 li 子标题高亮**不计入**「一页最多 3 处」。
+- **一句话/两句话重点**：可用下划线；不密时可下划线 + 笔刷叠加（**必须同色**）。
+- **一级标题（风水）**：默认至少一处画圈；若用户禁止画圈，可用 `titlePrimaryColor` 或文字色 `color` 代替。
+- （非风水封面标题的画圈规则由封面 skill 负责。）
 
 写入：`era_apply_highlights`（建议 `replace: true` 先清空再写）。
 
@@ -191,7 +193,7 @@ description: >-
 
 1. `era_update_config` 设 `aspectRatio`（保持当前模板：默认 `pageOverlay: 'pixel'` + 二级标题 `shuheiti`；风水风格用 `fengshui` 且 `showWordCount: false`、二级标题不用数黑体；`titleLineHeight` 不过松）
 2. `era_preview_layout`
-3. 若有告警必须先修再导出（非风水内容图忽略标题类告警）：单行溢出、孤行、独行标点、画圈跨行、高亮颜色超 3 种、行高过松、字号过小等
+3. 若有告警必须先修再导出（非风水内容图忽略标题类告警）：单行溢出、孤行、独行标点、画圈跨行、高亮颜色超 3 种、**一页计入密度的高亮超 3 处**（li 子标题整组除外）、行高过松、字号过小；标题缺画圈时可用 `titlePrimaryColor` / 文字色 `color` 豁免
 4. 通过后再 `era_export_images`（写出各页 PNG + 横向拼图 `graphic-review-sheet.png`，返回 `sheetPath` / `reviewSheet`）
 
 ---
@@ -226,7 +228,8 @@ description: >-
 | 建工程 | `era_create_project` · `POST /v1/projects` |
 | 写正文（内容图去掉 H1） | `era_set_markdown` · `PUT .../markdown` |
 | 写标题（风水流程） | `era_set_title` · `PUT .../title` |
-| 画幅/模板/字体 | `era_update_config` · `PATCH .../config`（`pageOverlay: 'pixel'` + 二级标题 `shuheiti`；风水 `fengshui` + `9:16` + `showWordCount: false`，二级标题保持宋体） |
+| 画幅/模板/字体 | `era_update_config` · `PATCH .../config`（`pageOverlay: 'pixel'` + 二级标题 `shuheiti`；风水 `fengshui` + `9:16` + `showWordCount: false` + 固定 `topText`，二级标题保持宋体） |
+| 顶部文案 | 风水模板 `topText` 固定为「连续观看、点赞、关注，你也是地理风水达人（阳宅篇）」 |
 | 图片混排 | markdown 整行 `![alt](url =宽x高)`（url 支持远程或 dataURL） |
 | GitHub 仓库卡片 | `node scripts/generate-github-repo-card.mjs --repo owner/name` |
 | 高亮 | `era_apply_highlights` · `POST .../highlights`（可带 `replace: true`） |

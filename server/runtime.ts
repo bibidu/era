@@ -41,6 +41,8 @@ const DEFAULT_CONFIG = {
   codeFontId: 'menlo',
   codeFontFamily: 'Menlo, monospace',
   titleFontSize: 56,
+  titleSecondaryFontSize: 40,
+  titlePrimaryColor: '',
   headingFontSize: 20,
   bodyFontSize: 13,
   codeFontSize: 12,

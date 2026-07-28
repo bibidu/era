@@ -44,6 +44,7 @@ import { PagePixelOverlay } from './PagePixelOverlay'
 import { PageWiremeshOverlay } from './PageWiremeshOverlay'
 import { shouldDrawPageOverlay } from './pageLayering'
 import { resolveTopBarParts } from './topBar'
+import { FENGSHUI_TOP_BAR_LINE_COLOR, FENGSHUI_TOP_BAR_TEXT_COLOR } from './pageFengshuiTokens'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 
 interface GraphicPageProps {
@@ -104,7 +105,11 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
   const styleType = resolveStyleType(block)
   const bodyUnit = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const codeUnit = `${(config.codeFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
-  const titleUnit = `${(config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
+  const titleFontPx =
+    (block.titleSentenceIndex ?? 0) > 0
+      ? (config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72))
+      : config.titleFontSize
+  const titleUnit = `${(titleFontPx / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const headingUnit = `${(config.headingFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const gap = '1.1cqw'
 
@@ -126,18 +131,27 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
 function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSProperties {
   const styleType = resolveStyleType(block)
   const { fontFamily } = getFontConfigForStyleType(config, styleType)
-  const titleSize = `${(config.titleFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
+  const titleFontPx =
+    (block.titleSentenceIndex ?? 0) > 0
+      ? (config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72))
+      : config.titleFontSize
+  const titleSize = `${(titleFontPx / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const headingSize = `${(config.headingFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const bodySize = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const codeSize = `${(config.codeFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const marginBottom = blockEndMargin(block, config)
 
   if (styleType === 'title') {
+    const primaryColor =
+      (block.titleSentenceIndex ?? 0) === 0 && config.titlePrimaryColor
+        ? config.titlePrimaryColor
+        : undefined
     return {
       fontFamily,
       fontSize: titleSize,
       lineHeight: config.titleLineHeight,
       fontWeight: 700,
+      color: primaryColor,
       marginTop:
         block.type === 'title' ? `calc(${titleSize} * ${config.titleMarginTop})` : undefined,
       marginBottom,
@@ -563,6 +577,10 @@ export function GraphicPage({
   const circleColors = config.circleHighlightColors
   const textColors = config.colorHighlightColors ?? {}
   const accentColor = config.highlightPickerColor
+  const isFengshui = config.pageOverlay === 'fengshui'
+  const topBarBorderColor = isFengshui ? FENGSHUI_TOP_BAR_LINE_COLOR : GRAPHIC_TOP_BAR_BORDER_COLOR
+  const topBarTextColor = isFengshui ? FENGSHUI_TOP_BAR_TEXT_COLOR : GRAPHIC_TOP_BAR_TEXT_COLOR
+  const topBarDividerColor = isFengshui ? FENGSHUI_TOP_BAR_LINE_COLOR : GRAPHIC_TOP_BAR_DIVIDER_COLOR
 
   const backgroundStyle: CSSProperties = resolvePageBackgroundStyle(config)
 
@@ -605,25 +623,25 @@ export function GraphicPage({
           top: `${percent.topBarTop}%`,
           height: `${percent.topBarHeight}%`,
           paddingBottom: '6px',
-          borderColor: GRAPHIC_TOP_BAR_BORDER_COLOR,
+          borderColor: topBarBorderColor,
         }}
       >
         {topBar.custom && topBar.countText ? (
           <>
             <span
               className="min-w-0 truncate font-normal"
-              style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px`, color: GRAPHIC_TOP_BAR_TEXT_COLOR }}
+              style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px`, color: topBarTextColor }}
             >
               {topBar.custom}
             </span>
             <span
               className="h-3 w-px shrink-0 self-center"
-              style={{ backgroundColor: GRAPHIC_TOP_BAR_DIVIDER_COLOR }}
+              style={{ backgroundColor: topBarDividerColor }}
               aria-hidden
             />
             <span
               className="shrink-0 font-normal"
-              style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px`, color: GRAPHIC_TOP_BAR_TEXT_COLOR }}
+              style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px`, color: topBarTextColor }}
             >
               {topBar.countText}
             </span>
@@ -631,14 +649,14 @@ export function GraphicPage({
         ) : topBar.custom ? (
           <span
             className="truncate font-normal"
-            style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px`, color: GRAPHIC_TOP_BAR_TEXT_COLOR }}
+            style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px`, color: topBarTextColor }}
           >
             {topBar.custom}
           </span>
         ) : topBar.countText ? (
           <span
             className="truncate font-normal"
-            style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px`, color: GRAPHIC_TOP_BAR_TEXT_COLOR }}
+            style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px`, color: topBarTextColor }}
           >
             {topBar.countText}
           </span>

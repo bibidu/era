@@ -26,6 +26,10 @@ export interface GraphicTextConfig {
   codeFontId: string
   codeFontFamily: string
   titleFontSize: number
+  /** 一级标题第二句及以后的字号（句读换行后的续句） */
+  titleSecondaryFontSize: number
+  /** 一级标题首句文字色；空则沿用默认正文色 */
+  titlePrimaryColor: string
   headingFontSize: number
   bodyFontSize: number
   codeFontSize: number
@@ -68,6 +72,8 @@ export interface MarkdownBlock {
   isBlockEnd?: boolean
   sourceBlockId?: string
   charOffset?: number
+  /** 一级标题句段：0=首句主字号，≥1=次句字号 */
+  titleSentenceIndex?: number
   imageUrl?: string
   imageWidth?: number
   imageHeight?: number
@@ -96,6 +102,8 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   codeFontId: DEFAULT_CODE_FONT_ID,
   codeFontFamily: DEFAULT_CODE_FONT_FAMILY,
   titleFontSize: 56,
+  titleSecondaryFontSize: 40,
+  titlePrimaryColor: '',
   headingFontSize: 20,
   bodyFontSize: 13,
   codeFontSize: 12,

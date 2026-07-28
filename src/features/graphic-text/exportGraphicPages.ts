@@ -25,7 +25,11 @@ import {
   drawPageGridOverlay,
   resolvePageBaseFillColor,
 } from './pageBackground'
-import { drawPageFengshuiOverlay } from './pageFengshuiTokens'
+import {
+  drawPageFengshuiOverlay,
+  FENGSHUI_TOP_BAR_LINE_COLOR,
+  FENGSHUI_TOP_BAR_TEXT_COLOR,
+} from './pageFengshuiTokens'
 import { drawPageGradientBackground } from './pageGradientTokens'
 import { drawPagePixelOverlay } from './pagePixelTokens'
 import { drawPageWiremeshOverlay } from './pageWiremeshTokens'
@@ -188,8 +192,12 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
   const styleType = resolveStyleType(block)
   const { fontFamily } = getFontConfigForStyleType(config, styleType)
   if (styleType === 'title') {
+    const titleSize =
+      (block.titleSentenceIndex ?? 0) > 0
+        ? (config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72))
+        : config.titleFontSize
     return {
-      size: config.titleFontSize * exportScale,
+      size: titleSize * exportScale,
       weight: 700,
       lineHeight: config.titleLineHeight,
       spacing: config.titleMarginBottom,
@@ -310,14 +318,19 @@ async function drawPage(
   const edgeWidth = width - safeX * 2
   const underlineY = topBarY + topBarHeight - 6
 
-  ctx.strokeStyle = GRAPHIC_TOP_BAR_BORDER_COLOR
+  const isFengshui = config.pageOverlay === 'fengshui'
+  const topBarLineColor = isFengshui ? FENGSHUI_TOP_BAR_LINE_COLOR : GRAPHIC_TOP_BAR_BORDER_COLOR
+  const topBarTextColor = isFengshui ? FENGSHUI_TOP_BAR_TEXT_COLOR : GRAPHIC_TOP_BAR_TEXT_COLOR
+  const topBarDividerColor = isFengshui ? FENGSHUI_TOP_BAR_LINE_COLOR : GRAPHIC_TOP_BAR_DIVIDER_COLOR
+
+  ctx.strokeStyle = topBarLineColor
   ctx.lineWidth = 2
   ctx.beginPath()
   ctx.moveTo(edgeX, underlineY)
   ctx.lineTo(edgeX + edgeWidth, underlineY)
   ctx.stroke()
 
-  ctx.fillStyle = GRAPHIC_TOP_BAR_TEXT_COLOR
+  ctx.fillStyle = topBarTextColor
   const topBarFontSize = Math.round(TOP_BAR_FONT_SIZE_PX * exportScale)
   ctx.font = `400 ${topBarFontSize}px ${config.bodyFontFamily}`
   ctx.textBaseline = 'bottom'
@@ -342,9 +355,9 @@ async function drawPage(
     const customWidth = ctx.measureText(customText).width
     ctx.fillText(customText, edgeX, topBarTextY)
     const dividerX = edgeX + customWidth + gap
-    ctx.fillStyle = GRAPHIC_TOP_BAR_DIVIDER_COLOR
+    ctx.fillStyle = topBarDividerColor
     ctx.fillRect(dividerX, topBarMidY - dividerHeight / 2, dividerWidth, dividerHeight)
-    ctx.fillStyle = GRAPHIC_TOP_BAR_TEXT_COLOR
+    ctx.fillStyle = topBarTextColor
     ctx.fillText(topBar.countText, dividerX + gap + dividerWidth, topBarTextY)
   } else if (topBar.custom) {
     ctx.fillText(topBar.custom, edgeX, topBarTextY, edgeWidth)
@@ -469,6 +482,12 @@ async function drawPage(
       ctx.fillRect(safeX, y, barWidth, lineHeight)
     }
 
+    const titlePrimary =
+      styleType === 'title' &&
+      (block.titleSentenceIndex ?? 0) === 0 &&
+      config.titlePrimaryColor
+        ? config.titlePrimaryColor
+        : null
     drawStyledLine(
       ctx,
       block.text,
@@ -483,7 +502,7 @@ async function drawPage(
       y,
       spec.size,
       enableHighlight,
-      styleType === 'code' ? CODE_TEXT_COLOR : GRAPHIC_PAGE_TEXT_COLOR,
+      styleType === 'code' ? CODE_TEXT_COLOR : titlePrimary || GRAPHIC_PAGE_TEXT_COLOR,
       circleLineWidth,
       textColorSegments,
     )

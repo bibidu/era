@@ -11,6 +11,15 @@ export const FENGSHUI_TOP_MIST = `rgba(${FENGSHUI_CANVAS_RGB}, 0.5)`
 export const FENGSHUI_MID_MIST = 'rgba(170, 190, 205, 0.08)'
 export const FENGSHUI_SEPIA_WASH = 'rgba(180, 205, 220, 0.06)'
 
+/** 风水图固定顶部文案（skill 约定，勿随意改） */
+export const FENGSHUI_TOP_TEXT = '连续观看、点赞、关注，你也是地理风水达人（阳宅篇）'
+
+/** 顶部文案区文字色（比默认 #525252 更淡） */
+export const FENGSHUI_TOP_BAR_TEXT_COLOR = '#A3A3A3'
+
+/** 顶部文案区底部分隔线（同步淡化） */
+export const FENGSHUI_TOP_BAR_LINE_COLOR = '#E5E5E5'
+
 /** 资源版本：底图/参数更新后递增，避免浏览器缓存旧图 */
 export const FENGSHUI_TEXTURE_VERSION = '20260722b'
 

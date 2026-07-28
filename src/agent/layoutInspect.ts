@@ -15,6 +15,92 @@ export const TITLE_LINE_HEIGHT_MAX = 1.12
 /** 单篇文章高亮颜色种类上限 */
 export const MAX_HIGHLIGHT_COLORS = 3
 
+/** 单页计入密度的高亮片段上限（li 子标题整组不计；极个别可放宽） */
+export const MAX_HIGHLIGHTS_PER_PAGE = 3
+
+function highlightMaps(config: GraphicTextConfig) {
+  return [
+    config.underlineHighlightColors ?? {},
+    config.handUnderlineHighlightColors ?? {},
+    config.brushHighlightColors ?? {},
+    config.quoteHighlightColors ?? {},
+    config.circleHighlightColors ?? {},
+  ]
+}
+
+function charHasHighlight(config: GraphicTextConfig, blockId: string, charIndex: number) {
+  const key = `${blockId}:${charIndex}`
+  return highlightMaps(config).some((map) => Boolean(map[key]))
+}
+
+/**
+ * 统计每页「计入密度」的高亮片段：同一 sourceBlock 内连续被高亮的字符算 1 处；
+ * 跨 style（brush/underline 叠加同一字符）仍只算一次连续片段。
+ * **例外**：列表项「子标题：说明」中仅覆盖冒号前子标题的高亮整段不计（见 skill li 连同规则）。
+ */
+function isListSubtitleOnlyHighlight(
+  blockType: string | undefined,
+  text: string,
+  coveredIndexes: number[],
+): boolean {
+  if (blockType !== 'list') return false
+  const plain = stripHighlightMarkers(text)
+  const colon = plain.search(/[：:]/)
+  if (colon <= 0) return false
+  if (!coveredIndexes.length) return false
+  const min = Math.min(...coveredIndexes)
+  const max = Math.max(...coveredIndexes)
+  // 高亮完全落在冒号前子标题内
+  return min >= 0 && max < colon
+}
+
+function countHighlightRunsPerPage(
+  pages: ReturnType<typeof paginateDocument>,
+  config: GraphicTextConfig,
+): number[] {
+  return pages.map((page) => {
+    let runs = 0
+    const bySource = new Map<
+      string,
+      { offset: number; text: string; type?: string }[]
+    >()
+    for (const block of page.blocks) {
+      if (block.type === 'image') continue
+      const sourceId = block.sourceBlockId ?? block.id
+      const offset = block.charOffset ?? 0
+      const text = stripHighlightMarkers(block.text)
+      const list = bySource.get(sourceId) ?? []
+      list.push({ offset, text, type: block.type })
+      bySource.set(sourceId, list)
+    }
+
+    for (const [sourceId, lines] of bySource) {
+      const covered = new Set<number>()
+      const blockType = lines[0]?.type
+      const fullText = lines
+        .slice()
+        .sort((a, b) => a.offset - b.offset)
+        .map((line) => line.text)
+        .join('')
+      for (const line of lines) {
+        const chars = [...line.text]
+        for (let i = 0; i < chars.length; i += 1) {
+          const index = line.offset + i
+          if (charHasHighlight(config, sourceId, index)) covered.add(index)
+        }
+      }
+      const indexes = [...covered].sort((a, b) => a - b)
+      if (!indexes.length) continue
+      if (isListSubtitleOnlyHighlight(blockType, fullText, indexes)) continue
+      runs += 1
+      for (let i = 1; i < indexes.length; i += 1) {
+        if (indexes[i] !== indexes[i - 1] + 1) runs += 1
+      }
+    }
+    return runs
+  })
+}
+
 function resolvePrimaryFontFamily(fontFamily: string) {
   return fontFamily.replace(/"/g, '').split(',')[0].trim()
 }
@@ -40,7 +126,6 @@ function collectHighlightColors(config: GraphicTextConfig): string[] {
     config.brushHighlightColors,
     config.quoteHighlightColors,
     config.circleHighlightColors,
-    config.colorHighlightColors,
   ]) {
     for (const color of Object.values(map ?? {})) {
       if (color) colors.add(color.toUpperCase())
@@ -197,20 +282,35 @@ export function inspectGraphicLayout(
       pageIndex: 0,
     })
   }
+
+  const runsPerPage = countHighlightRunsPerPage(pages, config)
+  runsPerPage.forEach((count, pageIndex) => {
+    if (count > MAX_HIGHLIGHTS_PER_PAGE) {
+      warnings.push({
+        code: 'too_many_highlights_per_page',
+        message: `第 ${pageIndex + 1} 页高亮 ${count} 处，超过上限 ${MAX_HIGHLIGHTS_PER_PAGE}（极个别页才可放宽）`,
+        pageIndex,
+      })
+    }
+  })
+
   const titleIds = titleSourceIds(pages)
   const circleMap = config.circleHighlightColors ?? {}
   const colorMap = config.colorHighlightColors ?? {}
   const titleHasCircle = titleIds.some((id) =>
     Object.keys(circleMap).some((key) => key.startsWith(`${id}:`)),
   )
+  const titleHasPrimaryColor = Boolean(
+    typeof config.titlePrimaryColor === 'string' && config.titlePrimaryColor.trim(),
+  )
   const titleHasTextColor = titleIds.some((id) =>
     Object.keys(colorMap).some((key) => key.startsWith(`${id}:`)),
   )
-  // 用户明确不要画圈时，可用文字色（color）代替标题画圈要求
-  if (titleIds.length > 0 && !titleHasCircle && !titleHasTextColor) {
+  // 允许用标题首句着色或文字色 color 代替画圈（用户明确禁止画圈时）
+  if (titleIds.length > 0 && !titleHasCircle && !titleHasPrimaryColor && !titleHasTextColor) {
     warnings.push({
       code: 'title_missing_circle',
-      message: '标题必须至少有一处画圈高亮（或文字色 color）',
+      message: '标题必须至少有一处画圈高亮（或 titlePrimaryColor / 文字色 color）',
       pageIndex: 0,
       blockId: titleIds[0],
     })
@@ -268,9 +368,13 @@ export function inspectGraphicLayout(
 
       const styleType = block.styleType ?? block.type
       const { fontFamily } = getFontConfigForStyleType(config, styleType)
+      const titleSize =
+        (block.titleSentenceIndex ?? 0) > 0
+          ? (config.titleSecondaryFontSize ?? config.titleFontSize)
+          : config.titleFontSize
       const fontSize =
         styleType === 'title'
-          ? config.titleFontSize * layout.exportScale
+          ? titleSize * layout.exportScale
           : styleType === 'heading'
             ? Math.round(config.headingFontSize * layout.exportScale)
             : styleType === 'code'
