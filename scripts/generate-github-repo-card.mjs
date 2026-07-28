@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 为图文 skill 生成 GitHub 仓库首页预览卡片图。
+ * 为图文 skill 生成开源社区仓库首页预览卡片图。
  * 拉取仓库 Open Graph 社交预览图，裁剪为 Era 内容区宽度，并叠加仓库名与 Star 数。
  *
  * 用法：
@@ -73,7 +73,7 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log(`GitHub 仓库卡片图生成器（供图文 skill 混排）
+  console.log(`开源社区仓库卡片图生成器（供图文 skill 混排）
 
 用法:
   node scripts/generate-github-repo-card.mjs --repo owner/name [--out path] [--dataurl]
@@ -208,7 +208,7 @@ function buildHtml({ ogImage, fullName, stars }) {
     <div class="meta">
       <div class="repo">
         <div class="repo-name">${fullName}</div>
-        <div class="repo-owner">GitHub 仓库</div>
+        <div class="repo-owner">开源社区仓库</div>
       </div>
       <div class="stars" aria-label="${stars} stars">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg>
