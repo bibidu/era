@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createSocialVideoAnalysis } from '../../agent/supabaseSocialVideoAnalysis'
 import { extractMarkdownField } from './parseMarkdownFields'
 
@@ -223,20 +223,13 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
   const [publishDate, setPublishDate] = useState('')
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
   const [status, setStatus] = useState('')
+  const [saveStatus, setSaveStatus] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
   const canSubmit = useMemo(() => {
     return model.trim() && prompt.trim() && (videoFile || videoUrl.trim())
   }, [model, prompt, videoFile, videoUrl])
-
-  useEffect(() => {
-    if (!markdown) {
-      return
-    }
-    setWorkTitle(extractMarkdownField(markdown, '作品名称'))
-    setPublishDate(extractMarkdownField(markdown, '发布日期'))
-  }, [markdown])
 
   async function copyMarkdown() {
     if (!markdown) {
@@ -262,18 +255,18 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
       setCoverUrl(await readImageFile(file))
     } catch (error) {
       const message = error instanceof Error ? error.message : '封面读取失败'
-      setStatus(message)
+      setSaveStatus(message)
     }
   }
 
   async function saveRecord() {
     if (!markdown.trim()) {
-      setStatus('请先完成数据提取。')
+      setSaveStatus('请先完成数据提取。')
       return
     }
 
     setIsSaving(true)
-    setStatus('正在保存到 Supabase...')
+    setSaveStatus('正在保存...')
 
     try {
       await createSocialVideoAnalysis({
@@ -282,11 +275,11 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
         coverUrl,
         markdown,
       })
-      setStatus('已保存到 Supabase。')
+      setSaveStatus('保存成功')
       onSaved?.()
     } catch (error) {
       const message = error instanceof Error ? error.message : '保存失败'
-      setStatus(`保存失败：${message}`)
+      setSaveStatus(`保存失败：${message}`)
     } finally {
       setIsSaving(false)
     }
@@ -303,6 +296,7 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
     setWorkTitle('')
     setPublishDate('')
     setCoverUrl(null)
+    setSaveStatus('')
     setStatus(videoFile ? '正在抽取本地视频帧...' : '正在调用模型...')
 
     try {
@@ -339,7 +333,10 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
         throw new Error(message)
       }
 
-      setMarkdown(data.markdown || JSON.stringify(data, null, 2))
+      const nextMarkdown = data.markdown || JSON.stringify(data, null, 2)
+      setMarkdown(nextMarkdown)
+      setWorkTitle(extractMarkdownField(nextMarkdown, '作品名称'))
+      setPublishDate(extractMarkdownField(nextMarkdown, '发布日期'))
       setStatus(`提取完成。Request ID：${data.requestId || '未返回'}`)
     } catch (error) {
       const message = error instanceof Error ? error.message : '未知错误'
@@ -353,13 +350,29 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
     }
   }
 
+  const fieldClass =
+    'rounded-2xl border px-4 py-3 text-sm outline-none transition focus:border-cyan-300'
+  const fieldStyle = {
+    borderColor: 'var(--era-border)',
+    background: 'var(--era-input)',
+    color: 'var(--era-fg)',
+  } as const
+  const panelStyle = {
+    borderColor: 'var(--era-border)',
+    background: 'var(--era-panel)',
+  } as const
+
   return (
-    <div className={`${embedded ? 'min-h-0 flex-1' : 'h-dvh'} overflow-y-auto bg-neutral-950 text-neutral-100`}>
+    <div
+      className={`${embedded ? 'min-h-0 flex-1' : 'h-dvh'} overflow-y-auto`}
+      style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}
+    >
       <main className="mx-auto flex min-h-full w-full max-w-5xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
         {!embedded ? (
           <div className="flex justify-end">
             <a
-              className="inline-flex h-10 items-center justify-center rounded-full border border-white/15 px-4 text-sm font-medium text-neutral-200 transition hover:bg-white/10"
+              className="inline-flex h-10 items-center justify-center rounded-full border px-4 text-sm font-medium transition hover:opacity-90"
+              style={{ borderColor: 'var(--era-border)' }}
               href="/era/"
             >
               返回 Era
@@ -368,20 +381,22 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
         ) : null}
 
         <section className="grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-          <div className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/[0.06] p-4">
-            <div className="grid gap-3 sm:grid-cols-[1fr_7rem]">
+          <div className="flex flex-col gap-4 rounded-3xl border p-4" style={panelStyle}>
+            <div className="grid grid-cols-[1fr_7rem] gap-3">
               <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-neutral-200">模型</span>
+                <span className="text-sm font-medium">模型</span>
                 <input
-                  className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300"
+                  className={fieldClass}
+                  style={fieldStyle}
                   value={model}
                   onChange={(event) => setModel(event.target.value)}
                 />
               </label>
               <label className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-neutral-200">FPS</span>
+                <span className="text-sm font-medium">FPS</span>
                 <input
-                  className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300"
+                  className={fieldClass}
+                  style={fieldStyle}
                   min="0.2"
                   step="0.1"
                   type="number"
@@ -392,9 +407,10 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
             </div>
 
             <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-neutral-200">上传视频</span>
+              <span className="text-sm font-medium">上传视频</span>
               <input
-                className="rounded-2xl border border-dashed border-white/15 bg-black/30 px-4 py-3 text-sm text-neutral-300 file:mr-3 file:rounded-full file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-semibold file:text-neutral-950"
+                className={`${fieldClass} border-dashed file:mr-3 file:rounded-full file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-semibold file:text-neutral-950`}
+                style={fieldStyle}
                 accept="video/*"
                 type="file"
                 onChange={(event) => setVideoFile(event.target.files?.[0] || null)}
@@ -402,9 +418,10 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
             </label>
 
             <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-neutral-200">或填写公网视频 URL</span>
+              <span className="text-sm font-medium">或填写公网视频 URL</span>
               <input
-                className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition placeholder:text-neutral-500 focus:border-cyan-300"
+                className={fieldClass}
+                style={fieldStyle}
                 type="url"
                 value={videoUrl}
                 placeholder="https://example.com/video.mp4"
@@ -413,16 +430,18 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
             </label>
 
             <label className="flex flex-1 flex-col gap-2">
-              <span className="text-sm font-medium text-neutral-200">提取要求</span>
+              <span className="text-sm font-medium">提取要求</span>
               <textarea
-                className="min-h-64 flex-1 resize-y rounded-2xl border border-white/10 bg-black/30 px-4 py-3 font-mono text-sm leading-6 text-white outline-none transition focus:border-cyan-300"
+                className={`${fieldClass} min-h-64 flex-1 resize-y font-mono leading-6`}
+                style={fieldStyle}
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value)}
               />
             </label>
 
             <button
-              className="h-12 rounded-2xl bg-white text-sm font-bold text-neutral-950 transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-12 rounded-2xl text-sm font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+              style={{ background: 'var(--era-button)', color: 'var(--era-button-fg)' }}
               type="button"
               disabled={!canSubmit || isLoading}
               onClick={submit}
@@ -430,15 +449,20 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
               {isLoading ? '提取中...' : '开始提取完整数据'}
             </button>
 
-            {status ? <p className="text-sm leading-6 text-neutral-300">{status}</p> : null}
+            {status ? (
+              <p className="text-sm leading-6" style={{ color: 'var(--era-muted)' }}>
+                {status}
+              </p>
+            ) : null}
           </div>
 
           <div className="flex min-h-[32rem] flex-col gap-4">
-            <div className="flex min-h-[24rem] flex-1 flex-col rounded-3xl border border-white/10 bg-white/[0.06] p-4">
+            <div className="flex min-h-[24rem] flex-1 flex-col rounded-3xl border p-4" style={panelStyle}>
               <div className="mb-3 flex items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold text-white">Markdown 结果</h2>
+                <h2 className="text-lg font-semibold">Markdown 结果</h2>
                 <button
-                  className="rounded-2xl border border-white/15 px-4 py-2 text-sm font-semibold text-neutral-100 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded-2xl border px-4 py-2 text-sm font-semibold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                  style={{ borderColor: 'var(--era-border)' }}
                   type="button"
                   disabled={!markdown}
                   onClick={copyMarkdown}
@@ -447,37 +471,44 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
                 </button>
               </div>
 
-              <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap rounded-2xl border border-white/10 bg-black/40 p-4 font-mono text-sm leading-6 text-neutral-100">
-                {markdown || '等待提取结果...'}
-              </pre>
+              <textarea
+                className={`${fieldClass} min-h-0 flex-1 resize-y font-mono leading-6`}
+                style={fieldStyle}
+                value={markdown}
+                placeholder="等待提取结果..."
+                onChange={(event) => setMarkdown(event.target.value)}
+              />
             </div>
 
             {markdown ? (
-              <div className="rounded-3xl border border-white/10 bg-white/[0.06] p-4">
-                <h3 className="text-base font-semibold text-white">保存作品</h3>
+              <div className="rounded-3xl border p-4" style={panelStyle}>
+                <h3 className="text-base font-semibold">保存作品</h3>
                 <div className="mt-4 grid gap-3">
                   <label className="flex flex-col gap-2">
-                    <span className="text-sm font-medium text-neutral-200">作品名称</span>
+                    <span className="text-sm font-medium">作品名称</span>
                     <input
-                      className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300"
+                      className={fieldClass}
+                      style={fieldStyle}
                       value={workTitle}
                       onChange={(event) => setWorkTitle(event.target.value)}
                     />
                   </label>
 
                   <label className="flex flex-col gap-2">
-                    <span className="text-sm font-medium text-neutral-200">发布日期</span>
+                    <span className="text-sm font-medium">发布日期</span>
                     <input
-                      className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition focus:border-cyan-300"
+                      className={fieldClass}
+                      style={fieldStyle}
                       value={publishDate}
                       onChange={(event) => setPublishDate(event.target.value)}
                     />
                   </label>
 
                   <label className="flex flex-col gap-2">
-                    <span className="text-sm font-medium text-neutral-200">作品封面</span>
+                    <span className="text-sm font-medium">作品封面</span>
                     <input
-                      className="rounded-2xl border border-dashed border-white/15 bg-black/30 px-4 py-3 text-sm text-neutral-300 file:mr-3 file:rounded-full file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-semibold file:text-neutral-950"
+                      className={`${fieldClass} border-dashed file:mr-3 file:rounded-full file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-semibold file:text-neutral-950`}
+                      style={fieldStyle}
                       accept="image/*"
                       type="file"
                       onChange={(event) => void handleCoverChange(event.target.files?.[0] || null)}
@@ -488,7 +519,8 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
                     <img
                       src={coverUrl}
                       alt="作品封面预览"
-                      className="aspect-[3/4] w-28 rounded-2xl border border-white/10 object-cover"
+                      className="aspect-[3/4] w-28 rounded-2xl border object-cover"
+                      style={{ borderColor: 'var(--era-border)' }}
                     />
                   ) : null}
 
@@ -500,6 +532,18 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
                   >
                     {isSaving ? '保存中...' : '保存到 Supabase'}
                   </button>
+
+                  {saveStatus ? (
+                    <p
+                      className="rounded-2xl px-3 py-2 text-sm font-medium"
+                      style={{
+                        color: saveStatus === '保存成功' ? 'var(--era-success)' : 'var(--era-muted)',
+                        background: 'var(--era-input)',
+                      }}
+                    >
+                      {saveStatus}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             ) : null}

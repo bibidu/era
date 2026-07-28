@@ -44,33 +44,41 @@ export function SocialVideoListPage({ onBack }: SocialVideoListPageProps) {
   }, [])
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-neutral-950 text-neutral-100">
-      <div className="flex shrink-0 items-center gap-2 border-b border-white/10 px-3 py-3">
+    <div className="flex min-h-0 flex-1 flex-col" style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}>
+      <div
+        className="flex shrink-0 items-center gap-2 border-b px-3 py-3"
+        style={{ borderColor: 'var(--era-border)' }}
+      >
         <button
           type="button"
-          className="flex size-9 items-center justify-center rounded-full bg-white/10 text-white"
+          className="flex size-9 items-center justify-center rounded-full"
+          style={{ background: 'var(--era-panel)' }}
           aria-label="返回"
           onClick={onBack}
         >
           <ChevronLeft size={18} />
         </button>
-        <div>
-          <h1 className="text-base font-semibold text-white">分析列表</h1>
-          <p className="text-xs text-neutral-400">发布越早越靠后</p>
-        </div>
+        <h1 className="text-base font-semibold">分析列表</h1>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {loading ? (
-          <div className="flex h-48 items-center justify-center text-sm text-neutral-400">加载中...</div>
+          <div className="flex h-48 items-center justify-center text-sm" style={{ color: 'var(--era-muted)' }}>
+            加载中...
+          </div>
         ) : error ? (
           <div className="rounded-3xl border border-amber-300/20 bg-amber-300/10 px-4 py-6 text-sm leading-6 text-amber-100">
             {error}
           </div>
         ) : records.length === 0 ? (
-          <div className="flex h-64 flex-col items-center justify-center rounded-3xl border border-dashed border-white/15 bg-white/[0.03] px-6 text-center">
-            <p className="text-base font-semibold text-white">暂无分析作品</p>
-            <p className="mt-2 text-sm leading-6 text-neutral-400">提取完成后保存，作品会出现在这里。</p>
+          <div
+            className="flex h-64 flex-col items-center justify-center rounded-3xl border border-dashed px-6 text-center"
+            style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
+          >
+            <p className="text-base font-semibold">暂无分析作品</p>
+            <p className="mt-2 text-sm leading-6" style={{ color: 'var(--era-muted)' }}>
+              提取完成后保存，作品会出现在这里。
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -78,7 +86,8 @@ export function SocialVideoListPage({ onBack }: SocialVideoListPageProps) {
               <button
                 key={record.id}
                 type="button"
-                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-neutral-900 text-left shadow-sm transition hover:border-white/20"
+                className="group relative overflow-hidden rounded-2xl border text-left shadow-sm transition hover:opacity-95"
+                style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
                 onClick={() => {
                   setSelectedRecord(record)
                   setSheetOpen(true)
@@ -92,7 +101,10 @@ export function SocialVideoListPage({ onBack }: SocialVideoListPageProps) {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-neutral-800 to-neutral-950 px-3 text-center text-sm font-medium text-neutral-300">
+                    <div
+                      className="flex h-full w-full items-center justify-center px-3 text-center text-sm font-medium"
+                      style={{ color: 'var(--era-muted)' }}
+                    >
                       {record.title || '未命名作品'}
                     </div>
                   )}

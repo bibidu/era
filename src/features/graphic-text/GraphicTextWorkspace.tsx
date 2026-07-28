@@ -393,14 +393,15 @@ export function GraphicTextWorkspace() {
 
   return (
     <div
-      className="relative flex min-h-0 flex-1 flex-col bg-neutral-100"
-      style={
-        sheetOpen
+      className="relative flex min-h-0 flex-1 flex-col"
+      style={{
+        background: 'var(--era-graphic-chrome)',
+        ...(sheetOpen
           ? {
               paddingBottom: `calc(${sheetHeight}px + env(safe-area-inset-bottom, 0px))`,
             }
-          : undefined
-      }
+          : null),
+      }}
     >
       {agentConnected ? (
         <div

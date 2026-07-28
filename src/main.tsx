@@ -2,7 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { applyTheme, readStoredTheme } from './theme/theme'
 import { checkForNewVersion } from './utils/versionCheck'
+
+applyTheme(readStoredTheme())
 
 function bootstrap() {
   createRoot(document.getElementById('root')!).render(

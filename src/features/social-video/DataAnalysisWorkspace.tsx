@@ -11,15 +11,16 @@ export function DataAnalysisWorkspace() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-neutral-950">
-      <header className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
-        <div>
-          <p className="text-base font-semibold text-white">社媒数据提取</p>
-          <p className="text-xs text-neutral-400">提取后可保存到分析列表</p>
-        </div>
+    <div className="flex min-h-0 flex-1 flex-col" style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}>
+      <header
+        className="flex shrink-0 items-center justify-between border-b px-4 py-3"
+        style={{ borderColor: 'var(--era-border)' }}
+      >
+        <p className="text-base font-semibold">社媒数据提取</p>
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded-full border border-white/15 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-white/10"
+          className="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm font-medium transition hover:opacity-90"
+          style={{ borderColor: 'var(--era-border)' }}
           onClick={() => setView('list')}
         >
           分析列表
