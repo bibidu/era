@@ -46,10 +46,10 @@ const titleAdjust = {
     },
     {
       chars: [
-        { ch: '「', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 56, scaleX: 1, scaleY: 1, widthEm: 1, color: '#111111' },
-        { ch: '上', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 56, scaleX: 1, scaleY: 1, widthEm: 1, color: '#111111' },
-        { ch: '篇', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 56, scaleX: 1, scaleY: 1, widthEm: 1, color: '#111111' },
-        { ch: '」', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 56, scaleX: 1, scaleY: 1, widthEm: 1, color: '#111111' },
+        { ch: '「', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 52, scaleX: 1, scaleY: 1, widthEm: 1, color: '#111111' },
+        { ch: '上', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 52, scaleX: 1, scaleY: 1, widthEm: 1, color: '#111111' },
+        { ch: '篇', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 52, scaleX: 1, scaleY: 1, widthEm: 1, color: '#111111' },
+        { ch: '」', fontId: 'song', fontFamily: '"Noto Serif SC", serif', fontSize: 52, scaleX: 1, scaleY: 1, widthEm: 1, color: '#111111' },
       ],
     },
   ],
