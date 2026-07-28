@@ -133,25 +133,27 @@
     .skeleton {
       position: absolute;
       border-radius: 10px;
-      background: var(--card-bg);
+      background: #1c1c1c;
       overflow: hidden;
     }
     .skeleton::after {
       content: '';
       position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(255,255,255,.06) 40%,
-        rgba(255,255,255,.1) 50%,
-        rgba(255,255,255,.06) 60%,
-        transparent 100%);
-      background-size: 200% 100%;
-      animation: shimmer 1.6s infinite;
+      top: 0; left: 0;
+      width: 45%;
+      height: 100%;
+      background: linear-gradient(
+        to right,
+        transparent,
+        rgba(255,255,255,.055),
+        transparent
+      );
+      transform: translateX(-150%) skewX(-22deg);
+      animation: shimmer-diag 3s ease-in-out infinite;
     }
-    @keyframes shimmer {
-      0%   { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
+    @keyframes shimmer-diag {
+      0%   { transform: translateX(-150%) skewX(-22deg); }
+      100% { transform: translateX(380%) skewX(-22deg); }
     }
 
     /* ── Image ── */
