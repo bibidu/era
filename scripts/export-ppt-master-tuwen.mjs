@@ -78,7 +78,7 @@ README 里强调的核心差异是「原生深度」：幻灯片母版、数据�
 
 ## 官网示例
 
-以下是 ppt-master 官网展示的一次性生成成品（未经精修），可在开源社区在线翻页查看完整 deck。
+以下是 ppt-master 官网两套示例的**封面页**（一次性生成、未经精修）。
 
 ${magazine.markdown}
 
@@ -94,37 +94,11 @@ ${swiss.caption}
 
 图表和表格能作为带数据的原生对象导出，也能沿用你自己的 PPT 模板来设计。
 
-## 不止一条路线
-
-从 PDF / 网页 / 主题生成新 deck 是主管线，但 PPT Master 还支持：
-
-- 从你的参考资料提炼可复用的品牌 / 版式 / 成品模板
-- 把新内容填进已有 .pptx，并尽量保留原有设计
-- 为成品 deck 追加原生转场、动画和旁白
-
-每条路线都有明确的「保留什么、改动什么」契约，方便你预期产出。
-
-## 形态与三个承诺
-
-形态上，它是在 Agent 工具里跑的一套工作流：对话里说「用这份 PDF 做 PPT」，本机生成并导出 .pptx。
-
-你不写代码，只做三件事：装 Python、装一个 AI 工具、把材料放进来。
-
-- **成本透明**：工具免费开源，主要成本是模型用量，无额外 PPT 订阅
-- **数据不出本地**：除与 AI 对话外，材料与生成过程留在你的电脑
-- **不锁定平台**：Claude、GPT、Gemini、Kimi 等都可驱动
-
 ## 适合谁
 
 需要把长文档快速变成能继续打磨的演示稿的人——产品路演、运营复盘、研究汇报、内部培训都合适。
 
 社区 Star 数已经说明认可度：这不是玩具 Demo，而是能进真实工作流的开源 Skill。
-
-若你也在用 Claude Code / Codex 做自动化，值得把 ppt-master 加进工具箱。
-
-让「写材料」和「做幻灯片」真正串成一条链路。
-
-它的价值是帮你把大部分枯燥的活儿干掉，剩下的打磨交给你——做原生可编辑的 PPT，本就是为了让你接着改，而不是甩给你一张改不动的图。
 
 一句话总结：**要的是能改的 PPT，不是能看的图片。**`
 
@@ -178,12 +152,8 @@ ${swiss.caption}
   addBrush(findScoped('本地生成'), '本地生成')
   addBrush(findScoped('Agent 工作流'), 'Agent 工作流')
   addBrush(findScoped('完整 PowerPoint 行为的成品'), '完整 PowerPoint 行为的成品')
-  addBrush(findScoped('数据不出本地'), '数据不出本地')
-  addBrush(findScoped('不锁定平台'), '不锁定平台')
   addUnderline(findScoped('能进真实工作流'), '能进真实工作流')
   addUnderline(findScoped('继续改母版'), '继续改母版')
-  addUnderline(findScoped('加进工具箱'), '加进工具箱')
-  addUnderline(findScoped('改不动的图'), '改不动的图')
   addBrush(findScoped('能改的 PPT'), '能改的 PPT')
 
   await api('POST', `/v1/projects/${projectId}/highlights`, { ranges, replace: true })
