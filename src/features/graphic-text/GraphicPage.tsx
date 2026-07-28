@@ -134,11 +134,6 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
 function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSProperties {
   const styleType = resolveStyleType(block)
   const { fontFamily } = getFontConfigForStyleType(config, styleType)
-  const titleFontPx =
-    (block.titleSentenceIndex ?? 0) > 0
-      ? (config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72))
-      : config.titleFontSize
-  const titleSize = `${(titleFontPx / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const headingSize = `${(config.headingFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const bodySize = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const codeSize = `${(config.codeFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
