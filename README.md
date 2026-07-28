@@ -1,13 +1,15 @@
-# 海报 / 图文编辑器（Era）
+# 图文编辑器（Era）
 
-移动端优先的编辑器：支持海报合成，以及图文分页排版、高亮与导出图片。
+移动端优先的编辑器：支持图文分页排版、高亮与导出图片。
 
 在线预览：https://bibidu.github.io/era/
 
+社媒视频完整数据提取页：顶部「数据分析」Tab，或直达 https://bibidu.github.io/era/?tool=social-video
+
 ## 功能
 
-- 上传固定海报底图，添加文本素材并导出
 - 图文模式：Markdown 分页、字体/纸色/高亮、多页导出
+- 社媒视频数据提取：上传视频抽帧或填写视频 URL，经 Supabase 代理调用 DashScope 返回 Markdown
 - 画幅：`3:4` 小红书风格；`9:16` 抖音风格
 - 导出图预览/下载：出图后上传 Supabase，在 Gallery 图文库查看（`/gallery/?shareId=...`），支持 ZIP 整包下载（MCP `era_create_export_share`）
 
