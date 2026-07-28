@@ -4,6 +4,13 @@ import {
   CODE_TEXT_COLOR,
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
+import {
+  GRAPHIC_LIST_BULLET_COLOR,
+  GRAPHIC_PAGE_TEXT_COLOR,
+  GRAPHIC_TOP_BAR_BORDER_COLOR,
+  GRAPHIC_TOP_BAR_DIVIDER_COLOR,
+  GRAPHIC_TOP_BAR_TEXT_COLOR,
+} from './graphicContentColors'
 import { buildCircleHighlightColorRuns, drawHandDrawnCircleAroundTextBounds, HAND_DRAWN_CIRCLE_STROKE_WIDTH } from './circleHighlight'
 import { drawHandDrawnUnderline, buildHandUnderlineColorRuns, HAND_DRAWN_UNDERLINE_TILE_WIDTH } from './handDrawnUnderlinePath'
 import { collectGraphicFontIds, getFontConfigForStyleType } from './graphicTextFonts'
@@ -303,14 +310,14 @@ async function drawPage(
   const edgeWidth = width - safeX * 2
   const underlineY = topBarY + topBarHeight - 6
 
-  ctx.strokeStyle = '#D4D4D4'
+  ctx.strokeStyle = GRAPHIC_TOP_BAR_BORDER_COLOR
   ctx.lineWidth = 2
   ctx.beginPath()
   ctx.moveTo(edgeX, underlineY)
   ctx.lineTo(edgeX + edgeWidth, underlineY)
   ctx.stroke()
 
-  ctx.fillStyle = '#525252'
+  ctx.fillStyle = GRAPHIC_TOP_BAR_TEXT_COLOR
   const topBarFontSize = Math.round(TOP_BAR_FONT_SIZE_PX * exportScale)
   ctx.font = `400 ${topBarFontSize}px ${config.bodyFontFamily}`
   ctx.textBaseline = 'bottom'
@@ -335,9 +342,9 @@ async function drawPage(
     const customWidth = ctx.measureText(customText).width
     ctx.fillText(customText, edgeX, topBarTextY)
     const dividerX = edgeX + customWidth + gap
-    ctx.fillStyle = '#D4D4D4'
+    ctx.fillStyle = GRAPHIC_TOP_BAR_DIVIDER_COLOR
     ctx.fillRect(dividerX, topBarMidY - dividerHeight / 2, dividerWidth, dividerHeight)
-    ctx.fillStyle = '#525252'
+    ctx.fillStyle = GRAPHIC_TOP_BAR_TEXT_COLOR
     ctx.fillText(topBar.countText, dividerX + gap + dividerWidth, topBarTextY)
   } else if (topBar.custom) {
     ctx.fillText(topBar.custom, edgeX, topBarTextY, edgeWidth)
@@ -450,7 +457,7 @@ async function drawPage(
     if (block.type === 'list') {
       const bulletRadius = spec.size * 0.16
       const centerY = y + ascent * 0.48
-      ctx.fillStyle = '#262626'
+      ctx.fillStyle = GRAPHIC_LIST_BULLET_COLOR
       ctx.beginPath()
       ctx.arc(safeX + quoteBarInset + bulletRadius * 2, centerY, bulletRadius, 0, Math.PI * 2)
       ctx.fill()
@@ -476,7 +483,7 @@ async function drawPage(
       y,
       spec.size,
       enableHighlight,
-      styleType === 'code' ? CODE_TEXT_COLOR : '#171717',
+      styleType === 'code' ? CODE_TEXT_COLOR : GRAPHIC_PAGE_TEXT_COLOR,
       circleLineWidth,
       textColorSegments,
     )

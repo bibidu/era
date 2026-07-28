@@ -101,6 +101,19 @@ body.is-dragging {
   max-height: 100%;
 }
 
+/*
+ * 海报画布内容色与主题解耦：
+ * 操作台用 --era-*；正文/顶栏/列表点等永远固定，不随白天黑夜变。
+ */
+.graphic-page {
+  color: #171717;
+}
+
+.graphic-page .graphic-code-block {
+  /* 代码块正文色由组件 inline 固定为 CODE_TEXT_COLOR */
+  color: #404040;
+}
+
 .graphic-text-toolbar-wrap {
   background: transparent;
 }
@@ -1513,7 +1526,8 @@ body.is-dragging {
   right: -0.02em;
   bottom: -0.08em;
   height: max(4px, 0.2em);
-  background-color: var(--graphic-highlight-underline, currentColor);
+  /* 禁止回落到主题 currentColor，避免暗色模式把下划线刷成浅色 */
+  background-color: var(--graphic-highlight-underline, #171717);
   z-index: 3;
   pointer-events: none;
 }
@@ -1990,17 +2004,17 @@ body.keyboard-dock-open {
 .graphic-text-adjust-stepper-value,
 .graphic-content-block-text,
 .graphic-content-block-type,
-.graphic-save-drawer-dialog .text-neutral-900,
-.graphic-config-drawer-dialog .text-neutral-900,
-.graphic-content-sheet .text-neutral-900 {
+.graphic-save-drawer-dialog .text-neutral-900:not(.graphic-page):not(.graphic-page *),
+.graphic-config-drawer-dialog .text-neutral-900:not(.graphic-page):not(.graphic-page *),
+.graphic-content-sheet .text-neutral-900:not(.graphic-page):not(.graphic-page *) {
   color: var(--era-fg);
 }
 
 .graphic-content-empty,
-.graphic-save-drawer-dialog .text-neutral-500,
-.graphic-save-drawer-dialog .text-neutral-700,
-.graphic-config-drawer-dialog .text-neutral-500,
-.graphic-content-sheet .text-neutral-500 {
+.graphic-save-drawer-dialog .text-neutral-500:not(.graphic-page):not(.graphic-page *),
+.graphic-save-drawer-dialog .text-neutral-700:not(.graphic-page):not(.graphic-page *),
+.graphic-config-drawer-dialog .text-neutral-500:not(.graphic-page):not(.graphic-page *),
+.graphic-content-sheet .text-neutral-500:not(.graphic-page):not(.graphic-page *) {
   color: var(--era-muted);
 }
 
@@ -2029,20 +2043,20 @@ html[data-theme="dark"] .graphic-content-sheet .border-neutral-300 {
   border-color: var(--era-sheet-border) !important;
 }
 
-html[data-theme="dark"] .graphic-save-drawer-dialog .text-neutral-900,
-html[data-theme="dark"] .graphic-config-drawer-dialog .text-neutral-900,
-html[data-theme="dark"] .graphic-content-sheet .text-neutral-900,
-html[data-theme="dark"] .graphic-save-drawer-dialog .text-neutral-800,
-html[data-theme="dark"] .graphic-config-drawer-dialog .text-neutral-800 {
+html[data-theme="dark"] .graphic-save-drawer-dialog .text-neutral-900:not(.graphic-page):not(.graphic-page *),
+html[data-theme="dark"] .graphic-config-drawer-dialog .text-neutral-900:not(.graphic-page):not(.graphic-page *),
+html[data-theme="dark"] .graphic-content-sheet .text-neutral-900:not(.graphic-page):not(.graphic-page *),
+html[data-theme="dark"] .graphic-save-drawer-dialog .text-neutral-800:not(.graphic-page):not(.graphic-page *),
+html[data-theme="dark"] .graphic-config-drawer-dialog .text-neutral-800:not(.graphic-page):not(.graphic-page *) {
   color: var(--era-fg) !important;
 }
 
-html[data-theme="dark"] .graphic-save-drawer-dialog .text-neutral-700,
-html[data-theme="dark"] .graphic-config-drawer-dialog .text-neutral-700,
-html[data-theme="dark"] .graphic-content-sheet .text-neutral-600,
-html[data-theme="dark"] .graphic-save-drawer-dialog .text-neutral-500,
-html[data-theme="dark"] .graphic-config-drawer-dialog .text-neutral-500,
-html[data-theme="dark"] .graphic-content-sheet .text-neutral-500 {
+html[data-theme="dark"] .graphic-save-drawer-dialog .text-neutral-700:not(.graphic-page):not(.graphic-page *),
+html[data-theme="dark"] .graphic-config-drawer-dialog .text-neutral-700:not(.graphic-page):not(.graphic-page *),
+html[data-theme="dark"] .graphic-content-sheet .text-neutral-600:not(.graphic-page):not(.graphic-page *),
+html[data-theme="dark"] .graphic-save-drawer-dialog .text-neutral-500:not(.graphic-page):not(.graphic-page *),
+html[data-theme="dark"] .graphic-config-drawer-dialog .text-neutral-500:not(.graphic-page):not(.graphic-page *),
+html[data-theme="dark"] .graphic-content-sheet .text-neutral-500:not(.graphic-page):not(.graphic-page *) {
   color: var(--era-muted) !important;
 }
 
@@ -2062,63 +2076,46 @@ html[data-theme="light"] .graphic-toolbar-strip-top-text {
 }
 
 
-/* Global dark-theme text brightening for UI chrome (exclude poster canvas) */
-html[data-theme="dark"] .text-black,
-html[data-theme="dark"] .text-neutral-950,
-html[data-theme="dark"] .text-neutral-900,
-html[data-theme="dark"] .text-neutral-800 {
+/* Global dark-theme brightening for UI chrome ONLY — never touch poster canvas */
+html[data-theme="dark"] .text-black:not(.graphic-page):not(.graphic-page *),
+html[data-theme="dark"] .text-neutral-950:not(.graphic-page):not(.graphic-page *),
+html[data-theme="dark"] .text-neutral-900:not(.graphic-page):not(.graphic-page *),
+html[data-theme="dark"] .text-neutral-800:not(.graphic-page):not(.graphic-page *) {
   color: #f5f5f5 !important;
 }
 
-html[data-theme="dark"] .text-neutral-700 {
+html[data-theme="dark"] .text-neutral-700:not(.graphic-page):not(.graphic-page *) {
   color: #e5e5e5 !important;
 }
 
-html[data-theme="dark"] .text-neutral-600 {
+html[data-theme="dark"] .text-neutral-600:not(.graphic-page):not(.graphic-page *) {
   color: #d4d4d4 !important;
 }
 
-html[data-theme="dark"] .text-neutral-500 {
+html[data-theme="dark"] .text-neutral-500:not(.graphic-page):not(.graphic-page *) {
   color: #a3a3a3 !important;
 }
 
-html[data-theme="dark"] .border-black,
-html[data-theme="dark"] .border-neutral-900 {
+html[data-theme="dark"] .border-black:not(.graphic-page):not(.graphic-page *):not(.graphic-save-thumb-frame),
+html[data-theme="dark"] .border-neutral-900:not(.graphic-page):not(.graphic-page *):not(.graphic-save-thumb-frame) {
   border-color: rgb(255 255 255 / 0.35) !important;
 }
 
-html[data-theme="dark"] .bg-white {
+html[data-theme="dark"] .bg-white:not(.graphic-page):not(.graphic-page *):not(.graphic-save-thumb-frame) {
   background-color: var(--era-sheet-soft) !important;
 }
 
-html[data-theme="dark"] .bg-neutral-50,
-html[data-theme="dark"] .bg-neutral-100 {
+html[data-theme="dark"] .bg-neutral-50:not(.graphic-page):not(.graphic-page *),
+html[data-theme="dark"] .bg-neutral-100:not(.graphic-page):not(.graphic-page *) {
   background-color: var(--era-sheet-strong) !important;
 }
 
-/* Keep rendered poster/page design colors stable */
-html[data-theme="dark"] .graphic-page .text-black,
-html[data-theme="dark"] .graphic-page .text-neutral-950 {
-  color: #0a0a0a !important;
-}
-
-html[data-theme="dark"] .graphic-page .text-neutral-800,
-html[data-theme="dark"] .graphic-page .text-neutral-700,
-html[data-theme="dark"] .graphic-page .text-neutral-600 {
-  color: #525252 !important;
-}
-
-html[data-theme="dark"] .graphic-page .text-neutral-500,
-html[data-theme="dark"] .graphic-page .text-neutral-400 {
-  color: #a3a3a3 !important;
-}
-
-html[data-theme="dark"] .graphic-page .bg-white,
+/* 缩略图纸白底 / 黑框保持纸面观感，不跟操作台主题走 */
 html[data-theme="dark"] .graphic-save-thumb-frame.bg-white {
   background-color: #ffffff !important;
 }
 
-html[data-theme="dark"] .graphic-page .border-black {
+html[data-theme="dark"] .graphic-save-thumb-frame.border-black {
   border-color: #000000 !important;
 }
 

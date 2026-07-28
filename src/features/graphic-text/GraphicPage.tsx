@@ -5,6 +5,14 @@ import {
   CODE_TEXT_COLOR,
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
+import {
+  GRAPHIC_EMPTY_HINT_COLOR,
+  GRAPHIC_LIST_BULLET_COLOR,
+  GRAPHIC_PAGE_TEXT_COLOR,
+  GRAPHIC_TOP_BAR_BORDER_COLOR,
+  GRAPHIC_TOP_BAR_DIVIDER_COLOR,
+  GRAPHIC_TOP_BAR_TEXT_COLOR,
+} from './graphicContentColors'
 import { HandDrawnUnderline } from './HandDrawnUnderline'
 import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
 import { getFontConfigForStyleType } from './graphicTextFonts'
@@ -473,7 +481,10 @@ function renderBlockText(
           className="flex h-[1lh] w-[0.7em] shrink-0 items-center justify-center"
           aria-hidden
         >
-          <span className="size-[0.32em] rounded-full bg-neutral-800" />
+          <span
+            className="size-[0.32em] rounded-full"
+            style={{ backgroundColor: GRAPHIC_LIST_BULLET_COLOR }}
+          />
         </span>
         <span className="min-w-0 flex-1">{textNode}</span>
       </div>
@@ -557,12 +568,14 @@ export function GraphicPage({
 
   return (
     <article
-      className={`graphic-page relative isolate overflow-hidden bg-[#fbf7ed] text-neutral-950 ${
+      className={`graphic-page relative isolate overflow-hidden bg-[#fbf7ed] ${
         highlightInteraction ? 'graphic-page--interactive' : ''
       } ${className}`}
       style={
         {
           ...backgroundStyle,
+          // 正文色固定，不继承 App/主题的 --era-fg，也不走会随暗色 remap 的 Tailwind text-*
+          color: GRAPHIC_PAGE_TEXT_COLOR,
           width: displayWidth ? `${displayWidth}px` : '100%',
           aspectRatio: `${aspectRatio.width} / ${aspectRatio.height}`,
           '--graphic-theme': accentColor,
@@ -585,45 +598,47 @@ export function GraphicPage({
         config.overlayStacked && <PageGradientOverlay variant={config.gradientVariant} />}
 
       <div
-        className="absolute z-10 flex min-w-0 items-center gap-2 border-b border-neutral-300"
+        className="absolute z-10 flex min-w-0 items-center gap-2 border-b"
         style={{
           left: `${percent.safeX}%`,
           right: `${percent.safeX}%`,
           top: `${percent.topBarTop}%`,
           height: `${percent.topBarHeight}%`,
           paddingBottom: '6px',
+          borderColor: GRAPHIC_TOP_BAR_BORDER_COLOR,
         }}
       >
         {topBar.custom && topBar.countText ? (
           <>
             <span
-              className="min-w-0 truncate font-normal text-neutral-600"
-              style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px` }}
+              className="min-w-0 truncate font-normal"
+              style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px`, color: GRAPHIC_TOP_BAR_TEXT_COLOR }}
             >
               {topBar.custom}
             </span>
             <span
-              className="h-3 w-px shrink-0 self-center bg-neutral-300"
+              className="h-3 w-px shrink-0 self-center"
+              style={{ backgroundColor: GRAPHIC_TOP_BAR_DIVIDER_COLOR }}
               aria-hidden
             />
             <span
-              className="shrink-0 font-normal text-neutral-600"
-              style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px` }}
+              className="shrink-0 font-normal"
+              style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px`, color: GRAPHIC_TOP_BAR_TEXT_COLOR }}
             >
               {topBar.countText}
             </span>
           </>
         ) : topBar.custom ? (
           <span
-            className="truncate font-normal text-neutral-600"
-            style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px` }}
+            className="truncate font-normal"
+            style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px`, color: GRAPHIC_TOP_BAR_TEXT_COLOR }}
           >
             {topBar.custom}
           </span>
         ) : topBar.countText ? (
           <span
-            className="truncate font-normal text-neutral-600"
-            style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px` }}
+            className="truncate font-normal"
+            style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px`, color: GRAPHIC_TOP_BAR_TEXT_COLOR }}
           >
             {topBar.countText}
           </span>
@@ -641,7 +656,10 @@ export function GraphicPage({
       >
         <div className="flex h-full flex-col justify-start">
           {page.blocks.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-center text-[3cqw] text-neutral-400">
+            <div
+              className="flex h-full items-center justify-center text-center text-[3cqw]"
+              style={{ color: GRAPHIC_EMPTY_HINT_COLOR }}
+            >
               输入 Markdown 内容后生成
             </div>
           ) : (
