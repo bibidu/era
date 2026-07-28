@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { readExportShareQuery, readHighlightSetupQuery } from './agent/agentHttp'
 import { TopModeTabs, type AppMode } from './components/TopModeTabs'
-import { ExportSharePage } from './features/graphic-text/ExportSharePage'
 import { GraphicTextWorkspace } from './features/graphic-text/GraphicTextWorkspace'
 import { HighlightSetupPage } from './features/graphic-text/HighlightSetupPage'
 import { PosterWorkspace } from './features/poster/PosterWorkspace'
@@ -13,8 +12,16 @@ function App() {
   const [mode, setMode] = useState<AppMode>('graphic')
   const poster = usePosterEditor()
 
-  if (exportShare.enabled) {
-    return <ExportSharePage shareId={exportShare.shareId} />
+  if (exportShare.enabled && exportShare.shareId) {
+    const target = new URL('gallery/', window.location.href)
+    target.searchParams.set('tab', 'preview')
+    target.searchParams.set('shareId', exportShare.shareId)
+    window.location.replace(target.toString())
+    return (
+      <div className="mx-auto flex h-dvh w-full max-w-lg items-center justify-center bg-white text-sm text-neutral-500">
+        正在跳转到图片预览…
+      </div>
+    )
   }
 
   if (highlightSetup.enabled) {

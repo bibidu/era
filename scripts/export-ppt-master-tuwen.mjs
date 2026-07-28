@@ -38,13 +38,29 @@ async function main() {
 
   const bodyText = `## 仓库信息
 
-本文介绍的仓库为 **hugohe3/ppt-master**（作者 Hugo He / 仓库名 ppt-master），可在 GitHub 搜索该全名直达项目主页。下方卡片展示该仓库在 GitHub 的社交预览图与当前 Star 数。
+本文介绍的仓库为 **hugohe3/ppt-master**（作者 Hugo He / 仓库名 ppt-master）。
+
+可在 GitHub 搜索该全名直达项目主页。
+
+下方卡片展示该仓库在 GitHub 的社交预览图与当前 Star 数。
 
 ${card.markdown}
 
 ## 它解决什么问题
 
-做 PPT 最烦的不是「写不出来」，而是 AI 给你一堆截图式页面——看着像，改不了。改一个字要重新生成，图表动不了，动画更是奢望。PPT Master 走另一条路：让 Agent 按 Skill 工作流，直接生成**可编辑的原生 PowerPoint**，形状、图表、过渡动画都在 PPT 里，而不是一张扁平长图。你拿到的是标准 .pptx，能在 PowerPoint / Keynote 里继续改母版、调数据、加备注。
+做 PPT 最烦的不是「写不出来」。
+
+而是 AI 给你一堆截图式页面——看着像，改不了。
+
+改一个字要重新生成，图表动不了，动画更是奢望。
+
+PPT Master 走另一条路：让 Agent 按 Skill 工作流，直接生成**可编辑的原生 PowerPoint**。
+
+形状、图表、过渡动画都在 PPT 里，而不是一张扁平长图。
+
+你拿到的是标准 .pptx，能在 PowerPoint / Keynote 里继续改母版、调数据、加备注。
+
+README 里强调的核心差异是「原生深度」：幻灯片母版、数据图表、过渡动画，不是文本框堆叠。
 
 ## 三个值得关注的点
 
@@ -54,7 +70,13 @@ ${card.markdown}
 
 ## 适合谁
 
-需要把长文档快速变成能继续打磨的演示稿的人——产品路演、运营复盘、研究汇报、内部培训都合适。社区 Star 数已经说明认可度：这不是玩具 Demo，而是能进真实工作流的开源 Skill。若你也在用 Claude Code / Codex 做自动化，值得把 ppt-master 加进工具箱，让「写材料」和「做幻灯片」真正串成一条链路。
+需要把长文档快速变成能继续打磨的演示稿的人——产品路演、运营复盘、研究汇报、内部培训都合适。
+
+社区 Star 数已经说明认可度：这不是玩具 Demo，而是能进真实工作流的开源 Skill。
+
+若你也在用 Claude Code / Codex 做自动化，值得把 ppt-master 加进工具箱。
+
+让「写材料」和「做幻灯片」真正串成一条链路。
 
 一句话总结：**要的是能改的 PPT，不是能看的图片。**`
 
@@ -94,7 +116,7 @@ ${card.markdown}
     ranges.push({ style: 'brush', blockId: block.id, start: idx, end: idx + phrase.length, color })
   }
 
-  function addUnderline(block, phrase, color = '#525252') {
+  function addUnderline(block, phrase, color = '#EF4444') {
     if (!block) return
     const plain = block.plainText ?? block.text
     const idx = plain.indexOf(phrase)
@@ -103,8 +125,8 @@ ${card.markdown}
   }
 
   addBrush(findScoped('可编辑的原生 PowerPoint'), '可编辑的原生 PowerPoint')
-  addUnderline(findScoped('不是一张扁平长图'), '不是一张扁平长图')
   addBrush(findScoped('原生深度'), '原生深度')
+  addUnderline(findScoped('不是一张扁平长图'), '不是一张扁平长图')
   addBrush(findScoped('本地生成'), '本地生成')
   addBrush(findScoped('Agent 工作流'), 'Agent 工作流')
   addUnderline(findScoped('能进真实工作流'), '能进真实工作流')
@@ -138,6 +160,9 @@ ${card.markdown}
     path.join(OUT, 'manifest.json'),
     JSON.stringify({ projectId, charCount, coverPath, sheetPath, pagePaths, exported }, null, 2),
   )
+
+  const share = await api('POST', `/v1/projects/${projectId}/export-share`, {})
+  console.log('gallery preview:', share.url)
 }
 
 async function stitchHorizontal(imagePaths, outPath) {

@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>图文中心 · Era</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0e0b;
+      --gold: #c9a96e;
+      --gold-dim: #b5a07a;
+      --text: #e8dfc8;
+      --sub: #6b5e47;
+      --card-bg: #1a1812;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Noto Serif SC", "Source Han Serif CN", Georgia, serif;
+      overflow: hidden;
+    }
+
+    /* ── Page tabs ── */
+    .page-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 10px 18px 0;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .page-tab {
+      flex: 1;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 8px 8px 0 0;
+      background: transparent;
+      color: var(--sub);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color .2s, background .2s;
+    }
+    .page-tab.active {
+      color: var(--gold);
+      background: rgba(201,169,110,.08);
+    }
+    .page-tab:disabled { opacity: .4; cursor: not-allowed; }
+
+    .status-msg {
+      display: none;
+      padding: 24px 18px;
+      text-align: center;
+      color: var(--sub);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .status-msg.show { display: block; }
+
+    /* ── Header ── */
+    .header {
+      padding: 14px 18px 12px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .title-block { flex: 1; min-width: 0; }
+
+    .badge {
+      font-size: 10px;
+      letter-spacing: .1em;
+      color: var(--gold-dim);
+      border: 1px solid #b5a07a44;
+      padding: 2px 10px;
+      border-radius: 999px;
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+
+    .title-block h1 {
+      font-size: clamp(13px, 3.5vw, 17px);
+      font-weight: 600;
+      line-height: 1.35;
+      color: #f0e6cc;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .title-block h1 span { color: #e05a4a; }
+
+    .btn-zip {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #c9a96e, #a07840);
+      color: #1a1509;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: 7px;
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity .2s;
+      letter-spacing: .03em;
+    }
+    .btn-zip:disabled { opacity: .55; cursor: not-allowed; }
+    .btn-zip:not(:disabled):hover { opacity: .88; }
+
+    /* ── Dots ── */
+    .dots {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--sub);
+      transition: background .25s, transform .25s;
+      cursor: pointer;
+    }
+    .dot.active {
+      background: var(--gold);
+      transform: scale(1.3);
+    }
+    .page-label {
+      font-size: 11px;
+      color: var(--sub);
+      margin-left: 6px;
+    }
+
+    /* ── Carousel ── */
+    .carousel-wrap {
+      /* height set by JS after measuring header */
+      display: flex;
+      overflow-x: scroll;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .carousel-wrap::-webkit-scrollbar { display: none; }
+
+    .slide {
+      flex: 0 0 100%;
+      scroll-snap-align: start;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      position: relative;
+    }
+
+    /* ── Skeleton ── */
+    .skeleton {
+      position: absolute;
+      border-radius: 10px;
+      background: #1c1c1c;
+      overflow: hidden;
+    }
+    .skeleton::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 45%;
+      height: 100%;
+      background: linear-gradient(
+        to right,
+        transparent,
+        rgba(255,255,255,.055),
+        transparent
+      );
+      transform: translateX(-150%) skewX(-22deg);
+      animation: shimmer-diag 3s ease-in-out infinite;
+    }
+    @keyframes shimmer-diag {
+      0%   { transform: translateX(-150%) skewX(-22deg); }
+      100% { transform: translateX(380%) skewX(-22deg); }
+    }
+
+    /* ── Image ── */
+    .slide img {
+      height: 100%;
+      width: auto;
+      max-width: 100%;
+      object-fit: contain;
+      border-radius: 10px;
+      display: none; /* shown after load */
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Individual download overlay ── */
+    .slide-dl {
+      position: absolute;
+      bottom: 20px; right: 20px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(0,0,0,.55);
+      color: var(--gold);
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(201,169,110,.3);
+      backdrop-filter: blur(6px);
+      text-decoration: none;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity .2s;
+    }
+    .slide:hover .slide-dl,
+    .slide-dl:focus { opacity: 1; }
+
+    /* ── Lightbox ── */
+    .lb {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.93);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      backdrop-filter: blur(8px);
+    }
+    .lb.open { display: flex; }
+    .lb img {
+      max-height: 94vh; max-width: 94vw;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+    .lb-close {
+      position: fixed; top: 16px; right: 18px;
+      color: #fff; font-size: 30px;
+      background: none; border: none; cursor: pointer; opacity: .7;
+    }
+    .lb-close:hover { opacity: 1; }
+    .lb-nav {
+      position: fixed; top: 50%; transform: translateY(-50%);
+      background: rgba(255,255,255,.12); color: #fff;
+      border: none; width: 42px; height: 42px;
+      border-radius: 50%; font-size: 20px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .lb-prev { left: 10px; }
+    .lb-next { right: 10px; }
+
+    /* ── Footer ── */
+    .footer {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      text-align: center;
+      font-size: 10px;
+      color: #2e2820;
+      padding: 6px;
+      background: var(--bg);
+      border-top: 1px solid #ffffff06;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="page-tabs" id="pageTabs" aria-label="页面切换">
+  <button type="button" class="page-tab active" data-tab="library">图文库</button>
+  <button type="button" class="page-tab" data-tab="preview">图片预览</button>
+</nav>
+
+<!-- Header -->
+<div class="header" id="header">
+  <div class="header-top">
+    <div class="title-block">
+      <div class="badge" id="badge">Era 图文</div>
+      <h1 id="groupTitle">图文下载中心</h1>
+    </div>
+    <button class="btn-zip" id="btnZip">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      <span id="btnLabel">下载 ZIP</span>
+    </button>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div class="dots" id="dots"></div>
+    <span class="page-label" id="pageLabel"></span>
+  </div>
+</div>
+
+<!-- Carousel -->
+<div class="carousel-wrap" id="carousel"></div>
+<div class="status-msg" id="statusMsg"></div>
+
+<!-- Lightbox -->
+<div class="lb" id="lb">
+  <button class="lb-close" id="lbClose">×</button>
+  <button class="lb-nav lb-prev" id="lbPrev">‹</button>
+  <img id="lbImg" src="" alt="" />
+  <button class="lb-nav lb-next" id="lbNext">›</button>
+</div>
+
+<div class="footer">Era 图文工具 · bibidu/era</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://kzoxyextxjwscrpjowud.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6b3h5ZXh0eGp3c2NycGpvd3VkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxMDM4MjYsImV4cCI6MjEwMDY3OTgyNn0.FZuvFtxaMOUUGg3y7kNDxv_p4Etz2KrVpkCHpPKbmDU';
+const EXPORT_TABLE = 'era_export_shares';
+
+const DATES = [
+  {
+    date: '2026-07-28',
+    title: '买房租房<span>选楼层</span>，99%的人都<span>选错</span>了（上篇）',
+    images: ['graphic-page-01.png','graphic-page-02.png','graphic-page-03.png','graphic-page-04.png']
+  }
+];
+
+const params = new URLSearchParams(location.search);
+const shareId = params.get('shareId') || '';
+const initialTab = params.get('tab') === 'preview' || params.get('exportShare') === '1' || shareId
+  ? 'preview'
+  : 'library';
+
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+const headerEl = document.getElementById('header');
+const carouselEl = document.getElementById('carousel');
+const dotsEl = document.getElementById('dots');
+const pageLabelEl = document.getElementById('pageLabel');
+const statusMsgEl = document.getElementById('statusMsg');
+const badgeEl = document.getElementById('badge');
+const groupTitleEl = document.getElementById('groupTitle');
+const footerH = 26;
+
+let activeTab = initialTab;
+let allImages = [];
+let dots = [];
+let lbCurrent = 0;
+
+const lb = document.getElementById('lb');
+const lbImg = document.getElementById('lbImg');
+
+function setCarouselHeight() {
+  const tabsH = document.getElementById('pageTabs').getBoundingClientRect().height;
+  const hh = headerEl.getBoundingClientRect().height;
+  carouselEl.style.height = `${window.innerHeight - tabsH - hh - footerH}px`;
+}
+
+function showStatus(text) {
+  statusMsgEl.textContent = text;
+  statusMsgEl.classList.add('show');
+  carouselEl.style.display = 'none';
+}
+
+function hideStatus() {
+  statusMsgEl.classList.remove('show');
+  carouselEl.style.display = 'flex';
+}
+
+function clearCarousel() {
+  carouselEl.innerHTML = '';
+  dotsEl.innerHTML = '';
+  dots = [];
+  allImages = [];
+  pageLabelEl.textContent = '';
+}
+
+async function fetchExportShare(id) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/${EXPORT_TABLE}?id=eq.${encodeURIComponent(id)}&select=*`,
+    {
+      headers: {
+        apikey: SUPABASE_ANON,
+        Authorization: `Bearer ${SUPABASE_ANON}`,
+      },
+    },
+  );
+  if (!res.ok) throw new Error(`加载失败 (${res.status})`);
+  const rows = await res.json();
+  if (!rows[0]) throw new Error('分享不存在或已过期');
+  return rows[0];
+}
+
+function buildLibraryImages() {
+  const base = new URL('.', location.href).href;
+  const list = [];
+  DATES.forEach((g) => {
+    g.images.forEach((f) => list.push({ src: `${base}${g.date}/${f}`, file: f, blob: null }));
+  });
+  return list;
+}
+
+function buildPreviewImages(record) {
+  const list = [];
+  if (record.sheet?.dataUrl) {
+    list.push({ src: record.sheet.dataUrl, file: record.sheet.name || 'graphic-review-sheet.png', blob: null });
+  }
+  (record.images || []).forEach((img) => {
+    list.push({ src: img.dataUrl, file: img.name, blob: null });
+  });
+  return list;
+}
+
+function renderCarousel(images) {
+  clearCarousel();
+  allImages = images;
+  hideStatus();
+
+  if (!images.length) {
+    showStatus('暂无图片');
+    return;
+  }
+
+  images.forEach(({ src, file }, i) => {
+    const slide = document.createElement('div');
+    slide.className = 'slide';
+
+    const skel = document.createElement('div');
+    skel.className = 'skeleton';
+
+    const img = document.createElement('img');
+    img.alt = `第 ${i + 1} 页`;
+    img.loading = i === 0 ? 'eager' : 'lazy';
+
+    function sizeSkeleton() {
+      const sh = carouselEl.clientHeight - 24;
+      const sw = Math.min((sh * 9) / 16, carouselEl.clientWidth - 24);
+      skel.style.width = `${sw}px`;
+      skel.style.height = `${Math.min(sw * 16 / 9, sh)}px`;
+      skel.style.maxHeight = `${sh}px`;
+    }
+    sizeSkeleton();
+    window.addEventListener('resize', sizeSkeleton);
+
+    img.addEventListener('load', () => {
+      skel.style.display = 'none';
+      img.style.display = 'block';
+    });
+    img.src = src;
+
+    const dlBtn = document.createElement('button');
+    dlBtn.className = 'slide-dl';
+    dlBtn.innerHTML = `${isIOS ? '分享' : '下载'}`;
+    dlBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (isIOS) {
+        await shareBlob(await resolveBlob(src, file), file);
+        return;
+      }
+      dlBtn.textContent = '…';
+      try {
+        const blob = await resolveBlob(src, file);
+        triggerDownload(blob, file);
+      } finally {
+        dlBtn.textContent = '下载';
+      }
+    });
+
+    img.addEventListener('click', () => openLb(i));
+
+    slide.appendChild(skel);
+    slide.appendChild(img);
+    slide.appendChild(dlBtn);
+    carouselEl.appendChild(slide);
+  });
+
+  dots = images.map((_, i) => {
+    const d = document.createElement('div');
+    d.className = `dot${i === 0 ? ' active' : ''}`;
+    d.addEventListener('click', () => {
+      carouselEl.scrollTo({ left: i * carouselEl.clientWidth, behavior: 'smooth' });
+    });
+    dotsEl.appendChild(d);
+    return d;
+  });
+  updateDots(0);
+}
+
+function updateDots(idx) {
+  dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+  pageLabelEl.textContent = allImages.length ? `${idx + 1} / ${allImages.length}` : '';
+}
+
+async function resolveBlob(src, file) {
+  if (src.startsWith('data:')) {
+    const res = await fetch(src);
+    return res.blob();
+  }
+  return fetch(src).then((r) => r.blob());
+}
+
+function triggerDownload(blob, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+async function shareBlob(blob, filename) {
+  const f = new File([blob], filename, { type: blob.type || 'image/png' });
+  if (navigator.canShare?.({ files: [f] })) {
+    await navigator.share({ files: [f], title: filename });
+  } else {
+    triggerDownload(blob, filename);
+  }
+}
+
+async function shareAllIOS() {
+  const btn = document.getElementById('btnZip');
+  const lbl = document.getElementById('btnLabel');
+  btn.disabled = true;
+  lbl.textContent = '加载中…';
+  try {
+    const files = await Promise.all(
+      allImages.map(async ({ src, file }) => {
+        const blob = await resolveBlob(src, file);
+        return new File([blob], file, { type: blob.type || 'image/png' });
+      }),
+    );
+    if (navigator.canShare?.({ files })) {
+      await navigator.share({ files, title: 'Era 图文' });
+      return;
+    }
+    for (const file of files) {
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: file.name });
+      }
+    }
+  } finally {
+    btn.disabled = false;
+    lbl.textContent = '下载 ZIP';
+  }
+}
+
+async function downloadZip() {
+  if (isIOS) {
+    await shareAllIOS();
+    return;
+  }
+  const btn = document.getElementById('btnZip');
+  const lbl = document.getElementById('btnLabel');
+  btn.disabled = true;
+  lbl.textContent = '打包中…';
+  try {
+    const zip = new JSZip();
+    await Promise.all(
+      allImages.map(async ({ src, file }) => {
+        zip.file(file, await resolveBlob(src, file));
+      }),
+    );
+    const content = await zip.generateAsync({ type: 'blob' });
+    const zipName = activeTab === 'preview' && shareId
+      ? `era-export-${shareId.slice(0, 8)}.zip`
+      : 'era-gallery.zip';
+    triggerDownload(content, zipName);
+  } catch (e) {
+    alert(`下载失败，请重试：${e.message}`);
+  } finally {
+    btn.disabled = false;
+    lbl.textContent = '下载 ZIP';
+  }
+}
+
+function openLb(i) {
+  lbCurrent = i;
+  lbImg.src = allImages[i].src;
+  lb.classList.add('open');
+}
+function closeLb() { lb.classList.remove('open'); }
+function navLb(d) {
+  lbCurrent = (lbCurrent + d + allImages.length) % allImages.length;
+  lbImg.src = allImages[lbCurrent].src;
+}
+
+async function loadLibraryTab() {
+  badgeEl.textContent = 'Era 图文库';
+  if (DATES.length) groupTitleEl.innerHTML = DATES[0].title;
+  renderCarousel(buildLibraryImages());
+}
+
+async function loadPreviewTab() {
+  badgeEl.textContent = '在线预览';
+  if (!shareId) {
+    groupTitleEl.textContent = '图片预览';
+    showStatus('请通过 Agent 分享的预览链接打开（需带 shareId 参数）');
+    return;
+  }
+  showStatus('加载预览中…');
+  try {
+    const record = await fetchExportShare(shareId);
+    groupTitleEl.textContent = record.title?.trim() || 'Era 导出图';
+    if (record.aspect_ratio) {
+      badgeEl.textContent = `画幅 ${record.aspect_ratio}`;
+    }
+    renderCarousel(buildPreviewImages(record));
+  } catch (e) {
+    groupTitleEl.textContent = '图片预览';
+    showStatus(e.message || '加载失败');
+  }
+}
+
+function setActiveTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.page-tab').forEach((el) => {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+  const url = new URL(location.href);
+  url.searchParams.set('tab', tab);
+  if (tab === 'preview' && shareId) url.searchParams.set('shareId', shareId);
+  else url.searchParams.delete('shareId');
+  history.replaceState(null, '', url);
+  if (tab === 'preview') void loadPreviewTab();
+  else void loadLibraryTab();
+  setCarouselHeight();
+}
+
+document.querySelectorAll('.page-tab').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.tab !== activeTab) setActiveTab(btn.dataset.tab);
+  });
+});
+
+document.getElementById('btnZip').addEventListener('click', () => void downloadZip());
+document.getElementById('lbClose').addEventListener('click', closeLb);
+document.getElementById('lbPrev').addEventListener('click', () => navLb(-1));
+document.getElementById('lbNext').addEventListener('click', () => navLb(1));
+lb.addEventListener('click', (e) => { if (e.target === lb) closeLb(); });
+document.addEventListener('keydown', (e) => {
+  if (!lb.classList.contains('open')) return;
+  if (e.key === 'Escape') closeLb();
+  if (e.key === 'ArrowLeft') navLb(-1);
+  if (e.key === 'ArrowRight') navLb(1);
+});
+
+let scrollTimer;
+carouselEl.addEventListener('scroll', () => {
+  clearTimeout(scrollTimer);
+  scrollTimer = setTimeout(() => {
+    const idx = Math.round(carouselEl.scrollLeft / carouselEl.clientWidth);
+    updateDots(idx);
+  }, 60);
+});
+
+window.addEventListener('resize', setCarouselHeight);
+setActiveTab(initialTab);
+</script>
+</body>
+</html>

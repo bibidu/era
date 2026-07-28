@@ -168,9 +168,9 @@ description: >-
 ### 配色
 
 - 全文高亮颜色种类 **≤ 3**（brush/underline/circle/quote 合计）。
-- **若用满 3 种颜色，其中必须有一种是灰色**（推荐深灰 `#525252` 或中灰 `#737373`；**禁止**用偏蓝的灰如 `#9CA3AF`）。
+- **色板不含灰色**：高亮样式选择器已去掉灰色，请用明黄、橙、红、绿、蓝、紫等彩色；下划线与笔刷同色叠加。
 - **笔刷与下划线同色**：同段叠加时下划线颜色必须与笔刷一致（禁止刷黄线红等混色）。
-- 常用组合：2 色（明黄 `#FACC15` + 深灰 `#525252`）；3 色（明黄 `#FACC15` + 警示红 `#EF4444` + 深灰 `#525252`）。
+- 常用组合：2 色（明黄 `#FACC15` + 警示红 `#EF4444`）；3 色（明黄 `#FACC15` + 警示红 `#EF4444` + 橙色 `#FB923C`）。
 
 ### 密度与语义（自动高亮或代改时最重要）
 
@@ -208,13 +208,14 @@ description: >-
 
 ---
 
-## §预览/下载页（GitHub Pages，必做）
+## §预览/下载页（Gallery 图片预览 Tab，必做）
 
-> **项目全局约定**：出图后必须把最终图**传到 GitHub Pages**，再把链接发给用户，让用户能**在线预览并下载原图**。不要只发聊天里的图，也不要只给本机路径。
+> **项目全局约定**：出图后必须把最终图**上传到 Supabase**，再把 **Gallery 图片预览 Tab** 链接发给用户。支持全屏轮播预览与 **ZIP 整包下载**（iOS 走分享）。
 
-1. 校验通过、且用户确认拼图后（可与「发分图」同时进行），调用 `era_create_export_share`（`projectId`）。它会导出各页原图 + 拼图并上传 Supabase，返回 `shareId` 与 GitHub Pages `url`（形如 `https://bibidu.github.io/era/?exportShare=1&shareId=<SHARE_ID>`）。
-2. **主动把该 `url` 发给用户**：打开即可逐页在线预览，并「下载」单页或「下载全部」原图。云端 Agent **必须**发 GitHub Pages 链接，不要发 `127.0.0.1`。
-3. 内容/高亮/封面有改动、重新导出后，需**重新** `era_create_export_share` 生成新链接再发。
+1. 校验通过、且用户确认拼图后，调用 `era_create_export_share`（`projectId`）。返回 `shareId` 与 Gallery URL（形如 `https://bibidu.github.io/era/gallery/?tab=preview&shareId=<SHARE_ID>`）。
+2. **主动把该 `url` 发给用户**：打开后切到「图片预览」Tab，可左右滑动逐页查看，点「下载 ZIP」一次打包全部原图。云端 Agent **必须**发 GitHub Pages 链接，不要发 `127.0.0.1`。
+3. 旧链接 `?exportShare=1&shareId=...` 会自动跳转到 Gallery 预览 Tab。
+4. 内容/高亮/封面有改动、重新导出后，需**重新** `era_create_export_share` 生成新链接再发。
 
 ---
 
@@ -232,7 +233,7 @@ description: >-
 | 高亮设置分享 | `era_create_highlight_setup_share` · `POST .../highlight-setup-share` → GitHub Pages `url` |
 | 校验 | `era_preview_layout` · `POST .../preview-layout` |
 | 导出 | `era_export_images` · `POST .../export`（含拼图 `sheetPath`） |
-| 导出图预览/下载页 | `era_create_export_share` · `POST .../export-share` → GitHub Pages `url`（`?exportShare=1&shareId=...`，在线预览 + 下载原图，**必做**） |
+| 导出图预览/下载页 | `era_create_export_share` · `POST .../export-share` → Gallery `url`（`/gallery/?tab=preview&shareId=...`，轮播预览 + ZIP 下载，**必做**） |
 | 封面图 | 见仓库中的 **封面 skill**（非风水流程） |
 | 通道 | `era_bridge_status` · `GET /v1/bridge/status` |
 

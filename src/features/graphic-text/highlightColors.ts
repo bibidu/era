@@ -26,9 +26,6 @@ export const THEME_COLORS = [
   '#22C55E',
   '#3B82F6',
   '#A855F7',
-  '#525252',
-  '#9CA3AF',
-  '#D1D5DB',
 ]
 
 export function keysFromHighlightMap(map: HighlightColorMap): Set<string> {
