@@ -13,7 +13,7 @@
 
 高亮步骤：先用 `era_create_highlight_setup_share` 上传正文到 Supabase，再把返回的 GitHub Pages URL（`?highlightSetup=1&shareId=...`）发给用户；用户复制配置发回后 `era_apply_highlights(replace: true)`。
 
-出图步骤：导出并经用户确认拼图后，必须用 `era_create_export_share` 上传 Supabase，并把 Gallery 预览链接（`/gallery/?tab=preview&shareId=...`）发给用户；支持 ZIP 整包下载。
+出图步骤：导出并经用户确认拼图后，必须用 `era_create_export_share` 上传 Supabase，并把 Gallery 图文库链接（`/gallery/?shareId=...`）发给用户；支持 ZIP 整包下载。
 
 ## 封面skill（单张 9:16 封面）
 

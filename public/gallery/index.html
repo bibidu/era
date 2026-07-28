@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>图文中心 · Era</title>
+  <title>图文库 · Era</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -24,31 +24,7 @@
       overflow: hidden;
     }
 
-    /* ── Page tabs ── */
-    .page-tabs {
-      display: flex;
-      gap: 8px;
-      padding: 10px 18px 0;
-      border-bottom: 1px solid rgba(255,255,255,.06);
-    }
-    .page-tab {
-      flex: 1;
-      padding: 8px 12px;
-      border: none;
-      border-radius: 8px 8px 0 0;
-      background: transparent;
-      color: var(--sub);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: color .2s, background .2s;
-    }
-    .page-tab.active {
-      color: var(--gold);
-      background: rgba(201,169,110,.08);
-    }
-    .page-tab:disabled { opacity: .4; cursor: not-allowed; }
-
+    /* ── Status ── */
     .status-msg {
       display: none;
       padding: 24px 18px;
@@ -274,17 +250,12 @@
 </head>
 <body>
 
-<nav class="page-tabs" id="pageTabs" aria-label="页面切换">
-  <button type="button" class="page-tab active" data-tab="library">图文库</button>
-  <button type="button" class="page-tab" data-tab="preview">图片预览</button>
-</nav>
-
 <!-- Header -->
 <div class="header" id="header">
   <div class="header-top">
     <div class="title-block">
       <div class="badge" id="badge">Era 图文</div>
-      <h1 id="groupTitle">图文下载中心</h1>
+      <h1 id="groupTitle">图文库</h1>
     </div>
     <button class="btn-zip" id="btnZip">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -331,9 +302,6 @@ const DATES = [
 
 const params = new URLSearchParams(location.search);
 const shareId = params.get('shareId') || '';
-const initialTab = params.get('tab') === 'preview' || params.get('exportShare') === '1' || shareId
-  ? 'preview'
-  : 'library';
 
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -347,18 +315,17 @@ const badgeEl = document.getElementById('badge');
 const groupTitleEl = document.getElementById('groupTitle');
 const footerH = 26;
 
-let activeTab = initialTab;
 let allImages = [];
 let dots = [];
 let lbCurrent = 0;
+let shareTitle = '';
 
 const lb = document.getElementById('lb');
 const lbImg = document.getElementById('lbImg');
 
 function setCarouselHeight() {
-  const tabsH = document.getElementById('pageTabs').getBoundingClientRect().height;
   const hh = headerEl.getBoundingClientRect().height;
-  carouselEl.style.height = `${window.innerHeight - tabsH - hh - footerH}px`;
+  carouselEl.style.height = `${window.innerHeight - hh - footerH}px`;
 }
 
 function showStatus(text) {
@@ -567,7 +534,7 @@ async function downloadZip() {
       }),
     );
     const content = await zip.generateAsync({ type: 'blob' });
-    const zipName = activeTab === 'preview' && shareId
+    const zipName = shareId
       ? `era-export-${shareId.slice(0, 8)}.zip`
       : 'era-gallery.zip';
     triggerDownload(content, zipName);
@@ -590,53 +557,30 @@ function navLb(d) {
   lbImg.src = allImages[lbCurrent].src;
 }
 
-async function loadLibraryTab() {
+async function loadGallery() {
   badgeEl.textContent = 'Era 图文库';
+
+  if (shareId) {
+    showStatus('加载中…');
+    try {
+      const record = await fetchExportShare(shareId);
+      shareTitle = record.title?.trim() || 'Era 导出图';
+      groupTitleEl.textContent = shareTitle;
+      if (record.aspect_ratio) {
+        badgeEl.textContent = `画幅 ${record.aspect_ratio}`;
+      }
+      renderCarousel(buildPreviewImages(record));
+      return;
+    } catch (e) {
+      groupTitleEl.textContent = '图文库';
+      showStatus(e.message || '加载失败');
+      return;
+    }
+  }
+
   if (DATES.length) groupTitleEl.innerHTML = DATES[0].title;
   renderCarousel(buildLibraryImages());
 }
-
-async function loadPreviewTab() {
-  badgeEl.textContent = '在线预览';
-  if (!shareId) {
-    groupTitleEl.textContent = '图片预览';
-    showStatus('请通过 Agent 分享的预览链接打开（需带 shareId 参数）');
-    return;
-  }
-  showStatus('加载预览中…');
-  try {
-    const record = await fetchExportShare(shareId);
-    groupTitleEl.textContent = record.title?.trim() || 'Era 导出图';
-    if (record.aspect_ratio) {
-      badgeEl.textContent = `画幅 ${record.aspect_ratio}`;
-    }
-    renderCarousel(buildPreviewImages(record));
-  } catch (e) {
-    groupTitleEl.textContent = '图片预览';
-    showStatus(e.message || '加载失败');
-  }
-}
-
-function setActiveTab(tab) {
-  activeTab = tab;
-  document.querySelectorAll('.page-tab').forEach((el) => {
-    el.classList.toggle('active', el.dataset.tab === tab);
-  });
-  const url = new URL(location.href);
-  url.searchParams.set('tab', tab);
-  if (tab === 'preview' && shareId) url.searchParams.set('shareId', shareId);
-  else url.searchParams.delete('shareId');
-  history.replaceState(null, '', url);
-  if (tab === 'preview') void loadPreviewTab();
-  else void loadLibraryTab();
-  setCarouselHeight();
-}
-
-document.querySelectorAll('.page-tab').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    if (btn.dataset.tab !== activeTab) setActiveTab(btn.dataset.tab);
-  });
-});
 
 document.getElementById('btnZip').addEventListener('click', () => void downloadZip());
 document.getElementById('lbClose').addEventListener('click', closeLb);
@@ -660,7 +604,8 @@ carouselEl.addEventListener('scroll', () => {
 });
 
 window.addEventListener('resize', setCarouselHeight);
-setActiveTab(initialTab);
+setCarouselHeight();
+void loadGallery();
 </script>
 </body>
 </html>
