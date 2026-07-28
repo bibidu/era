@@ -365,7 +365,11 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
   return (
     <div
       className={`${embedded ? 'min-h-0 flex-1' : 'h-dvh'} overflow-y-auto`}
-      style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}
+      style={{
+        background: 'var(--era-bg)',
+        color: 'var(--era-fg)',
+        paddingTop: embedded ? undefined : 'env(safe-area-inset-top, 0px)',
+      }}
     >
       <main className="mx-auto flex min-h-full w-full max-w-5xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
         {!embedded ? (

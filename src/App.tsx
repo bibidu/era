@@ -50,7 +50,11 @@ function App() {
     >
       <header
         className="flex shrink-0 items-center justify-center border-b px-4 py-2"
-        style={{ borderColor: 'var(--era-border)', background: 'var(--era-header)' }}
+        style={{
+          borderColor: 'var(--era-border)',
+          background: 'var(--era-header)',
+          paddingTop: 'calc(0.5rem + env(safe-area-inset-top, 0px))',
+        }}
       >
         <TopModeTabs value={mode} onChange={setMode} theme={theme} onToggleTheme={toggle} />
       </header>

@@ -18,14 +18,15 @@ export function readStoredTheme(): EraTheme {
   return 'dark'
 }
 
-function upsertMeta(name: string, content: string) {
-  let meta = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null
-  if (!meta) {
-    meta = document.createElement('meta')
-    meta.name = name
-    document.head.appendChild(meta)
-  }
+function replaceMeta(name: string, content: string, media?: string) {
+  document.querySelectorAll(`meta[name="${name}"]`).forEach((node) => node.remove())
+  const meta = document.createElement('meta')
+  meta.name = name
   meta.content = content
+  if (media) {
+    meta.media = media
+  }
+  document.head.appendChild(meta)
 }
 
 export function applyTheme(theme: EraTheme) {
@@ -33,19 +34,18 @@ export function applyTheme(theme: EraTheme) {
   document.documentElement.dataset.theme = theme
   document.documentElement.style.colorScheme = theme
   document.documentElement.style.backgroundColor = color
-  document.body.style.backgroundColor = color
+  if (document.body) {
+    document.body.style.backgroundColor = color
+  }
 
-  upsertMeta('theme-color', color)
-  upsertMeta('apple-mobile-web-app-status-bar-style', theme === 'dark' ? 'black' : 'default')
+  // Recreate theme-color metas so Safari re-reads them.
+  // Keep both media variants on the active app theme so system preference cannot pin the bar black.
+  replaceMeta('theme-color', color)
+  replaceMeta('theme-color', color, '(prefers-color-scheme: light)')
+  replaceMeta('theme-color', color, '(prefers-color-scheme: dark)')
 
-  // Some browsers keep multiple theme-color metas for media queries; keep a single source of truth.
-  document.querySelectorAll('meta[name="theme-color"]').forEach((node, index) => {
-    if (index === 0) {
-      ;(node as HTMLMetaElement).content = color
-      return
-    }
-    node.remove()
-  })
+  // black-translucent lets the themed page background show through the Apple status bar.
+  replaceMeta('apple-mobile-web-app-status-bar-style', 'black-translucent')
 
   try {
     localStorage.setItem(ERA_THEME_STORAGE_KEY, theme)

@@ -9,8 +9,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=overlays-content" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#0a0a0a" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0a0a0a" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0a0a" />
     <script>
       ;(function () {
         try {
@@ -20,12 +22,11 @@
           document.documentElement.dataset.theme = theme
           document.documentElement.style.colorScheme = theme
           document.documentElement.style.backgroundColor = color
-          var themeColor = document.querySelector('meta[name="theme-color"]')
-          if (themeColor) themeColor.setAttribute('content', color)
+          document.querySelectorAll('meta[name="theme-color"]').forEach(function (node) {
+            node.setAttribute('content', color)
+          })
           var statusBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
-          if (statusBar) {
-            statusBar.setAttribute('content', theme === 'dark' ? 'black' : 'default')
-          }
+          if (statusBar) statusBar.setAttribute('content', 'black-translucent')
         } catch (e) {}
       })()
     </script>
