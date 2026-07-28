@@ -1,4 +1,9 @@
 import { parseMarkdown } from './layout'
+import {
+  ERA_PAGE_BREAK_MARKER,
+  isPageBreakMarker,
+  stripPageBreakMarkerLines,
+} from './pageBreak'
 import { DEFAULT_MARKDOWN, type MarkdownBlock } from './types'
 
 export type ImageFit = 'width' | 'contain'
@@ -15,6 +20,7 @@ export interface MarkdownContentBlock {
   id: string
   kind: 'markdown'
   text: string
+  pageBreakBefore?: boolean
 }
 
 export interface ImageContentBlock {
@@ -64,7 +70,18 @@ function markdownFromParsedBlock(block: MarkdownBlock): string {
 export function splitMarkdownToContentBlocks(markdown: string): MarkdownContentBlock[] {
   const text = markdown.trim()
   if (!text) return []
-  return parseMarkdown(text).map((block) => createMarkdownContentBlock(markdownFromParsedBlock(block)))
+  return parseMarkdown(text)
+    .filter((block) => !isPageBreakMarker(block.text))
+    .map((block) =>
+      createMarkdownContentBlock(markdownFromParsedBlock(block), block.pageBreakBefore),
+    )
+}
+
+function sanitizeMarkdownContentBlock(block: MarkdownContentBlock): MarkdownContentBlock | null {
+  if (isPageBreakMarker(block.text)) return null
+  const text = stripPageBreakMarkerLines(block.text)
+  if (!text) return null
+  return text === block.text ? block : { ...block, text }
 }
 
 export function createDocumentFromMarkdown(markdown: string): GraphicDocument {
@@ -83,14 +100,20 @@ export function normalizeDocument(document: GraphicDocument): GraphicDocument {
       continue
     }
 
-    const parsed = parseMarkdown(block.text)
+    const sanitized = sanitizeMarkdownContentBlock(block)
+    if (!sanitized) continue
+
+    const parsed = parseMarkdown(sanitized.text)
     if (parsed.length <= 1) {
-      blocks.push(block)
+      blocks.push(sanitized)
       continue
     }
 
     for (const mdBlock of parsed) {
-      blocks.push(createMarkdownContentBlock(markdownFromParsedBlock(mdBlock)))
+      if (isPageBreakMarker(mdBlock.text)) continue
+      blocks.push(
+        createMarkdownContentBlock(markdownFromParsedBlock(mdBlock), mdBlock.pageBreakBefore),
+      )
     }
   }
 
@@ -112,7 +135,8 @@ export function createAssetId() {
 export function getDocumentMarkdown(document: GraphicDocument): string {
   return document.blocks
     .filter((block): block is MarkdownContentBlock => block.kind === 'markdown')
-    .map((block) => block.text)
+    .map((block) => stripPageBreakMarkerLines(block.text))
+    .filter((text) => text.length > 0)
     .join('\n\n')
 }
 
@@ -242,10 +266,14 @@ export function createImageContentBlock(assetId: string): ImageContentBlock {
   }
 }
 
-export function createMarkdownContentBlock(text = ''): MarkdownContentBlock {
+export function createMarkdownContentBlock(
+  text = '',
+  pageBreakBefore?: boolean,
+): MarkdownContentBlock {
   return {
     id: createBlockId(),
     kind: 'markdown',
     text,
+    ...(pageBreakBefore ? { pageBreakBefore: true } : {}),
   }
 }

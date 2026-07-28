@@ -35,6 +35,7 @@ import { THEME_COLORS } from './highlightColors'
 import type { InteractiveHighlightStyle } from './InteractiveHighlightedText'
 import { stripHighlightMarkers } from './inlineHighlight'
 import { getGraphicLayout, paginateDocument } from './layout'
+import { isPageBreakMarker } from './pageBreak'
 import {
   createHighlightPreviewDraft,
   type HighlightPreviewDraft,
@@ -61,6 +62,7 @@ function plainTextByBlockIdFromDocument(document: GraphicDocument): Record<strin
   const result: Record<string, string> = {}
   for (const block of document.blocks) {
     if (block.kind !== 'markdown') continue
+    if (isPageBreakMarker(block.text)) continue
     for (const md of parseScopedMarkdown(block.id, block.text)) {
       result[md.id] = stripHighlightMarkers(md.text)
     }

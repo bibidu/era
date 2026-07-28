@@ -3,6 +3,7 @@ import type {
   GraphicAsset,
   GraphicDocument,
   ImageContentBlock,
+  MarkdownContentBlock,
 } from './document'
 import { DEFAULT_IMAGE_MARGIN, parseScopedMarkdown } from './document'
 import { getFontConfigForStyleType } from './graphicTextFonts'
@@ -14,6 +15,7 @@ import {
   wrapCodeTextLines,
 } from './codeBlock'
 import { wrapPlainTextLinesByWidth } from './textWrap'
+import { ERA_PAGE_BREAK_MARKER, isPageBreakMarker } from './pageBreak'
 import type {
   GraphicAspectRatio,
   GraphicTextConfig,
@@ -166,7 +168,7 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
 
   const flushParagraph = () => {
     const text = paragraph.join(' ').trim()
-    if (text) blocks.push(createBlock('paragraph', text, blocks.length))
+    if (text && !isPageBreakMarker(text)) blocks.push(createBlock('paragraph', text, blocks.length))
     paragraph = []
   }
 
@@ -208,7 +210,7 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
       continue
     }
 
-    if (line === '<!-- era:page-break -->') {
+    if (line === ERA_PAGE_BREAK_MARKER) {
       flushParagraph()
       pendingPageBreak = true
       continue
@@ -559,14 +561,16 @@ function documentBlockToLayoutLines(
 export function paginateDocument(document: GraphicDocument, config: GraphicTextConfig): GraphicTextPage[] {
   const layout = getGraphicLayout(config)
   const availableHeight = layout.contentBottom - layout.safeTop
-  const PAGE_BREAK_MARKER = '<!-- era:page-break -->'
   const allLines: LayoutLine[] = []
   let forcePageBreakBeforeNext = false
 
   for (const block of document.blocks) {
-    if (block.kind === 'markdown' && block.text.trim() === PAGE_BREAK_MARKER) {
+    if (block.kind === 'markdown' && isPageBreakMarker(block.text)) {
       forcePageBreakBeforeNext = true
       continue
+    }
+    if (block.kind === 'markdown' && (block as MarkdownContentBlock).pageBreakBefore) {
+      forcePageBreakBeforeNext = true
     }
 
     const blockLines = documentBlockToLayoutLines(block, document, config, layout)

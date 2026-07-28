@@ -18,6 +18,10 @@ import {
   createExportShare,
   createHighlightSetupShare,
 } from '../src/agent/supabaseHighlightSetup.ts'
+import {
+  ERA_PAGE_BREAK_MARKER,
+  isPageBreakMarker,
+} from '../src/features/graphic-text/pageBreak.ts'
 
 export interface StoredProject {
   id: string
@@ -78,18 +82,31 @@ function splitMarkdownToBlocks(markdown: string) {
   // 与前端 createDocumentFromMarkdown 一致：按解析后的块拆成 content blocks
   // 此处做轻量拆分：按空行分段，标题/列表行单独成块
   const lines = text.replace(/\r\n/g, '\n').split('\n')
-  const chunks: string[] = []
+  const chunks: { text: string; pageBreakBefore?: boolean }[] = []
   let paragraph: string[] = []
   let inCode = false
   let code: string[] = []
+  let pendingPageBreak = false
 
   const flushParagraph = () => {
     const joined = paragraph.join('\n').trim()
-    if (joined) chunks.push(joined)
+    if (joined) {
+      chunks.push({
+        text: joined,
+        ...(pendingPageBreak ? { pageBreakBefore: true } : {}),
+      })
+      pendingPageBreak = false
+    }
     paragraph = []
   }
   const flushCode = () => {
-    if (code.length) chunks.push(['```', ...code, '```'].join('\n'))
+    if (code.length) {
+      chunks.push({
+        text: ['```', ...code, '```'].join('\n'),
+        ...(pendingPageBreak ? { pageBreakBefore: true } : {}),
+      })
+      pendingPageBreak = false
+    }
     code = []
   }
 
@@ -113,9 +130,9 @@ function splitMarkdownToBlocks(markdown: string) {
       flushParagraph()
       continue
     }
-    if (line.trim() === '<!-- era:page-break -->') {
+    if (line.trim() === ERA_PAGE_BREAK_MARKER) {
       flushParagraph()
-      chunks.push('<!-- era:page-break -->')
+      pendingPageBreak = true
       continue
     }
     if (
@@ -126,7 +143,12 @@ function splitMarkdownToBlocks(markdown: string) {
       /^!\[[^\]]*\]\(.+\)$/.test(line.trim())
     ) {
       flushParagraph()
-      chunks.push(line.trim())
+      const content = line.trim()
+      chunks.push({
+        text: content,
+        ...(pendingPageBreak ? { pageBreakBefore: true } : {}),
+      })
+      pendingPageBreak = false
       continue
     }
     paragraph.push(line)
@@ -137,7 +159,8 @@ function splitMarkdownToBlocks(markdown: string) {
   return chunks.map((chunk) => ({
     id: createBlockId(),
     kind: 'markdown' as const,
-    text: chunk,
+    text: chunk.text,
+    ...(chunk.pageBreakBefore ? { pageBreakBefore: true } : {}),
   }))
 }
 
@@ -157,6 +180,7 @@ export function summarizeContentBlocks(document: {
 
   for (const block of document.blocks) {
     if (block.kind !== 'markdown' || typeof block.text !== 'string') continue
+    if (isPageBreakMarker(block.text)) continue
     const lines = block.text.replace(/\r\n/g, '\n').split('\n')
     // 简化：每个 content block 通常已是单段；仍按 markdown 规则标 type
     let type = 'paragraph'
