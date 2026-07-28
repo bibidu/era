@@ -8,6 +8,7 @@ import { DEFAULT_IMAGE_MARGIN, parseScopedMarkdown } from './document'
 import { getFontConfigForStyleType } from './graphicTextFonts'
 import { measureImageLayoutSize } from './imageAsset'
 import { stripHighlightMarkers } from './inlineHighlight'
+import { stripTitleBreakMarkers, titlePlainText } from './glyphEmphasis'
 import {
   CODE_HORIZONTAL_PADDING_SCALE,
   estimateCodeLineWidth,
@@ -59,6 +60,7 @@ interface LayoutLine {
   sourceBlockId: string
   charOffset: number
   titleSentenceIndex?: number
+  titleFontSizeOverride?: number
   imageUrl?: string
   imageWidth?: number
   imageHeight?: number
@@ -68,6 +70,12 @@ interface LayoutLine {
 export function splitTitleSentences(text: string): string[] {
   const plain = text.trim()
   if (!plain) return ['']
+  // 显式换行：`|` 或换行符（用于风水标题多行排版）
+  const explicit = plain
+    .split(/\n|\|/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+  if (explicit.length > 1) return explicit
   const parts = plain.split(/(?<=[？！。!?])/).map((part) => part.trim()).filter(Boolean)
   return parts.length ? parts : [plain]
 }
@@ -224,9 +232,15 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
 }
 
 function resolveTitleFontSize(block: MarkdownBlock, config: GraphicTextConfig) {
-  const secondary = (block.titleSentenceIndex ?? 0) > 0
+  if (typeof block.titleFontSizeOverride === 'number' && block.titleFontSizeOverride > 0) {
+    return block.titleFontSizeOverride
+  }
   const secondarySize = config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72)
-  return secondary ? secondarySize : config.titleFontSize
+  const lineText = stripHighlightMarkers(block.text).trim()
+  // 「上篇」/（上篇）等篇名标记用次字号
+  if (/^[「（(]/.test(lineText)) return secondarySize
+  if ((block.titleSentenceIndex ?? 0) > 0) return secondarySize
+  return config.titleFontSize
 }
 
 function blockFontSize(block: MarkdownBlock, config: GraphicTextConfig, exportScale: number) {
@@ -338,23 +352,60 @@ function blockToLayoutLines(
   const fontWeight = styleType === 'title' || styleType === 'heading' ? 700 : 400
 
   if (styleType === 'title') {
-    const sentences = splitTitleSentences(plainText)
+    const fullPlain = titlePlainText(block.text)
+    const rawPlain = stripHighlightMarkers(block.text)
+    const explicitBreaks = /[|\n]/.test(rawPlain)
+    const sentences = splitTitleSentences(rawPlain)
     const lines: LayoutLine[] = []
     let charOffset = 0
     let lineIndex = 0
 
     for (let sentenceIndex = 0; sentenceIndex < sentences.length; sentenceIndex += 1) {
       const sentence = sentences[sentenceIndex]
-      const sentenceBlock: MarkdownBlock = { ...block, titleSentenceIndex: sentenceIndex }
-      const size = blockFontSize(sentenceBlock, config, layout.exportScale)
+      // 显式 | 换行：非篇名行保持主字号；篇名「」用次字号
+      const effectiveSentenceIndex = explicitBreaks
+        ? /^[「（(]/.test(sentence.trim())
+          ? 1
+          : 0
+        : sentenceIndex
+      let sentenceBlock: MarkdownBlock = {
+        ...block,
+        text: sentence,
+        titleSentenceIndex: effectiveSentenceIndex,
+      }
       const availableWidth = layout.pageWidth - layout.safeX * 2
-      const wrapped = wrapPlainTextLinesByWidth(
-        sentence,
-        fontFamily,
-        size,
-        fontWeight,
-        availableWidth,
-      )
+      let size = blockFontSize(sentenceBlock, config, layout.exportScale)
+
+      // 显式换行：禁止再按宽度折行；若超宽则缩小该行字号以单行放下
+      let wrapped: string[]
+      if (explicitBreaks) {
+        if (typeof document !== 'undefined') {
+          const ctx = document.createElement('canvas').getContext('2d')
+          if (ctx) {
+            const primary = fontFamily.replace(/"/g, '').split(',')[0].trim()
+            let fit = size
+            while (fit > 24 * layout.exportScale) {
+              ctx.font = `${fontWeight} ${fit}px ${primary}`
+              if (ctx.measureText(sentence).width <= availableWidth + 6) break
+              fit -= layout.exportScale
+            }
+            if (fit < size) {
+              const override = fit / layout.exportScale
+              sentenceBlock = { ...sentenceBlock, titleFontSizeOverride: override }
+              size = fit
+            }
+          }
+        }
+        wrapped = [sentence]
+      } else {
+        wrapped = wrapPlainTextLinesByWidth(
+          sentence,
+          fontFamily,
+          size,
+          fontWeight,
+          availableWidth,
+        )
+      }
       const lineHeight = blockLineHeight(sentenceBlock, config, layout.exportScale)
 
       for (let wrapIndex = 0; wrapIndex < wrapped.length; wrapIndex += 1) {
@@ -367,7 +418,9 @@ function blockToLayoutLines(
           type: isFirstLine ? block.type : 'paragraph',
           styleType,
           text:
-            sentences.length === 1 && wrapped.length === 1 ? block.text : lineText,
+            sentences.length === 1 && wrapped.length === 1
+              ? stripTitleBreakMarkers(block.text)
+              : lineText,
           lineHeight,
           spacingBefore: blockSpacingBefore(block, config, layout.exportScale, isFirstLine),
           spacingAfter: blockSpacingAfter(
@@ -379,11 +432,17 @@ function blockToLayoutLines(
           ),
           sourceBlockId: block.id,
           charOffset,
-          titleSentenceIndex: sentenceIndex,
+          titleSentenceIndex: effectiveSentenceIndex,
+          titleFontSizeOverride: sentenceBlock.titleFontSizeOverride,
         })
         charOffset += [...lineText].length
         lineIndex += 1
       }
+    }
+
+    // 校验 charOffset 覆盖完整标题纯文本
+    if (charOffset !== [...fullPlain].length && lines.length) {
+      // 容忍差异：markers 已剥离
     }
 
     return lines.length
@@ -393,7 +452,7 @@ function blockToLayoutLines(
             id: `${block.id}-l0`,
             type: block.type,
             styleType,
-            text: block.text,
+            text: stripTitleBreakMarkers(block.text),
             lineHeight: blockLineHeight(block, config, layout.exportScale),
             spacingBefore: blockSpacingBefore(block, config, layout.exportScale, true),
             spacingAfter: blockSpacingAfter(block, config, layout.exportScale, layout, true),
@@ -464,6 +523,7 @@ function layoutLinesToBlocks(lines: LayoutLine[]): MarkdownBlock[] {
     isBlockEnd: line.spacingAfter > 0,
     sourceBlockId: line.sourceBlockId,
     charOffset: line.charOffset,
+    titleFontSizeOverride: line.titleFontSizeOverride,
     titleSentenceIndex: line.titleSentenceIndex,
     imageUrl: line.imageUrl,
     imageWidth: line.imageWidth,

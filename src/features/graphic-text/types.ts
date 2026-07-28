@@ -59,6 +59,11 @@ export interface GraphicTextConfig {
   circleHighlightColors: Record<string, string>
   /** 文字本身着色（非笔刷底色） */
   colorHighlightColors: Record<string, string>
+  /**
+   * 逐字字形强调（标题混排数黑体等）。
+   * key=`${blockId}:${charIndex}`，value=`fontFamily||scaleX||scaleY`
+   */
+  glyphEmphasis: Record<string, string>
   highlightPickerColor: string
 }
 
@@ -74,6 +79,8 @@ export interface MarkdownBlock {
   charOffset?: number
   /** 一级标题句段：0=首句主字号，≥1=次句字号 */
   titleSentenceIndex?: number
+  /** 显式换行标题行：按行适配后的字号（导出坐标） */
+  titleFontSizeOverride?: number
   imageUrl?: string
   imageWidth?: number
   imageHeight?: number
@@ -131,6 +138,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   quoteHighlightColors: {},
   circleHighlightColors: {},
   colorHighlightColors: {},
+  glyphEmphasis: {},
   highlightPickerColor: '#FACC15',
 }
 

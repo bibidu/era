@@ -64,6 +64,7 @@ const DEFAULT_CONFIG = {
   showWordCount: true,
   backgroundUrl: null,
   ...emptyHighlightMaps(),
+  glyphEmphasis: {},
   highlightPickerColor: '#FACC15',
 }
 
@@ -171,7 +172,8 @@ export function summarizeContentBlocks(document: {
       text = first.replace(/^[-*+]\s+/, '')
     }
     const scopedId = `${block.id}::0::${type}`
-    const plainText = text.replace(/\[\[([^\]]+)\]\]/g, '$1').replace(/\*\*([^*]+)\*\*/g, '$1')
+    let plainText = text.replace(/\[\[([^\]]+)\]\]/g, '$1').replace(/\*\*([^*]+)\*\*/g, '$1')
+    if (type === 'title') plainText = plainText.replace(/\|/g, '').replace(/\n/g, '')
     result.push({
       id: scopedId,
       type,

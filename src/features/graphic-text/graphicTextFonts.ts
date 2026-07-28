@@ -22,5 +22,9 @@ export function getFontConfigForStyleType(config: GraphicTextConfig, styleType: 
 }
 
 export function collectGraphicFontIds(config: GraphicTextConfig) {
-  return [...new Set([config.titleFontId, config.headingFontId, config.bodyFontId, config.codeFontId])]
+  const ids = [config.titleFontId, config.headingFontId, config.bodyFontId, config.codeFontId]
+  if (config.glyphEmphasis && Object.keys(config.glyphEmphasis).length > 0) {
+    ids.push('shuheiti')
+  }
+  return [...new Set(ids)]
 }

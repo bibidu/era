@@ -29,6 +29,7 @@ import {
   stripHighlightMarkers,
   themeAlpha,
 } from './inlineHighlight'
+import { parseGlyphEmphasis } from './glyphEmphasis'
 import {
   InteractiveHighlightedChars,
   type InteractiveHighlightHandlers,
@@ -106,9 +107,11 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
   const bodyUnit = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const codeUnit = `${(config.codeFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const titleFontPx =
-    (block.titleSentenceIndex ?? 0) > 0
-      ? (config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72))
-      : config.titleFontSize
+    typeof block.titleFontSizeOverride === 'number' && block.titleFontSizeOverride > 0
+      ? block.titleFontSizeOverride
+      : (block.titleSentenceIndex ?? 0) > 0 || /^[「（(]/.test(stripHighlightMarkers(block.text).trim())
+        ? (config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72))
+        : config.titleFontSize
   const titleUnit = `${(titleFontPx / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const headingUnit = `${(config.headingFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const gap = '1.1cqw'
@@ -142,8 +145,18 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
   const marginBottom = blockEndMargin(block, config)
 
   if (styleType === 'title') {
+    const lineText = stripHighlightMarkers(block.text).trim()
+    const titleFontPx =
+      typeof block.titleFontSizeOverride === 'number' && block.titleFontSizeOverride > 0
+        ? block.titleFontSizeOverride
+        : (block.titleSentenceIndex ?? 0) > 0 || /^[「（(]/.test(lineText)
+          ? (config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72))
+          : config.titleFontSize
+    const titleSize = `${(titleFontPx / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
     const primaryColor =
-      (block.titleSentenceIndex ?? 0) === 0 && config.titlePrimaryColor
+      (block.titleSentenceIndex ?? 0) === 0 &&
+      !/^[「（(]/.test(lineText) &&
+      config.titlePrimaryColor
         ? config.titlePrimaryColor
         : undefined
     return {
@@ -204,6 +217,7 @@ function BrushUnderlineSegments({
   brushColors,
   underlineColors,
   textColors = {},
+  glyphEmphasis = {},
 }: {
   text: string
   blockId: string
@@ -211,44 +225,95 @@ function BrushUnderlineSegments({
   brushColors: Readonly<Record<string, string>>
   underlineColors: Readonly<Record<string, string>>
   textColors?: Readonly<Record<string, string>>
+  glyphEmphasis?: Readonly<Record<string, string>>
 }) {
-  const segments = buildMergedThemeHighlightSegments(
-    text,
-    blockId,
-    brushColors,
-    underlineColors,
-    {},
-    charOffset,
-    textColors,
-  )
+  const plain = stripHighlightMarkers(text)
+  const hasEmphasis = [...plain].some((_, i) => glyphEmphasis[`${blockId}:${charOffset + i}`])
+
+  if (!hasEmphasis) {
+    const segments = buildMergedThemeHighlightSegments(
+      text,
+      blockId,
+      brushColors,
+      underlineColors,
+      {},
+      charOffset,
+      textColors,
+    )
+
+    return (
+      <>
+        {segments.map((segment, index) => {
+          if (!segment.brushColor && !segment.underlineColor && !segment.textColor) {
+            return <span key={`${index}-${segment.text}`}>{segment.text}</span>
+          }
+
+          return (
+            <span
+              key={`${index}-${segment.text}`}
+              className={[
+                segment.brushColor ? 'graphic-theme-brush' : '',
+                segment.underlineColor ? 'graphic-theme-underline' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              style={{
+                ...(segment.brushColor
+                  ? { backgroundColor: themeAlpha(segment.brushColor, 0.28) }
+                  : null),
+                ...(segment.underlineColor
+                  ? { ['--graphic-highlight-underline' as string]: segment.underlineColor }
+                  : null),
+                ...(segment.textColor ? { color: segment.textColor } : null),
+              }}
+            >
+              {segment.text}
+            </span>
+          )
+        })}
+      </>
+    )
+  }
 
   return (
     <>
-      {segments.map((segment, index) => {
-        if (!segment.brushColor && !segment.underlineColor && !segment.textColor) {
-          return <span key={`${index}-${segment.text}`}>{segment.text}</span>
-        }
-
+      {[...plain].map((char, index) => {
+        const key = `${blockId}:${charOffset + index}`
+        const brushColor = brushColors[key]
+        const underlineColor = underlineColors[key]
+        const textColor = textColors[key]
+        const emphasis = parseGlyphEmphasis(glyphEmphasis[key])
         return (
           <span
-            key={`${index}-${segment.text}`}
+            key={key}
             className={[
-              segment.brushColor ? 'graphic-theme-brush' : '',
-              segment.underlineColor ? 'graphic-theme-underline' : '',
+              brushColor ? 'graphic-theme-brush' : '',
+              underlineColor ? 'graphic-theme-underline' : '',
+              emphasis ? 'graphic-glyph-emphasis' : '',
             ]
               .filter(Boolean)
               .join(' ')}
             style={{
-              ...(segment.brushColor
-                ? { backgroundColor: themeAlpha(segment.brushColor, 0.28) }
+              ...(brushColor ? { backgroundColor: themeAlpha(brushColor, 0.28) } : null),
+              ...(underlineColor
+                ? { ['--graphic-highlight-underline' as string]: underlineColor }
                 : null),
-              ...(segment.underlineColor
-                ? { ['--graphic-highlight-underline' as string]: segment.underlineColor }
+              ...(textColor ? { color: textColor } : null),
+              ...(emphasis
+                ? {
+                    fontFamily: emphasis.fontFamily,
+                    transform: `scale(${emphasis.scaleX}, ${emphasis.scaleY})`,
+                    transformOrigin: 'center center',
+                    display: 'inline-block',
+                    width: '1em',
+                    marginLeft: `${(emphasis.scaleX - 1) / 2}em`,
+                    marginRight: `${(emphasis.scaleX - 1) / 2}em`,
+                    textAlign: 'center' as const,
+                  }
                 : null),
-              ...(segment.textColor ? { color: segment.textColor } : null),
             }}
           >
-            {segment.text}
+            {char === ' ' ? '\u00a0' : char}
           </span>
         )
       })}
@@ -264,6 +329,7 @@ function HandUnderlineAwareSegments({
   underlineColors,
   handUnderlineColors,
   textColors = {},
+  glyphEmphasis = {},
 }: {
   text: string
   blockId: string
@@ -272,6 +338,7 @@ function HandUnderlineAwareSegments({
   underlineColors: Readonly<Record<string, string>>
   handUnderlineColors: Readonly<Record<string, string>>
   textColors?: Readonly<Record<string, string>>
+  glyphEmphasis?: Readonly<Record<string, string>>
 }) {
   const plain = stripHighlightMarkers(text)
   const handRuns = buildHandUnderlineColorRuns(plain, blockId, charOffset, handUnderlineColors)
@@ -285,6 +352,7 @@ function HandUnderlineAwareSegments({
         brushColors={brushColors}
         underlineColors={underlineColors}
         textColors={textColors}
+        glyphEmphasis={glyphEmphasis}
       />
     )
   }
@@ -370,6 +438,7 @@ function StyledHighlightedText({
   handUnderlineColors,
   circleColors,
   textColors = {},
+  glyphEmphasis = {},
   enableHighlight,
 }: {
   text: string
@@ -379,6 +448,7 @@ function StyledHighlightedText({
   handUnderlineColors: Readonly<Record<string, string>>
   circleColors: Readonly<Record<string, string>>
   textColors?: Readonly<Record<string, string>>
+  glyphEmphasis?: Readonly<Record<string, string>>
   enableHighlight: boolean
 }) {
   if (!enableHighlight) return <>{text}</>
@@ -404,6 +474,7 @@ function StyledHighlightedText({
             underlineColors={underlineColors}
             handUnderlineColors={handUnderlineColors}
             textColors={textColors}
+            glyphEmphasis={glyphEmphasis}
           />
         </CircleHighlightWrap>,
       )
@@ -424,6 +495,7 @@ function StyledHighlightedText({
         underlineColors={underlineColors}
         handUnderlineColors={handUnderlineColors}
         textColors={textColors}
+        glyphEmphasis={glyphEmphasis}
       />,
     )
     index = end
@@ -459,6 +531,7 @@ function renderBlockText(
   quoteColors: Readonly<Record<string, string>>,
   circleColors: Readonly<Record<string, string>>,
   textColors: Readonly<Record<string, string>>,
+  glyphEmphasis: Readonly<Record<string, string>>,
   highlightInteraction?: InteractiveHighlightHandlers,
 ) {
   const showQuoteBar = blockHasHighlightInMap(block, quoteColors)
@@ -473,6 +546,7 @@ function renderBlockText(
       circleColors={circleColors}
       quoteColors={quoteColors}
       textColors={textColors}
+      glyphEmphasis={glyphEmphasis}
       interaction={highlightInteraction}
     />
   ) : (
@@ -484,6 +558,7 @@ function renderBlockText(
       handUnderlineColors={handUnderlineColors}
       circleColors={circleColors}
       textColors={textColors}
+      glyphEmphasis={glyphEmphasis}
       enableHighlight
     />
   )
@@ -576,6 +651,7 @@ export function GraphicPage({
   const quoteColors = config.quoteHighlightColors
   const circleColors = config.circleHighlightColors
   const textColors = config.colorHighlightColors ?? {}
+  const glyphEmphasis = config.glyphEmphasis ?? {}
   const accentColor = config.highlightPickerColor
   const isFengshui = config.pageOverlay === 'fengshui'
   const topBarBorderColor = isFengshui ? FENGSHUI_TOP_BAR_LINE_COLOR : GRAPHIC_TOP_BAR_BORDER_COLOR
@@ -742,6 +818,7 @@ export function GraphicPage({
                               circleColors={circleColors}
                               quoteColors={quoteColors}
                               textColors={textColors}
+                              glyphEmphasis={glyphEmphasis}
                               interaction={highlightInteraction}
                             />
                           ) : (
@@ -753,6 +830,7 @@ export function GraphicPage({
                               handUnderlineColors={handUnderlineColors}
                               circleColors={circleColors}
                               textColors={textColors}
+                              glyphEmphasis={glyphEmphasis}
                               enableHighlight
                             />
                           )}
@@ -774,6 +852,7 @@ export function GraphicPage({
                   quoteColors,
                   circleColors,
                   textColors,
+                  glyphEmphasis,
                   highlightInteraction,
                 )}
               </div>

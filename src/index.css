@@ -1547,6 +1547,11 @@ body.is-dragging {
   -webkit-box-decoration-break: clone;
 }
 
+.graphic-glyph-emphasis {
+  /* transform / fontFamily 由 inline style 控制 */
+  vertical-align: baseline;
+}
+
 .graphic-interactive-circle {
   vertical-align: baseline;
 }

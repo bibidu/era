@@ -5,6 +5,7 @@ import {
   HAND_DRAWN_CIRCLE_VIEWBOX,
   buildCircleHighlightColorRuns,
 } from './circleHighlight'
+import { parseGlyphEmphasis } from './glyphEmphasis'
 import { themeAlpha, stripHighlightMarkers } from './inlineHighlight'
 import type { MarkdownBlock } from './types'
 
@@ -35,6 +36,7 @@ function InteractiveChar({
   brushColor,
   underlineColor,
   textColor,
+  emphasisRaw,
   onPointerDown,
 }: {
   char: string
@@ -42,20 +44,36 @@ function InteractiveChar({
   brushColor: string | null
   underlineColor: string | null
   textColor: string | null
+  emphasisRaw?: string | null
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void
 }) {
+  const emphasis = parseGlyphEmphasis(emphasisRaw)
   const style: CSSProperties = {
     ...(brushColor ? { backgroundColor: themeAlpha(brushColor, 0.28) } : null),
     ...(underlineColor
       ? { ['--graphic-highlight-underline' as string]: underlineColor }
       : null),
     ...(textColor ? { color: textColor } : null),
+    ...(emphasis
+      ? {
+          fontFamily: emphasis.fontFamily,
+          transform: `scale(${emphasis.scaleX}, ${emphasis.scaleY})`,
+          transformOrigin: 'center center',
+          display: 'inline-block',
+          // 布局宽按未缩放字宽，再用负 margin 收回 scaleX 多出的空隙，避免压到后字
+          width: '1em',
+          marginLeft: `${(emphasis.scaleX - 1) / 2}em`,
+          marginRight: `${(emphasis.scaleX - 1) / 2}em`,
+          textAlign: 'center' as const,
+        }
+      : null),
   }
 
   const className = [
     'graphic-interactive-char',
     brushColor ? 'graphic-theme-brush' : '',
     underlineColor ? 'graphic-theme-underline' : '',
+    emphasis ? 'graphic-glyph-emphasis' : '',
   ]
     .filter(Boolean)
     .join(' ')
@@ -81,6 +99,7 @@ export function InteractiveHighlightedChars({
   circleColors,
   quoteColors,
   textColors = {},
+  glyphEmphasis = {},
   interaction,
 }: {
   text: string
@@ -90,6 +109,7 @@ export function InteractiveHighlightedChars({
   circleColors: Readonly<Record<string, string>>
   quoteColors: Readonly<Record<string, string>>
   textColors?: Readonly<Record<string, string>>
+  glyphEmphasis?: Readonly<Record<string, string>>
   interaction: InteractiveHighlightHandlers
 }): ReactNode {
   const blockId = block.sourceBlockId ?? block.id
@@ -109,6 +129,7 @@ export function InteractiveHighlightedChars({
     const underlineColor = underlineColors[key] ?? null
     const quoteColor = quoteColors[key] ?? null
     const textColor = textColors[key] ?? null
+    const emphasisRaw = glyphEmphasis[key] ?? null
 
     let activeForStyle = false
     switch (interaction.activeStyle) {
@@ -138,6 +159,7 @@ export function InteractiveHighlightedChars({
         brushColor={brushColor}
         underlineColor={underlineColor}
         textColor={textColor}
+        emphasisRaw={emphasisRaw}
         onPointerDown={(event) => interaction.onCharPointerDown(key, activeForStyle, event)}
       />
     )
@@ -166,7 +188,6 @@ export function InteractiveHighlightedChars({
               strokeWidth={HAND_DRAWN_CIRCLE_STROKE_WIDTH}
               strokeLinecap="round"
               strokeLinejoin="round"
-              vectorEffect="non-scaling-stroke"
             />
           </svg>
         </span>,

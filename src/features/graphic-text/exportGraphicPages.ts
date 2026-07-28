@@ -19,6 +19,7 @@ import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { getFontById } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
 import { buildCharHighlightColorSegments, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
+import { parseGlyphEmphasis } from './glyphEmphasis'
 import { blockHasHighlightInMap, resolveBlockHighlightColor } from './highlightColors'
 import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
 import {
@@ -78,6 +79,25 @@ interface LineSegment {
   color: string | null
 }
 
+function measureGlyphAdvance(
+  ctx: CanvasRenderingContext2D,
+  char: string,
+  baseFont: string,
+  emphasisRaw: string | undefined,
+) {
+  const emphasis = parseGlyphEmphasis(emphasisRaw)
+  if (!emphasis) return ctx.measureText(char).width
+  const prev = ctx.font
+  // baseFont like `700 56px "Noto Serif SC", serif`
+  const weightSize = prev.match(/^(\d+)\s+([\d.]+)px\s+/) 
+  const weight = weightSize?.[1] ?? '700'
+  const size = weightSize?.[2] ?? '56'
+  ctx.font = `${weight} ${size}px ${emphasis.fontFamily}`
+  const w = ctx.measureText(char).width * emphasis.scaleX
+  ctx.font = prev
+  return w
+}
+
 function drawStyledLine(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -95,48 +115,97 @@ function drawStyledLine(
   textColor: string,
   circleLineWidth: number,
   textColorSegments: LineSegment[] = [],
+  glyphEmphasis: Readonly<Record<string, string>> = {},
 ) {
   const paddingX = 4
   const plainText = stripHighlightMarkers(text)
+  const chars = [...plainText]
+  const hasEmphasis = chars.some((_, i) => glyphEmphasis[`${blockId}:${charOffset + i}`])
   ctx.textBaseline = 'alphabetic'
   const textMetrics = ctx.measureText(plainText || '文')
   const ascent = textMetrics.actualBoundingBoxAscent ?? fontSize * 0.88
   const descent = textMetrics.actualBoundingBoxDescent ?? fontSize * 0.12
   const baselineY = yTop + ascent
   const underlineY = baselineY + fontSize * 0.18
+  const baseFont = ctx.font
+
+  const charAdvances = chars.map((char, i) =>
+    measureGlyphAdvance(ctx, char, baseFont, glyphEmphasis[`${blockId}:${charOffset + i}`]),
+  )
+  const totalWidth = charAdvances.reduce((a, b) => a + b, 0)
 
   if (enableHighlight) {
+    // brush backgrounds: walk chars for accurate emphasis widths
     let bgX = x
+    let charIdx = 0
     for (const segment of brushSegments) {
       if (!segment.text) continue
-      const metrics = ctx.measureText(segment.text)
+      const segChars = [...segment.text]
+      let segW = 0
+      for (let i = 0; i < segChars.length; i += 1) {
+        segW += charAdvances[charIdx + i] ?? ctx.measureText(segChars[i]).width
+      }
       if (segment.color) {
         ctx.fillStyle = themeAlpha(segment.color, 0.28)
-        ctx.fillRect(bgX - paddingX, yTop, metrics.width + paddingX * 2, ascent + descent + 4)
+        ctx.fillRect(bgX - paddingX, yTop, segW + paddingX * 2, ascent + descent + 4)
       }
-      bgX += metrics.width
+      bgX += segW
+      charIdx += segChars.length
     }
   }
 
-  if (enableHighlight && textColorSegments.some((segment) => segment.color)) {
-    let drawX = x
+  // Draw text char-by-char when emphasis or per-char colors present
+  if (hasEmphasis || (enableHighlight && textColorSegments.some((segment) => segment.color))) {
+    const colorAt: (string | null)[] = chars.map((_, i) => {
+      // rebuild from segments
+      return null
+    })
+    let ci = 0
     for (const segment of textColorSegments) {
-      if (!segment.text) continue
-      ctx.fillStyle = segment.color || textColor
-      ctx.fillText(segment.text, drawX, baselineY)
-      drawX += ctx.measureText(segment.text).width
+      for (const _ch of segment.text) {
+        if (ci < colorAt.length) colorAt[ci] = segment.color
+        ci += 1
+      }
+    }
+    let drawX = x
+    for (let i = 0; i < chars.length; i += 1) {
+      const char = chars[i]
+      const key = `${blockId}:${charOffset + i}`
+      const emphasis = parseGlyphEmphasis(glyphEmphasis[key])
+      const fill = (enableHighlight && colorAt[i]) || textColor
+      ctx.fillStyle = fill
+      if (emphasis) {
+        const weightSize = baseFont.match(/^(\d+)\s+([\d.]+)px\s+/)
+        const weight = weightSize?.[1] ?? '700'
+        const sizePx = Number(weightSize?.[2] ?? fontSize)
+        ctx.save()
+        ctx.translate(drawX + (charAdvances[i] / 2), baselineY)
+        ctx.scale(emphasis.scaleX, emphasis.scaleY)
+        ctx.font = `${weight} ${sizePx}px ${emphasis.fontFamily}`
+        ctx.textAlign = 'center'
+        ctx.fillText(char, 0, 0)
+        ctx.restore()
+        ctx.font = baseFont
+        ctx.textAlign = 'left'
+      } else {
+        ctx.fillText(char, drawX, baselineY)
+      }
+      drawX += charAdvances[i]
     }
   } else {
     ctx.fillStyle = textColor
     ctx.fillText(plainText, x, baselineY)
   }
 
+  const advancePrefix = (end: number) => charAdvances.slice(0, end).reduce((a, b) => a + b, 0)
+  const advanceRange = (start: number, end: number) =>
+    charAdvances.slice(start, end).reduce((a, b) => a + b, 0)
+
   if (enableHighlight) {
     const circleRuns = buildCircleHighlightColorRuns(plainText, blockId, charOffset, circleColors)
     for (const run of circleRuns) {
-      const prefix = plainText.slice(0, run.start)
-      const runX = x + ctx.measureText(prefix).width
-      const runWidth = ctx.measureText(run.text).width
+      const runX = x + advancePrefix(run.start)
+      const runWidth = advanceRange(run.start, run.end)
       drawHandDrawnCircleAroundTextBounds(
         ctx,
         runX,
@@ -151,26 +220,28 @@ function drawStyledLine(
     }
 
     let underlineX = x
+    let uIdx = 0
     for (const segment of underlineSegments) {
       if (!segment.text) continue
-      const metrics = ctx.measureText(segment.text)
+      const segLen = [...segment.text].length
+      const segW = advanceRange(uIdx, uIdx + segLen)
       if (segment.color) {
         ctx.strokeStyle = segment.color
         ctx.lineWidth = Math.max(4, fontSize * 0.12)
         ctx.lineCap = 'round'
         ctx.beginPath()
         ctx.moveTo(underlineX, underlineY)
-        ctx.lineTo(underlineX + metrics.width, underlineY)
+        ctx.lineTo(underlineX + segW, underlineY)
         ctx.stroke()
       }
-      underlineX += metrics.width
+      underlineX += segW
+      uIdx += segLen
     }
 
     const handRuns = buildHandUnderlineColorRuns(plainText, blockId, charOffset, handUnderlineColors)
     for (const run of handRuns) {
-      const prefix = plainText.slice(0, run.start)
-      const runX = x + ctx.measureText(prefix).width
-      const runWidth = ctx.measureText(run.text).width
+      const runX = x + advancePrefix(run.start)
+      const runWidth = advanceRange(run.start, run.end)
       drawHandDrawnUnderline(
         ctx,
         runX,
@@ -192,10 +263,13 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
   const styleType = resolveStyleType(block)
   const { fontFamily } = getFontConfigForStyleType(config, styleType)
   if (styleType === 'title') {
+    const lineText = stripHighlightMarkers(block.text).trim()
     const titleSize =
-      (block.titleSentenceIndex ?? 0) > 0
-        ? (config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72))
-        : config.titleFontSize
+      typeof block.titleFontSizeOverride === 'number' && block.titleFontSizeOverride > 0
+        ? block.titleFontSizeOverride
+        : (block.titleSentenceIndex ?? 0) > 0 || /^[「（(]/.test(lineText)
+          ? (config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72))
+          : config.titleFontSize
     return {
       size: titleSize * exportScale,
       weight: 700,
@@ -266,6 +340,7 @@ async function drawPage(
   const quoteColors = config.quoteHighlightColors
   const circleColors = config.circleHighlightColors
   const textColors = config.colorHighlightColors ?? {}
+  const glyphEmphasis = config.glyphEmphasis ?? {}
   const accentColor = config.highlightPickerColor
   const topBar = resolveTopBarParts(config, markdown)
   const canvas = document.createElement('canvas')
@@ -505,6 +580,7 @@ async function drawPage(
       styleType === 'code' ? CODE_TEXT_COLOR : titlePrimary || GRAPHIC_PAGE_TEXT_COLOR,
       circleLineWidth,
       textColorSegments,
+      glyphEmphasis,
     )
     y += lineHeight
 
