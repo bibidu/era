@@ -1,0 +1,13 @@
+---
+description: 当用户要生成社媒封面 / 封面skill 时，必须启用 fengmian skill
+alwaysApply: true
+---
+
+# 封面 Skill 强制路由
+
+只要用户提到以下任一意图，**必须**读取并严格执行项目 skill `.agents/skills/fengmian/SKILL.md`（也可用 `/fengmian` 或 `.cursor/skills/fengmian`）：
+
+- 封面skill / cover skill / 生成封面 / 社媒封面
+- 按大标题、小标题、描述、标签、二级标题、主题色出一张封面图
+
+不要与图文skill（Era 多页长图）混淆。必须运行 `scripts/generate-cover.mjs` 真实出 PNG，禁止只描述不发图。

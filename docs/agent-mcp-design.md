@@ -2,7 +2,8 @@
 
 > 状态：已按用户确认落地（分支 `cursor/mcp-local-agent-be32`）  
 > 范围：仅图文模式（graphic-text），不含海报  
-> 交互流程：见项目 skill `.cursor/skills/tuwen/SKILL.md`（**图文skill** / `/tuwen`）
+> 交互流程：见项目 skill `.cursor/skills/tuwen/SKILL.md`（**图文skill** / `/tuwen`）  
+> 单张社媒封面：见 `.agents/skills/fengmian/SKILL.md`（**封面skill** / `/fengmian`），渲染脚本 `scripts/generate-cover.mjs`（不走 Era Bridge）
 
 ## 背景知识
 
