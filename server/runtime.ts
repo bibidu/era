@@ -112,7 +112,8 @@ function splitMarkdownToBlocks(markdown: string) {
       line.startsWith('# ') ||
       /^#{2,6}\s/.test(line) ||
       /^[-*+]\s/.test(line) ||
-      /^\d+\.\s/.test(line)
+      /^\d+\.\s/.test(line) ||
+      /^!\[[^\]]*\]\(.+\)$/.test(line.trim())
     ) {
       flushParagraph()
       chunks.push(line.trim())
