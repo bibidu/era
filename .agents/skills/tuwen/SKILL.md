@@ -70,7 +70,7 @@ description: >-
 
 ### B2. 根据大纲生成内容（多轮确认）
 
-1. 依据大纲写 Markdown 内容，可含：`##` 二级标题、正文段落、`-` 列表、代码块、以及必要的图片占位（见 §图片混排、§GitHub 仓库图文）。
+1. 依据大纲写 Markdown 内容，可含：`##` 二级标题、正文段落、`-` 列表、代码块、以及必要的图片占位（见 §图片混排、§开源社区仓库图文）。
 2. 心里保留一个一级标题（供后续封面用），但**内容正文可不含 H1**；展示内容全文后**明确询问**：是否继续？
 3. 用户提出修改 → 改完再展示、再询问，直到用户确认内容。
 
@@ -106,17 +106,17 @@ description: >-
 
 ---
 
-## §GitHub 仓库图文（介绍开源项目时必做）
+## §开源社区仓库图文（介绍开源项目时必做）
 
-当正文主题是**介绍某个 GitHub 仓库**（如 `hugohe3/ppt-master`）时，除常规 B 流程外，内容图须包含以下两块：
+当正文主题是**介绍某个开源社区仓库**（如 `hugohe3/ppt-master`）时，除常规 B 流程外，内容图须包含以下两块：
 
 ### 1. 仓库首页预览卡片图
 
-1. 运行仓库卡片脚本（拉取 GitHub 社交预览图 + Star 数，裁剪为 Era 内容区宽度）：
+1. 运行仓库卡片脚本（拉取开源社区社交预览图 + Star 数，裁剪为 Era 内容区宽度）：
    ```bash
    node scripts/generate-github-repo-card.mjs --repo <owner>/<name> --out output/<name>-repo-card.png --dataurl-out output/<name>-repo-card.json
    ```
-2. 从 JSON 读取 `markdown` 字段（内含 dataURL 与 `=宽x高` 尺寸提示），**插入内容靠前位置**（通常紧跟首个 `##` 二级标题之后，或放在「仓库信息」段上方）。
+2. 从 JSON 读取 `markdown` 字段（内含 dataURL 与 `=宽x高` 尺寸提示），**插入内容靠前位置**（通常紧跟「仓库信息」段之后）。
 3. 卡片图须展示：**完整仓库名**（`owner/repo`）与 **Star 数**；不要只用纯文字代替。
 
 ### 2. 仓库信息说明段
@@ -126,12 +126,16 @@ description: >-
 ```markdown
 ## 仓库信息
 
-本文介绍的仓库为 **hugohe3/ppt-master**（作者/仓库名），可在 GitHub 搜索该全名直达项目主页。
+本文介绍的仓库为 **hugohe3/ppt-master**（作者 Hugo He / 仓库名 ppt-master）。
+
+下方卡片展示该仓库在开源社区的预览图与当前 Star 数。
 ```
 
 - `## 仓库信息` 使用二级标题（会渲染为数黑体）。
-- 文中至少一次以 `作者/仓库名` 格式写出全名（如 `abc/efg`），并简要说明作者与仓库名的对应关系。
+- 文中至少一次以 `作者/仓库名` 格式写出全名（如 `hugohe3/ppt-master`），并简要说明作者与仓库名的对应关系。
+- **不要**写「可在 GitHub 搜索…」类引导语；用「开源社区」表述即可。
 - 若用户给了具体仓库链接或全名，以用户提供的为准，不要臆造 owner。
+- 正文须足够充实（建议 **≥800 字**，含问题、能力、承诺、适合谁等），适当拆句分段，避免整段过长。
 
 ---
 
@@ -231,7 +235,7 @@ description: >-
 | 画幅/模板/字体 | `era_update_config` · `PATCH .../config`（`pageOverlay: 'pixel'` + 二级标题 `shuheiti`；风水 `fengshui` + `9:16` + `showWordCount: false` + 固定 `topText`，二级标题保持宋体） |
 | 顶部文案 | 风水模板 `topText` 固定为「连续观看、点赞、关注，你也是地理风水达人（阳宅篇）」 |
 | 图片混排 | markdown 整行 `![alt](url =宽x高)`（url 支持远程或 dataURL） |
-| GitHub 仓库卡片 | `node scripts/generate-github-repo-card.mjs --repo owner/name` |
+| 开源社区仓库卡片 | `node scripts/generate-github-repo-card.mjs --repo owner/name` |
 | 高亮 | `era_apply_highlights` · `POST .../highlights`（可带 `replace: true`） |
 | 高亮设置分享 | `era_create_highlight_setup_share` · `POST .../highlight-setup-share` → GitHub Pages `url` |
 | 校验 | `era_preview_layout` · `POST .../preview-layout` |
