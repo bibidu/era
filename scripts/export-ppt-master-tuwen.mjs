@@ -133,7 +133,7 @@ ${swiss.markdown}
   // 封面
   const coverPath = path.join(OUT, 'cover.png')
   execSync(
-    `node scripts/generate-cover.mjs --bigTitle "PPT\\nMASTER" --smallTitle "AI 生成可编辑 PPT" --description "开源 Skill：文档变原生 PowerPoint" --tags "Agent,开源,可编辑,.pptx" --secondaryTitles "原生图表,本地生成,Skill工作流" --themeColor "#1D4ED8" --out "${coverPath}"`,
+    `node scripts/generate-cover.mjs --bigTitle "PPT\\nMASTER" --smallTitle "AI 生成可编辑 PPT" --description "开源 Skill：文档变原生 PowerPoint" --tags "Agent,开源,可编辑,.pptx" --secondaryTitles "原生图表,本地生成,Skill工作流" --themeColor "#22C55E" --out "${coverPath}"`,
     { cwd: ROOT, stdio: 'inherit' },
   )
 
