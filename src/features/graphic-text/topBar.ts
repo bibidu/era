@@ -3,6 +3,8 @@ import { stripHighlightMarkers } from './inlineHighlight'
 import { parseMarkdown } from './layout'
 import type { GraphicTextConfig } from './types'
 
+export const NON_FENGSHUI_TOP_BAR_TEXT = '点赞关注不迷路～'
+
 export interface TopBarParts {
   custom: string | null
   countText: string
@@ -17,9 +19,12 @@ export function countMarkdownChars(markdown: string): number {
 }
 
 export function resolveTopBarParts(
-  config: Pick<GraphicTextConfig, 'topText' | 'showWordCount'>,
+  config: Pick<GraphicTextConfig, 'topText' | 'showWordCount' | 'pageOverlay'>,
   markdown: string,
 ): TopBarParts {
+  if (config.pageOverlay !== 'fengshui') {
+    return { custom: NON_FENGSHUI_TOP_BAR_TEXT, countText: '' }
+  }
   const custom = config.topText.trim()
   const showCount = config.showWordCount !== false
   const countText = showCount ? `全文 ${countMarkdownChars(markdown)} 字` : ''
@@ -27,7 +32,7 @@ export function resolveTopBarParts(
 }
 
 export function resolveTopBarText(
-  config: Pick<GraphicTextConfig, 'topText' | 'showWordCount'>,
+  config: Pick<GraphicTextConfig, 'topText' | 'showWordCount' | 'pageOverlay'>,
   markdown: string,
 ) {
   const { custom, countText } = resolveTopBarParts(config, markdown)

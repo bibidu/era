@@ -102,6 +102,7 @@ description: >-
 - Era 工程的 markdown **不要写 `# 一级标题`**，从二级标题 / 正文开始，避免内容图出现标题。
 - 画幅：默认像素模板 `pageOverlay: 'pixel'` + 用户选定的 `3:4`（小红书）/ `9:16`（抖音，默认优先）。
 - 建工程时写入二级标题数黑体：`headingFontId`=`shuheiti`，`headingFontFamily`=`"Alimama ShuHeiTi", sans-serif`。
+- **顶部文案固定**为 `点赞关注不迷路～`，**不显示「全文 xxx 字」**（`topText` + `showWordCount: false`；渲染层对非风水模板也会强制此规则）。
 - 因内容图无一级标题，`title_missing_circle` / `title_circle_wrapped` / `title_*` 等标题类校验**不适用于内容图**；标题相关规则改由封面 skill 负责。其余布局告警仍须修复（见 §校验与导出）。
 
 ---
@@ -234,7 +235,7 @@ description: >-
 | 写正文（内容图去掉 H1） | `era_set_markdown` · `PUT .../markdown` |
 | 写标题（风水流程） | `era_set_title` · `PUT .../title` |
 | 画幅/模板/字体 | `era_update_config` · `PATCH .../config`（`pageOverlay: 'pixel'` + 二级标题 `shuheiti`；风水 `fengshui` + `9:16` + `showWordCount: false` + 固定 `topText`，二级标题保持宋体） |
-| 顶部文案 | 风水模板 `topText` 固定为「连续观看、点赞、关注，你也是地理风水达人（阳宅篇）」 |
+| 顶部文案 | 非风水固定「点赞关注不迷路～」且不显示全文数字；风水 `topText` 固定为「连续观看、点赞、关注，你也是地理风水达人（阳宅篇）」 |
 | 图片混排 | markdown 整行 `![alt](url =宽x高)`（url 支持远程或 dataURL） |
 | 开源社区仓库卡片 | `node scripts/generate-github-repo-card.mjs --repo owner/name` |
 | ppt-master 官网示例封面 | `node scripts/generate-ppt-master-example-images.mjs` |

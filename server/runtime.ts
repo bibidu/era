@@ -13,7 +13,7 @@ import {
   type EraProjectSnapshot,
   type HighlightRange,
 } from '../src/agent/protocol.ts'
-import { applyHighlightRanges, emptyHighlightMaps } from '../src/agent/highlightRanges.ts'
+import { applyHighlightRanges, emptyHighlightMaps, remapHighlightRanges } from '../src/agent/highlightRanges.ts'
 import {
   createExportShare,
   createHighlightSetupShare,
@@ -25,6 +25,7 @@ import {
 import {
   getDocumentMarkdownForShare,
   normalizeDocument,
+  plainTextByScopedBlockId,
   type GraphicDocument,
 } from '../src/features/graphic-text/document.ts'
 
@@ -69,8 +70,8 @@ const DEFAULT_CONFIG = {
   backgroundType: 'solid',
   pageOverlay: 'grid',
   overlayStacked: false,
-  topText: '',
-  showWordCount: true,
+  topText: '点赞关注不迷路～',
+  showWordCount: false,
   backgroundUrl: null,
   ...emptyHighlightMaps(),
   highlightPickerColor: '#FACC15',
@@ -359,6 +360,17 @@ export class EraAgentRuntime {
   ) {
     const project = this.requireProject(projectId)
     const config = project.snapshot.config as Record<string, unknown>
+    const document = normalizeDocument(
+      (project.snapshot.document as GraphicDocument | undefined) ?? {
+        blocks: [],
+        assets: {},
+      },
+    )
+    const plainTextByBlockId = plainTextByScopedBlockId(document)
+    const { ranges: mappedRanges, remapped, errors: remapErrors } = remapHighlightRanges(
+      ranges,
+      plainTextByBlockId,
+    )
     const current = {
       underlineHighlightColors: {
         ...((config.underlineHighlightColors as Record<string, string>) ?? {}),
@@ -370,7 +382,7 @@ export class EraAgentRuntime {
       quoteHighlightColors: { ...((config.quoteHighlightColors as Record<string, string>) ?? {}) },
       circleHighlightColors: { ...((config.circleHighlightColors as Record<string, string>) ?? {}) },
     }
-    const { maps, applied, errors } = applyHighlightRanges(current, ranges, {
+    const { maps, applied, errors } = applyHighlightRanges(current, mappedRanges, {
       replace: Boolean(options?.replace),
     })
     project.snapshot = {
@@ -379,7 +391,14 @@ export class EraAgentRuntime {
     }
     project.updatedAt = new Date().toISOString()
     void this.pushSync(projectId)
-    return { projectId, applied, errors, maps, replace: Boolean(options?.replace) }
+    return {
+      projectId,
+      applied,
+      errors: [...remapErrors, ...errors],
+      remapped,
+      maps,
+      replace: Boolean(options?.replace),
+    }
   }
 
   async createHighlightSetupShare(projectId: string) {
