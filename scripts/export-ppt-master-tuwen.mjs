@@ -50,6 +50,8 @@ async function main() {
 
 ${card.markdown}
 
+<!-- era:page-break -->
+
 ## 官网示例
 
 ${magazine.markdown}

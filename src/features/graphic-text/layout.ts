@@ -62,6 +62,7 @@ interface LayoutLine {
   imageUrl?: string
   imageWidth?: number
   imageHeight?: number
+  pageBreakBefore?: boolean
 }
 
 /** 按句末标点切开标题，使第二句可换行并用次级字号 */
@@ -161,6 +162,7 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
   let paragraph: string[] = []
   let codeLines: string[] = []
   let inCodeBlock = false
+  let pendingPageBreak = false
 
   const flushParagraph = () => {
     const text = paragraph.join(' ').trim()
@@ -168,9 +170,17 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
     paragraph = []
   }
 
+  const pushBlock = (block: MarkdownBlock) => {
+    if (pendingPageBreak) {
+      block.pageBreakBefore = true
+      pendingPageBreak = false
+    }
+    blocks.push(block)
+  }
+
   const flushCodeBlock = () => {
     if (!codeLines.length) return
-    blocks.push(createBlock('code', codeLines.join('\n'), blocks.length))
+    pushBlock(createBlock('code', codeLines.join('\n'), blocks.length))
     codeLines = []
   }
 
@@ -198,21 +208,27 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
       continue
     }
 
+    if (line === '<!-- era:page-break -->') {
+      flushParagraph()
+      pendingPageBreak = true
+      continue
+    }
+
     if (isImageMarkdownLine(line)) {
       flushParagraph()
-      blocks.push(createImageBlock(line, blocks.length))
+      pushBlock(createImageBlock(line, blocks.length))
     } else if (line.startsWith('# ')) {
       flushParagraph()
-      blocks.push(createBlock('title', line.slice(2).trim(), blocks.length))
+      pushBlock(createBlock('title', line.slice(2).trim(), blocks.length))
     } else if (/^#{2,6}\s/.test(line)) {
       flushParagraph()
-      blocks.push(createBlock('heading', line.replace(/^#{2,6}\s+/, ''), blocks.length))
+      pushBlock(createBlock('heading', line.replace(/^#{2,6}\s+/, ''), blocks.length))
     } else if (/^[-*+]\s/.test(line)) {
       flushParagraph()
-      blocks.push(createBlock('list', line.replace(/^[-*+]\s+/, ''), blocks.length))
+      pushBlock(createBlock('list', line.replace(/^[-*+]\s+/, ''), blocks.length))
     } else if (/^\d+\.\s/.test(line)) {
       flushParagraph()
-      blocks.push(createBlock('list', line.replace(/^\d+\.\s+/, ''), blocks.length))
+      pushBlock(createBlock('list', line.replace(/^\d+\.\s+/, ''), blocks.length))
     } else {
       paragraph.push(line)
     }
@@ -380,6 +396,7 @@ function blockToLayoutLines(
           sourceBlockId: block.id,
           charOffset,
           titleSentenceIndex: sentenceIndex,
+          pageBreakBefore: isFirstLine ? block.pageBreakBefore : undefined,
         })
         charOffset += [...lineText].length
         lineIndex += 1
@@ -400,6 +417,7 @@ function blockToLayoutLines(
             sourceBlockId: block.id,
             charOffset: 0,
             titleSentenceIndex: 0,
+            pageBreakBefore: block.pageBreakBefore,
           },
         ]
   }
@@ -449,6 +467,7 @@ function blockToLayoutLines(
       ),
       sourceBlockId: block.id,
       charOffset,
+      pageBreakBefore: index === 0 ? block.pageBreakBefore : undefined,
     }
     charOffset += [...lineText].length
     return line
@@ -540,9 +559,23 @@ function documentBlockToLayoutLines(
 export function paginateDocument(document: GraphicDocument, config: GraphicTextConfig): GraphicTextPage[] {
   const layout = getGraphicLayout(config)
   const availableHeight = layout.contentBottom - layout.safeTop
-  const allLines = document.blocks.flatMap((block) =>
-    documentBlockToLayoutLines(block, document, config, layout),
-  )
+  const PAGE_BREAK_MARKER = '<!-- era:page-break -->'
+  const allLines: LayoutLine[] = []
+  let forcePageBreakBeforeNext = false
+
+  for (const block of document.blocks) {
+    if (block.kind === 'markdown' && block.text.trim() === PAGE_BREAK_MARKER) {
+      forcePageBreakBeforeNext = true
+      continue
+    }
+
+    const blockLines = documentBlockToLayoutLines(block, document, config, layout)
+    if (forcePageBreakBeforeNext && blockLines[0]) {
+      blockLines[0].pageBreakBefore = true
+      forcePageBreakBeforeNext = false
+    }
+    allLines.push(...blockLines)
+  }
 
   if (!allLines.length) {
     return [{ index: 0, blocks: [] }]
@@ -554,6 +587,12 @@ export function paginateDocument(document: GraphicDocument, config: GraphicTextC
 
   for (const line of allLines) {
     const lineTotal = line.spacingBefore + line.lineHeight + line.spacingAfter
+
+    if (line.pageBreakBefore && currentLines.length > 0) {
+      pages.push({ index: pages.length, blocks: layoutLinesToBlocks(currentLines) })
+      currentLines = []
+      usedHeight = 0
+    }
 
     if (currentLines.length > 0 && usedHeight + lineTotal > availableHeight) {
       pages.push({ index: pages.length, blocks: layoutLinesToBlocks(currentLines) })

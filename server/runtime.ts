@@ -113,6 +113,11 @@ function splitMarkdownToBlocks(markdown: string) {
       flushParagraph()
       continue
     }
+    if (line.trim() === '<!-- era:page-break -->') {
+      flushParagraph()
+      chunks.push('<!-- era:page-break -->')
+      continue
+    }
     if (
       line.startsWith('# ') ||
       /^#{2,6}\s/.test(line) ||
