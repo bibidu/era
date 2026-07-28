@@ -78,21 +78,11 @@ README 里强调的核心差异是「原生深度」：幻灯片母版、数据�
 
 ## 官网示例
 
-以下是 ppt-master 官网两套示例的**封面页**（一次性生成、未经精修）。
-
 ${magazine.markdown}
-
-${magazine.caption}
 
 ${swiss.markdown}
 
-${swiss.caption}
-
-丢进原材料，拿回的不只是能改的静态版面，而是**带完整 PowerPoint 行为的成品**。
-
-页间转场、入场动画（默认关闭可按需开启）、演讲者备注，乃至合成音频旁白，都可以留在 deck 里。
-
-图表和表格能作为带数据的原生对象导出，也能沿用你自己的 PPT 模板来设计。
+官网内置 **20+ 种风格模板**（杂志风、瑞士栅格、毛玻璃 SaaS、孟菲斯波普、Risograph 等），支持丰富的**页间转场**与**入场 / 强调动画**，还能根据**参考图、PDF 或网页**生成整套可编辑 .pptx，并在 PowerPoint 里继续改母版与数据。
 
 ## 适合谁
 
@@ -119,47 +109,22 @@ ${swiss.caption}
   console.log('projectId:', projectId)
 
   const mdResult = await api('PUT', `/v1/projects/${projectId}/markdown`, { markdown: bodyText })
-  const scopedBlocks = mdResult.blocks ?? []
+  void mdResult
 
   const preview1 = await api('POST', `/v1/projects/${projectId}/preview-layout`, {})
   console.log('layout issues:', preview1.issues?.length ?? 0, preview1.issues?.map((i) => i.code).join(', '))
 
-  const ranges = []
+  const highlightShare = await api('POST', `/v1/projects/${projectId}/highlight-setup-share`, {})
+  console.log('highlight setup:', highlightShare.url)
+  console.log('projectId:', projectId)
 
-  function findScoped(substr) {
-    return scopedBlocks.find((b) => b.plainText?.includes(substr) || b.text?.includes(substr))
+  if (process.env.SKIP_EXPORT === '1') {
+    await writeFile(
+      path.join(ROOT, 'output/ppt-master-tuwen/last-project.json'),
+      JSON.stringify({ projectId, charCount, highlightSetupUrl: highlightShare.url }, null, 2),
+    )
+    return
   }
-
-  function addBrush(block, phrase, color = '#FACC15') {
-    if (!block) return
-    const plain = block.plainText ?? block.text
-    const idx = plain.indexOf(phrase)
-    if (idx < 0) return
-    ranges.push({ style: 'brush', blockId: block.id, start: idx, end: idx + phrase.length, color })
-  }
-
-  function addUnderline(block, phrase, color = '#EF4444') {
-    if (!block) return
-    const plain = block.plainText ?? block.text
-    const idx = plain.indexOf(phrase)
-    if (idx < 0) return
-    ranges.push({ style: 'underline', blockId: block.id, start: idx, end: idx + phrase.length, color })
-  }
-
-  addBrush(findScoped('可编辑的原生 PowerPoint'), '可编辑的原生 PowerPoint')
-  addBrush(findScoped('原生深度'), '原生深度')
-  addUnderline(findScoped('不是一张扁平长图'), '不是一张扁平长图')
-  addBrush(findScoped('本地生成'), '本地生成')
-  addBrush(findScoped('Agent 工作流'), 'Agent 工作流')
-  addBrush(findScoped('完整 PowerPoint 行为的成品'), '完整 PowerPoint 行为的成品')
-  addUnderline(findScoped('能进真实工作流'), '能进真实工作流')
-  addUnderline(findScoped('继续改母版'), '继续改母版')
-  addBrush(findScoped('能改的 PPT'), '能改的 PPT')
-
-  await api('POST', `/v1/projects/${projectId}/highlights`, { ranges, replace: true })
-
-  const preview2 = await api('POST', `/v1/projects/${projectId}/preview-layout`, {})
-  console.log('after highlight issues:', preview2.issues?.length ?? 0)
 
   await mkdir(OUT, { recursive: true })
   const exported = await api('POST', `/v1/projects/${projectId}/export`, { outDir: OUT })
