@@ -87,8 +87,8 @@ export function MarkdownEditorDock({
         onClick={onDismiss}
       />
       <div ref={dockRef} className="keyboard-dock keyboard-dock--markdown">
-      <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-2">
-        <p className="text-sm font-medium text-neutral-900">{title}</p>
+      <div className="flex items-center justify-between border-b px-4 py-2" style={{ borderColor: 'var(--era-sheet-border)' }}>
+        <p className="text-sm font-medium" style={{ color: 'var(--era-fg)' }}>{title}</p>
         <button
           type="button"
           aria-label="完成编辑"
@@ -110,22 +110,30 @@ export function MarkdownEditorDock({
           autoComplete="off"
           autoCorrect="on"
           spellCheck
-          className="keyboard-dock-textarea min-h-0 w-full flex-1 resize-none rounded-xl border border-neutral-300 bg-neutral-50 px-3 py-3 font-mono text-base leading-7 text-neutral-900 outline-none placeholder:text-neutral-400"
+          className="keyboard-dock-textarea min-h-0 w-full flex-1 resize-none rounded-xl border px-3 py-3 font-mono text-base leading-7 outline-none"
           style={{
             fontSize: '16px',
             WebkitUserSelect: 'text',
             userSelect: 'text',
+            borderColor: 'var(--era-sheet-border)',
+            background: 'var(--era-input)',
+            color: 'var(--era-fg)',
           }}
         />
       </div>
 
-      <div className="shrink-0 border-t border-neutral-200 px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">
+      <div className="shrink-0 border-t px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))]" style={{ borderColor: 'var(--era-sheet-border)' }}>
         {pasteError && (
           <p className="mb-2 text-center text-xs text-red-500">{pasteError}</p>
         )}
         <button
           type="button"
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white text-sm font-medium active:bg-neutral-100"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border text-sm font-medium"
+          style={{
+            borderColor: 'var(--era-sheet-border)',
+            background: 'var(--era-sheet-soft)',
+            color: 'var(--era-fg)',
+          }}
           onClick={onPaste}
         >
           <ClipboardPaste size={18} />

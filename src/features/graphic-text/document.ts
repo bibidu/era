@@ -49,6 +49,13 @@ function markdownFromParsedBlock(block: MarkdownBlock): string {
       return `\`\`\`\n${block.text}\n\`\`\``
     case 'list':
       return `- ${block.text}`
+    case 'image': {
+      const size =
+        block.imageWidth && block.imageHeight
+          ? ` =${block.imageWidth}x${block.imageHeight}`
+          : ''
+      return `![${block.text ?? ''}](${block.imageUrl ?? ''}${size})`
+    }
     default:
       return block.text
   }

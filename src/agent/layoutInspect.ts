@@ -282,25 +282,6 @@ export function inspectGraphicLayout(
       pageIndex: 0,
     })
   }
-  if (colors.length === MAX_HIGHLIGHT_COLORS) {
-    const hasGray = colors.some((color) => {
-      const value = color.toUpperCase()
-      return (
-        value === '#525252' ||
-        value === '#737373' ||
-        value === '#404040' ||
-        value === '#666666' ||
-        value === '#6B7280'
-      )
-    })
-    if (!hasGray) {
-      warnings.push({
-        code: 'too_many_colors',
-        message: `使用满 ${MAX_HIGHLIGHT_COLORS} 种高亮色时必须包含明确灰色（推荐 #525252 / #737373；当前：${colors.join(', ')}）`,
-        pageIndex: 0,
-      })
-    }
-  }
 
   const runsPerPage = countHighlightRunsPerPage(pages, config)
   runsPerPage.forEach((count, pageIndex) => {
@@ -315,17 +296,21 @@ export function inspectGraphicLayout(
 
   const titleIds = titleSourceIds(pages)
   const circleMap = config.circleHighlightColors ?? {}
+  const colorMap = config.colorHighlightColors ?? {}
   const titleHasCircle = titleIds.some((id) =>
     Object.keys(circleMap).some((key) => key.startsWith(`${id}:`)),
   )
   const titleHasPrimaryColor = Boolean(
     typeof config.titlePrimaryColor === 'string' && config.titlePrimaryColor.trim(),
   )
-  // 允许用标题首句着色代替画圈（用户明确禁止画圈时）
-  if (titleIds.length > 0 && !titleHasCircle && !titleHasPrimaryColor) {
+  const titleHasTextColor = titleIds.some((id) =>
+    Object.keys(colorMap).some((key) => key.startsWith(`${id}:`)),
+  )
+  // 允许用标题首句着色或文字色 color 代替画圈（用户明确禁止画圈时）
+  if (titleIds.length > 0 && !titleHasCircle && !titleHasPrimaryColor && !titleHasTextColor) {
     warnings.push({
       code: 'title_missing_circle',
-      message: '标题必须至少有一处画圈高亮（或设置 titlePrimaryColor）',
+      message: '标题必须至少有一处画圈高亮（或 titlePrimaryColor / 文字色 color）',
       pageIndex: 0,
       blockId: titleIds[0],
     })

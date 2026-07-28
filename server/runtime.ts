@@ -14,6 +14,10 @@ import {
   type HighlightRange,
 } from '../src/agent/protocol.ts'
 import { applyHighlightRanges, emptyHighlightMaps } from '../src/agent/highlightRanges.ts'
+import {
+  createExportShare,
+  createHighlightSetupShare,
+} from '../src/agent/supabaseHighlightSetup.ts'
 
 export interface StoredProject {
   id: string
@@ -30,8 +34,8 @@ interface PendingBridgeCall {
 const DEFAULT_CONFIG = {
   titleFontId: 'song',
   titleFontFamily: '"Noto Serif SC", serif',
-  headingFontId: 'song',
-  headingFontFamily: '"Noto Serif SC", serif',
+  headingFontId: 'shuheiti',
+  headingFontFamily: '"Alimama ShuHeiTi", sans-serif',
   bodyFontId: 'song',
   bodyFontFamily: '"Noto Serif SC", serif',
   codeFontId: 'menlo',
@@ -113,7 +117,8 @@ function splitMarkdownToBlocks(markdown: string) {
       line.startsWith('# ') ||
       /^#{2,6}\s/.test(line) ||
       /^[-*+]\s/.test(line) ||
-      /^\d+\.\s/.test(line)
+      /^\d+\.\s/.test(line) ||
+      /^!\[[^\]]*\]\(.+\)$/.test(line.trim())
     ) {
       flushParagraph()
       chunks.push(line.trim())
@@ -313,25 +318,67 @@ export class EraAgentRuntime {
     }
   }
 
-  applyHighlights(projectId: string, ranges: HighlightRange[]) {
+  applyHighlights(
+    projectId: string,
+    ranges: HighlightRange[],
+    options?: { replace?: boolean },
+  ) {
     const project = this.requireProject(projectId)
     const config = project.snapshot.config as Record<string, unknown>
     const current = {
       underlineHighlightColors: {
         ...((config.underlineHighlightColors as Record<string, string>) ?? {}),
       },
+      handUnderlineHighlightColors: {
+        ...((config.handUnderlineHighlightColors as Record<string, string>) ?? {}),
+      },
       brushHighlightColors: { ...((config.brushHighlightColors as Record<string, string>) ?? {}) },
       quoteHighlightColors: { ...((config.quoteHighlightColors as Record<string, string>) ?? {}) },
       circleHighlightColors: { ...((config.circleHighlightColors as Record<string, string>) ?? {}) },
     }
-    const { maps, applied, errors } = applyHighlightRanges(current, ranges)
+    const { maps, applied, errors } = applyHighlightRanges(current, ranges, {
+      replace: Boolean(options?.replace),
+    })
     project.snapshot = {
       ...project.snapshot,
       config: { ...config, ...maps },
     }
     project.updatedAt = new Date().toISOString()
     void this.pushSync(projectId)
-    return { projectId, applied, errors, maps }
+    return { projectId, applied, errors, maps, replace: Boolean(options?.replace) }
+  }
+
+  async createHighlightSetupShare(projectId: string) {
+    const project = this.requireProject(projectId)
+    const document = project.snapshot.document as {
+      blocks: { id: string; kind: string; text?: string }[]
+      assets?: Record<string, unknown>
+    }
+    const config = (project.snapshot.config ?? {}) as Record<string, unknown>
+    const markdown = getDocumentMarkdown(document)
+    const title =
+      (project.snapshot.meta?.title ?? '').trim() ||
+      markdown
+        .split('\n')
+        .find((line) => line.startsWith('# '))
+        ?.replace(/^#\s+/, '')
+        .trim() ||
+      ''
+
+    const shared = await createHighlightSetupShare({
+      projectId,
+      title,
+      markdown,
+      document,
+      config,
+    })
+
+    return {
+      projectId,
+      shareId: shared.shareId,
+      url: shared.url,
+      expiresAt: shared.record.expires_at,
+    }
   }
 
   listFonts() {
@@ -398,7 +445,7 @@ export class EraAgentRuntime {
     return response.data
   }
 
-  async exportImages(projectId: string, pages?: number[], outDir?: string) {
+  private async runBridgeExport(projectId: string, pages?: number[]) {
     this.requireProject(projectId)
     const response = await this.callBridge({
       type: 'export_images',
@@ -406,9 +453,13 @@ export class EraAgentRuntime {
       payload: { pages },
     })
     if (!response.ok) throw new Error(response.error ?? 'export_images 失败')
-
     const images = (response.data?.images as { name: string; base64: string }[]) ?? []
     const sheet = response.data?.sheet as { name: string; base64: string } | undefined
+    return { images, sheet }
+  }
+
+  async exportImages(projectId: string, pages?: number[], outDir?: string) {
+    const { images, sheet } = await this.runBridgeExport(projectId, pages)
     const targetDir = path.resolve(outDir ?? path.join(this.outputDir, projectId))
     await fs.mkdir(targetDir, { recursive: true })
     const paths: string[] = []
@@ -432,6 +483,40 @@ export class EraAgentRuntime {
       sheetPath,
       /** 审阅用拼图；发分图前应先把 sheetPath 给用户确认 */
       reviewSheet: sheetPath,
+    }
+  }
+
+  /** 导出各页 PNG + 拼图并上传 Supabase，返回 GitHub Pages 预览/下载页 URL（供用户在线预览并下载原图） */
+  async createExportShare(projectId: string, pages?: number[]) {
+    const project = this.requireProject(projectId)
+    const { images, sheet } = await this.runBridgeExport(projectId, pages)
+    const shareImages = images.map((image) => ({
+      name: image.name,
+      dataUrl: `data:image/png;base64,${image.base64}`,
+    }))
+    const shareSheet = sheet?.base64
+      ? {
+          name: sheet.name || 'graphic-review-sheet.png',
+          dataUrl: `data:image/png;base64,${sheet.base64}`,
+        }
+      : null
+    const config = (project.snapshot.config ?? {}) as Record<string, unknown>
+    const aspectRatio =
+      typeof config.aspectRatio === 'string' ? (config.aspectRatio as string) : undefined
+    const title = (project.snapshot.meta?.title ?? '').trim()
+    const shared = await createExportShare({
+      projectId,
+      title,
+      aspectRatio,
+      images: shareImages,
+      sheet: shareSheet,
+    })
+    return {
+      projectId,
+      shareId: shared.shareId,
+      url: shared.url,
+      count: shareImages.length,
+      expiresAt: shared.record.expires_at,
     }
   }
 

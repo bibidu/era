@@ -4,6 +4,13 @@ import {
   CODE_TEXT_COLOR,
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
+import {
+  GRAPHIC_LIST_BULLET_COLOR,
+  GRAPHIC_PAGE_TEXT_COLOR,
+  GRAPHIC_TOP_BAR_BORDER_COLOR,
+  GRAPHIC_TOP_BAR_DIVIDER_COLOR,
+  GRAPHIC_TOP_BAR_TEXT_COLOR,
+} from './graphicContentColors'
 import { buildCircleHighlightColorRuns, drawHandDrawnCircleAroundTextBounds, HAND_DRAWN_CIRCLE_STROKE_WIDTH } from './circleHighlight'
 import { drawHandDrawnUnderline, buildHandUnderlineColorRuns, HAND_DRAWN_UNDERLINE_TILE_WIDTH } from './handDrawnUnderlinePath'
 import { collectGraphicFontIds, getFontConfigForStyleType } from './graphicTextFonts'
@@ -87,7 +94,7 @@ function drawStyledLine(
   enableHighlight: boolean,
   textColor: string,
   circleLineWidth: number,
-  colorizeCircledText = false,
+  textColorSegments: LineSegment[] = [],
 ) {
   const paddingX = 4
   const plainText = stripHighlightMarkers(text)
@@ -111,26 +118,13 @@ function drawStyledLine(
     }
   }
 
-  if (enableHighlight && colorizeCircledText) {
-    const circleRuns = buildCircleHighlightColorRuns(plainText, blockId, charOffset, circleColors)
-    let cursor = 0
+  if (enableHighlight && textColorSegments.some((segment) => segment.color)) {
     let drawX = x
-    for (const run of circleRuns) {
-      if (run.start > cursor) {
-        const plain = plainText.slice(cursor, run.start)
-        ctx.fillStyle = textColor
-        ctx.fillText(plain, drawX, baselineY)
-        drawX += ctx.measureText(plain).width
-      }
-      ctx.fillStyle = run.color
-      ctx.fillText(run.text, drawX, baselineY)
-      drawX += ctx.measureText(run.text).width
-      cursor = run.end
-    }
-    if (cursor < plainText.length) {
-      const rest = plainText.slice(cursor)
-      ctx.fillStyle = textColor
-      ctx.fillText(rest, drawX, baselineY)
+    for (const segment of textColorSegments) {
+      if (!segment.text) continue
+      ctx.fillStyle = segment.color || textColor
+      ctx.fillText(segment.text, drawX, baselineY)
+      drawX += ctx.measureText(segment.text).width
     }
   } else {
     ctx.fillStyle = textColor
@@ -271,6 +265,7 @@ async function drawPage(
   const handUnderlineColors = config.handUnderlineHighlightColors ?? {}
   const quoteColors = config.quoteHighlightColors
   const circleColors = config.circleHighlightColors
+  const textColors = config.colorHighlightColors ?? {}
   const accentColor = config.highlightPickerColor
   const topBar = resolveTopBarParts(config, markdown)
   const canvas = document.createElement('canvas')
@@ -324,8 +319,9 @@ async function drawPage(
   const underlineY = topBarY + topBarHeight - 6
 
   const isFengshui = config.pageOverlay === 'fengshui'
-  const topBarLineColor = isFengshui ? FENGSHUI_TOP_BAR_LINE_COLOR : '#D4D4D4'
-  const topBarTextColor = isFengshui ? FENGSHUI_TOP_BAR_TEXT_COLOR : '#525252'
+  const topBarLineColor = isFengshui ? FENGSHUI_TOP_BAR_LINE_COLOR : GRAPHIC_TOP_BAR_BORDER_COLOR
+  const topBarTextColor = isFengshui ? FENGSHUI_TOP_BAR_TEXT_COLOR : GRAPHIC_TOP_BAR_TEXT_COLOR
+  const topBarDividerColor = isFengshui ? FENGSHUI_TOP_BAR_LINE_COLOR : GRAPHIC_TOP_BAR_DIVIDER_COLOR
 
   ctx.strokeStyle = topBarLineColor
   ctx.lineWidth = 2
@@ -359,7 +355,7 @@ async function drawPage(
     const customWidth = ctx.measureText(customText).width
     ctx.fillText(customText, edgeX, topBarTextY)
     const dividerX = edgeX + customWidth + gap
-    ctx.fillStyle = topBarLineColor
+    ctx.fillStyle = topBarDividerColor
     ctx.fillRect(dividerX, topBarMidY - dividerHeight / 2, dividerWidth, dividerHeight)
     ctx.fillStyle = topBarTextColor
     ctx.fillText(topBar.countText, dividerX + gap + dividerWidth, topBarTextY)
@@ -440,6 +436,9 @@ async function drawPage(
     const underlineSegments = enableHighlight
       ? buildCharHighlightColorSegments(block.text, blockId, underlineColors, charOffset)
       : [{ text: plainText, color: null }]
+    const textColorSegments = enableHighlight
+      ? buildCharHighlightColorSegments(block.text, blockId, textColors, charOffset)
+      : [{ text: plainText, color: null }]
     const lineHeight = spec.size * spec.lineHeight
     const textMetrics = ctx.measureText(plainText || '文')
     const ascent = textMetrics.actualBoundingBoxAscent ?? spec.size * 0.88
@@ -471,7 +470,7 @@ async function drawPage(
     if (block.type === 'list') {
       const bulletRadius = spec.size * 0.16
       const centerY = y + ascent * 0.48
-      ctx.fillStyle = '#262626'
+      ctx.fillStyle = GRAPHIC_LIST_BULLET_COLOR
       ctx.beginPath()
       ctx.arc(safeX + quoteBarInset + bulletRadius * 2, centerY, bulletRadius, 0, Math.PI * 2)
       ctx.fill()
@@ -503,11 +502,9 @@ async function drawPage(
       y,
       spec.size,
       enableHighlight,
-      styleType === 'code'
-        ? CODE_TEXT_COLOR
-        : titlePrimary || '#171717',
+      styleType === 'code' ? CODE_TEXT_COLOR : titlePrimary || GRAPHIC_PAGE_TEXT_COLOR,
       circleLineWidth,
-      false,
+      textColorSegments,
     )
     y += lineHeight
 

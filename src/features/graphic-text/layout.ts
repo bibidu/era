@@ -4,7 +4,7 @@ import type {
   GraphicDocument,
   ImageContentBlock,
 } from './document'
-import { parseScopedMarkdown } from './document'
+import { DEFAULT_IMAGE_MARGIN, parseScopedMarkdown } from './document'
 import { getFontConfigForStyleType } from './graphicTextFonts'
 import { measureImageLayoutSize } from './imageAsset'
 import { stripHighlightMarkers } from './inlineHighlight'
@@ -128,6 +128,33 @@ function createBlock(type: MarkdownBlockType, text: string, index: number): Mark
   return { id: `${index}-${type}`, type, text, isBlockEnd: true }
 }
 
+/** 匹配整行图片： ![alt](url) ，url 后可带可选尺寸提示 " =宽x高"（原始像素） */
+const IMAGE_LINE_RE = /^!\[([^\]]*)\]\((.+)\)$/
+const IMAGE_SIZE_HINT_RE = /^(.*?)(?:\s+=(\d+)x(\d+))$/
+
+export function isImageMarkdownLine(line: string): boolean {
+  return IMAGE_LINE_RE.test(line.trim())
+}
+
+function createImageBlock(line: string, index: number): MarkdownBlock {
+  const match = line.trim().match(IMAGE_LINE_RE)
+  const alt = match?.[1]?.trim() ?? ''
+  const rawUrl = (match?.[2] ?? '').trim()
+  const sizeMatch = rawUrl.match(IMAGE_SIZE_HINT_RE)
+  const url = (sizeMatch ? sizeMatch[1] : rawUrl).trim()
+  const width = sizeMatch ? Number(sizeMatch[2]) : undefined
+  const height = sizeMatch ? Number(sizeMatch[3]) : undefined
+  return {
+    id: `${index}-image`,
+    type: 'image',
+    text: alt,
+    isBlockEnd: true,
+    imageUrl: url,
+    imageWidth: width && width > 0 ? width : undefined,
+    imageHeight: height && height > 0 ? height : undefined,
+  }
+}
+
 export function parseMarkdown(markdown: string): MarkdownBlock[] {
   const lines = markdown.replace(/\r\n/g, '\n').split('\n')
   const blocks: MarkdownBlock[] = []
@@ -171,7 +198,10 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
       continue
     }
 
-    if (line.startsWith('# ')) {
+    if (isImageMarkdownLine(line)) {
+      flushParagraph()
+      blocks.push(createImageBlock(line, blocks.length))
+    } else if (line.startsWith('# ')) {
       flushParagraph()
       blocks.push(createBlock('title', line.slice(2).trim(), blocks.length))
     } else if (/^#{2,6}\s/.test(line)) {
@@ -257,12 +287,52 @@ function blockSpacingBefore(
   return 0
 }
 
+function markdownImageToLayoutLine(
+  block: MarkdownBlock,
+  config: GraphicTextConfig,
+  layout: GraphicLayout,
+): LayoutLine[] {
+  if (!block.imageUrl) return []
+  const contentWidth = layout.pageWidth - layout.safeX * 2
+  const availableHeight = layout.contentBottom - layout.safeTop
+  const maxHeight = availableHeight * 0.9
+  const naturalWidth = block.imageWidth && block.imageWidth > 0 ? block.imageWidth : 16
+  const naturalHeight = block.imageHeight && block.imageHeight > 0 ? block.imageHeight : 9
+  const asset: GraphicAsset = {
+    id: block.id,
+    url: block.imageUrl,
+    width: naturalWidth,
+    height: naturalHeight,
+  }
+  const { width, height } = measureImageLayoutSize(asset, contentWidth, maxHeight, 'width')
+  const margin = config.bodyFontSize * layout.exportScale * DEFAULT_IMAGE_MARGIN
+  return [
+    {
+      id: `${block.id}-img`,
+      type: 'image',
+      styleType: 'image',
+      text: '',
+      lineHeight: height,
+      spacingBefore: margin,
+      spacingAfter: margin + blockGap(layout),
+      sourceBlockId: block.id,
+      charOffset: 0,
+      imageUrl: block.imageUrl,
+      imageWidth: width,
+      imageHeight: height,
+    },
+  ]
+}
+
 function blockToLayoutLines(
   block: MarkdownBlock,
   config: GraphicTextConfig,
   layout: GraphicLayout,
 ): LayoutLine[] {
   const styleType = resolveStyleType(block)
+  if (styleType === 'image') {
+    return markdownImageToLayoutLine(block, config, layout)
+  }
   const plainText = stripHighlightMarkers(block.text)
   const { fontFamily } = getFontConfigForStyleType(config, styleType)
   const fontWeight = styleType === 'title' || styleType === 'heading' ? 700 : 400

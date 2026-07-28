@@ -50,21 +50,14 @@ import {
 const PAGER_PAGE_PADDING = 32
 const PAGER_SHEET_PADDING = PAGER_PAGE_PADDING / 2
 
-interface GraphicTextWorkspaceProps {
-  defaultBackgroundUrl: string | null
-}
-
 function isTextAdjustTarget(nav: FontSizeNav): nav is FontSizeTarget {
   return nav === 'title' || nav === 'heading' || nav === 'body' || nav === 'code'
 }
 
-export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorkspaceProps) {
+export function GraphicTextWorkspace() {
   const [document, setDocument] = useState<GraphicDocument>(() => normalizeDocument(createDefaultDocument()))
   const markdown = useMemo(() => getDocumentMarkdown(document), [document])
-  const [config, setConfig] = useState<GraphicTextConfig>(() => ({
-    ...DEFAULT_GRAPHIC_TEXT_CONFIG,
-    backgroundUrl: defaultBackgroundUrl,
-  }))
+  const [config, setConfig] = useState<GraphicTextConfig>(() => DEFAULT_GRAPHIC_TEXT_CONFIG)
   const [configPanel, setConfigPanel] = useState<GraphicConfigPanel | null>(null)
   const [toolbarStrip, setToolbarStrip] = useState<ToolbarStrip | null>(null)
   const [templateNav, setTemplateNav] = useState<TemplateNav>(null)
@@ -105,14 +98,6 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
     [],
   )
   const { connected: agentConnected } = useEraAgentBridge(agentController)
-
-  useEffect(() => {
-    if (!defaultBackgroundUrl) return
-    setConfig((current) => {
-      if (current.backgroundType !== 'reference') return current
-      return { ...current, backgroundUrl: defaultBackgroundUrl }
-    })
-  }, [defaultBackgroundUrl])
 
   useEffect(() => {
     for (const fontId of collectGraphicFontIds(config)) {
@@ -182,6 +167,7 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
       brushHighlightColors: highlightPreview.brushHighlightColors ?? {},
       quoteHighlightColors: highlightPreview.quoteHighlightColors,
       circleHighlightColors: highlightPreview.circleHighlightColors,
+      colorHighlightColors: highlightPreview.colorHighlightColors ?? {},
       highlightPickerColor: highlightPreview.highlightPickerColor,
     }
   }, [config, configPanel, highlightPreview])
@@ -407,14 +393,15 @@ export function GraphicTextWorkspace({ defaultBackgroundUrl }: GraphicTextWorksp
 
   return (
     <div
-      className="relative flex min-h-0 flex-1 flex-col bg-neutral-100"
-      style={
-        sheetOpen
+      className="relative flex min-h-0 flex-1 flex-col"
+      style={{
+        background: 'var(--era-graphic-chrome)',
+        ...(sheetOpen
           ? {
               paddingBottom: `calc(${sheetHeight}px + env(safe-area-inset-bottom, 0px))`,
             }
-          : undefined
-      }
+          : null),
+      }}
     >
       {agentConnected ? (
         <div

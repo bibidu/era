@@ -249,6 +249,7 @@ export function configFromSnapshot(
     brushHighlightColors: raw.brushHighlightColors ?? {},
     quoteHighlightColors: raw.quoteHighlightColors ?? {},
     circleHighlightColors: raw.circleHighlightColors ?? {},
+    colorHighlightColors: raw.colorHighlightColors ?? {},
   }
 }
 

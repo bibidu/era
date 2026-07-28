@@ -5,6 +5,14 @@ import {
   CODE_TEXT_COLOR,
   CODE_VERTICAL_PADDING_SCALE,
 } from './codeBlock'
+import {
+  GRAPHIC_EMPTY_HINT_COLOR,
+  GRAPHIC_LIST_BULLET_COLOR,
+  GRAPHIC_PAGE_TEXT_COLOR,
+  GRAPHIC_TOP_BAR_BORDER_COLOR,
+  GRAPHIC_TOP_BAR_DIVIDER_COLOR,
+  GRAPHIC_TOP_BAR_TEXT_COLOR,
+} from './graphicContentColors'
 import { HandDrawnUnderline } from './HandDrawnUnderline'
 import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
 import { getFontConfigForStyleType } from './graphicTextFonts'
@@ -21,6 +29,10 @@ import {
   stripHighlightMarkers,
   themeAlpha,
 } from './inlineHighlight'
+import {
+  InteractiveHighlightedChars,
+  type InteractiveHighlightHandlers,
+} from './InteractiveHighlightedText'
 import {
   blockHasHighlightInMap,
   resolveBlockHighlightColor,
@@ -43,6 +55,8 @@ interface GraphicPageProps {
   showSafeArea?: boolean
   displayWidth?: number
   onCopyContent?: () => void
+  /** 高亮设置页：在渲染文字上点选/滑动，并即时预览效果 */
+  highlightInteraction?: InteractiveHighlightHandlers
 }
 
 function resolveStyleType(block: MarkdownBlock) {
@@ -189,12 +203,14 @@ function BrushUnderlineSegments({
   charOffset,
   brushColors,
   underlineColors,
+  textColors = {},
 }: {
   text: string
   blockId: string
   charOffset: number
   brushColors: Readonly<Record<string, string>>
   underlineColors: Readonly<Record<string, string>>
+  textColors?: Readonly<Record<string, string>>
 }) {
   const segments = buildMergedThemeHighlightSegments(
     text,
@@ -203,12 +219,13 @@ function BrushUnderlineSegments({
     underlineColors,
     {},
     charOffset,
+    textColors,
   )
 
   return (
     <>
       {segments.map((segment, index) => {
-        if (!segment.brushColor && !segment.underlineColor) {
+        if (!segment.brushColor && !segment.underlineColor && !segment.textColor) {
           return <span key={`${index}-${segment.text}`}>{segment.text}</span>
         }
 
@@ -228,6 +245,7 @@ function BrushUnderlineSegments({
               ...(segment.underlineColor
                 ? { ['--graphic-highlight-underline' as string]: segment.underlineColor }
                 : null),
+              ...(segment.textColor ? { color: segment.textColor } : null),
             }}
           >
             {segment.text}
@@ -245,6 +263,7 @@ function HandUnderlineAwareSegments({
   brushColors,
   underlineColors,
   handUnderlineColors,
+  textColors = {},
 }: {
   text: string
   blockId: string
@@ -252,6 +271,7 @@ function HandUnderlineAwareSegments({
   brushColors: Readonly<Record<string, string>>
   underlineColors: Readonly<Record<string, string>>
   handUnderlineColors: Readonly<Record<string, string>>
+  textColors?: Readonly<Record<string, string>>
 }) {
   const plain = stripHighlightMarkers(text)
   const handRuns = buildHandUnderlineColorRuns(plain, blockId, charOffset, handUnderlineColors)
@@ -264,6 +284,7 @@ function HandUnderlineAwareSegments({
         charOffset={charOffset}
         brushColors={brushColors}
         underlineColors={underlineColors}
+        textColors={textColors}
       />
     )
   }
@@ -283,6 +304,7 @@ function HandUnderlineAwareSegments({
             charOffset={charOffset + run.start}
             brushColors={brushColors}
             underlineColors={underlineColors}
+            textColors={textColors}
           />
         </HandDrawnUnderline>,
       )
@@ -301,6 +323,7 @@ function HandUnderlineAwareSegments({
         charOffset={charOffset + index}
         brushColors={brushColors}
         underlineColors={underlineColors}
+        textColors={textColors}
       />,
     )
     index = end
@@ -311,21 +334,14 @@ function HandUnderlineAwareSegments({
 
 function CircleHighlightWrap({
   themeColor,
-  colorizeText = false,
   children,
 }: {
   themeColor: string
-  colorizeText?: boolean
   children: ReactNode
 }) {
   return (
     <span className="graphic-circle-highlight">
-      <span
-        className="graphic-circle-highlight-text"
-        style={colorizeText ? { color: themeColor } : undefined}
-      >
-        {children}
-      </span>
+      <span className="graphic-circle-highlight-text">{children}</span>
       <svg
         className="graphic-circle-highlight-svg"
         viewBox={HAND_DRAWN_CIRCLE_VIEWBOX}
@@ -353,6 +369,7 @@ function StyledHighlightedText({
   underlineColors,
   handUnderlineColors,
   circleColors,
+  textColors = {},
   enableHighlight,
 }: {
   text: string
@@ -361,6 +378,7 @@ function StyledHighlightedText({
   underlineColors: Readonly<Record<string, string>>
   handUnderlineColors: Readonly<Record<string, string>>
   circleColors: Readonly<Record<string, string>>
+  textColors?: Readonly<Record<string, string>>
   enableHighlight: boolean
 }) {
   if (!enableHighlight) return <>{text}</>
@@ -369,7 +387,6 @@ function StyledHighlightedText({
   const charOffset = block.charOffset ?? 0
   const plain = stripHighlightMarkers(text)
   const circleRuns = buildCircleHighlightColorRuns(plain, blockId, charOffset, circleColors)
-  const colorizeCircledTitle = (block.styleType ?? block.type) === 'title'
   const parts: ReactNode[] = []
   let index = 0
   let runCursor = 0
@@ -378,11 +395,7 @@ function StyledHighlightedText({
     const run = circleRuns[runCursor]
     if (run && index === run.start) {
       parts.push(
-        <CircleHighlightWrap
-          key={`circle-${index}`}
-          themeColor={run.color}
-          colorizeText={colorizeCircledTitle}
-        >
+        <CircleHighlightWrap key={`circle-${index}`} themeColor={run.color}>
           <HandUnderlineAwareSegments
             text={run.text}
             blockId={blockId}
@@ -390,6 +403,7 @@ function StyledHighlightedText({
             brushColors={brushColors}
             underlineColors={underlineColors}
             handUnderlineColors={handUnderlineColors}
+            textColors={textColors}
           />
         </CircleHighlightWrap>,
       )
@@ -409,6 +423,7 @@ function StyledHighlightedText({
         brushColors={brushColors}
         underlineColors={underlineColors}
         handUnderlineColors={handUnderlineColors}
+        textColors={textColors}
       />,
     )
     index = end
@@ -443,11 +458,24 @@ function renderBlockText(
   handUnderlineColors: Readonly<Record<string, string>>,
   quoteColors: Readonly<Record<string, string>>,
   circleColors: Readonly<Record<string, string>>,
+  textColors: Readonly<Record<string, string>>,
+  highlightInteraction?: InteractiveHighlightHandlers,
 ) {
   const showQuoteBar = blockHasHighlightInMap(block, quoteColors)
   const quoteColor = resolveBlockHighlightColor(block, quoteColors)
 
-  const textNode = (
+  const textNode = highlightInteraction ? (
+    <InteractiveHighlightedChars
+      text={block.text}
+      block={block}
+      brushColors={brushColors}
+      underlineColors={underlineColors}
+      circleColors={circleColors}
+      quoteColors={quoteColors}
+      textColors={textColors}
+      interaction={highlightInteraction}
+    />
+  ) : (
     <StyledHighlightedText
       text={block.text}
       block={block}
@@ -455,6 +483,7 @@ function renderBlockText(
       underlineColors={underlineColors}
       handUnderlineColors={handUnderlineColors}
       circleColors={circleColors}
+      textColors={textColors}
       enableHighlight
     />
   )
@@ -466,7 +495,10 @@ function renderBlockText(
           className="flex h-[1lh] w-[0.7em] shrink-0 items-center justify-center"
           aria-hidden
         >
-          <span className="size-[0.32em] rounded-full bg-neutral-800" />
+          <span
+            className="size-[0.32em] rounded-full"
+            style={{ backgroundColor: GRAPHIC_LIST_BULLET_COLOR }}
+          />
         </span>
         <span className="min-w-0 flex-1">{textNode}</span>
       </div>
@@ -533,6 +565,7 @@ export function GraphicPage({
   showSafeArea = false,
   displayWidth,
   onCopyContent,
+  highlightInteraction,
 }: GraphicPageProps) {
   const layout = getGraphicLayout(config)
   const { percent, aspectRatio } = layout
@@ -542,16 +575,25 @@ export function GraphicPage({
   const handUnderlineColors = config.handUnderlineHighlightColors ?? {}
   const quoteColors = config.quoteHighlightColors
   const circleColors = config.circleHighlightColors
+  const textColors = config.colorHighlightColors ?? {}
   const accentColor = config.highlightPickerColor
+  const isFengshui = config.pageOverlay === 'fengshui'
+  const topBarBorderColor = isFengshui ? FENGSHUI_TOP_BAR_LINE_COLOR : GRAPHIC_TOP_BAR_BORDER_COLOR
+  const topBarTextColor = isFengshui ? FENGSHUI_TOP_BAR_TEXT_COLOR : GRAPHIC_TOP_BAR_TEXT_COLOR
+  const topBarDividerColor = isFengshui ? FENGSHUI_TOP_BAR_LINE_COLOR : GRAPHIC_TOP_BAR_DIVIDER_COLOR
 
   const backgroundStyle: CSSProperties = resolvePageBackgroundStyle(config)
 
   return (
     <article
-      className={`graphic-page relative isolate overflow-hidden bg-[#fbf7ed] text-neutral-950 ${className}`}
+      className={`graphic-page relative isolate overflow-hidden bg-[#fbf7ed] ${
+        highlightInteraction ? 'graphic-page--interactive' : ''
+      } ${className}`}
       style={
         {
           ...backgroundStyle,
+          // 正文色固定，不继承 App/主题的 --era-fg，也不走会随暗色 remap 的 Tailwind text-*
+          color: GRAPHIC_PAGE_TEXT_COLOR,
           width: displayWidth ? `${displayWidth}px` : '100%',
           aspectRatio: `${aspectRatio.width} / ${aspectRatio.height}`,
           '--graphic-theme': accentColor,
@@ -574,77 +616,47 @@ export function GraphicPage({
         config.overlayStacked && <PageGradientOverlay variant={config.gradientVariant} />}
 
       <div
-        className={`absolute z-10 flex min-w-0 items-center gap-2 border-b ${
-          config.pageOverlay === 'fengshui' ? '' : 'border-neutral-300'
-        }`}
+        className="absolute z-10 flex min-w-0 items-center gap-2 border-b"
         style={{
           left: `${percent.safeX}%`,
           right: `${percent.safeX}%`,
           top: `${percent.topBarTop}%`,
           height: `${percent.topBarHeight}%`,
           paddingBottom: '6px',
-          borderBottomColor:
-            config.pageOverlay === 'fengshui' ? FENGSHUI_TOP_BAR_LINE_COLOR : undefined,
+          borderColor: topBarBorderColor,
         }}
       >
         {topBar.custom && topBar.countText ? (
           <>
             <span
-              className={`min-w-0 truncate font-normal ${
-                config.pageOverlay === 'fengshui' ? '' : 'text-neutral-600'
-              }`}
-              style={{
-                fontSize: `${TOP_BAR_FONT_SIZE_PX}px`,
-                color:
-                  config.pageOverlay === 'fengshui' ? FENGSHUI_TOP_BAR_TEXT_COLOR : undefined,
-              }}
+              className="min-w-0 truncate font-normal"
+              style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px`, color: topBarTextColor }}
             >
               {topBar.custom}
             </span>
             <span
-              className={`h-3 w-px shrink-0 self-center ${
-                config.pageOverlay === 'fengshui' ? '' : 'bg-neutral-300'
-              }`}
-              style={{
-                backgroundColor:
-                  config.pageOverlay === 'fengshui' ? FENGSHUI_TOP_BAR_LINE_COLOR : undefined,
-              }}
+              className="h-3 w-px shrink-0 self-center"
+              style={{ backgroundColor: topBarDividerColor }}
               aria-hidden
             />
             <span
-              className={`shrink-0 font-normal ${
-                config.pageOverlay === 'fengshui' ? '' : 'text-neutral-600'
-              }`}
-              style={{
-                fontSize: `${TOP_BAR_FONT_SIZE_PX}px`,
-                color:
-                  config.pageOverlay === 'fengshui' ? FENGSHUI_TOP_BAR_TEXT_COLOR : undefined,
-              }}
+              className="shrink-0 font-normal"
+              style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px`, color: topBarTextColor }}
             >
               {topBar.countText}
             </span>
           </>
         ) : topBar.custom ? (
           <span
-            className={`truncate font-normal ${
-              config.pageOverlay === 'fengshui' ? '' : 'text-neutral-600'
-            }`}
-            style={{
-              fontSize: `${TOP_BAR_FONT_SIZE_PX}px`,
-              color: config.pageOverlay === 'fengshui' ? FENGSHUI_TOP_BAR_TEXT_COLOR : undefined,
-            }}
+            className="truncate font-normal"
+            style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px`, color: topBarTextColor }}
           >
             {topBar.custom}
           </span>
         ) : topBar.countText ? (
           <span
-            className={`truncate font-normal ${
-              config.pageOverlay === 'fengshui' ? '' : 'text-neutral-600'
-            }`}
-            style={{
-              fontSize: `${TOP_BAR_FONT_SIZE_PX}px`,
-              color: config.pageOverlay === 'fengshui' ? FENGSHUI_TOP_BAR_TEXT_COLOR : undefined,
-            }}
+            className="truncate font-normal"
+            style={{ fontSize: `${TOP_BAR_FONT_SIZE_PX}px`, color: topBarTextColor }}
           >
             {topBar.countText}
           </span>
@@ -662,7 +674,10 @@ export function GraphicPage({
       >
         <div className="flex h-full flex-col justify-start">
           {page.blocks.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-center text-[3cqw] text-neutral-400">
+            <div
+              className="flex h-full items-center justify-center text-center text-[3cqw]"
+              style={{ color: GRAPHIC_EMPTY_HINT_COLOR }}
+            >
               输入 Markdown 内容后生成
             </div>
           ) : (
@@ -718,15 +733,29 @@ export function GraphicPage({
                     >
                       {unit.blocks.map((block) => (
                         <div key={block.id} className="whitespace-pre">
-                          <StyledHighlightedText
-                            text={block.text}
-                            block={block}
-                            brushColors={brushColors}
-                            underlineColors={underlineColors}
-                            handUnderlineColors={handUnderlineColors}
-                            circleColors={circleColors}
-                            enableHighlight
-                          />
+                          {highlightInteraction ? (
+                            <InteractiveHighlightedChars
+                              text={block.text}
+                              block={block}
+                              brushColors={brushColors}
+                              underlineColors={underlineColors}
+                              circleColors={circleColors}
+                              quoteColors={quoteColors}
+                              textColors={textColors}
+                              interaction={highlightInteraction}
+                            />
+                          ) : (
+                            <StyledHighlightedText
+                              text={block.text}
+                              block={block}
+                              brushColors={brushColors}
+                              underlineColors={underlineColors}
+                              handUnderlineColors={handUnderlineColors}
+                              circleColors={circleColors}
+                              textColors={textColors}
+                              enableHighlight
+                            />
+                          )}
                         </div>
                       ))}
                     </div>
@@ -737,7 +766,16 @@ export function GraphicPage({
               const block = unit.block
               return (
               <div key={block.id} className="graphic-text-line" style={blockStyle(block, config)}>
-                {renderBlockText(block, brushColors, underlineColors, handUnderlineColors, quoteColors, circleColors)}
+                {renderBlockText(
+                  block,
+                  brushColors,
+                  underlineColors,
+                  handUnderlineColors,
+                  quoteColors,
+                  circleColors,
+                  textColors,
+                  highlightInteraction,
+                )}
               </div>
               )
             })

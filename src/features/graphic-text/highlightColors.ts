@@ -22,12 +22,10 @@ export const THEME_COLORS = [
   '#FACC15',
   '#FB923C',
   '#EF4444',
+  '#C41E3A',
   '#22C55E',
   '#3B82F6',
   '#A855F7',
-  '#525252',
-  '#9CA3AF',
-  '#D1D5DB',
 ]
 
 export function keysFromHighlightMap(map: HighlightColorMap): Set<string> {
@@ -39,12 +37,14 @@ export function countHighlightSelections(
   brush: HighlightColorMap,
   quote: HighlightColorMap,
   circle: HighlightColorMap,
+  color: HighlightColorMap = {},
 ) {
   return (
     Object.keys(underline).length +
     Object.keys(brush).length +
     Object.keys(quote).length +
-    Object.keys(circle).length
+    Object.keys(circle).length +
+    Object.keys(color).length
   )
 }
 

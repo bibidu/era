@@ -84,7 +84,48 @@ export function createAgentApp() {
     '/v1/projects/:projectId/highlights',
     asyncHandler(async (req, res) => {
       const ranges = (req.body?.ranges ?? []) as HighlightRange[]
-      res.json(runtime.applyHighlights(req.params.projectId, ranges))
+      const replace = Boolean(req.body?.replace)
+      res.json(runtime.applyHighlights(req.params.projectId, ranges, { replace }))
+    }),
+  )
+
+  app.post(
+    '/v1/projects/:projectId/highlight-setup-share',
+    asyncHandler(async (req, res) => {
+      res.status(201).json(await runtime.createHighlightSetupShare(req.params.projectId))
+    }),
+  )
+
+  app.post(
+    '/v1/highlight-setup-shares',
+    asyncHandler(async (req, res) => {
+      const { createHighlightSetupShare } = await import('../src/agent/supabaseHighlightSetup.ts')
+      const markdown = String(req.body?.markdown ?? '')
+      if (!markdown.trim()) {
+        res.status(400).json({ error: 'markdown 不能为空' })
+        return
+      }
+      const shared = await createHighlightSetupShare({
+        projectId: req.body?.projectId ? String(req.body.projectId) : undefined,
+        title: req.body?.title ? String(req.body.title) : undefined,
+        markdown,
+        document: req.body?.document,
+        config: (req.body?.config ?? {}) as Record<string, unknown>,
+      })
+      res.status(201).json({
+        shareId: shared.shareId,
+        url: shared.url,
+        expiresAt: shared.record.expires_at,
+      })
+    }),
+  )
+
+  app.post(
+    '/v1/projects/:projectId/export-share',
+    asyncHandler(async (req, res) => {
+      res
+        .status(201)
+        .json(await runtime.createExportShare(req.params.projectId, req.body?.pages))
     }),
   )
 

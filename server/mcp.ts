@@ -157,14 +157,51 @@ async function main() {
 
   server.tool(
     'era_apply_highlights',
-    '按字符 range 批量应用高亮（blockId + start/end，end 不含）',
+    '按字符 range 批量应用高亮（blockId + start/end，end 不含）。replace=true 时先清空再写入。',
     {
       projectId: z.string(),
       ranges: z.array(highlightRangeSchema),
+      replace: z.boolean().optional(),
     },
-    async ({ projectId, ranges }) => {
+    async ({ projectId, ranges, replace }) => {
       try {
-        return ok(await api('POST', `/v1/projects/${projectId}/highlights`, { ranges }))
+        return ok(
+          await api('POST', `/v1/projects/${projectId}/highlights`, {
+            ranges,
+            replace: Boolean(replace),
+          }),
+        )
+      } catch (error) {
+        return fail(error)
+      }
+    },
+  )
+
+  server.tool(
+    'era_create_highlight_setup_share',
+    '把当前工程正文/标题上传到 Supabase，返回 GitHub Pages 高亮设置页 URL（含 shareId）',
+    { projectId: z.string() },
+    async ({ projectId }) => {
+      try {
+        return ok(
+          await api('POST', `/v1/projects/${projectId}/highlight-setup-share`, {}),
+        )
+      } catch (error) {
+        return fail(error)
+      }
+    },
+  )
+
+  server.tool(
+    'era_create_export_share',
+    '导出各页 PNG + 拼图并上传 Supabase，返回 GitHub Pages 预览/下载页 URL（含 shareId），把该 URL 发给用户即可在线预览并下载原图',
+    {
+      projectId: z.string(),
+      pages: z.array(z.number().int().nonnegative()).optional().describe('0-based 页码，默认全部'),
+    },
+    async ({ projectId, pages }) => {
+      try {
+        return ok(await api('POST', `/v1/projects/${projectId}/export-share`, { pages }))
       } catch (error) {
         return fail(error)
       }
