@@ -136,6 +136,7 @@ description: >-
 - **不要**写「可在 GitHub 搜索…」类引导语；用「开源社区」表述即可。
 - 若用户给了具体仓库链接或全名，以用户提供的为准，不要臆造 owner。
 - 正文须足够充实（建议 **≥800 字**，含问题、能力、承诺、适合谁等），适当拆句分段，避免整段过长。
+- 介绍 **ppt-master** 类项目时，还须插入 **2 张官网示例截图**（杂志风 + 瑞士风，见 `node scripts/generate-ppt-master-example-images.mjs`），放在「## 官网示例」段。
 
 ---
 
@@ -236,6 +237,7 @@ description: >-
 | 顶部文案 | 风水模板 `topText` 固定为「连续观看、点赞、关注，你也是地理风水达人（阳宅篇）」 |
 | 图片混排 | markdown 整行 `![alt](url =宽x高)`（url 支持远程或 dataURL） |
 | 开源社区仓库卡片 | `node scripts/generate-github-repo-card.mjs --repo owner/name` |
+| ppt-master 官网示例图 | `node scripts/generate-ppt-master-example-images.mjs` |
 | 高亮 | `era_apply_highlights` · `POST .../highlights`（可带 `replace: true`） |
 | 高亮设置分享 | `era_create_highlight_setup_share` · `POST .../highlight-setup-share` → GitHub Pages `url` |
 | 校验 | `era_preview_layout` · `POST .../preview-layout` |

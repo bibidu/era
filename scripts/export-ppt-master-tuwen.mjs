@@ -34,7 +34,13 @@ function countChars(text) {
 }
 
 async function main() {
+  execSync('node scripts/generate-ppt-master-example-images.mjs', { cwd: ROOT, stdio: 'inherit' })
+
   const card = JSON.parse(await readFile(path.join(ROOT, 'output/ppt-master-repo-card.json'), 'utf8'))
+  const examples = JSON.parse(
+    await readFile(path.join(ROOT, 'output/ppt-master-example-images.json'), 'utf8'),
+  )
+  const [magazine, swiss] = examples.examples
 
   const bodyText = `## 仓库信息
 
@@ -69,6 +75,18 @@ README 里强调的核心差异是「原生深度」：幻灯片母版、数据�
 - 原生深度：幻灯片母版、数据图表、过渡动画，不是文本框堆叠；支持按模板出稿
 - 本地生成：材料在你机器上跑，不绑平台、不锁模型，数据不出本机
 - Agent 工作流：丢一份 PDF、网页或主题，按步骤出完整 .pptx，可继续手工精修
+
+## 官网示例
+
+以下是 ppt-master 官网展示的一次性生成成品（未经精修），可在开源社区在线翻页查看完整 deck。
+
+${magazine.markdown}
+
+${magazine.caption}
+
+${swiss.markdown}
+
+${swiss.caption}
 
 丢进原材料，拿回的不只是能改的静态版面，而是**带完整 PowerPoint 行为的成品**。
 
