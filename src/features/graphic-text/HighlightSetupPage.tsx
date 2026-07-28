@@ -167,9 +167,12 @@ export function HighlightSetupPage({
     try {
       if (shareId) {
         const record = await fetchHighlightSetupShare(shareId)
-        const nextDocument = record.document
-          ? normalizeDocument(record.document as GraphicDocument)
-          : createDocumentFromMarkdown(record.markdown || '')
+        const markdown = record.markdown?.trim() ?? ''
+        const nextDocument = markdown
+          ? createDocumentFromMarkdown(markdown)
+          : normalizeDocument(
+              (record.document as GraphicDocument | undefined) ?? { blocks: [], assets: {} },
+            )
         const nextConfig = mergeConfig(record.config)
         setDoc(nextDocument)
         setBaseConfig(nextConfig)

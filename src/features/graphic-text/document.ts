@@ -140,6 +140,28 @@ export function getDocumentMarkdown(document: GraphicDocument): string {
     .join('\n\n')
 }
 
+/** 高亮设置分享用：保留内部分页指令，供前端整段解析 */
+export function getDocumentMarkdownForShare(document: GraphicDocument): string {
+  return document.blocks
+    .filter((block): block is MarkdownContentBlock => block.kind === 'markdown')
+    .map((block) => {
+      if (isPageBreakMarker(block.text)) return ''
+      const body = stripPageBreakMarkerLines(block.text)
+      if (!body) return ''
+      return block.pageBreakBefore ? `${ERA_PAGE_BREAK_MARKER}\n\n${body}` : body
+    })
+    .filter((text) => text.length > 0)
+    .join('\n\n')
+}
+
+export function createHighlightShareDocument(document: GraphicDocument): GraphicDocument {
+  const markdown = getDocumentMarkdownForShare(document)
+  return {
+    blocks: markdown ? [createMarkdownContentBlock(markdown)] : [],
+    assets: document.assets ?? {},
+  }
+}
+
 export function parseScopedMarkdown(scopeId: string, markdown: string) {
   return parseMarkdown(markdown).map((block, index) => {
     const id = `${scopeId}::${index}::${block.type}`

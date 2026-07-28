@@ -22,6 +22,12 @@ import {
   ERA_PAGE_BREAK_MARKER,
   isPageBreakMarker,
 } from '../src/features/graphic-text/pageBreak.ts'
+import {
+  createHighlightShareDocument,
+  getDocumentMarkdownForShare,
+  normalizeDocument,
+  type GraphicDocument,
+} from '../src/features/graphic-text/document.ts'
 
 export interface StoredProject {
   id: string
@@ -379,12 +385,15 @@ export class EraAgentRuntime {
 
   async createHighlightSetupShare(projectId: string) {
     const project = this.requireProject(projectId)
-    const document = project.snapshot.document as {
-      blocks: { id: string; kind: string; text?: string }[]
-      assets?: Record<string, unknown>
-    }
+    const document = normalizeDocument(
+      (project.snapshot.document as GraphicDocument | undefined) ?? {
+        blocks: [],
+        assets: {},
+      },
+    )
     const config = (project.snapshot.config ?? {}) as Record<string, unknown>
-    const markdown = getDocumentMarkdown(document)
+    const markdown = getDocumentMarkdownForShare(document)
+    const shareDocument = createHighlightShareDocument(document)
     const title =
       (project.snapshot.meta?.title ?? '').trim() ||
       markdown
@@ -398,7 +407,7 @@ export class EraAgentRuntime {
       projectId,
       title,
       markdown,
-      document,
+      document: shareDocument,
       config,
     })
 
