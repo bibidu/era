@@ -1,6 +1,7 @@
 import { ERA_AGENT_DEFAULT_HOST, ERA_AGENT_DEFAULT_PORT } from './protocol'
 import {
   ERA_GITHUB_PAGES_BASE,
+  exportSharePagesUrl,
   highlightSetupPagesUrl,
 } from './supabaseHighlightSetup'
 
@@ -42,4 +43,20 @@ export function readHighlightSetupQuery(
   const projectId = params.get('projectId')?.trim() || null
   const shareId = params.get('shareId')?.trim() || null
   return { enabled, projectId, shareId }
+}
+
+export function exportSharePageUrl(shareId: string) {
+  return exportSharePagesUrl(shareId, ERA_GITHUB_PAGES_BASE)
+}
+
+export function readExportShareQuery(
+  search: string = typeof window !== 'undefined' ? window.location.search : '',
+): { enabled: boolean; shareId: string | null } {
+  const params = new URLSearchParams(search)
+  const enabled =
+    params.get('exportShare') === '1' ||
+    params.get('exportShare') === 'true' ||
+    params.get('mode') === 'export-share'
+  const shareId = params.get('shareId')?.trim() || null
+  return { enabled, shareId }
 }

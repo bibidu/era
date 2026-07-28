@@ -80,14 +80,17 @@ export interface GraphicTextPage {
 
 const DEFAULT_SONG_FONT_ID = 'song'
 const DEFAULT_SONG_FONT_FAMILY = '"Noto Serif SC", serif'
+const DEFAULT_SHUHEITI_FONT_ID = 'shuheiti'
+const DEFAULT_SHUHEITI_FONT_FAMILY = '"Alimama ShuHeiTi", sans-serif'
 const DEFAULT_CODE_FONT_ID = 'menlo'
 const DEFAULT_CODE_FONT_FAMILY = 'Menlo, monospace'
 
+/** 非风水：二级标题默认数黑体；一级标题与正文仍用宋体 */
 export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   titleFontId: DEFAULT_SONG_FONT_ID,
   titleFontFamily: DEFAULT_SONG_FONT_FAMILY,
-  headingFontId: DEFAULT_SONG_FONT_ID,
-  headingFontFamily: DEFAULT_SONG_FONT_FAMILY,
+  headingFontId: DEFAULT_SHUHEITI_FONT_ID,
+  headingFontFamily: DEFAULT_SHUHEITI_FONT_FAMILY,
   bodyFontId: DEFAULT_SONG_FONT_ID,
   bodyFontFamily: DEFAULT_SONG_FONT_FAMILY,
   codeFontId: DEFAULT_CODE_FONT_ID,

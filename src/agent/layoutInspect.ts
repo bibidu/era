@@ -197,26 +197,6 @@ export function inspectGraphicLayout(
       pageIndex: 0,
     })
   }
-  if (colors.length === MAX_HIGHLIGHT_COLORS) {
-    const hasGray = colors.some((color) => {
-      const value = color.toUpperCase()
-      return (
-        value === '#525252' ||
-        value === '#737373' ||
-        value === '#404040' ||
-        value === '#666666' ||
-        value === '#6B7280'
-      )
-    })
-    if (!hasGray) {
-      warnings.push({
-        code: 'too_many_colors',
-        message: `使用满 ${MAX_HIGHLIGHT_COLORS} 种高亮色时必须包含明确灰色（推荐 #525252 / #737373；当前：${colors.join(', ')}）`,
-        pageIndex: 0,
-      })
-    }
-  }
-
   const titleIds = titleSourceIds(pages)
   const circleMap = config.circleHighlightColors ?? {}
   const colorMap = config.colorHighlightColors ?? {}

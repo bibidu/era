@@ -175,3 +175,85 @@ export async function saveHighlightSetupResult(
   if (!record) throw new Error('写回高亮结果失败')
   return record
 }
+
+/* -------------------------------------------------------------------------- */
+/* 导出图分享：把最终导出的各页 PNG + 拼图存到 Supabase，返回 GitHub Pages 预览/下载页 */
+/* -------------------------------------------------------------------------- */
+
+export const ERA_EXPORT_SHARE_TABLE = 'era_export_shares'
+
+export interface ExportShareImage {
+  /** 文件名，如 graphic-page-01.png / graphic-review-sheet.png */
+  name: string
+  /** 完整 dataURL（data:image/png;base64,...） */
+  dataUrl: string
+}
+
+export interface ExportShareRecord {
+  id: string
+  created_at?: string
+  project_id?: string | null
+  title: string
+  aspect_ratio?: string | null
+  images: ExportShareImage[]
+  sheet?: ExportShareImage | null
+  expires_at?: string
+}
+
+export interface CreateExportShareInput {
+  projectId?: string
+  title?: string
+  aspectRatio?: string
+  images: ExportShareImage[]
+  sheet?: ExportShareImage | null
+}
+
+export function exportSharePagesUrl(shareId: string, pagesBase = ERA_GITHUB_PAGES_BASE) {
+  const base = pagesBase.endsWith('/') ? pagesBase : `${pagesBase}/`
+  const url = new URL('gallery/', base)
+  url.searchParams.set('shareId', shareId)
+  return url.toString()
+}
+
+export async function createExportShare(
+  input: CreateExportShareInput,
+  config = defaultSupabaseConfig(),
+): Promise<{ shareId: string; url: string; record: ExportShareRecord }> {
+  if (!input.images?.length) throw new Error('创建导出图分享失败：images 为空')
+  // 图片体积大：显式生成 id + return=minimal，避免把整行 base64 回显导致网关超时
+  const id =
+    (globalThis as { crypto?: { randomUUID?: () => string } }).crypto?.randomUUID?.() ??
+    `${Date.now()}-${Math.random().toString(16).slice(2)}`
+  const record: ExportShareRecord = {
+    id,
+    project_id: input.projectId ?? null,
+    title: input.title ?? '',
+    aspect_ratio: input.aspectRatio ?? null,
+    images: input.images,
+    sheet: input.sheet ?? null,
+  }
+  await supabaseRest<void>(config, ERA_EXPORT_SHARE_TABLE, {
+    method: 'POST',
+    prefer: 'return=minimal',
+    body: JSON.stringify(record),
+  })
+  return {
+    shareId: id,
+    url: exportSharePagesUrl(id),
+    record,
+  }
+}
+
+export async function fetchExportShare(
+  shareId: string,
+  config = defaultSupabaseConfig(),
+): Promise<ExportShareRecord> {
+  const rows = await supabaseRest<ExportShareRecord[]>(
+    config,
+    `${ERA_EXPORT_SHARE_TABLE}?id=eq.${encodeURIComponent(shareId)}&select=*`,
+    { method: 'GET' },
+  )
+  const record = rows[0]
+  if (!record) throw new Error('分享不存在或已过期')
+  return record
+}

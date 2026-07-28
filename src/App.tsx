@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { readHighlightSetupQuery } from './agent/agentHttp'
+import { readExportShareQuery, readHighlightSetupQuery } from './agent/agentHttp'
 import { TopModeTabs, type AppMode } from './components/TopModeTabs'
 import { GraphicTextWorkspace } from './features/graphic-text/GraphicTextWorkspace'
 import { HighlightSetupPage } from './features/graphic-text/HighlightSetupPage'
@@ -9,6 +9,7 @@ import { useEraTheme } from './theme/useEraTheme'
 
 function App() {
   const highlightSetup = useMemo(() => readHighlightSetupQuery(), [])
+  const exportShare = useMemo(() => readExportShareQuery(), [])
   const socialVideoTool = useMemo(() => {
     return new URLSearchParams(window.location.search).get('tool') === 'social-video'
   }, [])
@@ -17,6 +18,17 @@ function App() {
 
   if (socialVideoTool) {
     return <SocialVideoDataPage />
+  }
+
+  if (exportShare.enabled && exportShare.shareId) {
+    const target = new URL('gallery/', window.location.href)
+    target.searchParams.set('shareId', exportShare.shareId)
+    window.location.replace(target.toString())
+    return (
+      <div className="mx-auto flex h-dvh w-full max-w-lg items-center justify-center bg-white text-sm text-neutral-500">
+        正在跳转到图文库…
+      </div>
+    )
   }
 
   if (highlightSetup.enabled) {

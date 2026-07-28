@@ -11,6 +11,7 @@
 - 图文模式：Markdown 分页、字体/纸色/高亮、多页导出
 - 社媒视频数据提取：上传视频抽帧或填写视频 URL，经 Supabase 代理调用 DashScope 返回 Markdown
 - 画幅：`3:4` 小红书风格；`9:16` 抖音风格
+- 导出图预览/下载：出图后上传 Supabase，在 Gallery 图文库查看（`/gallery/?shareId=...`），支持 ZIP 整包下载（MCP `era_create_export_share`）
 
 ## 开发（前端）
 
@@ -27,9 +28,30 @@ npm run dev
 
 - 对话里说 **「图文skill」** 即可触发
 - 也可输入 `/tuwen`，或提到「用标题生成图文 / 小红书·抖音出图」
-- 流程：确认服务 → 正文确认 → 5 个标题 → 高亮建议 → 选抖音/小红书（默认都要）→ 校验 → 发图
+- 流程分支：
+  - **风水**：确认服务 → 正文确认 → 5 个标题 → 高亮 → 校验 → 发图（封面标题与内容同图）
+  - **非风水（默认）**：问大纲 → 生成并确认内容 → 确认标题＋封面信息 → 按封面 skill 出封面图 → 用户自设高亮 → 封面＋内容高亮页拼横版确认 → 逐张发图（内容图不含一级标题，需要配图时预览环节混排展示）
 
 技术方案：[docs/agent-mcp-design.md](./docs/agent-mcp-design.md)
+
+## 封面 Skill（单张社媒封面）
+
+瑞士/技术编辑风的 **9:16** 封面，走 skill **封面skill**（`.agents/skills/fengmian/SKILL.md`）：
+
+- 对话里说 **「封面skill」** 即可触发（也可用 `/fengmian`）
+- 字段：大标题（可多行、可指定颜色）、小标题、描述、多个标签、多个二级标题、主题色（可省略随机）
+- 本地渲染：
+
+```bash
+node scripts/generate-cover.mjs \
+  --bigTitle "SEEDANCE" \
+  --smallTitle "AI 视频导演流" \
+  --description "不是堆词，是导演工作流" \
+  --tags "分镜叙事,镜头控制" \
+  --secondaryTitles "导演模式,镜头语言,成片导出" \
+  --themeColor "#6D28D9" \
+  --out output/cover.png
+```
 
 ## 本地 Agent / MCP（可选，不影响普通使用）
 
