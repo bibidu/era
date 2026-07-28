@@ -4,6 +4,7 @@ import {
   emptyHighlightMaps,
   highlightMapsToRanges,
   parseHighlightMapKey,
+  remapHighlightRanges,
 } from '../src/agent/highlightRanges.ts'
 import {
   buildHighlightSetupPayload,
@@ -92,5 +93,26 @@ assert.deepEqual(toApplyHighlightRanges(roundtrip!.ranges)[1], {
   end: 4,
   color: '#EF4444',
 })
+
+const remapped = remapHighlightRanges(
+  [
+    {
+      style: 'brush',
+      blockId: 'old-block::0::paragraph',
+      start: 9,
+      end: 27,
+      color: '#22C55E',
+      text: 'hugohe3/ppt-master',
+    },
+  ],
+  {
+    'new-block::0::paragraph':
+      '本文介绍的仓库为 hugohe3/ppt-master（作者 Hugo He / 仓库名 ppt-master）。',
+  },
+)
+assert.equal(remapped.remapped, 1)
+assert.equal(remapped.errors.length, 0)
+assert.equal(remapped.ranges[0]?.blockId, 'new-block::0::paragraph')
+assert.equal(remapped.ranges[0]?.start, 9)
 
 console.log('highlightRanges ok')

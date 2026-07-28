@@ -13,6 +13,17 @@ export interface HighlightMaps {
 
 export type HighlightRangeWithText = HighlightRange & { text?: string }
 
+const SCOPED_BLOCK_ID_SUFFIX_RE = /::\d+::(\w+)$/
+
+function scopedBlockType(blockId: string): string | null {
+  return blockId.match(SCOPED_BLOCK_ID_SUFFIX_RE)?.[1] ?? null
+}
+
+function blockMatchesScopedType(blockId: string, type: string | null): boolean {
+  if (!type) return true
+  return scopedBlockType(blockId) === type
+}
+
 const HIGHLIGHT_STYLE_ORDER: HighlightStyle[] = [
   'underline',
   'handUnderline',
@@ -127,6 +138,63 @@ export function highlightMapsToRanges(
   }
 
   return ranges
+}
+
+/**
+ * 高亮设置页返回的 blockId 绑定的是分享时的 scoped id；正文块 uuid 变化后需按 text 重新定位。
+ */
+export function remapHighlightRanges(
+  ranges: HighlightRangeWithText[],
+  plainTextByBlockId: Record<string, string>,
+): { ranges: HighlightRangeWithText[]; remapped: number; errors: string[] } {
+  const errors: string[] = []
+  let remapped = 0
+  const next: HighlightRangeWithText[] = []
+
+  for (const range of ranges) {
+    const text = range.text?.trim()
+    const currentPlain = plainTextByBlockId[range.blockId]
+    const currentSlice =
+      currentPlain !== undefined ? currentPlain.slice(range.start, range.end) : undefined
+
+    if (currentPlain !== undefined && (!text || currentSlice === text)) {
+      next.push(range)
+      continue
+    }
+
+    if (currentPlain !== undefined && text) {
+      const index = currentPlain.indexOf(text)
+      if (index >= 0) {
+        next.push({ ...range, start: index, end: index + text.length })
+        remapped += 1
+        continue
+      }
+    }
+
+    if (!text) {
+      errors.push(`无法映射高亮（缺少 text）: ${range.blockId}`)
+      continue
+    }
+
+    const wantType = scopedBlockType(range.blockId)
+    let found: HighlightRangeWithText | null = null
+    for (const [blockId, blockPlain] of Object.entries(plainTextByBlockId)) {
+      if (!blockMatchesScopedType(blockId, wantType)) continue
+      const index = blockPlain.indexOf(text)
+      if (index < 0) continue
+      found = { ...range, blockId, start: index, end: index + text.length }
+      break
+    }
+
+    if (found) {
+      next.push(found)
+      remapped += 1
+    } else {
+      errors.push(`无法映射高亮: ${text}`)
+    }
+  }
+
+  return { ranges: next, remapped, errors }
 }
 
 /**

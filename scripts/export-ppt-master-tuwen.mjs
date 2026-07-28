@@ -83,7 +83,8 @@ ${swiss.markdown}
       aspectRatio: '9:16',
       headingFontId: 'shuheiti',
       headingFontFamily: '"Alimama ShuHeiTi", sans-serif',
-      showWordCount: true,
+      showWordCount: false,
+      topText: '点赞关注不迷路～',
     },
     meta: { topic: 'ppt-master' },
   })

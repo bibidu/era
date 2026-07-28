@@ -1,4 +1,5 @@
 import { parseMarkdown } from './layout'
+import { stripHighlightMarkers } from './inlineHighlight'
 import {
   ERA_PAGE_BREAK_MARKER,
   isPageBreakMarker,
@@ -171,6 +172,18 @@ export function parseScopedMarkdown(scopeId: string, markdown: string) {
       sourceBlockId: id,
     }
   })
+}
+
+export function plainTextByScopedBlockId(document: GraphicDocument): Record<string, string> {
+  const result: Record<string, string> = {}
+  for (const block of document.blocks) {
+    if (block.kind !== 'markdown') continue
+    if (isPageBreakMarker(block.text)) continue
+    for (const md of parseScopedMarkdown(block.id, block.text)) {
+      result[md.id] = stripHighlightMarkers(md.text)
+    }
+  }
+  return result
 }
 
 export function describeContentBlock(
