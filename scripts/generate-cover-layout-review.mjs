@@ -17,8 +17,10 @@ const OUT = process.argv[3] || path.join(ROOT, 'output', 'cover-layout-review.pn
 
 const W = 1080
 const H = 1920
-const CORE_TOP = 240
-const CORE_H = 1440
+const CORE_INSET_X = 20
+const CORE_W = W - CORE_INSET_X * 2
+const CORE_H = Math.round((CORE_W * 4) / 3)
+const CORE_TOP = Math.round((H - CORE_H) / 2)
 
 function toDataUrl(buf) {
   return `data:image/png;base64,${buf.toString('base64')}`
@@ -28,11 +30,11 @@ async function main() {
   const buf = await readFile(COVER)
   const png = PNG.sync.read(buf)
   // Extract center 3:4 crop
-  const crop = new PNG({ width: W, height: CORE_H })
+  const crop = new PNG({ width: CORE_W, height: CORE_H })
   for (let y = 0; y < CORE_H; y++) {
-    for (let x = 0; x < W; x++) {
-      const si = (png.width * (y + CORE_TOP) + x) << 2
-      const di = (W * y + x) << 2
+    for (let x = 0; x < CORE_W; x++) {
+      const si = (png.width * (y + CORE_TOP) + (x + CORE_INSET_X)) << 2
+      const di = (CORE_W * y + x) << 2
       crop.data[di] = png.data[si]
       crop.data[di + 1] = png.data[si + 1]
       crop.data[di + 2] = png.data[si + 2]
@@ -43,6 +45,9 @@ async function main() {
   const cropPath = path.join(path.dirname(OUT), 'cover-preview-3x4.png')
   await mkdir(path.dirname(OUT), { recursive: true })
   fs.writeFileSync(cropPath, cropBuf)
+
+  const topPct = ((CORE_TOP / H) * 100).toFixed(1)
+  const corePct = ((CORE_H / H) * 100).toFixed(1)
 
   const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8" />
@@ -59,9 +64,9 @@ async function main() {
   .stage img { width: 100%; height: 100%; display: block; }
   .overlay { position: absolute; inset: 0; pointer-events: none; }
   .band { position: absolute; left: 0; right: 0; background: rgba(34, 197, 94, 0.28); }
-  .band.top { top: 0; height: 12.5%; }
-  .band.bot { bottom: 0; height: 12.5%; }
-  .safe { position: absolute; left: 0; right: 0; top: 12.5%; height: 75%; border: 3px solid #ef4444; box-sizing: border-box; }
+  .band.top { top: 0; height: ${topPct}%; }
+  .band.bot { bottom: 0; height: ${topPct}%; }
+  .safe { position: absolute; left: 0; right: 0; top: ${topPct}%; height: ${corePct}%; border: 3px solid #ef4444; box-sizing: border-box; }
   .tag { position: absolute; left: 10px; padding: 4px 8px; font-size: 12px; font-weight: 700; border-radius: 4px; }
   .tag.green { background: #16a34a; top: 8px; }
   .tag.red { background: #ef4444; top: 14%; }
@@ -78,9 +83,9 @@ async function main() {
           <div class="band top"></div>
           <div class="band bot"></div>
           <div class="safe"></div>
-          <div class="tag green">留白 240px</div>
-          <div class="tag red">核心 3:4 · 1080×1440</div>
-          <div class="tag green green2">留白 240px</div>
+          <div class="tag green">留白 ${CORE_TOP}px</div>
+          <div class="tag red">核心 3:4 · ${CORE_W}×${CORE_H} · 左右各 ${CORE_INSET_X}px</div>
+          <div class="tag green green2">留白 ${CORE_TOP}px</div>
         </div>
       </div>
     </div>

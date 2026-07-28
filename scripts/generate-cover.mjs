@@ -2,7 +2,7 @@
 /**
  * 封面skill 渲染器：按瑞士/技术编辑风生成 9:16 社媒封面 PNG。
  * 画布 9:16；背景色+正方形网格铺满全图；其余核心内容落在上下居中、
- * 左右铺满的 3:4 区域（1080×1440），对齐社媒主页预览裁切。
+ * 左右各留 20px 的 3:4 区域，对齐社媒主页预览裁切并增强中心感。
  *
  * 用法：
  *   node scripts/generate-cover.mjs --input cover.json --out output/cover.png
@@ -21,10 +21,13 @@ const ROOT = path.resolve(__dirname, '..')
 
 const WIDTH = 1080
 const HEIGHT = 1920
-/** 个人主页预览裁切：左右铺满、上下居中的 3:4 核心区 */
-const CORE_WIDTH = WIDTH
-const CORE_HEIGHT = Math.round((CORE_WIDTH * 4) / 3) // 1440
-const CORE_TOP = Math.round((HEIGHT - CORE_HEIGHT) / 2) // 240
+/** 核心 3:4 区左右内缩，增强中心感 */
+const CORE_INSET_X = 20
+/** 个人主页预览裁切：左右各留 20px、上下居中的 3:4 核心区 */
+const CORE_WIDTH = WIDTH - CORE_INSET_X * 2
+const CORE_HEIGHT = Math.round((CORE_WIDTH * 4) / 3)
+const CORE_TOP = Math.round((HEIGHT - CORE_HEIGHT) / 2)
+const CORE_LEFT = CORE_INSET_X
 
 /** 适合社媒的主题色池（未指定时随机） */
 const THEME_COLORS = [
@@ -299,7 +302,7 @@ function buildHtml(cfg, theme) {
 
   /*
    * 全画布仅保留：背景色 + 正方形网格。
-   * 其余全部落入上下居中、左右铺满的 3:4 核心区（社媒主页预览裁切区）。
+   * 其余全部落入上下居中、左右各留 20px 的 3:4 核心区（社媒主页预览裁切区）。
    */
   .hatch {
     position: absolute;
@@ -317,7 +320,7 @@ function buildHtml(cfg, theme) {
   .core {
     position: absolute;
     top: ${CORE_TOP}px;
-    left: 0;
+    left: ${CORE_LEFT}px;
     width: ${CORE_WIDTH}px;
     height: ${CORE_HEIGHT}px;
     overflow: hidden;
@@ -723,6 +726,8 @@ Usage:
         width: CORE_WIDTH,
         height: CORE_HEIGHT,
         top: CORE_TOP,
+        left: CORE_LEFT,
+        insetX: CORE_INSET_X,
         aspectRatio: '3:4',
       },
     },
