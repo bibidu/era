@@ -2,7 +2,7 @@
 /**
  * 封面skill 渲染器：按瑞士/技术编辑风生成 9:16 社媒封面 PNG。
  * 画布 9:16；背景色+正方形网格铺满全图；其余核心内容落在上下居中、
- * 左右各留 120px 的 3:4 区域，对齐社媒主页预览裁切并增强中心感。
+ * 左右各留 80px 的 3:4 区域，对齐社媒主页预览裁切并增强中心感。
  *
  * 用法：
  *   node scripts/generate-cover.mjs --input cover.json --out output/cover.png
@@ -22,8 +22,8 @@ const ROOT = path.resolve(__dirname, '..')
 const WIDTH = 1080
 const HEIGHT = 1920
 /** 核心 3:4 区左右内缩，增强中心感 */
-const CORE_INSET_X = 120
-/** 个人主页预览裁切：左右各留 120px、上下居中的 3:4 核心区 */
+const CORE_INSET_X = 80
+/** 个人主页预览裁切：左右各留 80px、上下居中的 3:4 核心区 */
 const CORE_WIDTH = WIDTH - CORE_INSET_X * 2
 const CORE_HEIGHT = Math.round((CORE_WIDTH * 4) / 3)
 const CORE_TOP = Math.round((HEIGHT - CORE_HEIGHT) / 2)
@@ -302,7 +302,7 @@ function buildHtml(cfg, theme) {
 
   /*
    * 全画布仅保留：背景色 + 正方形网格。
-   * 其余全部落入上下居中、左右各留 120px 的 3:4 核心区（社媒主页预览裁切区）。
+   * 其余全部落入上下居中、左右各留 80px 的 3:4 核心区（社媒主页预览裁切区）。
    */
   .hatch {
     position: absolute;

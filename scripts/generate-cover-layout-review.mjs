@@ -17,7 +17,7 @@ const OUT = process.argv[3] || path.join(ROOT, 'output', 'cover-layout-review.pn
 
 const W = 1080
 const H = 1920
-const CORE_INSET_X = 120
+const CORE_INSET_X = 80
 const CORE_W = W - CORE_INSET_X * 2
 const CORE_H = Math.round((CORE_W * 4) / 3)
 const CORE_TOP = Math.round((H - CORE_H) / 2)
