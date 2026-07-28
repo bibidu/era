@@ -3,6 +3,7 @@ import { readExportShareQuery, readHighlightSetupQuery } from './agent/agentHttp
 import { TopModeTabs, type AppMode } from './components/TopModeTabs'
 import { GraphicTextWorkspace } from './features/graphic-text/GraphicTextWorkspace'
 import { HighlightSetupPage } from './features/graphic-text/HighlightSetupPage'
+import { TitleAdjustPage } from './features/title-adjust/TitleAdjustPage'
 import { DataAnalysisWorkspace } from './features/social-video/DataAnalysisWorkspace'
 import { SocialVideoDataPage } from './features/social-video/SocialVideoDataPage'
 import { useEraTheme } from './theme/useEraTheme'
@@ -83,6 +84,8 @@ function App() {
 
       {mode === 'data' ? (
         <DataAnalysisWorkspace />
+      ) : mode === 'title-adjust' ? (
+        <TitleAdjustPage />
       ) : (
         <GraphicTextWorkspace />
       )}
