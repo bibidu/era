@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>买房租房选楼层，99%的人都选错了（上篇）</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #0f0e0b;
+      color: #e8dfc8;
+      font-family: "Noto Serif SC", "Source Han Serif CN", "STSong", Georgia, serif;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      padding: 48px 24px 32px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .header-badge {
+      display: inline-block;
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: #b5a07a;
+      border: 1px solid #b5a07a55;
+      padding: 4px 14px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+    }
+    .header h1 {
+      font-size: clamp(18px, 4vw, 26px);
+      font-weight: 600;
+      line-height: 1.4;
+      color: #f0e6cc;
+      margin-bottom: 8px;
+    }
+    .header h1 span { color: #e05a4a; }
+    .header p {
+      font-size: 13px;
+      color: #8a7d66;
+      margin-bottom: 28px;
+    }
+
+    /* ── Batch download button ── */
+    .btn-download-all {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #c9a96e 0%, #a07840 100%);
+      color: #1a1509;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 12px 28px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity .2s, transform .15s;
+      letter-spacing: .04em;
+    }
+    .btn-download-all:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-download-all:active { transform: translateY(0); }
+    .btn-download-all svg { flex-shrink: 0; }
+
+    /* ── Grid ── */
+    .gallery {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 20px 60px;
+    }
+    .gallery-label {
+      font-size: 12px;
+      letter-spacing: .1em;
+      color: #6b5e47;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .gallery-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #ffffff12;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #1a1812;
+      border: 1px solid #ffffff10;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color .2s, transform .2s;
+    }
+    .card:hover {
+      border-color: #c9a96e44;
+      transform: translateY(-3px);
+    }
+
+    .card-thumb {
+      position: relative;
+      background: #0d0c09;
+      overflow: hidden;
+      cursor: zoom-in;
+    }
+    .card-thumb img {
+      width: 100%;
+      display: block;
+      transition: transform .3s;
+    }
+    .card-thumb:hover img { transform: scale(1.02); }
+
+    .card-page-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,.55);
+      color: #d4b880;
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 4px;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(196,169,110,.25);
+    }
+
+    .card-footer {
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .card-name {
+      font-size: 12px;
+      color: #7a6e5c;
+    }
+    .btn-dl {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #2a2519;
+      color: #c9a96e;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #c9a96e33;
+      text-decoration: none;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .2s, border-color .2s;
+    }
+    .btn-dl:hover { background: #382e1c; border-color: #c9a96e77; }
+
+    /* ── Lightbox ── */
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.9);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(8px);
+    }
+    .lightbox.open { display: flex; }
+    .lightbox img {
+      max-height: 92vh;
+      max-width: 92vw;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 0 80px rgba(0,0,0,.8);
+    }
+    .lightbox-close {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      color: #fff;
+      font-size: 32px;
+      cursor: pointer;
+      line-height: 1;
+      opacity: .7;
+      transition: opacity .15s;
+      background: none;
+      border: none;
+    }
+    .lightbox-close:hover { opacity: 1; }
+    .lightbox-nav {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,.12);
+      color: #fff;
+      border: none;
+      font-size: 22px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .2s;
+    }
+    .lightbox-nav:hover { background: rgba(255,255,255,.25); }
+    .lightbox-prev { left: 16px; }
+    .lightbox-next { right: 16px; }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      color: #3d3427;
+      border-top: 1px solid #ffffff08;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-badge">地理风水 · 阳宅篇</div>
+  <h1>买房租房<span>选楼层</span>，99%的人都<span>选错</span>了<br>（上篇）</h1>
+  <p>共 4 页 · 抖音 9:16 竖版 · 风水质感模板</p>
+  <button class="btn-download-all" id="btnAll">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+    批量下载全部 4 张
+  </button>
+</div>
+
+<div class="gallery">
+  <div class="gallery-label">全部图片</div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lbClose">×</button>
+  <button class="lightbox-nav lightbox-prev" id="lbPrev">‹</button>
+  <img id="lbImg" src="" alt="" />
+  <button class="lightbox-nav lightbox-next" id="lbNext">›</button>
+</div>
+
+<div class="footer">Era 图文工具生成 · bibidu/era</div>
+
+<script>
+  const images = [
+    { file: 'graphic-page-01.png', label: '第 1 页' },
+    { file: 'graphic-page-02.png', label: '第 2 页' },
+    { file: 'graphic-page-03.png', label: '第 3 页' },
+    { file: 'graphic-page-04.png', label: '第 4 页' },
+  ];
+
+  const base = new URL('.', location.href).href;
+  const grid = document.getElementById('grid');
+
+  images.forEach((img, i) => {
+    const src = base + img.file;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-thumb" data-idx="${i}">
+        <img src="${src}" alt="${img.label}" loading="lazy" />
+        <span class="card-page-badge">${img.label}</span>
+      </div>
+      <div class="card-footer">
+        <span class="card-name">${img.file}</span>
+        <a class="btn-dl" href="${src}" download="${img.file}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          下载
+        </a>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  /* ── Lightbox ── */
+  let current = 0;
+  const lb = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lbImg');
+
+  function openLb(idx) {
+    current = idx;
+    lbImg.src = base + images[idx].file;
+    lb.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeLb() {
+    lb.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function navLb(dir) {
+    current = (current + dir + images.length) % images.length;
+    lbImg.src = base + images[current].file;
+  }
+
+  grid.addEventListener('click', e => {
+    const thumb = e.target.closest('[data-idx]');
+    if (thumb) openLb(+thumb.dataset.idx);
+  });
+  document.getElementById('lbClose').addEventListener('click', closeLb);
+  document.getElementById('lbPrev').addEventListener('click', () => navLb(-1));
+  document.getElementById('lbNext').addEventListener('click', () => navLb(1));
+  lb.addEventListener('click', e => { if (e.target === lb) closeLb(); });
+  document.addEventListener('keydown', e => {
+    if (!lb.classList.contains('open')) return;
+    if (e.key === 'Escape') closeLb();
+    if (e.key === 'ArrowLeft') navLb(-1);
+    if (e.key === 'ArrowRight') navLb(1);
+  });
+
+  /* ── Batch download ── */
+  document.getElementById('btnAll').addEventListener('click', async () => {
+    for (let i = 0; i < images.length; i++) {
+      await new Promise(resolve => {
+        const a = document.createElement('a');
+        a.href = base + images[i].file;
+        a.download = images[i].file;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(resolve, 400);
+      });
+    }
+  });
+</script>
+</body>
+</html>
