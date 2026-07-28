@@ -193,6 +193,22 @@ async function main() {
   )
 
   server.tool(
+    'era_create_export_share',
+    '导出各页 PNG + 拼图并上传 Supabase，返回 GitHub Pages 预览/下载页 URL（含 shareId），把该 URL 发给用户即可在线预览并下载原图',
+    {
+      projectId: z.string(),
+      pages: z.array(z.number().int().nonnegative()).optional().describe('0-based 页码，默认全部'),
+    },
+    async ({ projectId, pages }) => {
+      try {
+        return ok(await api('POST', `/v1/projects/${projectId}/export-share`, { pages }))
+      } catch (error) {
+        return fail(error)
+      }
+    },
+  )
+
+  server.tool(
     'era_preview_layout',
     '浏览器内分页预览并检测：单行溢出、孤行、独行标点（需已打开本地 Era）',
     { projectId: z.string() },

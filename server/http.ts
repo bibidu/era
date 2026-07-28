@@ -121,6 +121,15 @@ export function createAgentApp() {
   )
 
   app.post(
+    '/v1/projects/:projectId/export-share',
+    asyncHandler(async (req, res) => {
+      res
+        .status(201)
+        .json(await runtime.createExportShare(req.params.projectId, req.body?.pages))
+    }),
+  )
+
+  app.post(
     '/v1/projects/:projectId/preview-layout',
     asyncHandler(async (req, res) => {
       res.json(await runtime.previewLayout(req.params.projectId))

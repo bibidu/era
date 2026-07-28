@@ -1,16 +1,21 @@
 import { useMemo, useState } from 'react'
-import { readHighlightSetupQuery } from './agent/agentHttp'
+import { readExportShareQuery, readHighlightSetupQuery } from './agent/agentHttp'
 import { TopModeTabs, type AppMode } from './components/TopModeTabs'
+import { ExportSharePage } from './features/graphic-text/ExportSharePage'
 import { GraphicTextWorkspace } from './features/graphic-text/GraphicTextWorkspace'
 import { HighlightSetupPage } from './features/graphic-text/HighlightSetupPage'
 import { PosterWorkspace } from './features/poster/PosterWorkspace'
-import { SliceToolWorkspace } from './features/test/SliceToolWorkspace'
 import { usePosterEditor } from './features/poster/usePosterEditor'
 
 function App() {
   const highlightSetup = useMemo(() => readHighlightSetupQuery(), [])
+  const exportShare = useMemo(() => readExportShareQuery(), [])
   const [mode, setMode] = useState<AppMode>('graphic')
   const poster = usePosterEditor()
+
+  if (exportShare.enabled) {
+    return <ExportSharePage shareId={exportShare.shareId} />
+  }
 
   if (highlightSetup.enabled) {
     if (!highlightSetup.shareId && !highlightSetup.projectId) {
@@ -35,11 +40,7 @@ function App() {
   }
 
   return (
-    <div
-      className={`mx-auto flex h-dvh w-full flex-col overflow-hidden bg-white ${
-        mode === 'test' ? 'max-w-6xl' : 'max-w-lg'
-      }`}
-    >
+    <div className="mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden bg-white">
       <header className="flex shrink-0 items-center justify-center border-b border-neutral-200 px-4 py-2">
         <TopModeTabs
           value={mode}
@@ -52,8 +53,6 @@ function App() {
 
       {mode === 'poster' ? (
         <PosterWorkspace editor={poster} />
-      ) : mode === 'test' ? (
-        <SliceToolWorkspace />
       ) : (
         <GraphicTextWorkspace defaultBackgroundUrl={poster.posterUrl} />
       )}

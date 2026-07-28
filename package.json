@@ -14,6 +14,7 @@
     "start:local-agent": "bash scripts/start-local-agent.sh",
     "ensure:era": "bash scripts/ensure-era-ready.sh",
     "cover": "node scripts/generate-cover.mjs",
+    "repo-card": "node scripts/generate-github-repo-card.mjs",
     "smoke:highlights": "tsx server/smoke-highlights.ts",
     "smoke:supabase-highlight": "tsx server/smoke-supabase-highlight.ts"
   },
