@@ -3,6 +3,7 @@ import { readHighlightSetupQuery } from './agent/agentHttp'
 import { TopModeTabs, type AppMode } from './components/TopModeTabs'
 import { GraphicTextWorkspace } from './features/graphic-text/GraphicTextWorkspace'
 import { HighlightSetupPage } from './features/graphic-text/HighlightSetupPage'
+import { DataAnalysisWorkspace } from './features/social-video/DataAnalysisWorkspace'
 import { SocialVideoDataPage } from './features/social-video/SocialVideoDataPage'
 
 function App() {
@@ -49,7 +50,7 @@ function App() {
       </header>
 
       {mode === 'data' ? (
-        <SocialVideoDataPage embedded />
+        <DataAnalysisWorkspace />
       ) : (
         <GraphicTextWorkspace />
       )}
