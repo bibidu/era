@@ -9,7 +9,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=overlays-content" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <script>
+      ;(function () {
+        try {
+          var theme = localStorage.getItem('era-theme')
+          if (theme !== 'light' && theme !== 'dark') theme = 'dark'
+          var color = theme === 'light' ? '#ffffff' : '#0a0a0a'
+          document.documentElement.dataset.theme = theme
+          document.documentElement.style.colorScheme = theme
+          document.documentElement.style.backgroundColor = color
+          var themeColor = document.querySelector('meta[name="theme-color"]')
+          if (themeColor) themeColor.setAttribute('content', color)
+          var statusBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+          if (statusBar) {
+            statusBar.setAttribute('content', theme === 'dark' ? 'black' : 'default')
+          }
+        } catch (e) {}
+      })()
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet" />
@@ -23,7 +42,8 @@
           min-height: 100dvh;
           align-items: center;
           justify-content: center;
-          color: #737373;
+          background: #0a0a0a;
+          color: #a3a3a3;
           font: 14px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
         "
       >

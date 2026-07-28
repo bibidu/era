@@ -176,7 +176,7 @@ export function GraphicSaveImagesSheet({
               <button
                 type="button"
                 disabled={!hasSelection || saving}
-                className="h-11 min-w-[7.5rem] rounded-full bg-neutral-900 px-8 text-sm font-semibold text-white disabled:bg-neutral-300 disabled:text-neutral-500"
+                className="h-11 min-w-[7.5rem] rounded-full era-primary-btn bg-neutral-900 px-8 text-sm font-semibold text-white disabled:bg-neutral-300 disabled:text-neutral-500"
                 onClick={handleSave}
               >
                 {saving ? saveProgress || '生成中...' : '保存'}
