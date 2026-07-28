@@ -404,7 +404,6 @@ export class EraAgentRuntime {
       projectId,
       title,
       markdown,
-      document: { blocks: [], assets: document.assets ?? {} },
       config,
     })
 

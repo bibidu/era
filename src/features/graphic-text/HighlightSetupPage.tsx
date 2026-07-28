@@ -130,6 +130,29 @@ async function copyText(text: string) {
   document.body.removeChild(area)
 }
 
+function documentFromHighlightShareRecord(
+  record: { markdown?: string; document?: unknown },
+): GraphicDocument {
+  const markdown = record.markdown?.trim() ?? ''
+  const rawDocument = record.document as GraphicDocument | null | undefined
+  const hasDocumentBlocks = Boolean(
+    rawDocument?.blocks?.some(
+      (block) => block.kind === 'markdown' && String(block.text ?? '').trim().length > 0,
+    ),
+  )
+
+  if (markdown && !hasDocumentBlocks) {
+    return createDocumentFromMarkdown(markdown)
+  }
+  if (rawDocument?.blocks?.length) {
+    return normalizeDocument(rawDocument)
+  }
+  if (markdown) {
+    return createDocumentFromMarkdown(markdown)
+  }
+  return { blocks: [], assets: {} }
+}
+
 export function HighlightSetupPage({
   projectId,
   shareId,
@@ -167,12 +190,7 @@ export function HighlightSetupPage({
     try {
       if (shareId) {
         const record = await fetchHighlightSetupShare(shareId)
-        const markdown = record.markdown?.trim() ?? ''
-        const nextDocument = markdown
-          ? createDocumentFromMarkdown(markdown)
-          : normalizeDocument(
-              (record.document as GraphicDocument | undefined) ?? { blocks: [], assets: {} },
-            )
+        const nextDocument = documentFromHighlightShareRecord(record)
         const nextConfig = mergeConfig(record.config)
         setDoc(nextDocument)
         setBaseConfig(nextConfig)
