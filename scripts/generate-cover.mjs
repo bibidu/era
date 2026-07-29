@@ -674,44 +674,73 @@ Usage:
     await page.evaluate(async () => {
       if (document.fonts?.ready) await document.fonts.ready
     })
-    // 最大化主标题，同时保证小标题/标签完整可见，并把剩余空间分给小标题上间距
-    await page.evaluate(() => {
+    // 逐行缩小字号以适配内容区（扣除 padding），避免第二行溢出裁切
+    const fitMeta = await page.evaluate(() => {
       const title = document.querySelector('.big-title')
       const content = document.querySelector('.content')
       const info = document.querySelector('.info')
       const badge = document.querySelector('.badge')
       const footer = document.querySelector('.footer')
-      if (!title || !content || !info) return
+      if (!title || !content || !info) return { ok: false, reason: 'missing-nodes' }
 
-      const innerW = content.clientWidth
-      const innerH = content.clientHeight
+      const cs = getComputedStyle(content)
+      const padL = parseFloat(cs.paddingLeft) || 0
+      const padR = parseFloat(cs.paddingRight) || 0
+      const padT = parseFloat(cs.paddingTop) || 0
+      const padB = parseFloat(cs.paddingBottom) || 0
+      // clientWidth 含 padding；真正可排字宽度需扣除左右 padding，并留安全边避免视觉贴边
+      const innerW = Math.max(80, content.clientWidth - padL - padR - 24)
+      const innerH = Math.max(80, content.clientHeight - padT - padB)
       const badgeH = badge ? badge.getBoundingClientRect().height + 16 : 0
       const footerH = footer ? footer.getBoundingClientRect().height + 24 : 0
 
-      // 先清空 transform 以便测原始尺寸
       title.style.transform = 'none'
+      title.style.marginLeft = '0'
       title.style.height = 'auto'
-      title.style.width = 'max-content'
+      title.style.width = '100%'
+      title.style.maxWidth = `${innerW}px`
+      title.style.alignItems = 'flex-start'
 
-      const needW = Math.max(title.scrollWidth, 1)
-      const needH = Math.max(title.scrollHeight, 1)
-      const infoH = info.getBoundingClientRect().height
-      const minGap = 80
-      const targetGap = 140
-      const reserved = badgeH + infoH + footerH + minGap + 8
-      const availForTitle = Math.max(160, innerH - reserved)
-      // 不超出核心区宽度，避免裁切；缩小后水平居中保证左右留白一致
-      const s = Math.min(1, innerW / needW, availForTitle / needH)
+      const lines = Array.from(title.querySelectorAll(':scope > .line'))
+      const baseSize = parseFloat(getComputedStyle(title).fontSize) || 220
+      const lineScales = []
+      // 目标宽度：内容区再收一档，避免第二行视觉贴边
+      const targetW = Math.floor(innerW * 0.92)
 
-      title.style.transformOrigin = 'left top'
-      title.style.transform = `scale(${s})`
-      const scaledH = needH * s
-      const scaledW = needW * s
-      title.style.height = `${scaledH}px`
-      title.style.width = `${scaledW}px`
-      title.style.marginLeft = `${Math.max(0, (innerW - scaledW) / 2)}px`
+      for (const line of lines) {
+        line.style.transform = 'none'
+        line.style.fontSize = `${baseSize}px`
+        line.style.display = 'block'
+        line.style.whiteSpace = 'nowrap'
+        line.style.width = 'max-content'
+        line.style.maxWidth = 'none'
+        // 逐级缩小该行字号，直到不超出目标宽度
+        let size = baseSize
+        let guard = 0
+        while (line.scrollWidth > targetW && size > 48 && guard < 160) {
+          size -= 2
+          line.style.fontSize = `${size}px`
+          guard += 1
+        }
+        // 再保险：若仍略超，用 scale 压进目标宽度并保持行盒高度正确
+        const needW = Math.max(line.scrollWidth, 1)
+        const s = needW > targetW ? targetW / needW : 1
+        if (s < 1) {
+          const naturalH = line.getBoundingClientRect().height
+          line.style.transformOrigin = 'left top'
+          line.style.transform = `scale(${s})`
+          line.style.height = `${naturalH * s}px`
+          line.style.width = `${needW * s}px`
+        }
+        lineScales.push({
+          text: (line.textContent || '').trim(),
+          fontSize: size,
+          scale: s,
+          width: line.getBoundingClientRect().width,
+        })
+      }
 
-      // 小标题过宽时同步缩放，避免换行裁切
+      // 小标题过宽时同步缩放
       const small = info.querySelector('.small-title')
       if (small && small.scrollWidth > innerW) {
         const ss = innerW / small.scrollWidth
@@ -721,13 +750,36 @@ Usage:
         small.style.width = `${small.scrollWidth * ss}px`
       }
 
+      const titleH = title.getBoundingClientRect().height
       const infoH2 = info.getBoundingClientRect().height
-      const used = badgeH + scaledH + infoH2 + footerH
+      const minGap = 80
+      const targetGap = 140
+      const used = badgeH + titleH + infoH2 + footerH
       const gap = Math.max(minGap, Math.min(targetGap, innerH - used - 8))
       info.style.marginTop = `${Math.round(gap)}px`
+
+      // 溢出检测：任一行右缘超出内容区则失败
+      const contentBox = content.getBoundingClientRect()
+      const rightLimit = contentBox.left + padL + innerW + 1
+      const overflows = lines.map((line) => {
+        const r = line.getBoundingClientRect()
+        return {
+          text: (line.textContent || '').trim(),
+          right: r.right,
+          limit: rightLimit,
+          overflowPx: Math.max(0, r.right - rightLimit),
+        }
+      })
+      const ok = overflows.every((o) => o.overflowPx <= 0.5)
+      return { ok, innerW, lineScales, overflows }
     })
+    if (!fitMeta?.ok) {
+      console.error('封面标题仍溢出，未写出文件:', JSON.stringify(fitMeta, null, 2))
+      process.exit(1)
+    }
     await page.waitForTimeout(300)
     await page.locator('#cover').screenshot({ path: outPath, type: 'png' })
+    Object.assign(meta, { titleFit: fitMeta })
   } finally {
     await browser.close()
     try {
@@ -746,6 +798,7 @@ Usage:
     blobCorner: meta.blobCorner,
     titleSize: meta.titleSize,
     smallTitleSize: meta.smallTitleSize,
+    titleFit: meta.titleFit ?? null,
     size: {
       width: WIDTH,
       height: HEIGHT,
