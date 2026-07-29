@@ -30,11 +30,9 @@ const fieldStyle = {
   color: 'var(--era-fg)',
 } as const
 
-function buildAiRevisionPrompt(outline: string, content: string, workType: SocialVideoWorkType) {
-  const outlineText = outline.trim()
-  const contentText = content.trim()
+function buildAiRevisionPrompt(workType: SocialVideoWorkType) {
   const coverClause = workType === '图文' ? '封面图以及' : ''
-  return `你需要按照大纲: ${outlineText}或内容:${contentText}，并使用 图文skill进行生成任务。
+  return `你需要使用 图文skill进行生成任务。
 
 首先，你需要生成5个标题以及正文内容(如果提供了正文，则严格按照正文进行展示)，并引导用户选择或确定一个标题。
 
@@ -114,7 +112,7 @@ export function SocialVideoCreatePage({
   }, [isEdit, imagePreviews, content, coverUrl])
 
   async function handleCopyPrompt() {
-    const prompt = buildAiRevisionPrompt(outline, content, workType)
+    const prompt = buildAiRevisionPrompt(workType)
     try {
       await navigator.clipboard.writeText(prompt)
       setCopyHint('已复制')
