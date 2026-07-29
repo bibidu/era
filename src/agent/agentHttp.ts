@@ -1,8 +1,5 @@
 import { ERA_AGENT_DEFAULT_HOST, ERA_AGENT_DEFAULT_PORT } from './protocol'
-import {
-  ERA_GITHUB_PAGES_BASE,
-  highlightSetupPagesUrl,
-} from './supabaseHighlightSetup'
+import { ERA_PUBLIC_BASE, highlightSetupPagesUrl } from './supabaseHighlightSetup'
 
 /** 浏览器侧访问 Agent REST 的 base URL（与 Bridge WS 主机/端口一致） */
 export function agentHttpBase(): string {
@@ -28,23 +25,5 @@ export function highlightSetupPageUrl(projectId: string): string {
 }
 
 export function highlightSetupSharePageUrl(shareId: string) {
-  return highlightSetupPagesUrl(shareId, ERA_GITHUB_PAGES_BASE)
-}
-
-/** @deprecated 使用 ?tab=highlight；保留解析以兼容旧链接 */
-export function readHighlightSetupQuery(
-  search: string = typeof window !== 'undefined' ? window.location.search : '',
-): { enabled: boolean; projectId: string | null; shareId: string | null } {
-  const params = new URLSearchParams(search)
-  const tab = params.get('tab')?.trim().toLowerCase()
-  const enabled =
-    tab === 'highlight' ||
-    tab === 'highlight-setup' ||
-    params.get('tab') === '高亮' ||
-    params.get('highlightSetup') === '1' ||
-    params.get('highlightSetup') === 'true' ||
-    params.get('mode') === 'highlight-setup'
-  const projectId = params.get('projectId')?.trim() || null
-  const shareId = params.get('shareId')?.trim() || null
-  return { enabled, projectId, shareId }
+  return highlightSetupPagesUrl(shareId, ERA_PUBLIC_BASE)
 }

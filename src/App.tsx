@@ -21,7 +21,6 @@ function App() {
   }, [])
 
   useEffect(() => {
-    // 首次进入：规范化 URL（旧 ?highlightSetup=1 / ?tool=social-video → ?tab=）
     replaceAppTabInUrl(readAppTabFromSearch(), readHighlightIdsFromSearch())
     window.addEventListener('popstate', syncFromUrl)
     return () => window.removeEventListener('popstate', syncFromUrl)
