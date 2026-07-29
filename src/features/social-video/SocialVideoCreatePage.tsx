@@ -1,10 +1,13 @@
 import { ChevronLeft } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
   SOCIAL_VIDEO_PUBLISH_STATUSES,
   SOCIAL_VIDEO_WORK_TYPES,
   createSocialVideoAnalysis,
+  getSocialVideoAnalysis,
+  updateSocialVideoAnalysis,
+  type SocialVideoAnalysisRecord,
   type SocialVideoPublishStatus,
   type SocialVideoWorkType,
 } from '../../agent/supabaseSocialVideoAnalysis'
@@ -14,6 +17,8 @@ import { truncateText } from './parseMarkdownMetrics'
 interface SocialVideoCreatePageProps {
   onBack: () => void
   onCreated?: () => void
+  /** 传入则为编辑模式 */
+  editingRecord?: SocialVideoAnalysisRecord | null
 }
 
 const fieldClass =
@@ -24,37 +29,92 @@ const fieldStyle = {
   color: 'var(--era-fg)',
 } as const
 
-export function SocialVideoCreatePage({ onBack, onCreated }: SocialVideoCreatePageProps) {
+export function SocialVideoCreatePage({
+  onBack,
+  onCreated,
+  editingRecord = null,
+}: SocialVideoCreatePageProps) {
+  const isEdit = Boolean(editingRecord?.id)
   const [publishStatus, setPublishStatus] = useState<SocialVideoPublishStatus>('待AI修改')
   const [outline, setOutline] = useState('')
   const [workType, setWorkType] = useState<SocialVideoWorkType>(DEFAULT_SOCIAL_VIDEO_WORK_TYPE)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [publishedAt, setPublishedAt] = useState('')
+  const [coverUrl, setCoverUrl] = useState<string | null>(null)
   const [contentDrawerOpen, setContentDrawerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(isEdit)
   const [statusMessage, setStatusMessage] = useState('')
+
+  useEffect(() => {
+    if (!editingRecord?.id) {
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
+    setLoading(true)
+    void (async () => {
+      try {
+        const full =
+          editingRecord.markdown !== undefined && editingRecord.outline !== undefined
+            ? editingRecord
+            : await getSocialVideoAnalysis(editingRecord.id)
+        if (cancelled) return
+        setPublishStatus(full.publish_status)
+        setOutline(full.outline || '')
+        setWorkType(full.work_type)
+        setTitle(full.title || '')
+        setContent(full.markdown || '')
+        setPublishedAt(full.published_at || '')
+        setCoverUrl(full.cover_url)
+        setStatusMessage('')
+      } catch (error) {
+        if (!cancelled) {
+          setStatusMessage(error instanceof Error ? error.message : '加载帖子失败')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [editingRecord])
 
   const canSubmit = useMemo(() => outline.trim().length > 0 && Boolean(workType), [outline, workType])
 
-  async function handleCreate() {
-    if (!canSubmit || saving) return
+  async function handleSubmit() {
+    if (!canSubmit || saving || loading) return
     setSaving(true)
-    setStatusMessage('正在创建...')
+    setStatusMessage(isEdit ? '正在保存...' : '正在创建...')
     try {
-      await createSocialVideoAnalysis({
+      const payload = {
         title: title.trim(),
-        publishedAt: '',
-        coverUrl: null,
+        publishedAt,
+        coverUrl,
         markdown: content,
         outline: outline.trim(),
         publishStatus,
         workType,
-      })
-      setStatusMessage('创建成功')
+      }
+      if (isEdit && editingRecord?.id) {
+        await updateSocialVideoAnalysis(editingRecord.id, payload)
+        setStatusMessage('保存成功')
+      } else {
+        await createSocialVideoAnalysis(payload)
+        setStatusMessage('创建成功')
+      }
       onCreated?.()
       onBack()
     } catch (error) {
-      setStatusMessage(error instanceof Error ? `创建失败：${error.message}` : '创建失败')
+      setStatusMessage(
+        error instanceof Error
+          ? `${isEdit ? '保存' : '创建'}失败：${error.message}`
+          : `${isEdit ? '保存' : '创建'}失败`,
+      )
     } finally {
       setSaving(false)
     }
@@ -79,7 +139,7 @@ export function SocialVideoCreatePage({ onBack, onCreated }: SocialVideoCreatePa
         >
           <ChevronLeft size={18} />
         </button>
-        <h1 className="text-base font-semibold">创建帖子</h1>
+        <h1 className="text-base font-semibold">{isEdit ? '编辑帖子' : '创建帖子'}</h1>
       </header>
 
       <div
@@ -111,84 +171,93 @@ export function SocialVideoCreatePage({ onBack, onCreated }: SocialVideoCreatePa
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-        <div className="mx-auto flex w-full max-w-lg flex-col gap-4">
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium">
-              大纲<span className="ml-1 text-rose-400">*</span>
-            </span>
-            <textarea
-              className={`${fieldClass} min-h-28 resize-y leading-6`}
-              style={fieldStyle}
-              value={outline}
-              placeholder="填写必填大纲"
-              onChange={(event) => setOutline(event.target.value)}
-            />
-          </label>
+        {loading ? (
+          <div className="flex h-48 items-center justify-center text-sm" style={{ color: 'var(--era-muted)' }}>
+            加载中...
+          </div>
+        ) : (
+          <div className="mx-auto flex w-full max-w-lg flex-col gap-4">
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">
+                大纲<span className="ml-1 text-rose-400">*</span>
+              </span>
+              <textarea
+                className={`${fieldClass} min-h-28 resize-y leading-6`}
+                style={fieldStyle}
+                value={outline}
+                placeholder="填写必填大纲"
+                onChange={(event) => setOutline(event.target.value)}
+              />
+            </label>
 
-          <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium">
-              类型<span className="ml-1 text-rose-400">*</span>
-            </span>
-            <div className="flex gap-2">
-              {SOCIAL_VIDEO_WORK_TYPES.map((type) => {
-                const active = workType === type
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    className="rounded-full px-4 py-2 text-sm font-medium transition"
-                    style={
-                      active
-                        ? { background: 'var(--era-button)', color: 'var(--era-button-fg)' }
-                        : {
-                            background: 'var(--era-panel)',
-                            color: 'var(--era-muted)',
-                            border: '1px solid var(--era-border)',
-                          }
-                    }
-                    onClick={() => setWorkType(type)}
-                  >
-                    {type}
-                  </button>
-                )
-              })}
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium">
+                类型<span className="ml-1 text-rose-400">*</span>
+              </span>
+              <div className="flex gap-2">
+                {SOCIAL_VIDEO_WORK_TYPES.map((type) => {
+                  const active = workType === type
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      className="rounded-full px-4 py-2 text-sm font-medium transition"
+                      style={
+                        active
+                          ? { background: 'var(--era-button)', color: 'var(--era-button-fg)' }
+                          : {
+                              background: 'var(--era-panel)',
+                              color: 'var(--era-muted)',
+                              border: '1px solid var(--era-border)',
+                            }
+                      }
+                      onClick={() => setWorkType(type)}
+                    >
+                      {type}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
+
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">标题</span>
+              <input
+                className={fieldClass}
+                style={fieldStyle}
+                value={title}
+                placeholder="可选标题"
+                onChange={(event) => setTitle(event.target.value)}
+              />
+            </label>
+
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium">内容</span>
+              <button
+                type="button"
+                className="flex min-h-12 items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition hover:opacity-90"
+                style={fieldStyle}
+                onClick={() => setContentDrawerOpen(true)}
+              >
+                <span
+                  className="min-w-0 flex-1 truncate"
+                  style={{ color: content.trim() ? 'var(--era-fg)' : 'var(--era-muted)' }}
+                >
+                  {contentPreview}
+                </span>
+                <span className="shrink-0 text-xs font-medium" style={{ color: 'var(--era-muted)' }}>
+                  编辑
+                </span>
+              </button>
+            </div>
+
+            {statusMessage ? (
+              <p className="text-sm" style={{ color: 'var(--era-muted)' }}>
+                {statusMessage}
+              </p>
+            ) : null}
           </div>
-
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium">标题</span>
-            <input
-              className={fieldClass}
-              style={fieldStyle}
-              value={title}
-              placeholder="可选标题"
-              onChange={(event) => setTitle(event.target.value)}
-            />
-          </label>
-
-          <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium">内容</span>
-            <button
-              type="button"
-              className="flex min-h-12 items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition hover:opacity-90"
-              style={fieldStyle}
-              onClick={() => setContentDrawerOpen(true)}
-            >
-              <span className="min-w-0 flex-1 truncate" style={{ color: content.trim() ? 'var(--era-fg)' : 'var(--era-muted)' }}>
-                {contentPreview}
-              </span>
-              <span className="shrink-0 text-xs font-medium" style={{ color: 'var(--era-muted)' }}>
-                编辑
-              </span>
-            </button>
-          </div>
-
-          {statusMessage ? (
-            <p className="text-sm" style={{ color: 'var(--era-muted)' }}>
-              {statusMessage}
-            </p>
-          ) : null}
-        </div>
+        )}
       </div>
 
       <div
@@ -203,10 +272,10 @@ export function SocialVideoCreatePage({ onBack, onCreated }: SocialVideoCreatePa
           type="button"
           className="h-12 w-full rounded-2xl text-sm font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           style={{ background: 'var(--era-button)', color: 'var(--era-button-fg)' }}
-          disabled={!canSubmit || saving}
-          onClick={() => void handleCreate()}
+          disabled={!canSubmit || saving || loading}
+          onClick={() => void handleSubmit()}
         >
-          {saving ? '创建中...' : '创建'}
+          {saving ? (isEdit ? '保存中...' : '创建中...') : isEdit ? '保存' : '创建'}
         </button>
       </div>
 

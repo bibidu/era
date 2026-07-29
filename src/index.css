@@ -1707,6 +1707,35 @@ body.text-input-open .drawer__dialog {
   pointer-events: none;
 }
 
+.era-bottom-sheet__backdrop {
+  background: rgb(0 0 0 / 0.5);
+  opacity: 0;
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity;
+}
+
+.era-bottom-sheet__backdrop[data-open='true'] {
+  opacity: 1;
+}
+
+.era-bottom-sheet__dialog {
+  transform: translate3d(0, 100%, 0);
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.era-bottom-sheet__dialog[data-open='true'] {
+  transform: translate3d(0, 0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .era-bottom-sheet__backdrop,
+  .era-bottom-sheet__dialog {
+    transition: none !important;
+  }
+}
+
 .grey-slider-wrap {
   touch-action: pan-y;
   padding-block: 10px;

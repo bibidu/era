@@ -5,6 +5,7 @@ import {
   type SocialVideoAnalysisRecord,
 } from '../../agent/supabaseSocialVideoAnalysis'
 import { BottomSheet } from '../../components/BottomSheet'
+import { MarkdownPreview } from './MarkdownPreview'
 
 interface SocialVideoDetailSheetProps {
   record: SocialVideoAnalysisRecord | null
@@ -82,14 +83,14 @@ export function SocialVideoDetailSheet({ record, isOpen, onOpenChange }: SocialV
           className="flex shrink-0 items-center justify-between border-b px-4 py-3"
           style={{ borderColor: 'var(--era-border)' }}
         >
-              <div className="min-w-0">
-                <p className="truncate text-base font-semibold">{view?.title || '作品分析'}</p>
-                <p className="truncate text-xs" style={{ color: 'var(--era-muted)' }}>
-                  {[view?.work_type, view?.publish_status, view?.published_at || '未填写发布日期']
-                    .filter(Boolean)
-                    .join(' · ')}
-                </p>
-              </div>
+          <div className="min-w-0">
+            <p className="truncate text-base font-semibold">{view?.title || '作品分析'}</p>
+            <p className="truncate text-xs" style={{ color: 'var(--era-muted)' }}>
+              {[view?.work_type, view?.publish_status, view?.published_at || '未填写发布日期']
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -112,12 +113,18 @@ export function SocialVideoDetailSheet({ record, isOpen, onOpenChange }: SocialV
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-          <pre
-            className="whitespace-pre-wrap rounded-2xl border p-4 font-mono text-sm leading-6"
-            style={{ borderColor: 'var(--era-border)', background: 'var(--era-input)' }}
-          >
-            {loadingDetail ? '加载中...' : view?.markdown || '暂无分析数据'}
-          </pre>
+          {loadingDetail ? (
+            <p className="text-sm" style={{ color: 'var(--era-muted)' }}>
+              加载中...
+            </p>
+          ) : (
+            <div
+              className="rounded-2xl border p-4"
+              style={{ borderColor: 'var(--era-border)', background: 'var(--era-input)' }}
+            >
+              <MarkdownPreview value={view?.markdown || ''} />
+            </div>
+          )}
         </div>
 
         {status ? (
