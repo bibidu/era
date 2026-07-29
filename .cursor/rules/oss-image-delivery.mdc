@@ -1,0 +1,26 @@
+---
+description: 凡交付图片必须走阿里云 OSS 私有桶，并在对话框发送 12 小时签名 URL
+alwaysApply: true
+---
+
+# 图片交付：阿里云 OSS（全局强制）
+
+本仓库**任何**需要把图片发给用户的场景（图文导出、封面、拼图总览、截图、生成图、预览确认等），一律遵守：
+
+## 必须
+
+1. 用 `bash scripts/oss-upload.sh <本地图片>` 上传到阿里云 OSS（私有读）
+2. 在**对话框直接发送** stdout 返回的 **12 小时签名 URL**（带 `Expires` / `Signature`）
+3. 上传脚本会在存图前自动清理 Bucket 内超过 **14 小时**的旧对象（省存储费）；不要绕过 `oss-upload.sh` 直接 `ossutil cp`
+
+## 禁止
+
+- 只发本地路径、`file://`、未签名裸 OSS URL
+- 用 HTML 嵌入图片链接代替对话框发图（用户可能看不到）
+- 把对象改成公共读（`public-read`）
+
+## 文档与实现
+
+- 约定说明：`docs/cloud-hosting.md`、各 skill 的 `references/cloud-hosting.md`、`AGENTS.md`
+- 上传：`scripts/oss-upload.sh`（内部会调用 `scripts/oss-cleanup-expired.sh`）
+- 仅清理：`bash scripts/oss-cleanup-expired.sh` 或 `npm run oss:cleanup`

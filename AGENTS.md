@@ -28,6 +28,7 @@
 
 ## 云托管（强制）
 
-- **图片**：阿里云 OSS 私有读（`scripts/oss-upload.sh`），交付 **12 小时签名 URL**（对话框直发）。
+- **图片**：阿里云 OSS 私有读（`scripts/oss-upload.sh`），交付 **12 小时签名 URL**（对话框直发）。全局规则：`.cursor/rules/oss-image-delivery.mdc`。
+- **过期清理**：每次存图前自动删除 `era/assets/` 下超过 **14 小时**的旧对象（`scripts/oss-cleanup-expired.sh`），避免签名过期后仍占存储计费。
 - **前端**：腾讯云 EdgeOne Makers（`npm run deploy:edgeone`；`main` 推送由 Actions 部署），交付 EdgeOne 链接。
 - 说明：`docs/cloud-hosting.md`、skill `references/cloud-hosting.md`。
