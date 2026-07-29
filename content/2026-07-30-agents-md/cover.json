@@ -1,0 +1,1 @@
+{"bigTitle": "AGENTS.MD\n居然是个负担", "bigTitleFont": "shuheiti", "bigTitleColor": "#111111", "bigTitleLineColors": ["#111111", "#E85D04"], "smallTitle": "不是删光，是把常驻规则改成按需加载", "description": "200 行砍到 18 行，指令遵循反而变好", "tags": ["上下文管理", "规则路由", "按需加载"], "secondaryTitles": ["留硬约束", "拆场景文件", "只写路由"], "themeColor": "#E85D04", "blobCorner": "bottom-right", "out": "output/cover-c-shuhei.png"}
