@@ -66,16 +66,20 @@ if [[ $CODE -ne 0 ]]; then
   exit "$CODE"
 fi
 
-# 从 JSON 或文本中提取 URL（去掉临时 eo_token 查询串，便于分享）
+# 从 JSON 或文本中提取 URL（须保留 eo_token/eo_time，大陆访问缺参会 401）
 URL="$(echo "$OUT" | perl -ne 'print "$1\n" if /"(?:url|domain|accessUrl|projectUrl)"\s*:\s*"(https?:[^"]+)"/' | tail -1)"
 if [[ -z "$URL" ]]; then
-  URL="$(echo "$OUT" | grep -Eo 'https?://[a-zA-Z0-9._/-]+\.(edgeone\.app|pages\.edgeone\.ai|edgeone\.site|edgeone\.cool)[a-zA-Z0-9._/-]*' | tail -1 || true)"
+  URL="$(echo "$OUT" | grep -Eo 'https?://[a-zA-Z0-9._/-]+\.(edgeone\.app|pages\.edgeone\.ai|edgeone\.site|edgeone\.cool)[^[:space:]"<>]*' | tail -1 || true)"
 fi
-CLEAN_URL="$(echo "$URL" | sed 's/[?&]eo_token=[^&]*//g; s/[?&]eo_time=[^&]*//g; s/\?$//; s/&&*/\&/g')"
 
-if [[ -n "$CLEAN_URL" ]]; then
+if [[ -n "$URL" ]]; then
   echo ""
-  echo "EDGEONE_URL=$CLEAN_URL"
+  echo "EDGEONE_URL=$URL"
+  if [[ "$URL" != *eo_token=* ]]; then
+    echo "警告: 部署 URL 未含 eo_token。若项目加速区域含中国大陆，裸域名在大陆可能返回 401；请绑定自定义域名或到控制台复制预览链接。" >&2
+  else
+    echo "提示: 预览链接含 eo_token，约 3 小时有效；长期访问请绑定自定义域名。" >&2
+  fi
 else
   echo ""
   echo "部署完成，但未能自动解析 URL。请到 EdgeOne 控制台查看项目「${PROJECT}」。" >&2

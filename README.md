@@ -2,7 +2,7 @@
 
 移动端优先的编辑器：支持图文分页排版、高亮与导出图片。
 
-在线预览（EdgeOne）：https://bibidu-era-0tdhv043.edgeone.cool/
+在线预览（EdgeOne）：部署后从 Actions 摘要或 `npm run deploy:edgeone` 输出复制**完整**链接（含 `?eo_token=...&eo_time=...`）。裸域名 `https://bibidu-era-0tdhv043.edgeone.cool/` 在大陆可能 **401**，见 [docs/cloud-hosting.md](./docs/cloud-hosting.md)。
 
 顶栏三个 Tab（可用 `?tab=` 深链自动切换）：
 

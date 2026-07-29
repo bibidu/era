@@ -55,3 +55,12 @@ bash scripts/oss-upload.sh --sign <object-key>
 - CLI: `edgeone makers deploy ./dist -n bibidu-era`
 - GitHub Actions Secret: `EDGEONE_API_TOKEN`
 - 本地: `npm run deploy:edgeone`
+
+### 预览链接与 401
+
+部署输出形如 `https://<project>.edgeone.cool?eo_token=...&eo_time=...`。**必须整段复制**（含 `?` 后参数）：
+
+- 项目加速区域含**中国大陆**时，裸域名在大陆网络会返回 **401**；须带 `eo_token` / `eo_time`（约 **3 小时**有效）
+- 海外网络可能可无参访问，不代表大陆可用
+
+长期稳定访问：在 [EdgeOne 控制台](https://console.cloud.tencent.com/edgeone/pages) 为项目 `bibidu-era` **绑定自定义域名**（全球不含大陆区域可免备案）。
