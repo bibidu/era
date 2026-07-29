@@ -17,7 +17,7 @@ description: >-
 - 「生成封面」「做一张封面」「社媒封面」
 - 用户明确按字段传入：大标题 +（小标题/描述/标签/二级标题/主题色）并要求出封面图
 
-**不要**与「图文skill / era」混淆：封面是单张 9:16 封面，不是 Markdown 分页长图。
+**不要**与「图文skill」混淆：封面是单张 9:16 封面，不是 Markdown 分页长图。
 
 ---
 
@@ -95,9 +95,12 @@ node scripts/generate-cover.mjs \
 
 ---
 
-## 4. 交付
+## 4. 交付（对话框直发 OSS 签名 URL）
 
-1. 把生成的 PNG（`path`）**先上传阿里云 OSS（私有）**，再把 **12 小时签名 URL** 发给用户（读 `references/cloud-hosting.md`）：
+**硬性规则：交付图片时，必须在对话框里直接发送阿里云 OSS 的 12 小时签名 URL。**  
+否则用户可能看不到图。禁止用 HTML 嵌入图片、禁止只发本地路径、禁止发未签名裸 OSS URL。
+
+1. 把生成的 PNG（`path`）**先上传阿里云 OSS（私有）**，再把 **12 小时签名 URL 直接粘贴到对话框**发给用户（读 `references/cloud-hosting.md`）：
 
 ```bash
 bash scripts/oss-upload.sh <path>
@@ -105,9 +108,9 @@ bash scripts/oss-upload.sh <path>
 ```
 
 2. 简短说明：主题色、大标题颜色、输出尺寸 `1080×1920 / 9:16`、签名链接有效期 12 小时
-3. 询问是否要改文案或换主题色；若要改 → 改字段后重新跑脚本，再上传发新签名链接
-4. 若相关前端代码已推 GitHub：部署 EdgeOne 后回传 EdgeOne 链接（`npm run deploy:edgeone`）
-5. **禁止**用口头描述代替真实出图；**禁止**假装已生成；**禁止**只发本地路径或未签名的裸 OSS URL
+3. 询问是否要改文案或换主题色；若要改 → 改字段后重新跑脚本，再上传并在对话框发新签名链接
+4. 若相关前端代码已推 GitHub：部署 EdgeOne 后可回传 EdgeOne 链接（`npm run deploy:edgeone`），但**封面图本身仍须对话框直发 OSS 签名 URL**
+5. **禁止**用口头描述代替真实出图；**禁止**假装已生成；**禁止**只发本地路径或未签名的裸 OSS URL；**禁止**用 HTML 页面代替对话框发图
 
 ---
 
@@ -119,5 +122,6 @@ bash scripts/oss-upload.sh <path>
 | 引擎 | `scripts/generate-cover.mjs` | Era + Bridge 导出 |
 | 输入 | 标题/标签等短字段 | Markdown 正文 + 高亮 |
 | 确认流 | 出图后可改 | 正文→标题→高亮逐步确认 |
+| 发图 | 对话框直发 OSS 12h 签名 URL | 同左（拼图/分图均直发） |
 
 用户只要封面时只用本 skill；只要图文分页时用图文skill。

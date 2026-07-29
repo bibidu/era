@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 确认 Era Agent + 前端 Bridge 可用；供 era skill / 云端 Agent 调用。
+# 确认 Era Agent + 前端 Bridge 可用；供图文 skill（tuwen）/ 云端 Agent 调用。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
