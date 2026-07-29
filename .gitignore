@@ -32,3 +32,6 @@ era-source.zip
 .env
 .edgeone/*
 .tef_dist/*
+
+# Supabase CLI local state
+supabase/.temp/
