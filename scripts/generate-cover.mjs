@@ -168,29 +168,43 @@ function bigTitleLines(raw, cfg) {
   if (Array.isArray(raw)) {
     items = raw.map((item) => {
       if (item && typeof item === 'object') {
-        return {
-          text: String(item.text ?? item.title ?? '').trim(),
-          color: item.color ? normalizeHex(item.color, defaultColor) : null,
-        }
+        const text = String(item.text ?? item.title ?? '').trim()
+        const lineColor = item.color ? normalizeHex(item.color, defaultColor) : null
+        const segments = Array.isArray(item.segments)
+          ? item.segments
+              .map((seg) => ({
+                text: String(seg?.text ?? '').trim(),
+                color: seg?.color ? normalizeHex(seg.color, lineColor || defaultColor) : null,
+              }))
+              .filter((seg) => seg.text)
+          : null
+        return { text: segments?.length ? segments.map((s) => s.text).join('') : text, color: lineColor, segments }
       }
-      return { text: String(item ?? '').trim(), color: null }
+      return { text: String(item ?? '').trim(), color: null, segments: null }
     })
   } else {
     const text = String(raw ?? '').trim()
     items = text
       ? text
           .split(/\r?\n|\\n/)
-          .map((l) => ({ text: l.trim(), color: null }))
+          .map((l) => ({ text: l.trim(), color: null, segments: null }))
           .filter((l) => l.text)
       : []
   }
 
-  if (!items.length) items = [{ text: 'TITLE', color: null }]
+  if (!items.length) items = [{ text: 'TITLE', color: null, segments: null }]
 
-  return items.map((item, i) => ({
-    text: item.text,
-    color: item.color || normalizeHex(lineColors[i], defaultColor) || defaultColor,
-  }))
+  return items.map((item, i) => {
+    const color = item.color || normalizeHex(lineColors[i], defaultColor) || defaultColor
+    const segments = item.segments?.length
+      ? item.segments.map((seg) => ({ text: seg.text, color: seg.color || color }))
+      : null
+    return {
+      text: item.text,
+      color,
+      segments,
+    }
+  })
 }
 
 function footerIcon(i) {
@@ -270,6 +284,16 @@ function buildHtml(cfg, theme) {
     .map((l) => {
       const hasCjk = /[\u3400-\u9FFF]/.test(l.text)
       const cls = hasCjk ? 'line cjk' : 'line'
+      if (l.segments?.length) {
+        const inner = l.segments
+          .map((seg) => {
+            const segCjk = /[\u3400-\u9FFF]/.test(seg.text)
+            const segCls = segCjk ? 'seg cjk' : 'seg'
+            return `<span class="${segCls}" style="color:${escapeHtml(seg.color)}">${escapeHtml(seg.text)}</span>`
+          })
+          .join('')
+        return `<span class="${cls}">${inner}</span>`
+      }
       return `<span class="${cls}" style="color:${escapeHtml(l.color)}">${escapeHtml(l.text)}</span>`
     })
     .join('')
@@ -433,7 +457,9 @@ function buildHtml(cfg, theme) {
     transform-origin: left top;
   }
   .big-title .line { display: block; white-space: nowrap; }
-  .big-title .line.cjk {
+  .big-title .line .seg { white-space: nowrap; }
+  .big-title .line.cjk,
+  .big-title .line .seg.cjk {
     font-family: "Noto Sans SC", "PingFang SC", "Helvetica Neue", sans-serif;
     font-weight: 900;
     letter-spacing: -0.04em;
@@ -674,7 +700,8 @@ Usage:
       const targetGap = 140
       const reserved = badgeH + infoH + footerH + minGap + 8
       const availForTitle = Math.max(160, innerH - reserved)
-      const s = Math.min(1, (innerW * 1.12) / needW, availForTitle / needH)
+      // 不超出核心区宽度，避免裁切；缩小后水平居中保证左右留白一致
+      const s = Math.min(1, innerW / needW, availForTitle / needH)
 
       title.style.transformOrigin = 'left top'
       title.style.transform = `scale(${s})`
@@ -682,6 +709,7 @@ Usage:
       const scaledW = needW * s
       title.style.height = `${scaledH}px`
       title.style.width = `${scaledW}px`
+      title.style.marginLeft = `${Math.max(0, (innerW - scaledW) / 2)}px`
 
       // 小标题过宽时同步缩放，避免换行裁切
       const small = info.querySelector('.small-title')
