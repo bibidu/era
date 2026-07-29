@@ -372,6 +372,7 @@ async function drawPage(
   const blockGap = width * 0.011
   let codeBlockSourceId: string | null = null
   let codeBlockFrame: { x: number; y: number; w: number; h: number } | null = null
+  let codeBlockFilledTo = 0
 
   const circleLineWidth = Math.max(
     HAND_DRAWN_CIRCLE_STROKE_WIDTH,
@@ -454,14 +455,18 @@ async function drawPage(
         flushCodeBlockFrame()
         codeBlockSourceId = blockId
         codeBlockFrame = { x: bgX, y: lineTop, w: bgW, h: lineBottom - lineTop }
+        codeBlockFilledTo = lineTop
       } else if (codeBlockFrame) {
         codeBlockFrame.h = lineBottom - codeBlockFrame.y
       }
 
-      ctx.fillStyle = config.codeBackgroundColor
-      if (codeBlockFrame) {
-        ctx.fillRect(codeBlockFrame.x, codeBlockFrame.y, codeBlockFrame.w, codeBlockFrame.h)
+      // 只补画本行新增的一条带：整块重填会盖掉上一行刚绘制的文字，多行代码块只剩最后一行
+      const fillTop = Math.max(lineTop, codeBlockFilledTo)
+      if (lineBottom > fillTop) {
+        ctx.fillStyle = config.codeBackgroundColor
+        ctx.fillRect(bgX, fillTop, bgW, lineBottom - fillTop)
       }
+      codeBlockFilledTo = lineBottom
     } else {
       flushCodeBlockFrame()
       codeBlockSourceId = null
