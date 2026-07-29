@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # 删除阿里云 OSS 指定前缀下「最后修改时间」早于阈值的对象，避免签名过期后仍占存储产生费用。
 # 默认：清理 era/assets/ 下超过 14 小时的对象。
+# 永久保留：对象 key 含 __cover_keep__ 的封面图永不删除。
 #
 # 用法:
 #   bash scripts/oss-cleanup-expired.sh
@@ -22,6 +23,7 @@ MAX_AGE_HOURS="${OSS_CLEANUP_MAX_AGE_HOURS:-14}"
 DRY_RUN="${OSS_CLEANUP_DRY_RUN:-0}"
 ENDPOINT="${OSS_ENDPOINT:-oss-cn-beijing.aliyuncs.com}"
 CONFIG_PATH="${HOME}/.ossutilconfig"
+COVER_KEEP_MARK="__cover_keep__"
 
 ensure_ossutil_config() {
   if [[ -f "$CONFIG_PATH" ]]; then
@@ -96,6 +98,7 @@ mapfile -t LINES < <("$OSSUTIL" ls "$LIST_URI" 2>/dev/null | grep -E 'oss://' ||
 
 deleted=0
 skipped=0
+kept_cover=0
 failed=0
 
 for line in "${LINES[@]}"; do
@@ -104,6 +107,13 @@ for line in "${LINES[@]}"; do
   [[ -z "$key_uri" ]] && continue
   # 目录占位（以 / 结尾）跳过
   [[ "$key_uri" == */ ]] && continue
+
+  # 封面永久标记：永不删除
+  if [[ "$key_uri" == *"${COVER_KEEP_MARK}"* ]]; then
+    echo "oss-cleanup: 保留封面 $key_uri" >&2
+    kept_cover=$((kept_cover + 1))
+    continue
+  fi
 
   # 前两列通常是日期与时间（本地/带时区展示）
   date_part="$(echo "$line" | awk '{print $1}')"
@@ -151,6 +161,6 @@ for line in "${LINES[@]}"; do
   fi
 done
 
-echo "oss-cleanup: 完成 deleted=${deleted} kept_or_skipped=${skipped} failed=${failed} dry_run=${DRY_RUN}" >&2
+echo "oss-cleanup: 完成 deleted=${deleted} kept_cover=${kept_cover} kept_or_skipped=${skipped} failed=${failed} dry_run=${DRY_RUN}" >&2
 # 清理失败不阻断上传；非 0 仅在解析参数错误时
 exit 0

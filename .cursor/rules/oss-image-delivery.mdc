@@ -12,14 +12,16 @@ alwaysApply: true
 ## 必须
 
 1. 用 `bash scripts/oss-upload.sh <本地图片>` 上传到阿里云 OSS（私有读）
-2. 若该场景需要在对话框发图（封面 skill、拼图确认等）：**直接发送** stdout 返回的 **12 小时签名 URL**（带 `Expires` / `Signature`）
-3. 上传脚本会在存图前自动清理 Bucket 内超过 **14 小时**的旧对象（省存储费）；不要绕过 `oss-upload.sh` 直接 `ossutil cp`
+2. 若该场景需要在对话框发图（封面 skill、拼图确认等）：**直接发送** stdout 返回的 URL  
+   - 普通图：**12 小时签名 URL**（带 `Expires` / `Signature`）  
+   - **封面图**：文件名自动带 `__cover_keep__`，公共读、**查看无过期**；也可用 `--cover` 强制
+3. 上传脚本会在存图前自动清理 Bucket 内超过 **14 小时**的旧对象（省存储费）；**含 `__cover_keep__` 的封面永不删**；不要绕过 `oss-upload.sh` 直接 `ossutil cp`
 
 ## 禁止
 
-- 只发本地路径、`file://`、未签名裸 OSS URL
+- 只发本地路径、`file://`、未签名裸 OSS URL（封面永久公共 URL 除外）
 - 用 HTML 嵌入图片链接代替对话框发图（用户可能看不到）
-- 把对象改成公共读（`public-read`）
+- 把**非封面**对象改成公共读（`public-read`）；仅 `__cover_keep__` 封面允许
 - 图文多页最终交付时在对话里堆各页独立图 URL（改发预览链接）
 
 ## 文档与实现

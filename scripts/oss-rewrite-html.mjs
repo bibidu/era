@@ -56,6 +56,21 @@ function resolveLocal(ref) {
   return candidates.find((p) => existsSync(p)) || null
 }
 
+const COVER_KEEP_MARK = '__cover_keep__'
+
+function looksLikeCoverName(name) {
+  const base = basename(name)
+  if (base.includes(COVER_KEEP_MARK)) return true
+  return /^cover([._-].+)?\.(png|jpe?g|webp|gif|svg)$/i.test(base)
+}
+
+function ensureCoverKeepKey(key) {
+  if (key.includes(COVER_KEEP_MARK)) return key
+  const i = key.lastIndexOf('.')
+  if (i <= 0 || key.lastIndexOf('/') > i) return `${key}${COVER_KEEP_MARK}`
+  return `${key.slice(0, i)}${COVER_KEEP_MARK}${key.slice(i)}`
+}
+
 const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)
 const slug = `${basename(dir)}-${stamp}`
 const map = new Map()
@@ -63,7 +78,10 @@ const map = new Map()
 for (const ref of refs) {
   const local = resolveLocal(ref)
   if (!local) continue
-  const key = `era/assets/${slug}/${basename(local)}`
+  let key = `era/assets/${slug}/${basename(local)}`
+  if (looksLikeCoverName(local) || looksLikeCoverName(key)) {
+    key = ensureCoverKeepKey(key)
+  }
   const result = spawnSync('bash', [uploadSh, local, key], {
     encoding: 'utf8',
     env: process.env,

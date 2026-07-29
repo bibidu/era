@@ -41,7 +41,7 @@ export interface CreateSocialVideoAnalysisInput {
 export interface ListSocialVideoAnalysesOptions {
   /** 不传或空 = 全部；后端 eq 筛选 */
   publishStatus?: SocialVideoPublishStatus | '' | null
-  /** 看板等需要图表时拉 markdown */
+  /** 复盘等需要全文时拉 markdown */
   includeMarkdown?: boolean
 }
 

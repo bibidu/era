@@ -28,12 +28,13 @@
 - `.agents/skills/fengmian/SKILL.md`
 - `.cursor/skills/fengmian`（指向上述目录的符号链接）
 
-用户说「封面skill / 生成封面 / 社媒封面」或传入大标题、小标题、描述、标签、二级标题、主题色并要求出封面时：读取该 skill，运行 `node scripts/generate-cover.mjs` 生成 `1080×1920` PNG；上传 OSS 后在**对话框直接发送 12 小时签名 URL**。主题色未指定则随机。不要与图文skill 的多页导出流程混淆。
+用户说「封面skill / 生成封面 / 社媒封面」或传入大标题、小标题、描述、标签、二级标题、主题色并要求出封面时：读取该 skill，运行 `node scripts/generate-cover.mjs` 生成 `1080×1920` PNG；上传 OSS（封面自动带 `__cover_keep__` 标记、公共读、**查看无过期**）后在**对话框直接发送返回的 URL**。主题色未指定则随机。不要与图文skill 的多页导出流程混淆。
 
 ## 云托管（强制）
 
-- **图片**：阿里云 OSS 私有读（`scripts/oss-upload.sh`），交付 **12 小时签名 URL**（对话框直发）。全局规则：`.cursor/rules/oss-image-delivery.mdc`。
-- **过期清理**：每次存图前自动删除 `era/assets/` 下超过 **14 小时**的旧对象（`scripts/oss-cleanup-expired.sh`），避免签名过期后仍占存储计费。
+- **图片**：阿里云 OSS 私有读（`scripts/oss-upload.sh`），普通图交付 **12 小时签名 URL**（对话框直发）。全局规则：`.cursor/rules/oss-image-delivery.mdc`。
+- **封面永久**：对象 key 含 `__cover_keep__`（`cover.png` 等会自动加标，或 `--cover`）；清理脚本跳过；公共读、查看无过期。写入社媒 `cover_url` / 预览首图必须用此 URL。
+- **过期清理**：每次存图前自动删除 `era/assets/` 下超过 **14 小时**的旧对象（`scripts/oss-cleanup-expired.sh`），避免签名过期后仍占存储计费；跳过 `__cover_keep__` 封面。
 - **前端**：腾讯云 EdgeOne Makers（`npm run deploy:edgeone`；`main` 推送由 Actions 部署），交付 EdgeOne 链接。
 - 说明：`docs/cloud-hosting.md`、skill `references/cloud-hosting.md`。
 

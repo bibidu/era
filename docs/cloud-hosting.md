@@ -5,8 +5,8 @@
 本仓库**任何**交付给用户的图片（图文页、封面、拼图、截图、生成图等）：
 
 1. 必须经 `bash scripts/oss-upload.sh` 上传到 **阿里云 OSS 私有桶**
-2. 必须在**对话框直接发送**返回的 **12 小时签名 URL**
-3. 禁止本地路径、裸 OSS URL、用 HTML 嵌入代替对话框发图
+2. 必须在**对话框直接发送**返回的 URL（普通图为 **12 小时签名 URL**；封面为带 `__cover_keep__` 的**永久公共 URL**）
+3. 禁止本地路径、用 HTML 嵌入代替对话框发图
 
 Cursor 全局规则：`.cursor/rules/oss-image-delivery.mdc`（`alwaysApply`）。
 
@@ -14,10 +14,20 @@ Cursor 全局规则：`.cursor/rules/oss-image-delivery.mdc`（`alwaysApply`）�
 
 - Bucket: `agent-17718139319`
 - Region: `oss-cn-beijing`
-- ACL: **private**（禁止公共读）
+- ACL: **private**（禁止公共读；**封面永久对象例外**见下）
 - 前缀: `era/assets/`（默认）
 - 交付: `ossutil sign oss://bucket/key --timeout 43200`  
   URL 带 `Expires` / `OSSAccessKeyId` / `Signature` 临时通行证参数
+
+### 封面图永久保留（`__cover_keep__`）
+
+风水 / 图文 / 社媒等**所有封面图**上传时，对象 key 文件名须带标记 **`__cover_keep__`**（脚本会对 `cover.png` / `cover-*.png` 等自动插入，也可用 `bash scripts/oss-upload.sh --cover <file>` 强制）：
+
+- 清理脚本**永不删除**含该标记的对象
+- ACL 设为 **public-read**，stdout 返回**无过期**的公共 URL（写入 Supabase `cover_url` / `image_previews` 首图时必须用此 URL）
+- 例：`era/assets/20260730-120000/cover__cover_keep__.png`
+
+普通内容页 / 拼图仍走私有 + 12h 签名，并参与 14h 清理。
 
 ### 过期对象自动清理（省存储费）
 
@@ -25,6 +35,7 @@ Cursor 全局规则：`.cursor/rules/oss-image-delivery.mdc`（`alwaysApply`）�
 
 - **每次存图前**，`oss-upload.sh` 会自动调用 `scripts/oss-cleanup-expired.sh`
 - 默认删除 `era/assets/` 下 **LastModified 超过 14 小时**的对象（比签名多留约 2 小时缓冲）
+- **跳过** key 含 `__cover_keep__` 的封面
 - 也可手动：`npm run oss:cleanup` 或 `bash scripts/oss-cleanup-expired.sh --dry-run`
 - 紧急跳过清理：`OSS_SKIP_CLEANUP=1 bash scripts/oss-upload.sh ...`
 
@@ -52,6 +63,7 @@ accessKeySecret=<RAM AccessKey Secret>
 
 ```bash
 npm run oss:upload -- <file> [key]
+bash scripts/oss-upload.sh --cover <cover.png>   # 强制按封面永久上传
 npm run oss:cleanup
 npm run oss:rewrite-html -- <index.html>
 bash scripts/oss-upload.sh --sign <object-key>
