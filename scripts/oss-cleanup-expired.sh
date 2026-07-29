@@ -8,7 +8,8 @@
 #   OSS_CLEANUP_MAX_AGE_HOURS=14 bash scripts/oss-cleanup-expired.sh
 #
 # 环境变量（可选）:
-#   OSS_BUCKET / OSS_PREFIX / OSSUTIL  同 oss-upload.sh
+#   OSS_ACCESS_KEY_ID / OSS_ACCESS_KEY_SECRET  同 oss-upload.sh（缺配置文件时自动写入）
+#   OSS_ENDPOINT / OSS_BUCKET / OSS_PREFIX / OSSUTIL
 #   OSS_CLEANUP_MAX_AGE_HOURS         默认 14
 #   OSS_CLEANUP_DRY_RUN=1             只列出不删除
 #   OSS_SKIP_CLEANUP=1                跳过（由 oss-upload.sh 识别）
@@ -19,6 +20,30 @@ BUCKET="${OSS_BUCKET:-agent-17718139319}"
 PREFIX="${OSS_PREFIX:-era/assets}"
 MAX_AGE_HOURS="${OSS_CLEANUP_MAX_AGE_HOURS:-14}"
 DRY_RUN="${OSS_CLEANUP_DRY_RUN:-0}"
+ENDPOINT="${OSS_ENDPOINT:-oss-cn-beijing.aliyuncs.com}"
+CONFIG_PATH="${HOME}/.ossutilconfig"
+
+ensure_ossutil_config() {
+  if [[ -f "$CONFIG_PATH" ]]; then
+    return 0
+  fi
+  local key_id="${OSS_ACCESS_KEY_ID:-}"
+  local key_secret="${OSS_ACCESS_KEY_SECRET:-}"
+  if [[ -z "$key_id" || -z "$key_secret" ]]; then
+    return 1
+  fi
+  umask 077
+  cat >"$CONFIG_PATH" <<EOF
+[Credentials]
+language=CH
+endpoint=${ENDPOINT}
+accessKeyID=${key_id}
+accessKeySecret=${key_secret}
+EOF
+  chmod 600 "$CONFIG_PATH"
+  echo "oss-cleanup: 已从环境变量写入 ${CONFIG_PATH}" >&2
+  return 0
+}
 
 for arg in "$@"; do
   case "$arg" in
@@ -44,9 +69,11 @@ if [[ ! -x "$OSSUTIL" ]]; then
   fi
 fi
 
-if [[ ! -f "${HOME}/.ossutilconfig" ]]; then
-  echo "oss-cleanup: 缺少 ~/.ossutilconfig，跳过清理" >&2
-  exit 0
+if [[ ! -f "$CONFIG_PATH" ]]; then
+  if ! ensure_ossutil_config; then
+    echo "oss-cleanup: 缺少 ~/.ossutilconfig 且无 OSS_ACCESS_KEY_*，跳过清理" >&2
+    exit 0
+  fi
 fi
 
 if ! [[ "$MAX_AGE_HOURS" =~ ^[0-9]+([.][0-9]+)?$ ]]; then

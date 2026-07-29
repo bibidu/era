@@ -28,7 +28,15 @@ Cursor 全局规则：`.cursor/rules/oss-image-delivery.mdc`（`alwaysApply`）�
 - 也可手动：`npm run oss:cleanup` 或 `bash scripts/oss-cleanup-expired.sh --dry-run`
 - 紧急跳过清理：`OSS_SKIP_CLEANUP=1 bash scripts/oss-upload.sh ...`
 
-凭证写入 `~/.ossutilconfig`（勿提交仓库）：
+凭证优先用 Cursor Cloud Secrets（推荐，Cloud Agent 自动注入）：
+
+- `OSS_ACCESS_KEY_ID`
+- `OSS_ACCESS_KEY_SECRET`
+
+配置入口：https://cursor.com/dashboard/cloud-agents → Secrets。  
+`scripts/oss-upload.sh` 若发现没有 `~/.ossutilconfig`，会用上述环境变量自动写入该文件。
+
+本机也可手写 `~/.ossutilconfig`（勿提交仓库）：
 
 ```
 [Credentials]
