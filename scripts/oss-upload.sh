@@ -10,6 +10,9 @@
 #   bash scripts/oss-upload.sh --sign <remote-key>   # 仅对已有对象重新签名（不触发清理）
 #
 # 环境变量（可选）:
+#   OSS_ACCESS_KEY_ID / OSS_ACCESS_KEY_SECRET
+#                     Cursor Cloud Secrets 注入；若无 ~/.ossutilconfig 则自动写入
+#   OSS_ENDPOINT      默认 oss-cn-beijing.aliyuncs.com
 #   OSS_BUCKET        默认 agent-17718139319
 #   OSS_REGION        默认 oss-cn-beijing
 #   OSS_PREFIX        默认 era/assets
@@ -24,6 +27,31 @@ BUCKET="${OSS_BUCKET:-agent-17718139319}"
 REGION="${OSS_REGION:-oss-cn-beijing}"
 PREFIX="${OSS_PREFIX:-era/assets}"
 SIGN_TIMEOUT="${OSS_SIGN_TIMEOUT:-43200}"
+ENDPOINT="${OSS_ENDPOINT:-oss-cn-beijing.aliyuncs.com}"
+CONFIG_PATH="${HOME}/.ossutilconfig"
+
+ensure_ossutil_config() {
+  if [[ -f "$CONFIG_PATH" ]]; then
+    return 0
+  fi
+  local key_id="${OSS_ACCESS_KEY_ID:-}"
+  local key_secret="${OSS_ACCESS_KEY_SECRET:-}"
+  if [[ -z "$key_id" || -z "$key_secret" ]]; then
+    echo "错误: 缺少 ~/.ossutilconfig，且未设置 OSS_ACCESS_KEY_ID / OSS_ACCESS_KEY_SECRET。" >&2
+    echo "请在 Cursor Cloud Agents → Secrets 配置上述两个变量，或本机写入 ~/.ossutilconfig。" >&2
+    exit 1
+  fi
+  umask 077
+  cat >"$CONFIG_PATH" <<EOF
+[Credentials]
+language=CH
+endpoint=${ENDPOINT}
+accessKeyID=${key_id}
+accessKeySecret=${key_secret}
+EOF
+  chmod 600 "$CONFIG_PATH"
+  echo "oss-upload: 已从环境变量写入 ${CONFIG_PATH}" >&2
+}
 
 if [[ ! -x "$OSSUTIL" ]]; then
   if command -v ossutil >/dev/null 2>&1; then
@@ -34,10 +62,7 @@ if [[ ! -x "$OSSUTIL" ]]; then
   fi
 fi
 
-if [[ ! -f "${HOME}/.ossutilconfig" ]]; then
-  echo "错误: 缺少 ~/.ossutilconfig。请先配置 AccessKey。" >&2
-  exit 1
-fi
+ensure_ossutil_config
 
 # 存图前清理超过 14h 的旧对象（签名默认 12h，多留 2h 缓冲）
 run_cleanup_before_store() {
