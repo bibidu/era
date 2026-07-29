@@ -108,9 +108,7 @@ export async function listSocialVideoAnalyses(
   const params = new URLSearchParams()
   params.set(
     'select',
-    options.includeMarkdown
-      ? 'id,created_at,title,published_at,cover_url,publish_status,work_type,outline,image_previews,markdown'
-      : 'id,created_at,title,published_at,cover_url,publish_status,work_type,outline,image_previews',
+    'id,created_at,title,published_at,cover_url,publish_status,work_type,outline,image_previews,markdown',
   )
   params.set('order', 'created_at.desc')
   const status = options.publishStatus?.trim()
