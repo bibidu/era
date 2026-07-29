@@ -21,7 +21,7 @@
 ```
 用户（IM / Cursor 对话）
    ↕
-Agent（严格执行 era skill）
+Agent（严格执行图文 skill / tuwen）
    ├─ LLM：正文 / 标题 / 高亮建议（Agent 内生成）
    ├─ 人机确认：逐步「是否继续」
    └─ 出图：Era MCP / REST
@@ -36,7 +36,7 @@ Agent（严格执行 era skill）
 | 项 | 选择 |
 | --- | --- |
 | 3.4 渲染 | **B**：浏览器打开 Era + WebSocket 控制通道 |
-| 编排 | **Agent 主导** + **era skill** 固定流程 |
+| 编排 | **Agent 主导** + **图文 skill（tuwen）** 固定流程 |
 | 高亮定位 | **字符 range**（`blockId + start/end`） |
 | REST | 与 MCP 共用，供脚本/无 MCP 环境调用 |
 | 海报 | 本期不做 |
@@ -108,7 +108,7 @@ Agent（严格执行 era skill）
 
 `POST /v1/projects/:id/highlights` 可带 `replace: true`（先清空再写入）。
 
-标题高亮**禁止**使用 `quote`（由 era skill 约束）。
+标题高亮**禁止**使用 `quote`（由图文 skill 约束）。
 
 ## 布局异常检测
 
