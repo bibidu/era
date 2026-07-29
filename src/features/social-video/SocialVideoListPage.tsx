@@ -16,6 +16,7 @@ interface SocialVideoListPageProps {
   reloadToken?: number
   onSmartExtract: () => void
   onOpenBoard: () => void
+  onOpenReview: () => void
   onCreate: () => void
   onEdit: (record: SocialVideoAnalysisRecord) => void
 }
@@ -64,6 +65,7 @@ export function SocialVideoListPage({
   reloadToken = 0,
   onSmartExtract,
   onOpenBoard,
+  onOpenReview,
   onCreate,
   onEdit,
 }: SocialVideoListPageProps) {
@@ -110,11 +112,11 @@ export function SocialVideoListPage({
         className="flex shrink-0 items-center justify-between gap-2 border-b px-4 py-3"
         style={{ borderColor: 'var(--era-border)' }}
       >
-        <h1 className="text-base font-semibold">分析列表</h1>
-        <div className="flex shrink-0 items-center gap-2">
+        <h1 className="shrink-0 text-base font-semibold">分析列表</h1>
+        <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto">
           <button
             type="button"
-            className="inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium transition hover:opacity-90"
+            className="inline-flex shrink-0 items-center rounded-full border px-2.5 py-1.5 text-sm font-medium transition hover:opacity-90"
             style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
             onClick={onCreate}
           >
@@ -122,7 +124,15 @@ export function SocialVideoListPage({
           </button>
           <button
             type="button"
-            className="inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium transition hover:opacity-90"
+            className="inline-flex shrink-0 items-center rounded-full border px-2.5 py-1.5 text-sm font-medium transition hover:opacity-90"
+            style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
+            onClick={onOpenReview}
+          >
+            复盘
+          </button>
+          <button
+            type="button"
+            className="inline-flex shrink-0 items-center rounded-full border px-2.5 py-1.5 text-sm font-medium transition hover:opacity-90"
             style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
             onClick={onOpenBoard}
           >
@@ -130,7 +140,7 @@ export function SocialVideoListPage({
           </button>
           <button
             type="button"
-            className="inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium transition hover:opacity-90"
+            className="inline-flex shrink-0 items-center rounded-full border px-2.5 py-1.5 text-sm font-medium transition hover:opacity-90"
             style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
             onClick={onSmartExtract}
           >
