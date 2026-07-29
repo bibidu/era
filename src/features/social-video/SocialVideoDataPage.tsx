@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { browserSupabaseConfig } from '../../agent/supabaseHighlightSetup'
 import { createSocialVideoAnalysis } from '../../agent/supabaseSocialVideoAnalysis'
 import { extractMarkdownField } from './parseMarkdownFields'
 
@@ -312,10 +313,13 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
         media = [{ type: 'video', url: videoUrl.trim(), fps: normalizedFps }]
       }
 
+      const { anonKey } = browserSupabaseConfig()
       const response = await fetch(SUPABASE_PROXY_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
         },
         body: JSON.stringify({
           model: model.trim(),
@@ -330,6 +334,11 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
 
       if (!response.ok) {
         const message = data.error || text || `HTTP ${response.status}`
+        if (response.status === 401) {
+          throw new Error(
+            '鉴权失败（401）：Supabase 代理或 DashScope API Key 无效。请检查 Supabase 函数密钥 DASHSCOPE_API_KEY，或刷新页面后重试。',
+          )
+        }
         throw new Error(message)
       }
 
