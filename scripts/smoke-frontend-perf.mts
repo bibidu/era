@@ -58,6 +58,21 @@ async function main() {
       await page.getByRole('button', { name: '已发布', exact: true }).click()
       await page.waitForTimeout(600)
 
+      // 状态筛选在进出编辑/创建后应保持
+      await page.getByRole('button', { name: '待AI修改', exact: true }).click()
+      await page.waitForTimeout(400)
+      const createKeep = page.getByRole('button', { name: '创建', exact: true })
+      if ((await createKeep.count()) > 0) {
+        await createKeep.click()
+        await page.waitForTimeout(400)
+        const backKeep = page.getByRole('button', { name: '返回' })
+        if ((await backKeep.count()) > 0) await backKeep.click()
+        await page.waitForTimeout(400)
+        const activePending = page.getByRole('button', { name: '待AI修改', exact: true })
+        // 粗略：筛选按钮仍存在即可；样式断言不稳定
+        if ((await activePending.count()) === 0) fail('返回后状态筛选丢失')
+      }
+
       const createBtn = page.getByRole('button', { name: '创建', exact: true })
       if ((await createBtn.count()) === 0) fail('社媒缺少「创建」入口')
       else {

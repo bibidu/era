@@ -9,6 +9,9 @@ import {
 import { SocialVideoDetailSheet } from './SocialVideoDetailSheet'
 
 interface SocialVideoListPageProps {
+  statusFilter: '' | SocialVideoPublishStatus
+  onStatusFilterChange: (value: '' | SocialVideoPublishStatus) => void
+  reloadToken?: number
   onSmartExtract: () => void
   onOpenBoard: () => void
   onCreate: () => void
@@ -36,12 +39,14 @@ function statusBadgeStyle(status: SocialVideoPublishStatus): { background: strin
 }
 
 export function SocialVideoListPage({
+  statusFilter,
+  onStatusFilterChange,
+  reloadToken = 0,
   onSmartExtract,
   onOpenBoard,
   onCreate,
   onEdit,
 }: SocialVideoListPageProps) {
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('')
   const [records, setRecords] = useState<SocialVideoAnalysisRecord[]>([])
   const [selectedRecord, setSelectedRecord] = useState<SocialVideoAnalysisRecord | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -73,7 +78,7 @@ export function SocialVideoListPage({
     return () => {
       cancelled = true
     }
-  }, [statusFilter])
+  }, [statusFilter, reloadToken])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col" style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}>
@@ -130,7 +135,7 @@ export function SocialVideoListPage({
                       border: '1px solid var(--era-border)',
                     }
               }
-              onClick={() => setStatusFilter(item.value)}
+              onClick={() => onStatusFilterChange(item.value)}
             >
               {item.label}
             </button>

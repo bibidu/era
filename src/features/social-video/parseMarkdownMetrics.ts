@@ -97,3 +97,32 @@ export function truncateText(value: string, max = 72) {
   if (normalized.length <= max) return normalized
   return `${normalized.slice(0, max)}…`
 }
+
+export interface MarkdownImageRef {
+  alt: string
+  src: string
+}
+
+/** 从 markdown 提取图片；可选附带封面（去重） */
+export function extractMarkdownImages(markdown: string, coverUrl?: string | null): MarkdownImageRef[] {
+  const images: MarkdownImageRef[] = []
+  const seen = new Set<string>()
+
+  const push = (src: string, alt = '') => {
+    const normalized = src.trim()
+    if (!normalized || seen.has(normalized)) return
+    seen.add(normalized)
+    images.push({ src: normalized, alt })
+  }
+
+  if (coverUrl) push(coverUrl, '封面')
+
+  const pattern = /!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g
+  let match: RegExpExecArray | null
+  while ((match = pattern.exec(markdown)) !== null) {
+    push(match[2], match[1] || '')
+  }
+
+  return images
+}
+
