@@ -7,13 +7,13 @@
 顶栏三个 Tab（可用 `?tab=` 深链自动切换）：
 
 - 图文：`?tab=graphic`
-- 数据分析：`?tab=data`
+- 社媒：`?tab=data`
 - 高亮：`?tab=highlight&shareId=...`
 
 ## 功能
 
 - 图文模式：Markdown 分页、字体/纸色/高亮、多页导出
-- 社媒视频数据提取：「数据分析」Tab；上传视频抽帧或填写视频 URL，经 Supabase 代理调用 DashScope 返回 Markdown
+- 社媒：「社媒」Tab 展示分析列表；右上角「智能提取」进入视频数据提取页（上传抽帧或填写视频 URL，经 Supabase 代理调用 DashScope 返回 Markdown）
 - 高亮设置：「高亮」Tab；`?tab=highlight&shareId=...` 自动打开并加载分享内容
 - 画幅：`3:4` 小红书风格；`9:16` 抖音风格
 - 发图：阿里云 OSS 私有桶 + 对话框直发 **12 小时签名 URL**（无 Gallery 页）

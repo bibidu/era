@@ -1,5 +1,9 @@
 # Agent 说明
 
+## Git / PR（强制）
+
+完成功能改动并创建 PR 后，**直接合入 `main`**，不要询问用户是否合并。仅当用户明确要求先别合并 / 保持 draft 审阅时例外。约定见 `.cursor/rules/auto-merge-pr.mdc`。
+
 ## 图文skill（多页长图）
 
 本仓库图文出图流程由 skill **图文skill**（目录 `tuwen`）定义：
@@ -40,5 +44,5 @@
 | Tab | URL |
 | --- | --- |
 | 图文 | `?tab=graphic` |
-| 数据分析 | `?tab=data` |
+| 社媒 | `?tab=data` |
 | 高亮 | `?tab=highlight&shareId=<id>` |
