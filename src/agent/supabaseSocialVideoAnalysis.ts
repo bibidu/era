@@ -158,6 +158,35 @@ export async function createSocialVideoAnalysis(
   return normalizeRecord(record)
 }
 
+export async function updateSocialVideoAnalysis(
+  id: string,
+  input: CreateSocialVideoAnalysisInput,
+  config = browserSupabaseConfig(),
+): Promise<SocialVideoAnalysisRecord> {
+  const rows = await supabaseRest<SocialVideoAnalysisRecord[]>(
+    config,
+    `${ERA_SOCIAL_VIDEO_ANALYSES_TABLE}?id=eq.${encodeURIComponent(id)}`,
+    {
+      method: 'PATCH',
+      prefer: 'return=representation',
+      body: JSON.stringify({
+        title: input.title,
+        published_at: input.publishedAt,
+        cover_url: input.coverUrl ?? null,
+        markdown: input.markdown,
+        outline: input.outline ?? '',
+        publish_status: input.publishStatus ?? DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS,
+        work_type: input.workType ?? DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
+      }),
+    },
+  )
+  const record = rows[0]
+  if (!record?.id) {
+    throw new Error('保存失败：Supabase 未返回记录 id')
+  }
+  return normalizeRecord(record)
+}
+
 export function sortSocialVideoAnalyses(records: SocialVideoAnalysisRecord[]) {
   return [...records].sort((left, right) => {
     const leftTime = parsePublishedAtSortKey(left.published_at, left.created_at)

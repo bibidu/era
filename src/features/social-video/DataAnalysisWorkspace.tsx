@@ -1,5 +1,6 @@
 import { ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
+import type { SocialVideoAnalysisRecord } from '../../agent/supabaseSocialVideoAnalysis'
 import { SocialVideoBoardPage } from './SocialVideoBoardPage'
 import { SocialVideoCreatePage } from './SocialVideoCreatePage'
 import { SocialVideoDataPage } from './SocialVideoDataPage'
@@ -8,6 +9,7 @@ import { SocialVideoListPage } from './SocialVideoListPage'
 export function DataAnalysisWorkspace() {
   const [view, setView] = useState<'list' | 'extract' | 'board' | 'create'>('list')
   const [listReloadToken, setListReloadToken] = useState(0)
+  const [editingRecord, setEditingRecord] = useState<SocialVideoAnalysisRecord | null>(null)
 
   if (view === 'extract') {
     return (
@@ -39,7 +41,11 @@ export function DataAnalysisWorkspace() {
   if (view === 'create') {
     return (
       <SocialVideoCreatePage
-        onBack={() => setView('list')}
+        editingRecord={editingRecord}
+        onBack={() => {
+          setEditingRecord(null)
+          setView('list')
+        }}
         onCreated={() => setListReloadToken((token) => token + 1)}
       />
     )
@@ -50,7 +56,14 @@ export function DataAnalysisWorkspace() {
       key={listReloadToken}
       onSmartExtract={() => setView('extract')}
       onOpenBoard={() => setView('board')}
-      onCreate={() => setView('create')}
+      onCreate={() => {
+        setEditingRecord(null)
+        setView('create')
+      }}
+      onEdit={(record) => {
+        setEditingRecord(record)
+        setView('create')
+      }}
     />
   )
 }

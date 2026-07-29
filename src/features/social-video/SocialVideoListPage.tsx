@@ -12,6 +12,7 @@ interface SocialVideoListPageProps {
   onSmartExtract: () => void
   onOpenBoard: () => void
   onCreate: () => void
+  onEdit: (record: SocialVideoAnalysisRecord) => void
 }
 
 type StatusFilter = '' | SocialVideoPublishStatus
@@ -34,7 +35,12 @@ function statusBadgeStyle(status: SocialVideoPublishStatus): { background: strin
   }
 }
 
-export function SocialVideoListPage({ onSmartExtract, onOpenBoard, onCreate }: SocialVideoListPageProps) {
+export function SocialVideoListPage({
+  onSmartExtract,
+  onOpenBoard,
+  onCreate,
+  onEdit,
+}: SocialVideoListPageProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('')
   const [records, setRecords] = useState<SocialVideoAnalysisRecord[]>([])
   const [selectedRecord, setSelectedRecord] = useState<SocialVideoAnalysisRecord | null>(null)
@@ -164,8 +170,12 @@ export function SocialVideoListPage({ onSmartExtract, onOpenBoard, onCreate }: S
                   className="group relative overflow-hidden rounded-2xl border text-left shadow-sm transition hover:opacity-95"
                   style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
                   onClick={() => {
-                    setSelectedRecord(record)
-                    setSheetOpen(true)
+                    if (record.publish_status === '已发布') {
+                      setSelectedRecord(record)
+                      setSheetOpen(true)
+                      return
+                    }
+                    onEdit(record)
                   }}
                 >
                   <div className="aspect-[3/4] w-full">

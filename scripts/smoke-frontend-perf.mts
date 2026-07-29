@@ -95,7 +95,23 @@ async function main() {
         await page.waitForTimeout(400)
       }
 
-      await extractBtn.click()
+      
+      // 已发布卡片应打开底部 sheet（有动画 class）
+      const cards = page.locator('button.group.relative')
+      const cardCount = await cards.count()
+      if (cardCount > 0) {
+        await cards.first().click()
+        await page.waitForTimeout(350)
+        const sheet = page.locator('.era-bottom-sheet__dialog')
+        if ((await sheet.count()) > 0) {
+          const open = await sheet.first().getAttribute('data-open')
+          if (open !== 'true') fail('底部 sheet 未进入打开动画态')
+          await page.getByRole('button', { name: '关闭', exact: true }).first().click()
+          await page.waitForTimeout(280)
+        }
+      }
+
+await extractBtn.click()
       await page.waitForTimeout(500)
       const backOrTitle =
         (await page.getByText('智能提取').count()) > 0 ||
