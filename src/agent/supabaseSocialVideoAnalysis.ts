@@ -21,6 +21,10 @@ export interface SocialVideoAnalysisRecord {
   cover_url: string | null
   markdown?: string
   outline?: string
+  /** 修改建议；与大纲二选一存库 */
+  revision_suggestion?: string
+  /** 图片预览 URL 列表（封面/内容图等） */
+  image_previews?: string[]
   publish_status: SocialVideoPublishStatus
   work_type: SocialVideoWorkType
 }
@@ -31,6 +35,8 @@ export interface CreateSocialVideoAnalysisInput {
   coverUrl?: string | null
   markdown: string
   outline?: string
+  revisionSuggestion?: string
+  imagePreviews?: string[]
   publishStatus?: SocialVideoPublishStatus
   workType?: SocialVideoWorkType
 }
@@ -81,9 +87,17 @@ function normalizeWorkType(value: unknown): SocialVideoWorkType {
   return DEFAULT_SOCIAL_VIDEO_WORK_TYPE
 }
 
+function normalizeImagePreviews(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+}
+
 function normalizeRecord(row: SocialVideoAnalysisRecord): SocialVideoAnalysisRecord {
   return {
     ...row,
+    outline: typeof row.outline === 'string' ? row.outline : '',
+    revision_suggestion: typeof row.revision_suggestion === 'string' ? row.revision_suggestion : '',
+    image_previews: normalizeImagePreviews(row.image_previews),
     publish_status: normalizePublishStatus(row.publish_status),
     work_type: normalizeWorkType(row.work_type),
   }
@@ -97,8 +111,8 @@ export async function listSocialVideoAnalyses(
   params.set(
     'select',
     options.includeMarkdown
-      ? 'id,created_at,title,published_at,cover_url,publish_status,work_type,outline,markdown'
-      : 'id,created_at,title,published_at,cover_url,publish_status,work_type,outline',
+      ? 'id,created_at,title,published_at,cover_url,publish_status,work_type,outline,revision_suggestion,image_previews,markdown'
+      : 'id,created_at,title,published_at,cover_url,publish_status,work_type,outline,revision_suggestion,image_previews',
   )
   params.set('order', 'created_at.desc')
   const status = options.publishStatus?.trim()
@@ -146,6 +160,8 @@ export async function createSocialVideoAnalysis(
         cover_url: input.coverUrl ?? null,
         markdown: input.markdown,
         outline: input.outline ?? '',
+        revision_suggestion: input.revisionSuggestion ?? '',
+        image_previews: input.imagePreviews ?? [],
         publish_status: input.publishStatus ?? DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS,
         work_type: input.workType ?? DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
       }),
@@ -175,6 +191,8 @@ export async function updateSocialVideoAnalysis(
         cover_url: input.coverUrl ?? null,
         markdown: input.markdown,
         outline: input.outline ?? '',
+        revision_suggestion: input.revisionSuggestion ?? '',
+        image_previews: input.imagePreviews ?? [],
         publish_status: input.publishStatus ?? DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS,
         work_type: input.workType ?? DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
       }),
