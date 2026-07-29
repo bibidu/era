@@ -1,10 +1,11 @@
 import { ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
+import { SocialVideoBoardPage } from './SocialVideoBoardPage'
 import { SocialVideoDataPage } from './SocialVideoDataPage'
 import { SocialVideoListPage } from './SocialVideoListPage'
 
 export function DataAnalysisWorkspace() {
-  const [view, setView] = useState<'list' | 'extract'>('list')
+  const [view, setView] = useState<'list' | 'extract' | 'board'>('list')
 
   if (view === 'extract') {
     return (
@@ -29,5 +30,14 @@ export function DataAnalysisWorkspace() {
     )
   }
 
-  return <SocialVideoListPage onSmartExtract={() => setView('extract')} />
+  if (view === 'board') {
+    return <SocialVideoBoardPage onBack={() => setView('list')} />
+  }
+
+  return (
+    <SocialVideoListPage
+      onSmartExtract={() => setView('extract')}
+      onOpenBoard={() => setView('board')}
+    />
+  )
 }

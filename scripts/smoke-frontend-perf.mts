@@ -58,6 +58,17 @@ async function main() {
       await page.getByRole('button', { name: '已发布', exact: true }).click()
       await page.waitForTimeout(600)
 
+      const boardBtn = page.getByRole('button', { name: '看板', exact: true })
+      if ((await boardBtn.count()) === 0) fail('社媒缺少「看板」入口')
+      else {
+        await boardBtn.click()
+        await page.waitForTimeout(800)
+        if ((await page.getByText('数据看板').count()) === 0) fail('未进入数据看板页')
+        const back = page.getByRole('button', { name: '返回' })
+        if ((await back.count()) > 0) await back.click()
+        await page.waitForTimeout(400)
+      }
+
       await extractBtn.click()
       await page.waitForTimeout(500)
       const backOrTitle =
