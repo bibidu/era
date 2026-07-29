@@ -42,10 +42,12 @@ ensure_ossutil_config() {
     exit 1
   fi
   umask 077
+  # ossutil v2 的 v4 签名要求 region，且只认 cn-beijing 这种不带 oss- 前缀的写法
   cat >"$CONFIG_PATH" <<EOF
 [Credentials]
 language=CH
 endpoint=${ENDPOINT}
+region=${REGION#oss-}
 accessKeyID=${key_id}
 accessKeySecret=${key_secret}
 EOF
@@ -78,7 +80,11 @@ run_cleanup_before_store() {
 sign_url() {
   local key="$1"
   local raw
-  raw="$("$OSSUTIL" sign "oss://${BUCKET}/${key}" --timeout "$SIGN_TIMEOUT" 2>/dev/null | grep -Eo 'https?://[^[:space:]]+' | tail -1)"
+  # ossutil v2 用 --expires-duration，v1 用 --timeout
+  raw="$("$OSSUTIL" sign "oss://${BUCKET}/${key}" --expires-duration "${SIGN_TIMEOUT}s" 2>/dev/null | grep -Eo 'https?://[^[:space:]]+' | tail -1)"
+  if [[ -z "$raw" ]]; then
+    raw="$("$OSSUTIL" sign "oss://${BUCKET}/${key}" --timeout "$SIGN_TIMEOUT" 2>/dev/null | grep -Eo 'https?://[^[:space:]]+' | tail -1)"
+  fi
   if [[ -z "$raw" ]]; then
     echo "错误: 签名失败 oss://${BUCKET}/${key}" >&2
     exit 1
