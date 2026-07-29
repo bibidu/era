@@ -134,7 +134,7 @@ ${swiss.markdown}
   const share = await api('POST', `/v1/projects/${projectId}/export-share`, {
     coverPath: path.join(OUT, 'cover.png'),
   })
-  console.log('gallery preview:', share.url)
+  console.log('export share id:', share.shareId)
 }
 
 async function stitchHorizontal(imagePaths, outPath) {

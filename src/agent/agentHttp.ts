@@ -1,7 +1,6 @@
 import { ERA_AGENT_DEFAULT_HOST, ERA_AGENT_DEFAULT_PORT } from './protocol'
 import {
   ERA_GITHUB_PAGES_BASE,
-  exportSharePagesUrl,
   highlightSetupPagesUrl,
 } from './supabaseHighlightSetup'
 
@@ -14,7 +13,7 @@ export function agentHttpBase(): string {
   return `http://${host}:${port}`
 }
 
-/** 本地调试用（含 projectId）；云端请用 shareId 的 GitHub Pages 链接 */
+/** 本地调试用（含 projectId）；云端请用 shareId 的 EdgeOne 链接 */
 export function highlightSetupPageUrl(projectId: string): string {
   const origin =
     typeof window !== 'undefined'
@@ -23,7 +22,7 @@ export function highlightSetupPageUrl(projectId: string): string {
   const base = import.meta.env.BASE_URL || '/era/'
   const normalizedBase = base.endsWith('/') ? base : `${base}/`
   const url = new URL(`${normalizedBase}`, `${origin}/`)
-  url.searchParams.set('highlightSetup', '1')
+  url.searchParams.set('tab', 'highlight')
   url.searchParams.set('projectId', projectId)
   return url.toString()
 }
@@ -32,31 +31,20 @@ export function highlightSetupSharePageUrl(shareId: string) {
   return highlightSetupPagesUrl(shareId, ERA_GITHUB_PAGES_BASE)
 }
 
+/** @deprecated 使用 ?tab=highlight；保留解析以兼容旧链接 */
 export function readHighlightSetupQuery(
   search: string = typeof window !== 'undefined' ? window.location.search : '',
 ): { enabled: boolean; projectId: string | null; shareId: string | null } {
   const params = new URLSearchParams(search)
+  const tab = params.get('tab')?.trim().toLowerCase()
   const enabled =
+    tab === 'highlight' ||
+    tab === 'highlight-setup' ||
+    params.get('tab') === '高亮' ||
     params.get('highlightSetup') === '1' ||
     params.get('highlightSetup') === 'true' ||
     params.get('mode') === 'highlight-setup'
   const projectId = params.get('projectId')?.trim() || null
   const shareId = params.get('shareId')?.trim() || null
   return { enabled, projectId, shareId }
-}
-
-export function exportSharePageUrl(shareId: string) {
-  return exportSharePagesUrl(shareId, ERA_GITHUB_PAGES_BASE)
-}
-
-export function readExportShareQuery(
-  search: string = typeof window !== 'undefined' ? window.location.search : '',
-): { enabled: boolean; shareId: string | null } {
-  const params = new URLSearchParams(search)
-  const enabled =
-    params.get('exportShare') === '1' ||
-    params.get('exportShare') === 'true' ||
-    params.get('mode') === 'export-share'
-  const shareId = params.get('shareId')?.trim() || null
-  return { enabled, shareId }
 }

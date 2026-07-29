@@ -80,7 +80,7 @@ export function defaultSupabaseConfig() {
 export function highlightSetupPagesUrl(shareId: string, pagesBase = ERA_GITHUB_PAGES_BASE) {
   const base = pagesBase.endsWith('/') ? pagesBase : `${pagesBase}/`
   const url = new URL(base)
-  url.searchParams.set('highlightSetup', '1')
+  url.searchParams.set('tab', 'highlight')
   url.searchParams.set('shareId', shareId)
   return url.toString()
 }
@@ -219,11 +219,11 @@ export interface CreateExportShareInput {
   sheet?: ExportShareImage | null
 }
 
-export function exportSharePagesUrl(shareId: string, pagesBase = ERA_GITHUB_PAGES_BASE) {
-  const base = pagesBase.endsWith('/') ? pagesBase : `${pagesBase}/`
-  const url = new URL('gallery/', base)
-  url.searchParams.set('shareId', shareId)
-  return url.toString()
+/** Gallery 图文库已下线；保留函数供旧调用，返回空字符串 */
+export function exportSharePagesUrl(shareId: string, _pagesBase = ERA_GITHUB_PAGES_BASE) {
+  void shareId
+  void _pagesBase
+  return ''
 }
 
 export async function createExportShare(

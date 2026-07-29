@@ -156,9 +156,12 @@ function documentFromHighlightShareRecord(
 export function HighlightSetupPage({
   projectId,
   shareId,
+  embedded = false,
 }: {
   projectId?: string | null
   shareId?: string | null
+  /** 嵌入顶栏 Tab 时占满剩余高度，不再自占整屏 */
+  embedded?: boolean
 }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -408,11 +411,15 @@ export function HighlightSetupPage({
     : `project: ${resolvedProjectId || projectId || '-'}`
 
   return (
-    <div className="mx-auto flex h-dvh w-full max-w-lg flex-col overflow-hidden bg-neutral-100">
+    <div
+      className={`flex w-full flex-col overflow-hidden bg-neutral-100 ${
+        embedded ? 'min-h-0 flex-1' : 'mx-auto h-dvh max-w-lg'
+      }`}
+    >
       <header className="flex shrink-0 flex-col gap-2 border-b border-neutral-200 bg-white px-4 py-3">
         <div>
-          <p className="text-sm font-semibold text-neutral-900">高亮设置</p>
-          <p className="mt-1 text-xs leading-5 text-neutral-500">
+          {embedded ? null : <p className="text-sm font-semibold text-neutral-900">高亮设置</p>}
+          <p className={`text-xs leading-5 text-neutral-500 ${embedded ? '' : 'mt-1'}`}>
             在下方真实预览文字上点击或滑动标记；字太小时可放大后滚动操作。
           </p>
           <p className="mt-1 truncate font-mono text-[11px] text-neutral-400">{idLabel}</p>

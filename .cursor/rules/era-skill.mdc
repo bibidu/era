@@ -17,6 +17,6 @@ alwaysApply: true
 - **风水**：封面标题与内容同在一套 Era 图里（原流程）。
 - **非风水（默认）**：先问大纲 → 生成内容并确认 → 确认标题＋封面所需信息（字段见「封面 skill」）→ 按封面 skill 出封面图 → 用户自设高亮 → 封面＋内容高亮页拼成横版总览确认 → 逐张发图。内容图**不含一级标题**，只含二级标题/正文/图片/代码块等；需要配图时在预览环节混排展示。默认直接导出**抖音 9:16**，无需询问平台。
 
-高亮步骤：创建 Supabase share 后发送 EdgeOne URL（`shareId`），引导用户复制配置发回。
+高亮步骤：创建 Supabase share 后发送 EdgeOne URL（`?tab=highlight&shareId=...`），打开后自动进入高亮 Tab，引导用户复制配置发回。
 导出后必须先发拼图总览供确认（对话框**直接发送**阿里云 OSS **12 小时签名 URL**，不要用 HTML 嵌入），用户确认后再逐张发各页独立图片的 OSS 签名 URL。
-出图后必须用 `era_create_export_share` 上传 Supabase，并把 Gallery 图文库链接（`/gallery/?shareId=...`）发给用户；支持 ZIP 整包下载。高亮色板不含灰色。
+不要再发 Gallery 图文库链接。高亮色板不含灰色。
