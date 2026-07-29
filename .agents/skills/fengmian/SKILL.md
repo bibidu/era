@@ -97,10 +97,17 @@ node scripts/generate-cover.mjs \
 
 ## 4. 交付
 
-1. 把生成的 PNG（`path`）作为图片发给用户
-2. 简短说明：主题色、大标题颜色、输出尺寸 `1080×1920 / 9:16`
-3. 询问是否要改文案或换主题色；若要改 → 改字段后重新跑脚本，再发新图
-4. **禁止**用口头描述代替真实出图；**禁止**假装已生成
+1. 把生成的 PNG（`path`）**先上传阿里云 OSS（私有）**，再把 **12 小时签名 URL** 发给用户（读 `references/cloud-hosting.md`）：
+
+```bash
+bash scripts/oss-upload.sh <path>
+# stdout：带 Expires / OSSAccessKeyId / Signature 的临时可读链接（默认 12h）
+```
+
+2. 简短说明：主题色、大标题颜色、输出尺寸 `1080×1920 / 9:16`、签名链接有效期 12 小时
+3. 询问是否要改文案或换主题色；若要改 → 改字段后重新跑脚本，再上传发新签名链接
+4. 若相关前端代码已推 GitHub：部署 EdgeOne 后回传 EdgeOne 链接（`npm run deploy:edgeone`）
+5. **禁止**用口头描述代替真实出图；**禁止**假装已生成；**禁止**只发本地路径或未签名的裸 OSS URL
 
 ---
 

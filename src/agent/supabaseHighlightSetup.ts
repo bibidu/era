@@ -5,7 +5,9 @@ export const DEFAULT_SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6b3h5ZXh0eGp3c2NycGpvd3VkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxMDM4MjYsImV4cCI6MjEwMDY3OTgyNn0.FZuvFtxaMOUUGg3y7kNDxv_p4Etz2KrVpkCHpPKbmDU'
 
 export const ERA_HIGHLIGHT_SETUP_TABLE = 'era_highlight_setups'
-export const ERA_GITHUB_PAGES_BASE = 'https://bibidu.github.io/era/'
+export const ERA_PUBLIC_BASE = 'https://bibidu-era-0tdhv043.edgeone.cool/'
+/** @deprecated 使用 ERA_PUBLIC_BASE；保留别名兼容旧引用 */
+export const ERA_GITHUB_PAGES_BASE = ERA_PUBLIC_BASE
 
 export interface HighlightSetupShareRecord {
   id: string

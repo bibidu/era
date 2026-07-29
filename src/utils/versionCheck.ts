@@ -5,7 +5,8 @@ declare global {
   }
 }
 
-const VERSION_URL = 'https://raw.githubusercontent.com/bibidu/era/gh-pages/version.json'
+const baseUrl = import.meta.env.BASE_URL || '/'
+const VERSION_URL = `${baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`}version.json`
 const RELOAD_KEY = 'era-version-reload'
 const REFRESH_PARAM = 'era_refresh'
 const VERSION_CHECK_TIMEOUT_MS = 2500

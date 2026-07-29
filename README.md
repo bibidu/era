@@ -2,9 +2,9 @@
 
 移动端优先的编辑器：支持图文分页排版、高亮与导出图片。
 
-在线预览：https://bibidu.github.io/era/
+在线预览（EdgeOne）：https://bibidu-era-0tdhv043.edgeone.cool/
 
-社媒视频完整数据提取页：顶部「数据分析」Tab，或直达 https://bibidu.github.io/era/?tool=social-video
+社媒视频完整数据提取页：顶部「数据分析」Tab，或直达 https://bibidu-era-0tdhv043.edgeone.cool/?tool=social-video
 
 ## 功能
 
@@ -20,7 +20,13 @@ npm install
 npm run dev
 ```
 
-推送到 `main` 后会自动构建部署到 `gh-pages`。
+推送到 `main` 后会自动构建并部署到 **腾讯云 EdgeOne Makers**（项目 `bibidu-era`）。本地也可：
+
+```bash
+npm run deploy:edgeone
+```
+
+图片资源统一上传 **阿里云 OSS 私有桶**（bucket `agent-17718139319`），交付 **12 小时签名 URL**（防盗刷）。见 [docs/cloud-hosting.md](./docs/cloud-hosting.md)。
 
 ## 图文 Skill（图文对话出图）
 

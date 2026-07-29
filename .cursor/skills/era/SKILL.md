@@ -163,8 +163,8 @@ description: >-
 2. **创建云端分享**（把正文存到 Supabase，避免 URL 过长）：
    - MCP：`era_create_highlight_setup_share`（`projectId`）
    - 或 REST：`POST /v1/projects/:projectId/highlight-setup-share`
-   - 返回 `shareId`、`url`（GitHub Pages 链接）
-3. **主动把 `url` 发给用户**（形如 `https://bibidu.github.io/era/?highlightSetup=1&shareId=<SHARE_ID>`）。云端 Agent **必须**发 GitHub Pages 链接，不要发 `127.0.0.1`。
+   - 返回 `shareId`、`url`（EdgeOne 链接）
+3. **主动把 `url` 发给用户**（形如 `https://bibidu-era-0tdhv043.edgeone.cool/?highlightSetup=1&shareId=<SHARE_ID>`）。云端 Agent **必须**发 EdgeOne 链接，不要发 `127.0.0.1`。
 4. 说明操作：打开链接 → 顶部选样式/颜色 → 在文字上点击或滑动标记 → 底部可翻页 → 完成后点 **「复制并应用高亮配置」**（写回 Supabase 并复制到剪贴板）→ 把剪贴板内容粘贴发回。
 5. 收到粘贴后：识别 `ERA_HIGHLIGHT_SETUP_V1` / `"type":"era_highlight_setup"`，解析 `projectId` 与 `ranges`，调用 `era_apply_highlights`（`replace: true`），简要确认后继续。
 6. 用户迟迟未回传或不会操作：可改用自动高亮（下），并说明你在代为设置。
@@ -206,22 +206,43 @@ description: >-
 
 **硬性顺序，不得颠倒：**
 
-1. 导出后**先只发拼图**（横版总览）给用户；非风水流程的拼图须为 **封面图 + 各内容页** 的拼合版。提醒可放大逐页查看，此步不附各页独立图。
+1. 导出后**先只发拼图**（横版总览）给用户；非风水流程的拼图须为 **封面图 + 各内容页** 的拼合版。提醒可放大逐页查看，此步不附各页独立图。拼图也须先上传 OSS，发 **12 小时签名 URL**。
 2. **明确询问**：拼图效果是否 OK？要改高亮/内容/封面/画幅吗？
 3. 用户要改 → 修改 → 重新校验/导出/拼图 → 仍先只发拼图再问。
-4. **仅当用户明确确认后**，再**逐张单独**发送封面图与各页独立 PNG。
+4. **仅当用户明确确认后**，再**逐张单独**发送封面图与各页独立 PNG：每张先 `bash scripts/oss-upload.sh`，再发签名 URL（不要只发本地路径）。
 5. 双平台导出时：每个比例各自「先拼图确认 → 再分图」，不混发。
+
+### 上传 OSS（发图前必须）
+
+读 `references/cloud-hosting.md`：
+
+```bash
+bash scripts/oss-upload.sh <本地png路径>
+# stdout 为带 Expires/Signature 的 12h 签名 URL
+```
+
+若交付物是含多图的 HTML：`node scripts/oss-rewrite-html.mjs <index.html>`（只替换图片 URL）。
 
 ---
 
 ## §预览/下载页（Gallery 图文库，必做）
 
-> **项目全局约定**：出图后必须把最终图**上传到 Supabase**，再把 **Gallery 图文库** 链接发给用户。支持全屏轮播预览与 **ZIP 整包下载**（iOS 走分享）。
+> **项目全局约定**：出图后必须把最终图**上传到 Supabase**，再把 **Gallery 图文库** 链接发给用户。支持全屏轮播预览与 **ZIP 整包下载**（iOS 走分享）。前端正式域名走 **EdgeOne**，不再使用 EdgeOne。
 
-1. 校验通过、且用户确认拼图后，调用 `era_create_export_share`（`projectId`）。返回 `shareId` 与 Gallery URL（形如 `https://bibidu.github.io/era/gallery/?shareId=<SHARE_ID>`）。
-2. **主动把该 `url` 发给用户**：打开图文库可左右滑动逐页查看，点「下载 ZIP」一次打包全部原图。云端 Agent **必须**发 GitHub Pages 链接，不要发 `127.0.0.1`。
+1. 校验通过、且用户确认拼图后，调用 `era_create_export_share`（`projectId`）。返回 `shareId` 与 Gallery URL（形如 `https://bibidu-era-0tdhv043.edgeone.cool/gallery/?shareId=<SHARE_ID>`）。
+2. **主动把该 `url` 发给用户**：打开图文库可左右滑动逐页查看，点「下载 ZIP」一次打包全部原图。云端 Agent **必须**发 EdgeOne 链接，不要发 `127.0.0.1`。
 3. 旧链接 `?exportShare=1&shareId=...` 会自动跳转到图文库。
 4. 内容/高亮/封面有改动、重新导出后，需**重新** `era_create_export_share` 生成新链接再发。
+
+### 前端部署 EdgeOne
+
+代码推到 GitHub `main` 后由 Actions 部署；也可本地：
+
+```bash
+npm run deploy:edgeone
+```
+
+部署成功后把 EdgeOne URL 回传给用户。
 
 ---
 
@@ -237,7 +258,7 @@ description: >-
 | 图片混排 | markdown 整行 `![alt](url =宽x高)`（url 支持远程或 dataURL） |
 | 开源社区仓库卡片 | `node scripts/generate-github-repo-card.mjs --repo owner/name` |
 | 高亮 | `era_apply_highlights` · `POST .../highlights`（可带 `replace: true`） |
-| 高亮设置分享 | `era_create_highlight_setup_share` · `POST .../highlight-setup-share` → GitHub Pages `url` |
+| 高亮设置分享 | `era_create_highlight_setup_share` · `POST .../highlight-setup-share` → EdgeOne `url` |
 | 校验 | `era_preview_layout` · `POST .../preview-layout` |
 | 导出 | `era_export_images` · `POST .../export`（含拼图 `sheetPath`） |
 | 导出图预览/下载页 | `era_create_export_share` · `POST .../export-share` → Gallery `url`（`/gallery/?shareId=...`，轮播预览 + ZIP 下载，**必做**） |

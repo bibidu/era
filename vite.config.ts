@@ -4,5 +4,6 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: '/era/',
+  // 本地默认 /era/；EdgeOne 生产构建用 ERA_BASE=/
+  base: process.env.ERA_BASE ?? '/era/',
 })

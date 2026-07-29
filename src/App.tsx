@@ -39,7 +39,7 @@ function App() {
           <p className="text-xs leading-5" style={{ color: 'var(--era-muted)' }}>
             云端请使用：
             <span className="font-mono">
-              https://bibidu.github.io/era/?highlightSetup=1&amp;shareId=&lt;id&gt;
+              https://bibidu-era-0tdhv043.edgeone.cool/?highlightSetup=1&amp;shareId=&lt;id&gt;
             </span>
           </p>
         </div>

@@ -27,3 +27,8 @@ era-source.zip
 
 # Local Cursor / MCP config (machine-specific paths)
 .cursor/
+
+# Tencent Cloud EdgeOne
+.env
+.edgeone/*
+.tef_dist/*

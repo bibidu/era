@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy to EdgeOne Makers
 
 on:
   push:
@@ -6,10 +6,10 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: pages
+  group: edgeone-deploy
   cancel-in-progress: true
 
 jobs:
@@ -40,17 +40,34 @@ jobs:
       - name: Smoke supabase highlight share
         run: npm run smoke:supabase-highlight
 
-      - name: Build and verify fonts
+      - name: Build (EdgeOne root base)
         run: npm run verify:fonts
+        env:
+          ERA_BASE: /
 
       - name: Inject build version
         run: node scripts/inject-build-version.mjs
         env:
           GITHUB_SHA: ${{ github.sha }}
 
-      - name: Deploy to gh-pages branch
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          force_orphan: true
+      - name: Deploy to EdgeOne Makers
+        id: deploy
+        env:
+          EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
+          NO_PROXY: '*'
+        run: |
+          set -euo pipefail
+          unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY all_proxy || true
+          OUT="$(npx --yes edgeone@latest makers deploy ./dist -n bibidu-era -e production -t "$EDGEONE_API_TOKEN" --json 2>&1)"
+          echo "$OUT"
+          URL="$(echo "$OUT" | perl -ne 'print "$1\n" if /"(?:url|domain|accessUrl|projectUrl)"\s*:\s*"(https?:[^"]+)"/' | tail -1)"
+          if [ -z "$URL" ]; then
+            URL="$(echo "$OUT" | grep -Eo 'https?://[a-zA-Z0-9._/-]+\.(edgeone\.app|pages\.edgeone\.ai|edgeone\.site)[a-zA-Z0-9._/-]*' | tail -1 || true)"
+          fi
+          if [ -n "$URL" ]; then
+            echo "url=$URL" >> "$GITHUB_OUTPUT"
+            echo "### EdgeOne 前端链接" >> "$GITHUB_STEP_SUMMARY"
+            echo "$URL" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### EdgeOne 部署完成（未能自动解析 URL，请到控制台查看项目 bibidu-era）" >> "$GITHUB_STEP_SUMMARY"
+          fi
