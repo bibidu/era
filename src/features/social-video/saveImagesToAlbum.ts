@@ -95,12 +95,13 @@ async function fetchImageFile(url: string, index: number): Promise<File> {
         throw new Error(text || `代理下载失败（${response.status}）`)
       }
     } catch (error) {
-      const message =
+      const raw =
         error instanceof Error
           ? error.message
           : lastError instanceof Error
             ? lastError.message
-            : 'Load failed'
+            : '下载失败'
+      const message = /load failed|failed to fetch/i.test(raw) ? '跨域下载失败' : raw
       throw new Error(message)
     }
   }
