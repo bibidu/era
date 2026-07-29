@@ -1,18 +1,21 @@
 ---
-description: 改动完成后的 PR 直接合入 main，无需询问用户确认
+description: 改动完成后的 PR 直接合入 main，无需询问；合入后必须回传最新 EdgeOne URL
 alwaysApply: true
 ---
 
-# PR 自动合入主分支
+# PR 自动合入主分支 + 回传最新 URL
 
-本仓库约定：Cloud Agent / 本机 Agent 完成功能改动并创建 PR 后，**直接将 PR 合入 `main`**，不要等待或询问用户是否合并。
+本仓库约定：Cloud Agent / 本机 Agent 完成功能改动并创建 PR 后，**直接将 PR 合入 `main`**，不要等待或询问用户是否合并；合入推送后还必须把**最新线上预览 URL**发给用户。
 
 ## 必须
 
 1. 实现、自测通过后：commit → push → 创建/更新 PR
 2. 随即把该改动分支 **merge 进 `main` 并 push**（或等价合入），无需二次确认
 3. 合入后可关闭对应 PR（若 GitHub 未自动关闭）
+4. **等待** `main` 上 `Deploy to EdgeOne Makers` Actions 成功结束后，从该次 run 的日志 / Job Summary 解析 **完整** EdgeOne URL（须含 `eo_token` / `eo_time`），并在对话里**直接发给用户**
+5. 可用：`gh run list --branch main` → `gh run view <id> --log`，用正则提取 `https://…edgeone.cool?eo_token=…&eo_time=…`
+6. 禁止只发裸域名（大陆可能 401）；禁止只发 Actions 页面链接代替预览 URL
 
 ## 例外
 
-仅当用户**明确说不要合入 / 先别合并 / 保持 draft 等审**时，才跳过合入。
+仅当用户**明确说不要合入 / 先别合并 / 保持 draft 等审**时，才跳过合入与回传。
