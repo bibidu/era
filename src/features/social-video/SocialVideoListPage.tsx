@@ -10,6 +10,7 @@ import { SocialVideoDetailSheet } from './SocialVideoDetailSheet'
 
 interface SocialVideoListPageProps {
   onSmartExtract: () => void
+  onOpenBoard: () => void
 }
 
 type StatusFilter = '' | SocialVideoPublishStatus
@@ -32,7 +33,7 @@ function statusBadgeStyle(status: SocialVideoPublishStatus): { background: strin
   }
 }
 
-export function SocialVideoListPage({ onSmartExtract }: SocialVideoListPageProps) {
+export function SocialVideoListPage({ onSmartExtract, onOpenBoard }: SocialVideoListPageProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('')
   const [records, setRecords] = useState<SocialVideoAnalysisRecord[]>([])
   const [selectedRecord, setSelectedRecord] = useState<SocialVideoAnalysisRecord | null>(null)
@@ -74,14 +75,24 @@ export function SocialVideoListPage({ onSmartExtract }: SocialVideoListPageProps
         style={{ borderColor: 'var(--era-border)' }}
       >
         <h1 className="text-base font-semibold">分析列表</h1>
-        <button
-          type="button"
-          className="inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium transition hover:opacity-90"
-          style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
-          onClick={onSmartExtract}
-        >
-          智能提取
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            className="inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium transition hover:opacity-90"
+            style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
+            onClick={onOpenBoard}
+          >
+            看板
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium transition hover:opacity-90"
+            style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
+            onClick={onSmartExtract}
+          >
+            智能提取
+          </button>
+        </div>
       </div>
 
       <div

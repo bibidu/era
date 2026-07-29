@@ -36,6 +36,8 @@ export interface CreateSocialVideoAnalysisInput {
 export interface ListSocialVideoAnalysesOptions {
   /** 不传或空 = 全部；后端 eq 筛选 */
   publishStatus?: SocialVideoPublishStatus | '' | null
+  /** 看板等需要图表时拉 markdown */
+  includeMarkdown?: boolean
 }
 
 async function supabaseRest<T>(
@@ -92,7 +94,9 @@ export async function listSocialVideoAnalyses(
   const params = new URLSearchParams()
   params.set(
     'select',
-    'id,created_at,title,published_at,cover_url,publish_status,work_type',
+    options.includeMarkdown
+      ? 'id,created_at,title,published_at,cover_url,publish_status,work_type,markdown'
+      : 'id,created_at,title,published_at,cover_url,publish_status,work_type',
   )
   params.set('order', 'created_at.desc')
   const status = options.publishStatus?.trim()
