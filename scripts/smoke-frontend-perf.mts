@@ -49,6 +49,15 @@ async function main() {
     }
     if ((await extractBtn.count()) === 0) fail('社媒 Tab 未出现「智能提取」')
     else {
+      // 状态筛选（后端筛选入口）
+      for (const label of ['全部', '已发布', '待审核', '待AI修改']) {
+        if ((await page.getByRole('button', { name: label, exact: true }).count()) === 0) {
+          fail(`社媒缺少状态筛选：${label}`)
+        }
+      }
+      await page.getByRole('button', { name: '已发布', exact: true }).click()
+      await page.waitForTimeout(600)
+
       await extractBtn.click()
       await page.waitForTimeout(500)
       const backOrTitle =

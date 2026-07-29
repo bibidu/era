@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import {
+  SOCIAL_VIDEO_PUBLISH_STATUSES,
   listSocialVideoAnalyses,
   sortSocialVideoAnalyses,
   type SocialVideoAnalysisRecord,
+  type SocialVideoPublishStatus,
 } from '../../agent/supabaseSocialVideoAnalysis'
 import { SocialVideoDetailSheet } from './SocialVideoDetailSheet'
 
@@ -10,7 +12,28 @@ interface SocialVideoListPageProps {
   onSmartExtract: () => void
 }
 
+type StatusFilter = '' | SocialVideoPublishStatus
+
+const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+  { value: '', label: '全部' },
+  ...SOCIAL_VIDEO_PUBLISH_STATUSES.map((status) => ({ value: status, label: status })),
+]
+
+function statusBadgeStyle(status: SocialVideoPublishStatus): { background: string; color: string } {
+  switch (status) {
+    case '已发布':
+      return { background: 'rgb(22 163 74 / 0.92)', color: '#ffffff' }
+    case '待审核':
+      return { background: 'rgb(245 158 11 / 0.95)', color: '#171717' }
+    case '待AI修改':
+      return { background: 'rgb(59 130 246 / 0.95)', color: '#ffffff' }
+    default:
+      return { background: 'rgb(0 0 0 / 0.65)', color: '#ffffff' }
+  }
+}
+
 export function SocialVideoListPage({ onSmartExtract }: SocialVideoListPageProps) {
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('')
   const [records, setRecords] = useState<SocialVideoAnalysisRecord[]>([])
   const [selectedRecord, setSelectedRecord] = useState<SocialVideoAnalysisRecord | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -23,7 +46,9 @@ export function SocialVideoListPage({ onSmartExtract }: SocialVideoListPageProps
     void (async () => {
       setLoading(true)
       try {
-        const rows = await listSocialVideoAnalyses()
+        const rows = await listSocialVideoAnalyses({
+          publishStatus: statusFilter || null,
+        })
         if (cancelled) return
         setRecords(sortSocialVideoAnalyses(rows))
         setError('')
@@ -40,7 +65,7 @@ export function SocialVideoListPage({ onSmartExtract }: SocialVideoListPageProps
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [statusFilter])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col" style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}>
@@ -59,6 +84,34 @@ export function SocialVideoListPage({ onSmartExtract }: SocialVideoListPageProps
         </button>
       </div>
 
+      <div
+        className="flex shrink-0 gap-2 overflow-x-auto border-b px-4 py-2.5"
+        style={{ borderColor: 'var(--era-border)' }}
+      >
+        {STATUS_FILTERS.map((item) => {
+          const active = statusFilter === item.value
+          return (
+            <button
+              key={item.label}
+              type="button"
+              className="shrink-0 rounded-full px-3 py-1 text-xs font-medium transition"
+              style={
+                active
+                  ? { background: 'var(--era-button)', color: 'var(--era-button-fg)' }
+                  : {
+                      background: 'var(--era-panel)',
+                      color: 'var(--era-muted)',
+                      border: '1px solid var(--era-border)',
+                    }
+              }
+              onClick={() => setStatusFilter(item.value)}
+            >
+              {item.label}
+            </button>
+          )
+        })}
+      </div>
+
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {loading ? (
           <div className="flex h-48 items-center justify-center text-sm" style={{ color: 'var(--era-muted)' }}>
@@ -75,47 +128,58 @@ export function SocialVideoListPage({ onSmartExtract }: SocialVideoListPageProps
           >
             <p className="text-base font-semibold">暂无分析作品</p>
             <p className="mt-2 text-sm leading-6" style={{ color: 'var(--era-muted)' }}>
-              点击右上角「智能提取」，完成后保存，作品会出现在这里。
+              {statusFilter
+                ? `当前筛选「${statusFilter}」下没有作品。`
+                : '点击右上角「智能提取」，完成后保存，作品会出现在这里。'}
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            {records.map((record) => (
-              <button
-                key={record.id}
-                type="button"
-                className="group relative overflow-hidden rounded-2xl border text-left shadow-sm transition hover:opacity-95"
-                style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
-                onClick={() => {
-                  setSelectedRecord(record)
-                  setSheetOpen(true)
-                }}
-              >
-                <div className="aspect-[3/4] w-full">
-                  {record.cover_url ? (
-                    <img
-                      src={record.cover_url}
-                      alt={record.title || '作品封面'}
-                      loading="lazy"
-                      decoding="async"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div
-                      className="flex h-full w-full items-center justify-center px-3 text-center text-sm font-medium"
-                      style={{ color: 'var(--era-muted)' }}
+            {records.map((record) => {
+              const badge = statusBadgeStyle(record.publish_status)
+              return (
+                <button
+                  key={record.id}
+                  type="button"
+                  className="group relative overflow-hidden rounded-2xl border text-left shadow-sm transition hover:opacity-95"
+                  style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
+                  onClick={() => {
+                    setSelectedRecord(record)
+                    setSheetOpen(true)
+                  }}
+                >
+                  <div className="aspect-[3/4] w-full">
+                    {record.cover_url ? (
+                      <img
+                        src={record.cover_url}
+                        alt={record.title || '作品封面'}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div
+                        className="flex h-full w-full items-center justify-center px-3 text-center text-sm font-medium"
+                        style={{ color: 'var(--era-muted)' }}
+                      >
+                        {record.title || '未命名作品'}
+                      </div>
+                    )}
+                    <span
+                      className="absolute right-1.5 top-1.5 max-w-[calc(100%-0.75rem)] truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide shadow-sm"
+                      style={badge}
                     >
-                      {record.title || '未命名作品'}
+                      {record.publish_status}
+                    </span>
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-2 pb-2 pt-10">
+                      <p className="line-clamp-2 text-xs font-semibold leading-4 text-white sm:text-sm">
+                        {record.title || '未命名作品'}
+                      </p>
                     </div>
-                  )}
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-2 pb-2 pt-10">
-                    <p className="line-clamp-2 text-xs font-semibold leading-4 text-white sm:text-sm">
-                      {record.title || '未命名作品'}
-                    </p>
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              )
+            })}
           </div>
         )}
       </div>
