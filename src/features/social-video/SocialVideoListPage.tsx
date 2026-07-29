@@ -185,18 +185,17 @@ export function SocialVideoListPage({
                     {record.cover_url ? (
                       <img
                         src={record.cover_url}
-                        alt={record.title || '作品封面'}
+                        alt=""
                         loading="lazy"
                         decoding="async"
                         className="h-full w-full object-cover"
                       />
                     ) : (
                       <div
-                        className="flex h-full w-full items-center justify-center px-3 text-center text-sm font-medium"
-                        style={{ color: 'var(--era-muted)' }}
-                      >
-                        {record.title || '未命名作品'}
-                      </div>
+                        className="h-full w-full"
+                        style={{ background: 'var(--era-panel)' }}
+                        aria-hidden
+                      />
                     )}
                     <span
                       className="absolute right-1.5 top-1.5 max-w-[calc(100%-0.75rem)] truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide shadow-sm"
@@ -204,11 +203,6 @@ export function SocialVideoListPage({
                     >
                       {record.publish_status}
                     </span>
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-2 pb-2 pt-10">
-                      <p className="line-clamp-2 text-xs font-semibold leading-4 text-white sm:text-sm">
-                        {record.title || '未命名作品'}
-                      </p>
-                    </div>
                   </div>
                 </button>
               )

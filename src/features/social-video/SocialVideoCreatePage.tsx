@@ -12,6 +12,7 @@ import {
   type SocialVideoWorkType,
 } from '../../agent/supabaseSocialVideoAnalysis'
 import { MarkdownContentDrawer } from './MarkdownContentDrawer'
+import { ImagePreviewStrip } from './ImagePreviewStrip'
 import { extractMarkdownImages, truncateText } from './parseMarkdownMetrics'
 
 interface SocialVideoCreatePageProps {
@@ -288,29 +289,10 @@ export function SocialVideoCreatePage({
             {isEdit ? (
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium">图片预览</span>
-                {previewImages.length === 0 ? (
-                  <p className="text-xs leading-5" style={{ color: 'var(--era-muted)' }}>
-                    暂无图片（图片预览字段或内容中的 Markdown 图片会出现在这里）
-                  </p>
-                ) : (
-                  <div className="flex w-full flex-nowrap gap-3 overflow-x-auto pb-1">
-                    {previewImages.map((image) => (
-                      <div
-                        key={image.src}
-                        className="aspect-[3/4] h-32 w-auto min-w-[7.5rem] shrink-0 overflow-hidden rounded-2xl border"
-                        style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
-                      >
-                        <img
-                          src={image.src}
-                          alt={image.alt || '预览图'}
-                          loading="lazy"
-                          decoding="async"
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <ImagePreviewStrip
+                  images={previewImages}
+                  zipName={`post-${editingRecord?.id?.slice(0, 8) || 'images'}.zip`}
+                />
               </div>
             ) : null}
 
