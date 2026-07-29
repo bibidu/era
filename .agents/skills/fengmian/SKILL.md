@@ -95,22 +95,23 @@ node scripts/generate-cover.mjs \
 
 ---
 
-## 4. 交付（对话框直发 OSS 签名 URL）
+## 4. 交付（对话框直发 OSS 封面永久 URL）
 
-**硬性规则：交付图片时，必须在对话框里直接发送阿里云 OSS 的 12 小时签名 URL。**  
-否则用户可能看不到图。禁止用 HTML 嵌入图片、禁止只发本地路径、禁止发未签名裸 OSS URL。
+**硬性规则：交付图片时，必须在对话框里直接发送阿里云 OSS 返回的 URL。**  
+否则用户可能看不到图。禁止用 HTML 嵌入图片、禁止只发本地路径。
 
-1. 把生成的 PNG（`path`）**先上传阿里云 OSS（私有）**，再把 **12 小时签名 URL 直接粘贴到对话框**发给用户（读 `references/cloud-hosting.md`）：
+1. 把生成的 PNG（`path`）**先上传阿里云 OSS**。封面文件名（如 `cover.png`）会自动带上 **`__cover_keep__`** 标记：公共读、**查看无过期**、清理脚本永不删除（读 `references/cloud-hosting.md`）：
 
 ```bash
 bash scripts/oss-upload.sh <path>
-# stdout：带 Expires / OSSAccessKeyId / Signature 的临时可读链接（默认 12h）
+# 或强制封面：bash scripts/oss-upload.sh --cover <path>
+# stdout：无 Expires 的永久公共 URL（key 含 __cover_keep__）
 ```
 
-2. 简短说明：主题色、大标题颜色、输出尺寸 `1080×1920 / 9:16`、签名链接有效期 12 小时
-3. 询问是否要改文案或换主题色；若要改 → 改字段后重新跑脚本，再上传并在对话框发新签名链接
-4. 若相关前端代码已推 GitHub：部署 EdgeOne 后可回传 EdgeOne 链接（`npm run deploy:edgeone`），但**封面图本身仍须对话框直发 OSS 签名 URL**
-5. **禁止**用口头描述代替真实出图；**禁止**假装已生成；**禁止**只发本地路径或未签名的裸 OSS URL；**禁止**用 HTML 页面代替对话框发图
+2. 简短说明：主题色、大标题颜色、输出尺寸 `1080×1920 / 9:16`、封面链接长期有效
+3. 询问是否要改文案或换主题色；若要改 → 改字段后重新跑脚本，再上传并在对话框发新 URL
+4. 若相关前端代码已推 GitHub：部署 EdgeOne 后可回传 EdgeOne 链接（`npm run deploy:edgeone`），但**封面图本身仍须对话框直发 OSS URL**
+5. **禁止**用口头描述代替真实出图；**禁止**假装已生成；**禁止**只发本地路径；**禁止**用 HTML 页面代替对话框发图
 
 ---
 

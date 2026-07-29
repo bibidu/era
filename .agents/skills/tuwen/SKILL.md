@@ -88,7 +88,7 @@ description: >-
 
 用户确认标题 + 封面信息后，**按仓库中的「封面 skill」生成封面图**，把封面发给用户确认；用户要改 → 改完再确认。
 
-封面交付同样必须走 **§发图 · 上传 OSS**：在对话框**直接发送**阿里云 OSS **12 小时签名 URL**（不要用 HTML 嵌入、不要只发本地路径）。
+封面交付同样必须走 **§发图 · 上传 OSS**：在对话框**直接发送**阿里云 OSS 返回的封面永久 URL（`cover*.png` 自动带 `__cover_keep__`，查看无过期；不要用 HTML 嵌入、不要只发本地路径）。
 
 ### B5. 用户自行设置高亮（内容图）
 
@@ -100,7 +100,7 @@ description: >-
 
 ### B7. 逐张发送
 
-用户确认总览后，**逐张单独**发送封面图与每一页内容图：每张上传 OSS，在对话框**直接发送**签名 URL（可直接发布的原图）。
+用户确认总览后，**逐张单独**发送封面图与每一页内容图：每张上传 OSS，在对话框**直接发送**返回的 URL（封面为 `__cover_keep__` 永久链，内容页为 12h 签名）。
 
 ### 内容图构建要点（Era）
 
@@ -192,10 +192,10 @@ description: >-
 
 ```bash
 bash scripts/oss-upload.sh <本地png路径>
-# stdout 为带 Expires/Signature 的 12h 签名 URL
+# 普通图：12h 签名 URL；cover*.png / --cover：__cover_keep__ 永久公共 URL
 ```
 
-若交付物是含多图的 HTML：`node scripts/oss-rewrite-html.mjs <index.html>`（只替换图片 URL）——但**图文确认与发图仍以对话框直发签名 URL 为准**，不要用 HTML 替代。
+若交付物是含多图的 HTML：`node scripts/oss-rewrite-html.mjs <index.html>`（只替换图片 URL）——但**图文确认与发图仍以对话框直发为准**，不要用 HTML 替代。
 
 ### 硬性顺序，不得颠倒
 

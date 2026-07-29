@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # 上传本地文件到阿里云 OSS（私有读，对象存储无 CDN），stdout 打印 12 小时签名 URL。
-# 存图前会自动调用 oss-cleanup-expired.sh，删除前缀下超过 14 小时的旧对象（省存储费）。
+# 封面图（文件名含 __cover_keep__，或识别为 cover*）：永久保留 + 公共读（查看无过期）。
+# 存图前会自动调用 oss-cleanup-expired.sh，删除前缀下超过 14 小时的旧对象（省存储费；跳过封面标记）。
 # 依赖：ossutil（默认 ~/.local/bin/ossutil）、~/.ossutilconfig
 #
 # 用法:
 #   bash scripts/oss-upload.sh <local-file> [remote-key]
+#   bash scripts/oss-upload.sh --cover <local-file> [remote-key]   # 强制按封面（永久）上传
 #   bash scripts/oss-upload.sh --dir <local-dir> [remote-prefix]
 #   bash scripts/oss-upload.sh --rewrite-html <index.html>
 #   bash scripts/oss-upload.sh --sign <remote-key>   # 仅对已有对象重新签名（不触发清理）
@@ -16,7 +18,7 @@
 #   OSS_BUCKET        默认 agent-17718139319
 #   OSS_REGION        默认 oss-cn-beijing
 #   OSS_PREFIX        默认 era/assets
-#   OSS_SIGN_TIMEOUT  签名有效期秒数，默认 43200（12 小时）
+#   OSS_SIGN_TIMEOUT  签名有效期秒数，默认 43200（12 小时）；封面图不使用签名
 #   OSSUTIL           ossutil 可执行路径
 #   OSS_SKIP_CLEANUP=1  跳过上传前的过期清理
 set -euo pipefail
@@ -29,6 +31,9 @@ PREFIX="${OSS_PREFIX:-era/assets}"
 SIGN_TIMEOUT="${OSS_SIGN_TIMEOUT:-43200}"
 ENDPOINT="${OSS_ENDPOINT:-oss-cn-beijing.aliyuncs.com}"
 CONFIG_PATH="${HOME}/.ossutilconfig"
+
+# 对象 key / 文件名中的永久封面标记（清理脚本会跳过）
+COVER_KEEP_MARK="__cover_keep__"
 
 ensure_ossutil_config() {
   if [[ -f "$CONFIG_PATH" ]]; then
@@ -66,7 +71,7 @@ fi
 
 ensure_ossutil_config
 
-# 存图前清理超过 14h 的旧对象（签名默认 12h，多留 2h 缓冲）
+# 存图前清理超过 14h 的旧对象（签名默认 12h，多留 2h 缓冲；封面标记对象会被跳过）
 run_cleanup_before_store() {
   if [[ "${OSS_SKIP_CLEANUP:-0}" == "1" ]]; then
     return 0
@@ -74,6 +79,63 @@ run_cleanup_before_store() {
   bash "${SCRIPT_DIR}/oss-cleanup-expired.sh" || {
     echo "警告: 过期对象清理未完全成功，继续上传" >&2
   }
+}
+
+is_cover_keep_key() {
+  local name="$1"
+  [[ "$name" == *"${COVER_KEEP_MARK}"* ]]
+}
+
+# 识别封面文件名：cover.png / cover-xxx.png / xxx__cover_keep__.png 等
+looks_like_cover_name() {
+  local base
+  base="$(basename "$1")"
+  if is_cover_keep_key "$base"; then
+    return 0
+  fi
+  # cover.png / cover.jpg / cover-foo.png / cover_bar.webp
+  if [[ "$base" =~ ^[Cc]over([._-].+)?\.(png|jpe?g|webp|gif|svg)$ ]]; then
+    return 0
+  fi
+  return 1
+}
+
+# 在扩展名前插入 __cover_keep__（已有则原样返回）
+ensure_cover_keep_key() {
+  local key="$1"
+  if is_cover_keep_key "$key"; then
+    echo "$key"
+    return
+  fi
+  local dir base name ext
+  dir="$(dirname "$key")"
+  base="$(basename "$key")"
+  if [[ "$base" == *.* ]]; then
+    name="${base%.*}"
+    ext="${base##*.}"
+    base="${name}${COVER_KEEP_MARK}.${ext}"
+  else
+    base="${base}${COVER_KEEP_MARK}"
+  fi
+  if [[ "$dir" == "." ]]; then
+    echo "$base"
+  else
+    echo "${dir}/${base}"
+  fi
+}
+
+# 公共读封面 URL（无 Expires，长期可访问）
+public_url() {
+  local key="$1"
+  # 路径编码：保留 /
+  local encoded
+  encoded="$(
+    python3 - "$key" <<'PY'
+import sys, urllib.parse
+print(urllib.parse.quote(sys.argv[1], safe="/"))
+PY
+  )"
+  echo "https://${BUCKET}.${ENDPOINT}/${encoded}"
 }
 
 # 对象保持私有；返回带 Expires / OSSAccessKeyId / Signature 的临时 URL（默认 12h）
@@ -97,23 +159,54 @@ sign_url() {
   fi
 }
 
+# 封面：公共读 + 永久 URL；其它：私有 + 12h 签名
+deliver_url() {
+  local key="$1"
+  if is_cover_keep_key "$key"; then
+    "$OSSUTIL" set-acl "oss://${BUCKET}/${key}" public-read -f >/dev/null 2>&1 || true
+    public_url "$key"
+  else
+    "$OSSUTIL" set-acl "oss://${BUCKET}/${key}" private -f >/dev/null 2>&1 || true
+    sign_url "$key"
+  fi
+}
+
 upload_one() {
   local local_path="$1"
   local key="$2"
+  local force_cover="${3:-0}"
   if [[ ! -f "$local_path" ]]; then
     echo "错误: 文件不存在: $local_path" >&2
     exit 1
   fi
+  if [[ "$force_cover" == "1" ]] || looks_like_cover_name "$local_path" || looks_like_cover_name "$key"; then
+    key="$(ensure_cover_keep_key "$key")"
+    echo "oss-upload: 封面永久保留 ${key}" >&2
+  fi
   "$OSSUTIL" cp "$local_path" "oss://${BUCKET}/${key}" -f >/dev/null
-  # 强制对象私有，防止误设公共读导致盗刷
-  "$OSSUTIL" set-acl "oss://${BUCKET}/${key}" private -f >/dev/null 2>&1 || true
-  sign_url "$key"
+  deliver_url "$key"
 }
 
 rewrite_html() {
   local html_path="$1"
   node "${SCRIPT_DIR}/oss-rewrite-html.mjs" "$html_path"
 }
+
+FORCE_COVER=0
+ARGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --cover)
+      FORCE_COVER=1
+      shift
+      ;;
+    *)
+      ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+set -- "${ARGS[@]+"${ARGS[@]}"}"
 
 case "${1:-}" in
   --dir)
@@ -123,7 +216,7 @@ case "${1:-}" in
     find "$local_dir" -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' -o -iname '*.gif' -o -iname '*.svg' \) | while read -r f; do
       rel="${f#"$local_dir"/}"
       key="${remote_prefix%/}/${rel}"
-      url="$(upload_one "$f" "$key")"
+      url="$(upload_one "$f" "$key" "$FORCE_COVER")"
       echo "$url"
     done
     ;;
@@ -132,15 +225,19 @@ case "${1:-}" in
     rewrite_html "${2:?需要 HTML 路径}"
     ;;
   --sign)
-    sign_url "${2:?需要 object key}"
+    key="${2:?需要 object key}"
+    if looks_like_cover_name "$key" || is_cover_keep_key "$key"; then
+      key="$(ensure_cover_keep_key "$key")"
+    fi
+    deliver_url "$key"
     ;;
   -h|--help)
-    sed -n '2,22p' "$0"
+    sed -n '2,26p' "$0"
     ;;
   *)
     run_cleanup_before_store
     local_file="${1:?需要本地文件路径}"
     remote_key="${2:-${PREFIX}/$(date +%Y%m%d-%H%M%S)/$(basename "$local_file")}"
-    upload_one "$local_file" "$remote_key"
+    upload_one "$local_file" "$remote_key" "$FORCE_COVER"
     ;;
 esac

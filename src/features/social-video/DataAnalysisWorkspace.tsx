@@ -5,7 +5,6 @@ import {
   type SocialVideoPublishStatus,
 } from '../../agent/supabaseSocialVideoAnalysis'
 import { AccountReviewPage } from './AccountReviewPage'
-import { SocialVideoBoardPage } from './SocialVideoBoardPage'
 import { SocialVideoCreatePage } from './SocialVideoCreatePage'
 import { SocialVideoDataPage } from './SocialVideoDataPage'
 import { SocialVideoListPage } from './SocialVideoListPage'
@@ -13,7 +12,7 @@ import { SocialVideoListPage } from './SocialVideoListPage'
 export type SocialListStatusFilter = '' | SocialVideoPublishStatus
 
 export function DataAnalysisWorkspace() {
-  const [view, setView] = useState<'list' | 'extract' | 'board' | 'review' | 'create'>('list')
+  const [view, setView] = useState<'list' | 'extract' | 'review' | 'create'>('list')
   const [listReloadToken, setListReloadToken] = useState(0)
   const [editingRecord, setEditingRecord] = useState<SocialVideoAnalysisRecord | null>(null)
   const [statusFilter, setStatusFilter] = useState<SocialListStatusFilter>('')
@@ -47,10 +46,6 @@ export function DataAnalysisWorkspace() {
     )
   }
 
-  if (view === 'board') {
-    return <SocialVideoBoardPage onBack={() => setView('list')} />
-  }
-
   if (view === 'review') {
     return <AccountReviewPage onBack={() => setView('list')} />
   }
@@ -74,7 +69,6 @@ export function DataAnalysisWorkspace() {
       onStatusFilterChange={setStatusFilter}
       reloadToken={listReloadToken}
       onSmartExtract={() => setView('extract')}
-      onOpenBoard={() => setView('board')}
       onOpenReview={() => setView('review')}
       onCreate={() => {
         setEditingRecord(null)
@@ -87,4 +81,3 @@ export function DataAnalysisWorkspace() {
     />
   )
 }
-

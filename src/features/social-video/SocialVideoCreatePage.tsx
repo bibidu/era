@@ -36,7 +36,7 @@ function buildAiRevisionPrompt(outline: string, workType: SocialVideoWorkType) {
 
 首先，你需要生成5个标题以及正文内容(如果提供了正文，则严格按照正文进行展示)，并引导用户选择或确定一个标题。
 
-然后，当标题和内容都确认后，你需要生成 ${coverClause}内容图，并经由阿里云对象存储上传，并把多个图片链接依次写入 supabase 的 图片预览字段中，除了该字段，确定的标题和内容也需要保存到supabase的这一条记录中。
+然后，当标题和内容都确认后，你需要生成 ${coverClause}内容图，并经由阿里云对象存储上传（封面须用 cover 文件名或 --cover，自动带 __cover_keep__ 永久标记），并把多个图片链接依次写入 supabase 的 图片预览字段中，除了该字段，确定的标题和内容也需要保存到supabase的这一条记录中。
 
 用户要求:${userRequest}`
 }
