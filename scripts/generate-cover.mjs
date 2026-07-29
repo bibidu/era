@@ -45,6 +45,8 @@ const DEFAULTS = {
   bigTitle: 'COVER SKILL',
   bigTitleColor: '#111111',
   bigTitleLineColors: null,
+  /** 大标题字体：默认 anton；`shuheiti` / `数黑体` 用阿里妈妈数黑体（中英同行） */
+  bigTitleFont: 'anton',
   blobCorner: null,
   smallTitle: '',
   description: '',
@@ -53,6 +55,37 @@ const DEFAULTS = {
   themeColor: null,
   badge: 'skill',
   out: path.join(ROOT, 'output', 'cover.png'),
+}
+
+function normalizeBigTitleFont(raw) {
+  const v = String(raw || 'anton').trim().toLowerCase()
+  if (
+    v === 'shuheiti' ||
+    v === 'shuhei' ||
+    v === '数黑体' ||
+    v === 'alimama' ||
+    v === 'alimama-shuheiti' ||
+    v.includes('数黑')
+  ) {
+    return 'shuheiti'
+  }
+  return 'anton'
+}
+
+function shuheitiFontFaceCss() {
+  const woff2 = path.join(ROOT, 'public', 'fonts', 'AlimamaShuHeiTi-Bold.woff2')
+  const ttf = path.join(ROOT, 'public', 'fonts', 'AlimamaShuHeiTi-Bold.ttf')
+  const woff2Url = `file://${woff2}`
+  const ttfUrl = `file://${ttf}`
+  return `@font-face {
+  font-family: 'Alimama ShuHeiTi';
+  src:
+    url('${woff2Url}') format('woff2'),
+    url('${ttfUrl}') format('truetype');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: block;
+}`
 }
 
 function parseArgs(argv) {
@@ -80,6 +113,9 @@ function parseArgs(argv) {
           .split(/[,，|]/)
           .map((s) => s.trim())
           .filter(Boolean)
+        break
+      case '--bigTitleFont':
+        out.bigTitleFont = next()
         break
       case '--smallTitle':
         out.smallTitle = next()
@@ -228,12 +264,42 @@ function footerIcon(i) {
 function buildHtml(cfg, theme) {
   const lines = bigTitleLines(cfg.bigTitle, cfg)
   const lineCount = lines.length
-  // 再收一档
-  const titleSize =
-    lineCount <= 1 ? 280 : lineCount === 2 ? 220 : lineCount === 3 ? 190 : 160
-  const titleLh = 0.96
+  const titleFont = normalizeBigTitleFont(cfg.bigTitleFont)
+  const useShuhei = titleFont === 'shuheiti'
+  // 再收一档；数黑体笔画更满，两行时略收字号
+  const titleSize = useShuhei
+    ? lineCount <= 1
+      ? 240
+      : lineCount === 2
+        ? 168
+        : lineCount === 3
+          ? 140
+          : 120
+    : lineCount <= 1
+      ? 280
+      : lineCount === 2
+        ? 220
+        : lineCount === 3
+          ? 190
+          : 160
+  const titleLh = useShuhei ? 1.05 : 0.96
   const titleLineGap = lineCount <= 1 ? 0 : lineCount === 2 ? 10 : 14
   const smallTitleSize = 56
+  const bigTitleFontFamily = useShuhei
+    ? '"Alimama ShuHeiTi", "Noto Sans SC", sans-serif'
+    : '"Anton", "Noto Sans SC", "Impact", "Arial Narrow", sans-serif'
+  const bigTitleFontWeight = useShuhei ? '700' : '400'
+  const bigTitleTextTransform = useShuhei ? 'none' : 'uppercase'
+  const shuheitiFace = useShuhei ? shuheitiFontFaceCss() : ''
+  const cjkTitleOverride = useShuhei
+    ? `font-family: ${bigTitleFontFamily};
+    font-weight: ${bigTitleFontWeight};
+    letter-spacing: -0.02em;
+    text-transform: none;`
+    : `font-family: "Noto Sans SC", "PingFang SC", "Helvetica Neue", sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    text-transform: none;`
 
   // 装饰圆：再略收；右上 / 右下随机
   const blobCorner =
@@ -307,6 +373,7 @@ function buildHtml(cfg, theme) {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet" />
 <style>
+${shuheitiFace}
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     width: ${WIDTH}px;
@@ -444,12 +511,12 @@ function buildHtml(cfg, theme) {
     flex-direction: column;
     align-items: flex-start;
     gap: ${titleLineGap}px;
-    font-family: "Anton", "Noto Sans SC", "Impact", "Arial Narrow", sans-serif;
-    font-weight: 400;
+    font-family: ${bigTitleFontFamily};
+    font-weight: ${bigTitleFontWeight};
     font-size: ${titleSize}px;
     line-height: ${titleLh};
     letter-spacing: -0.02em;
-    text-transform: uppercase;
+    text-transform: ${bigTitleTextTransform};
     color: ${normalizeHex(cfg.bigTitleColor, '#111111')};
     max-width: none;
     width: max-content;
@@ -460,10 +527,7 @@ function buildHtml(cfg, theme) {
   .big-title .line .seg { white-space: nowrap; }
   .big-title .line.cjk,
   .big-title .line .seg.cjk {
-    font-family: "Noto Sans SC", "PingFang SC", "Helvetica Neue", sans-serif;
-    font-weight: 900;
-    letter-spacing: -0.04em;
-    text-transform: none;
+    ${cjkTitleOverride}
   }
   /* 彩色标题压在主题色块上时保持可读 */
   .big-title .line[style*="color:#"],
@@ -636,6 +700,7 @@ Usage:
 字段:
   bigTitle          大标题（可多行，用 \\n 分隔），默认黑色
   bigTitleColor     大标题颜色，默认 #111111
+  bigTitleFont      大标题字体：anton（默认）或 shuheiti / 数黑体
   smallTitle        小标题
   description       描述
   tags              多个标签
@@ -647,6 +712,7 @@ Usage:
   }
 
   const cfg = await loadConfig(cli)
+  cfg.bigTitleFont = normalizeBigTitleFont(cfg.bigTitleFont)
   const titleCheck = Array.isArray(cfg.bigTitle)
     ? cfg.bigTitle.length > 0
     : Boolean(cfg.bigTitle?.toString?.().trim?.())
@@ -670,10 +736,13 @@ Usage:
       deviceScaleFactor: 1,
     })
     await page.goto(`file://${tmpHtml}`, { waitUntil: 'networkidle' })
-    // 等 Google Fonts
-    await page.evaluate(async () => {
+    // 等字体（Google Fonts / 本地数黑体）
+    await page.evaluate(async (needShuhei) => {
       if (document.fonts?.ready) await document.fonts.ready
-    })
+      if (needShuhei && document.fonts?.load) {
+        await document.fonts.load('700 168px "Alimama ShuHeiTi"')
+      }
+    }, cfg.bigTitleFont === 'shuheiti')
     // 逐行缩小字号以适配内容区（扣除 padding），避免第二行溢出裁切
     const fitMeta = await page.evaluate(() => {
       const title = document.querySelector('.big-title')
