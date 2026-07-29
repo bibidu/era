@@ -8,7 +8,7 @@ export interface SocialVideoAnalysisRecord {
   title: string
   published_at: string
   cover_url: string | null
-  markdown: string
+  markdown?: string
 }
 
 export interface CreateSocialVideoAnalysisInput {
@@ -48,9 +48,25 @@ export async function listSocialVideoAnalyses(
 ): Promise<SocialVideoAnalysisRecord[]> {
   return supabaseRest<SocialVideoAnalysisRecord[]>(
     config,
-    `${ERA_SOCIAL_VIDEO_ANALYSES_TABLE}?select=*&order=created_at.desc`,
+    `${ERA_SOCIAL_VIDEO_ANALYSES_TABLE}?select=id,created_at,title,published_at,cover_url&order=created_at.desc`,
     { method: 'GET' },
   )
+}
+
+export async function getSocialVideoAnalysis(
+  id: string,
+  config = browserSupabaseConfig(),
+): Promise<SocialVideoAnalysisRecord> {
+  const rows = await supabaseRest<SocialVideoAnalysisRecord[]>(
+    config,
+    `${ERA_SOCIAL_VIDEO_ANALYSES_TABLE}?id=eq.${encodeURIComponent(id)}&select=*&limit=1`,
+    { method: 'GET' },
+  )
+  const record = rows[0]
+  if (!record?.id) {
+    throw new Error('未找到该分析作品')
+  }
+  return record
 }
 
 export async function createSocialVideoAnalysis(
