@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 
 interface BottomSheetProps {
   isOpen: boolean
@@ -8,10 +8,9 @@ interface BottomSheetProps {
   dialogStyle?: CSSProperties
 }
 
-const ENTER_MS = 280
-const EXIT_MS = 220
+const EXIT_MS = 320
 
-/** 轻量底部弹层：backdrop + 面板滑入/滑出，关闭时等动画结束再卸载 */
+/** 轻量底部弹层：可靠的滑入/滑出（强制 reflow 后再打开，避免首帧跳变） */
 export function BottomSheet({
   isOpen,
   onOpenChange,
@@ -21,14 +20,25 @@ export function BottomSheet({
 }: BottomSheetProps) {
   const [mounted, setMounted] = useState(isOpen)
   const [visible, setVisible] = useState(false)
+  const panelRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isOpen) {
       setMounted(true)
+      setVisible(false)
+      let openTimer = 0
       const raf = window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => setVisible(true))
+        // 确保浏览器先提交「关闭态」样式，再切到打开态，动画才能播
+        void panelRef.current?.offsetHeight
+        openTimer = window.setTimeout(() => {
+          void panelRef.current?.offsetHeight
+          setVisible(true)
+        }, 16)
       })
-      return () => window.cancelAnimationFrame(raf)
+      return () => {
+        window.cancelAnimationFrame(raf)
+        window.clearTimeout(openTimer)
+      }
     }
 
     setVisible(false)
@@ -56,8 +66,9 @@ export function BottomSheet({
         data-open={visible ? 'true' : 'false'}
         onClick={() => onOpenChange(false)}
       />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center overflow-hidden">
         <div
+          ref={panelRef}
           role="dialog"
           aria-modal="true"
           data-open={visible ? 'true' : 'false'}
@@ -66,7 +77,6 @@ export function BottomSheet({
             background: 'var(--era-sheet)',
             color: 'var(--era-fg)',
             paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-            transitionDuration: `${visible ? ENTER_MS : EXIT_MS}ms`,
             ...dialogStyle,
           }}
         >

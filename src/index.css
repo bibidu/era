@@ -1708,10 +1708,11 @@ body.text-input-open .drawer__dialog {
 }
 
 .era-bottom-sheet__backdrop {
-  background: rgb(0 0 0 / 0.5);
+  background: rgb(0 0 0 / 0.52);
   opacity: 0;
-  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 280ms cubic-bezier(0.32, 0.72, 0, 1);
   will-change: opacity;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .era-bottom-sheet__backdrop[data-open='true'] {
@@ -1720,19 +1721,23 @@ body.text-input-open .drawer__dialog {
 
 .era-bottom-sheet__dialog {
   transform: translate3d(0, 100%, 0);
-  transition-property: transform;
-  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform;
+  opacity: 0.88;
+  transition:
+    transform 320ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 240ms cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 .era-bottom-sheet__dialog[data-open='true'] {
   transform: translate3d(0, 0, 0);
+  opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .era-bottom-sheet__backdrop,
   .era-bottom-sheet__dialog {
-    transition: none !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

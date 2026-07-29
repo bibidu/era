@@ -111,18 +111,33 @@ async function main() {
       }
 
       
-      // 已发布卡片应打开底部 sheet（有动画 class）
+      // 已发布卡片：sheet 动画 + Markdown 渲染
+      await page.getByRole('button', { name: '已发布', exact: true }).click()
+      await page.waitForTimeout(500)
       const cards = page.locator('button.group.relative')
       const cardCount = await cards.count()
       if (cardCount > 0) {
         await cards.first().click()
-        await page.waitForTimeout(350)
+        await page.waitForTimeout(120)
         const sheet = page.locator('.era-bottom-sheet__dialog')
-        if ((await sheet.count()) > 0) {
+        if ((await sheet.count()) === 0) fail('未出现底部 sheet')
+        else {
+          // 打开瞬间应为关闭态或随后变为打开态
+          await page.waitForTimeout(360)
           const open = await sheet.first().getAttribute('data-open')
           if (open !== 'true') fail('底部 sheet 未进入打开动画态')
+          await page.waitForTimeout(600)
+          const md = page.locator('.era-md-preview')
+          if ((await md.count()) === 0) fail('sheet 内缺少 Markdown 预览')
+          else {
+            const hasHeading = await md.locator('h1, h2, h3').count()
+            const text = (await md.innerText()).trim()
+            if (!text) fail('Markdown 预览内容为空')
+            // 有结构化标题更好；没有也不直接失败（部分帖可能无 # 标题）
+            console.log('md headings:', hasHeading, 'chars:', text.length)
+          }
           await page.getByRole('button', { name: '关闭', exact: true }).first().click()
-          await page.waitForTimeout(280)
+          await page.waitForTimeout(320)
         }
       }
 
