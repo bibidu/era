@@ -2128,3 +2128,79 @@ html[data-theme="dark"] .era-primary-btn:disabled {
   background-color: #404040 !important;
   color: #a3a3a3 !important;
 }
+
+/* 社媒创建帖：Markdown 预览 */
+.era-md-preview {
+  font-size: 0.925rem;
+  line-height: 1.7;
+  word-break: break-word;
+}
+
+.era-md-preview > :first-child {
+  margin-top: 0;
+}
+
+.era-md-preview > :last-child {
+  margin-bottom: 0;
+}
+
+.era-md-preview h1,
+.era-md-preview h2,
+.era-md-preview h3,
+.era-md-preview h4,
+.era-md-preview h5,
+.era-md-preview h6 {
+  margin: 1.1em 0 0.45em;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--era-fg);
+}
+
+.era-md-preview h1 { font-size: 1.55rem; }
+.era-md-preview h2 { font-size: 1.3rem; }
+.era-md-preview h3 { font-size: 1.12rem; }
+
+.era-md-preview p,
+.era-md-preview ul,
+.era-md-preview ol,
+.era-md-preview blockquote,
+.era-md-preview pre {
+  margin: 0.7em 0;
+}
+
+.era-md-preview a {
+  color: #67e8f9;
+  text-decoration: underline;
+}
+
+.era-md-preview img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.85em 0;
+  border-radius: 0.85rem;
+  border: 1px solid var(--era-border);
+}
+
+.era-md-preview pre {
+  overflow-x: auto;
+  border-radius: 0.9rem;
+  border: 1px solid var(--era-border);
+  background: var(--era-input);
+  padding: 0.85rem 1rem;
+}
+
+.era-md-preview code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85em;
+}
+
+.era-md-preview :not(pre) > code {
+  border-radius: 0.4rem;
+  background: var(--era-input);
+  padding: 0.1em 0.35em;
+}
+
+.era-md-preview .md-empty {
+  color: var(--era-muted);
+}
