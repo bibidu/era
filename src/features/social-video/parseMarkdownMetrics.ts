@@ -117,7 +117,8 @@ export function extractMarkdownImages(markdown: string, coverUrl?: string | null
 
   if (coverUrl) push(coverUrl, '封面')
 
-  const pattern = /!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g
+  // 兼容 `![alt](url =860x312)` / `![alt](url "title")`
+  const pattern = /!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?(?:\s+=\s*\d+(?:x\d+)?)?\)/g
   let match: RegExpExecArray | null
   while ((match = pattern.exec(markdown)) !== null) {
     push(match[2], match[1] || '')
