@@ -2,6 +2,17 @@ import { browserSupabaseConfig, resolveSupabaseConfig } from './supabaseHighligh
 
 export const ERA_SOCIAL_VIDEO_ANALYSES_TABLE = 'era_social_video_analyses'
 
+/** 发布状态（存库中文枚举） */
+export const SOCIAL_VIDEO_PUBLISH_STATUSES = ['已发布', '待审核', '待AI修改'] as const
+export type SocialVideoPublishStatus = (typeof SOCIAL_VIDEO_PUBLISH_STATUSES)[number]
+
+/** 作品类型（存库中文枚举） */
+export const SOCIAL_VIDEO_WORK_TYPES = ['图文', '风水'] as const
+export type SocialVideoWorkType = (typeof SOCIAL_VIDEO_WORK_TYPES)[number]
+
+export const DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS: SocialVideoPublishStatus = '待审核'
+export const DEFAULT_SOCIAL_VIDEO_WORK_TYPE: SocialVideoWorkType = '图文'
+
 export interface SocialVideoAnalysisRecord {
   id: string
   created_at: string
@@ -9,6 +20,8 @@ export interface SocialVideoAnalysisRecord {
   published_at: string
   cover_url: string | null
   markdown?: string
+  publish_status: SocialVideoPublishStatus
+  work_type: SocialVideoWorkType
 }
 
 export interface CreateSocialVideoAnalysisInput {
@@ -16,6 +29,13 @@ export interface CreateSocialVideoAnalysisInput {
   publishedAt: string
   coverUrl?: string | null
   markdown: string
+  publishStatus?: SocialVideoPublishStatus
+  workType?: SocialVideoWorkType
+}
+
+export interface ListSocialVideoAnalysesOptions {
+  /** 不传或空 = 全部；后端 eq 筛选 */
+  publishStatus?: SocialVideoPublishStatus | '' | null
 }
 
 async function supabaseRest<T>(
@@ -43,14 +63,49 @@ async function supabaseRest<T>(
   return JSON.parse(text) as T
 }
 
+function normalizePublishStatus(value: unknown): SocialVideoPublishStatus {
+  if (typeof value === 'string' && (SOCIAL_VIDEO_PUBLISH_STATUSES as readonly string[]).includes(value)) {
+    return value as SocialVideoPublishStatus
+  }
+  return DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS
+}
+
+function normalizeWorkType(value: unknown): SocialVideoWorkType {
+  if (typeof value === 'string' && (SOCIAL_VIDEO_WORK_TYPES as readonly string[]).includes(value)) {
+    return value as SocialVideoWorkType
+  }
+  return DEFAULT_SOCIAL_VIDEO_WORK_TYPE
+}
+
+function normalizeRecord(row: SocialVideoAnalysisRecord): SocialVideoAnalysisRecord {
+  return {
+    ...row,
+    publish_status: normalizePublishStatus(row.publish_status),
+    work_type: normalizeWorkType(row.work_type),
+  }
+}
+
 export async function listSocialVideoAnalyses(
+  options: ListSocialVideoAnalysesOptions = {},
   config = browserSupabaseConfig(),
 ): Promise<SocialVideoAnalysisRecord[]> {
-  return supabaseRest<SocialVideoAnalysisRecord[]>(
+  const params = new URLSearchParams()
+  params.set(
+    'select',
+    'id,created_at,title,published_at,cover_url,publish_status,work_type',
+  )
+  params.set('order', 'created_at.desc')
+  const status = options.publishStatus?.trim()
+  if (status) {
+    params.set('publish_status', `eq.${status}`)
+  }
+
+  const rows = await supabaseRest<SocialVideoAnalysisRecord[]>(
     config,
-    `${ERA_SOCIAL_VIDEO_ANALYSES_TABLE}?select=id,created_at,title,published_at,cover_url&order=created_at.desc`,
+    `${ERA_SOCIAL_VIDEO_ANALYSES_TABLE}?${params.toString()}`,
     { method: 'GET' },
   )
+  return rows.map(normalizeRecord)
 }
 
 export async function getSocialVideoAnalysis(
@@ -66,7 +121,7 @@ export async function getSocialVideoAnalysis(
   if (!record?.id) {
     throw new Error('未找到该分析作品')
   }
-  return record
+  return normalizeRecord(record)
 }
 
 export async function createSocialVideoAnalysis(
@@ -84,6 +139,8 @@ export async function createSocialVideoAnalysis(
         published_at: input.publishedAt,
         cover_url: input.coverUrl ?? null,
         markdown: input.markdown,
+        publish_status: input.publishStatus ?? DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS,
+        work_type: input.workType ?? DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
       }),
     },
   )
@@ -91,7 +148,7 @@ export async function createSocialVideoAnalysis(
   if (!record?.id) {
     throw new Error('保存失败：Supabase 未返回记录 id')
   }
-  return record
+  return normalizeRecord(record)
 }
 
 export function sortSocialVideoAnalyses(records: SocialVideoAnalysisRecord[]) {

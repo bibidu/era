@@ -82,12 +82,14 @@ export function SocialVideoDetailSheet({ record, isOpen, onOpenChange }: SocialV
           className="flex shrink-0 items-center justify-between border-b px-4 py-3"
           style={{ borderColor: 'var(--era-border)' }}
         >
-          <div className="min-w-0">
-            <p className="truncate text-base font-semibold">{view?.title || '作品分析'}</p>
-            <p className="truncate text-xs" style={{ color: 'var(--era-muted)' }}>
-              {view?.published_at || '未填写发布日期'}
-            </p>
-          </div>
+              <div className="min-w-0">
+                <p className="truncate text-base font-semibold">{view?.title || '作品分析'}</p>
+                <p className="truncate text-xs" style={{ color: 'var(--era-muted)' }}>
+                  {[view?.work_type, view?.publish_status, view?.published_at || '未填写发布日期']
+                    .filter(Boolean)
+                    .join(' · ')}
+                </p>
+              </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
