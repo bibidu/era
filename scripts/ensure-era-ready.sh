@@ -136,5 +136,5 @@ fi
 echo "ERA_READY=1"
 echo "OPEN_URL=http://${DEV_HOST}:${DEV_PORT}/era/"
 echo "AGENT_URL=http://${HOST}:${PORT}"
-echo "HIGHLIGHT_SETUP_PAGES_BASE=https://bibidu.github.io/era/"
-echo "HIGHLIGHT_SETUP_URL_HINT=先 POST /v1/projects/<id>/highlight-setup-share 取 url（含 shareId）"
+echo "HIGHLIGHT_SETUP_PAGES_BASE=https://bibidu-era-0tdhv043.edgeone.cool/"
+echo "HIGHLIGHT_SETUP_URL_HINT=先 POST /v1/projects/<id>/highlight-setup-share 取 url（?tab=highlight&shareId=...）"

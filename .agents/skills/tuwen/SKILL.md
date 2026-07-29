@@ -137,7 +137,7 @@ description: >-
    - MCP：`era_create_highlight_setup_share`（`projectId`）
    - 或 REST：`POST /v1/projects/:projectId/highlight-setup-share`
    - 返回 `shareId`、`url`（EdgeOne 链接）
-3. **主动把 `url` 发给用户**（形如 `https://bibidu-era-0tdhv043.edgeone.cool/?highlightSetup=1&shareId=<SHARE_ID>`）。云端 Agent **必须**发 EdgeOne 链接，不要发 `127.0.0.1`。
+3. **主动把 `url` 发给用户**（形如 `https://bibidu-era-0tdhv043.edgeone.cool/?tab=highlight&shareId=<SHARE_ID>`）。云端 Agent **必须**发 EdgeOne 链接，不要发 `127.0.0.1`。打开后会自动切到「高亮」Tab。
 4. 说明操作：打开链接 → 顶部选样式/颜色 → 在文字上点击或滑动标记 → 底部可翻页 → 完成后点 **「复制并应用高亮配置」**（写回 Supabase 并复制到剪贴板）→ 把剪贴板内容粘贴发回。
 5. 收到粘贴后：识别 `ERA_HIGHLIGHT_SETUP_V1` / `"type":"era_highlight_setup"`，解析 `projectId` 与 `ranges`，调用 `era_apply_highlights`（`replace: true`），简要确认后继续。
 6. 用户迟迟未回传或不会操作：可改用自动高亮（下），并说明你在代为设置。
@@ -209,14 +209,10 @@ bash scripts/oss-upload.sh <本地png路径>
 
 ---
 
-## §预览/下载页（Gallery 图文库，必做）
+## §发图后（无 Gallery）
 
-> **项目全局约定**：出图后必须把最终图**上传到 Supabase**，再把 **Gallery 图文库** 链接发给用户（作为整包预览/ZIP 下载入口）。**单张图确认与分发仍须在对话框直发 OSS 签名 URL**，Gallery 是补充，不能替代对话框发图。
-
-1. 校验通过、且用户确认拼图后，调用 `era_create_export_share`（`projectId`）。返回 `shareId` 与 Gallery URL（形如 `https://bibidu-era-0tdhv043.edgeone.cool/gallery/?shareId=<SHARE_ID>`）。
-2. **主动把该 `url` 发给用户**：打开图文库可左右滑动逐页查看，点「下载 ZIP」一次打包全部原图。云端 Agent **必须**发 EdgeOne 链接，不要发 `127.0.0.1`。
-3. 旧链接 `?exportShare=1&shareId=...` 会自动跳转到图文库。
-4. 内容/高亮/封面有改动、重新导出后，需**重新** `era_create_export_share` 生成新链接再发。
+Gallery 图文库已下线。出图确认与交付**只走对话框 OSS 12h 签名 URL**（见 §发图）。  
+`era_create_export_share` 仍可把导出图存到 Supabase（可选），但**不要**再发 Gallery / `/gallery/` 链接。
 
 ### 前端部署 EdgeOne
 
@@ -241,10 +237,9 @@ npm run deploy:edgeone
 | 顶部文案 | 非风水固定「点赞关注不迷路～」且不显示全文数字；风水 `topText` 固定为「连续观看、点赞、关注，你也是地理风水达人（阳宅篇）」 |
 | 图片混排 | markdown 整行 `![alt](url =宽x高)`（url 支持远程或 dataURL） |
 | 高亮 | `era_apply_highlights` · `POST .../highlights`（可带 `replace: true`） |
-| 高亮设置分享 | `era_create_highlight_setup_share` · `POST .../highlight-setup-share` → EdgeOne `url` |
+| 高亮设置分享 | `era_create_highlight_setup_share` · `POST .../highlight-setup-share` → EdgeOne `url`（`?tab=highlight&shareId=...`，自动打开高亮 Tab） |
 | 校验 | `era_preview_layout` · `POST .../preview-layout` |
 | 导出 | `era_export_images` · `POST .../export`（含拼图 `sheetPath`） |
-| 导出图预览/下载页 | `era_create_export_share` · `POST .../export-share` → Gallery `url`（`/gallery/?shareId=...`，轮播预览 + ZIP 下载，**必做**；对话框仍须直发各图 OSS 签名 URL） |
 | 封面图 | 见仓库中的 **封面 skill**（非风水流程） |
 | 通道 | `era_bridge_status` · `GET /v1/bridge/status` |
 

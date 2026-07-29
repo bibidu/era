@@ -25,7 +25,7 @@ const created = await createHighlightSetupShare(
 assert.ok(created.shareId)
 assert.equal(
   created.url,
-  `https://bibidu-era-0tdhv043.edgeone.cool/?highlightSetup=1&shareId=${created.shareId}`,
+  `https://bibidu-era-0tdhv043.edgeone.cool/?tab=highlight&shareId=${created.shareId}`,
 )
 assert.equal(highlightSetupPagesUrl(created.shareId), created.url)
 

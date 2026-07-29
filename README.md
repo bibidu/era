@@ -4,14 +4,19 @@
 
 在线预览（EdgeOne）：https://bibidu-era-0tdhv043.edgeone.cool/
 
-社媒视频完整数据提取页：顶部「数据分析」Tab，或直达 https://bibidu-era-0tdhv043.edgeone.cool/?tool=social-video
+顶栏三个 Tab（可用 `?tab=` 深链自动切换）：
+
+- 图文：`?tab=graphic`
+- 数据分析：`?tab=data`
+- 高亮：`?tab=highlight&shareId=...`
 
 ## 功能
 
 - 图文模式：Markdown 分页、字体/纸色/高亮、多页导出
-- 社媒视频数据提取：上传视频抽帧或填写视频 URL，经 Supabase 代理调用 DashScope 返回 Markdown
+- 社媒视频数据提取：「数据分析」Tab；上传视频抽帧或填写视频 URL，经 Supabase 代理调用 DashScope 返回 Markdown
+- 高亮设置：「高亮」Tab；`?tab=highlight&shareId=...` 自动打开并加载分享内容
 - 画幅：`3:4` 小红书风格；`9:16` 抖音风格
-- 导出图预览/下载：出图后上传 Supabase，在 Gallery 图文库查看（`/gallery/?shareId=...`），支持 ZIP 整包下载（MCP `era_create_export_share`）
+- 发图：阿里云 OSS 私有桶 + 对话框直发 **12 小时签名 URL**（无 Gallery 页）
 
 ## 开发（前端）
 
