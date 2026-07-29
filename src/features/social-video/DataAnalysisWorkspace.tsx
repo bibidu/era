@@ -1,15 +1,21 @@
 import { ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
-import type { SocialVideoAnalysisRecord } from '../../agent/supabaseSocialVideoAnalysis'
+import {
+  type SocialVideoAnalysisRecord,
+  type SocialVideoPublishStatus,
+} from '../../agent/supabaseSocialVideoAnalysis'
 import { SocialVideoBoardPage } from './SocialVideoBoardPage'
 import { SocialVideoCreatePage } from './SocialVideoCreatePage'
 import { SocialVideoDataPage } from './SocialVideoDataPage'
 import { SocialVideoListPage } from './SocialVideoListPage'
 
+export type SocialListStatusFilter = '' | SocialVideoPublishStatus
+
 export function DataAnalysisWorkspace() {
   const [view, setView] = useState<'list' | 'extract' | 'board' | 'create'>('list')
   const [listReloadToken, setListReloadToken] = useState(0)
   const [editingRecord, setEditingRecord] = useState<SocialVideoAnalysisRecord | null>(null)
+  const [statusFilter, setStatusFilter] = useState<SocialListStatusFilter>('')
 
   if (view === 'extract') {
     return (
@@ -53,7 +59,9 @@ export function DataAnalysisWorkspace() {
 
   return (
     <SocialVideoListPage
-      key={listReloadToken}
+      statusFilter={statusFilter}
+      onStatusFilterChange={setStatusFilter}
+      reloadToken={listReloadToken}
       onSmartExtract={() => setView('extract')}
       onOpenBoard={() => setView('board')}
       onCreate={() => {
@@ -67,3 +75,4 @@ export function DataAnalysisWorkspace() {
     />
   )
 }
+
