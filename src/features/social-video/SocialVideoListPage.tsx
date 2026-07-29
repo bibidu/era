@@ -6,6 +6,8 @@ import {
   type SocialVideoAnalysisRecord,
   type SocialVideoPublishStatus,
 } from '../../agent/supabaseSocialVideoAnalysis'
+import { TEXT_FONT_OPTIONS } from '../../data/fonts'
+import { ensureFontReady } from '../../utils/fontLoad'
 import { SocialVideoDetailSheet } from './SocialVideoDetailSheet'
 
 interface SocialVideoListPageProps {
@@ -25,6 +27,11 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   ...SOCIAL_VIDEO_PUBLISH_STATUSES.map((status) => ({ value: status, label: status })),
 ]
 
+const SHUHEITI_FONT =
+  TEXT_FONT_OPTIONS.find((font) => font.id === 'shuheiti') ?? TEXT_FONT_OPTIONS[0]
+
+const SHUHEITI_FAMILY = '"Alimama ShuHeiTi", sans-serif'
+
 function statusBadgeStyle(status: SocialVideoPublishStatus): { background: string; color: string } {
   switch (status) {
     case '已发布':
@@ -34,6 +41,21 @@ function statusBadgeStyle(status: SocialVideoPublishStatus): { background: strin
     default:
       return { background: 'rgb(0 0 0 / 0.65)', color: '#ffffff' }
   }
+}
+
+/** 无封面时展示：优先大纲，否则正文纯文本 */
+function emptyCoverPreviewText(record: SocialVideoAnalysisRecord): string {
+  const outline = (record.outline || '').replace(/\s+/g, ' ').trim()
+  if (outline) return outline
+
+  const content = (record.markdown || '')
+    .replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`[^`]*`/g, ' ')
+    .replace(/[#>*_~\[\]()>|-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return content
 }
 
 export function SocialVideoListPage({
@@ -50,6 +72,10 @@ export function SocialVideoListPage({
   const [sheetOpen, setSheetOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    void ensureFontReady(SHUHEITI_FONT, '大纲内容预览')
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -166,6 +192,7 @@ export function SocialVideoListPage({
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {records.map((record) => {
               const badge = statusBadgeStyle(record.publish_status)
+              const emptyText = record.cover_url ? '' : emptyCoverPreviewText(record)
               return (
                 <button
                   key={record.id}
@@ -192,10 +219,20 @@ export function SocialVideoListPage({
                       />
                     ) : (
                       <div
-                        className="h-full w-full"
+                        className="flex h-full w-full items-center justify-center px-2.5"
                         style={{ background: 'var(--era-panel)' }}
-                        aria-hidden
-                      />
+                      >
+                        <p
+                          className="w-full truncate text-center text-xs font-medium leading-5"
+                          style={{
+                            fontFamily: SHUHEITI_FAMILY,
+                            color: 'var(--era-fg)',
+                          }}
+                          title={emptyText || undefined}
+                        >
+                          {emptyText || '暂无内容'}
+                        </p>
+                      </div>
                     )}
                     <span
                       className="absolute right-1.5 top-1.5 max-w-[calc(100%-0.75rem)] truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide shadow-sm"
