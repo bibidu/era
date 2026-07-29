@@ -1,14 +1,13 @@
 import { ChevronLeft } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
+  DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS,
   DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
-  SOCIAL_VIDEO_PUBLISH_STATUSES,
   SOCIAL_VIDEO_WORK_TYPES,
   createSocialVideoAnalysis,
   getSocialVideoAnalysis,
   updateSocialVideoAnalysis,
   type SocialVideoAnalysisRecord,
-  type SocialVideoPublishStatus,
   type SocialVideoWorkType,
 } from '../../agent/supabaseSocialVideoAnalysis'
 import { MarkdownContentDrawer } from './MarkdownContentDrawer'
@@ -48,7 +47,6 @@ export function SocialVideoCreatePage({
   editingRecord = null,
 }: SocialVideoCreatePageProps) {
   const isEdit = Boolean(editingRecord?.id)
-  const [publishStatus, setPublishStatus] = useState<SocialVideoPublishStatus>('待AI修改')
   const [outline, setOutline] = useState('')
   const [workType, setWorkType] = useState<SocialVideoWorkType>(DEFAULT_SOCIAL_VIDEO_WORK_TYPE)
   const [title, setTitle] = useState('')
@@ -77,7 +75,6 @@ export function SocialVideoCreatePage({
             ? editingRecord
             : await getSocialVideoAnalysis(editingRecord.id)
         if (cancelled) return
-        setPublishStatus(full.publish_status)
         setOutline(full.outline || '')
         setWorkType(full.work_type)
         setTitle(full.title || '')
@@ -138,7 +135,7 @@ export function SocialVideoCreatePage({
         markdown: content,
         outline: outline.trim(),
         imagePreviews,
-        publishStatus,
+        publishStatus: DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS,
         workType,
       }
       if (isEdit && editingRecord?.id) {
@@ -202,28 +199,12 @@ export function SocialVideoCreatePage({
         className="sticky top-0 z-10 flex shrink-0 gap-2 overflow-x-auto border-b px-4 py-2.5"
         style={{ borderColor: 'var(--era-border)', background: 'var(--era-bg)' }}
       >
-        {SOCIAL_VIDEO_PUBLISH_STATUSES.map((status) => {
-          const active = publishStatus === status
-          return (
-            <button
-              key={status}
-              type="button"
-              className="shrink-0 rounded-full px-3 py-1 text-xs font-medium transition"
-              style={
-                active
-                  ? { background: 'var(--era-button)', color: 'var(--era-button-fg)' }
-                  : {
-                      background: 'var(--era-panel)',
-                      color: 'var(--era-muted)',
-                      border: '1px solid var(--era-border)',
-                    }
-              }
-              onClick={() => setPublishStatus(status)}
-            >
-              {status}
-            </button>
-          )
-        })}
+        <span
+          className="shrink-0 rounded-full px-3 py-1 text-xs font-medium"
+          style={{ background: 'var(--era-button)', color: 'var(--era-button-fg)' }}
+        >
+          {DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS}
+        </span>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">

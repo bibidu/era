@@ -1,7 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { browserSupabaseConfig } from '../../agent/supabaseHighlightSetup'
-import { createSocialVideoAnalysis } from '../../agent/supabaseSocialVideoAnalysis'
+import {
+  getSocialVideoAnalysis,
+  listSocialVideoAnalyses,
+  updateSocialVideoAnalysis,
+  type SocialVideoAnalysisRecord,
+} from '../../agent/supabaseSocialVideoAnalysis'
 import { extractMarkdownField } from './parseMarkdownFields'
+import { truncateText } from './parseMarkdownMetrics'
 
 const SUPABASE_PROXY_ENDPOINT =
   'https://kzoxyextxjwscrpjowud.functions.supabase.co/dashscope-video-extract'
@@ -213,6 +219,12 @@ function readImageFile(file: File) {
   })
 }
 
+/** 关联帖子下拉展示：优先标题，否则大纲，最长 30 字 */
+function relatedPostLabel(record: SocialVideoAnalysisRecord) {
+  const text = (record.title || '').trim() || (record.outline || '').trim() || '未命名帖子'
+  return truncateText(text, 30)
+}
+
 export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDataPageProps) {
   const [model, setModel] = useState(DEFAULT_MODEL)
   const [videoUrl, setVideoUrl] = useState('')
@@ -223,10 +235,36 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
   const [workTitle, setWorkTitle] = useState('')
   const [publishDate, setPublishDate] = useState('')
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  const [relatedPostId, setRelatedPostId] = useState('')
+  const [pendingPosts, setPendingPosts] = useState<SocialVideoAnalysisRecord[]>([])
+  const [pendingPostsLoading, setPendingPostsLoading] = useState(true)
+  const [pendingPostsError, setPendingPostsError] = useState('')
   const [status, setStatus] = useState('')
   const [saveStatus, setSaveStatus] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      setPendingPostsLoading(true)
+      try {
+        const rows = await listSocialVideoAnalyses({ publishStatus: '待AI修改' })
+        if (cancelled) return
+        setPendingPosts(rows)
+        setPendingPostsError('')
+      } catch (error) {
+        if (cancelled) return
+        setPendingPosts([])
+        setPendingPostsError(error instanceof Error ? error.message : '加载待 AI 修改帖子失败')
+      } finally {
+        if (!cancelled) setPendingPostsLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const canSubmit = useMemo(() => {
     return model.trim() && prompt.trim() && (videoFile || videoUrl.trim())
@@ -266,17 +304,32 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
       return
     }
 
+    if (!relatedPostId) {
+      setSaveStatus('请先选择关联帖子。')
+      return
+    }
+
     setIsSaving(true)
     setSaveStatus('正在保存...')
 
     try {
-      await createSocialVideoAnalysis({
-        title: workTitle.trim(),
-        publishedAt: publishDate.trim(),
-        coverUrl,
+      const existing =
+        pendingPosts.find((post) => post.id === relatedPostId) ||
+        (await getSocialVideoAnalysis(relatedPostId))
+
+      await updateSocialVideoAnalysis(relatedPostId, {
+        title: workTitle.trim() || existing.title || '',
+        publishedAt: publishDate.trim() || existing.published_at || '',
+        coverUrl: coverUrl ?? existing.cover_url,
         markdown,
+        outline: existing.outline || '',
+        imagePreviews: existing.image_previews || [],
+        publishStatus: '已发布',
+        workType: existing.work_type,
       })
       setSaveStatus('保存成功')
+      setPendingPosts((posts) => posts.filter((post) => post.id !== relatedPostId))
+      setRelatedPostId('')
       onSaved?.()
     } catch (error) {
       const message = error instanceof Error ? error.message : '保存失败'
@@ -395,6 +448,35 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
 
         <section className="grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
           <div className="flex flex-col gap-4 rounded-3xl border p-4" style={panelStyle}>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">关联帖子</span>
+              <select
+                className={fieldClass}
+                style={fieldStyle}
+                value={relatedPostId}
+                disabled={pendingPostsLoading}
+                onChange={(event) => setRelatedPostId(event.target.value)}
+              >
+                <option value="">
+                  {pendingPostsLoading
+                    ? '加载中...'
+                    : pendingPosts.length === 0
+                      ? '暂无待 AI 修改帖子'
+                      : '请选择待 AI 修改帖子'}
+                </option>
+                {pendingPosts.map((post) => (
+                  <option key={post.id} value={post.id}>
+                    {relatedPostLabel(post)}
+                  </option>
+                ))}
+              </select>
+              {pendingPostsError ? (
+                <span className="text-xs" style={{ color: 'var(--era-muted)' }}>
+                  {pendingPostsError}
+                </span>
+              ) : null}
+            </label>
+
             <div className="grid grid-cols-[1fr_7rem] gap-3">
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium">模型</span>

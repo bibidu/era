@@ -35,7 +35,13 @@ export function DataAnalysisWorkspace() {
           </button>
           <h1 className="text-base font-semibold">智能提取</h1>
         </header>
-        <SocialVideoDataPage embedded />
+        <SocialVideoDataPage
+          embedded
+          onSaved={() => {
+            setListReloadToken((token) => token + 1)
+            setView('list')
+          }}
+        />
       </div>
     )
   }
