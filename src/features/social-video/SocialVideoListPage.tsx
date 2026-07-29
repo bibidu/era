@@ -96,6 +96,8 @@ export function SocialVideoListPage({ onSmartExtract }: SocialVideoListPageProps
                     <img
                       src={record.cover_url}
                       alt={record.title || '作品封面'}
+                      loading="lazy"
+                      decoding="async"
                       className="h-full w-full object-cover"
                     />
                   ) : (

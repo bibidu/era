@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "@heroui/styles";
 
 :root,
 html[data-theme="dark"] {
@@ -63,7 +62,7 @@ body,
   overflow: hidden;
   background: var(--era-bg);
   color: var(--era-fg);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
@@ -1702,6 +1701,7 @@ body.is-dragging {
   z-index: 1;
 }
 
+body.text-input-open .era-bottom-sheet__dialog,
 body.text-input-open .drawer__dialog {
   opacity: 0;
   pointer-events: none;

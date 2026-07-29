@@ -44,7 +44,7 @@ export const TEXT_FONT_OPTIONS: FontOption[] = [
     fontFamily: '"Alimama ShuHeiTi", sans-serif',
     sample: '数黑体',
     source: 'cdn',
-    cdnUrl: '/era/fonts/alimama-shuheiti.css',
+    cdnUrl: `${import.meta.env.BASE_URL}fonts/alimama-shuheiti.css`,
   },
 ]
 

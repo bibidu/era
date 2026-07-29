@@ -1,14 +1,38 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 import { TopModeTabs, type AppMode } from './components/TopModeTabs'
-import { GraphicTextWorkspace } from './features/graphic-text/GraphicTextWorkspace'
-import { HighlightSetupPage } from './features/graphic-text/HighlightSetupPage'
-import { DataAnalysisWorkspace } from './features/social-video/DataAnalysisWorkspace'
 import {
   readAppTabFromSearch,
   readHighlightIdsFromSearch,
   replaceAppTabInUrl,
 } from './app/tabRouting'
 import { useEraTheme } from './theme/useEraTheme'
+
+const GraphicTextWorkspace = lazy(() =>
+  import('./features/graphic-text/GraphicTextWorkspace').then((m) => ({
+    default: m.GraphicTextWorkspace,
+  })),
+)
+const HighlightSetupPage = lazy(() =>
+  import('./features/graphic-text/HighlightSetupPage').then((m) => ({
+    default: m.HighlightSetupPage,
+  })),
+)
+const DataAnalysisWorkspace = lazy(() =>
+  import('./features/social-video/DataAnalysisWorkspace').then((m) => ({
+    default: m.DataAnalysisWorkspace,
+  })),
+)
+
+function TabLoadingFallback() {
+  return (
+    <div
+      className="flex min-h-0 flex-1 items-center justify-center text-sm"
+      style={{ color: 'var(--era-muted)' }}
+    >
+      加载中...
+    </div>
+  )
+}
 
 function App() {
   const [mode, setMode] = useState<AppMode>(() => readAppTabFromSearch())
@@ -66,30 +90,32 @@ function App() {
         <TopModeTabs value={mode} onChange={handleModeChange} theme={theme} onToggleTheme={toggle} />
       </header>
 
-      {mode === 'data' ? (
-        <DataAnalysisWorkspace />
-      ) : mode === 'highlight' ? (
-        highlightIds.shareId || highlightIds.projectId ? (
-          <HighlightSetupPage
-            key={`${highlightIds.shareId ?? ''}:${highlightIds.projectId ?? ''}`}
-            shareId={highlightIds.shareId}
-            projectId={highlightIds.projectId}
-            embedded
-          />
+      <Suspense fallback={<TabLoadingFallback />}>
+        {mode === 'data' ? (
+          <DataAnalysisWorkspace />
+        ) : mode === 'highlight' ? (
+          highlightIds.shareId || highlightIds.projectId ? (
+            <HighlightSetupPage
+              key={`${highlightIds.shareId ?? ''}:${highlightIds.projectId ?? ''}`}
+              shareId={highlightIds.shareId}
+              projectId={highlightIds.projectId}
+              embedded
+            />
+          ) : (
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+              <p className="text-sm font-medium">缺少 shareId 或 projectId</p>
+              <p className="text-xs leading-5" style={{ color: 'var(--era-muted)' }}>
+                请使用：
+                <span className="font-mono">
+                  ?tab=highlight&amp;shareId=&lt;id&gt;
+                </span>
+              </p>
+            </div>
+          )
         ) : (
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
-            <p className="text-sm font-medium">缺少 shareId 或 projectId</p>
-            <p className="text-xs leading-5" style={{ color: 'var(--era-muted)' }}>
-              请使用：
-              <span className="font-mono">
-                ?tab=highlight&amp;shareId=&lt;id&gt;
-              </span>
-            </p>
-          </div>
-        )
-      ) : (
-        <GraphicTextWorkspace />
-      )}
+          <GraphicTextWorkspace />
+        )}
+      </Suspense>
     </div>
   )
 }

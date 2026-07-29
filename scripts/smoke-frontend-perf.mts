@@ -1,0 +1,87 @@
+/**
+ * 本地预览冒烟：验证图文 / 社媒 / 高亮 Tab 可切换且关键 UI 正常。
+ * 用法：先 ERA_BASE=/ npm run build && npx vite preview --host 127.0.0.1 --port 4173
+ *       再 npx tsx scripts/smoke-frontend-perf.mts
+ */
+import { chromium } from 'playwright'
+
+const BASE = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:4173'
+
+async function main() {
+  const browser = await chromium.launch({ headless: true })
+  const page = await browser.newPage()
+  const failures: string[] = []
+
+  const fail = (msg: string) => {
+    failures.push(msg)
+    console.error('FAIL:', msg)
+  }
+
+  try {
+    const started = Date.now()
+    await page.goto(BASE + '/', { waitUntil: 'networkidle', timeout: 30000 })
+    const loadMs = Date.now() - started
+    console.log(`graphic load: ${loadMs}ms`)
+
+    // 顶栏三个 Tab
+    for (const label of ['图文', '社媒', '高亮']) {
+      const tab = page.getByRole('button', { name: label, exact: true })
+      if ((await tab.count()) === 0) fail(`缺少 Tab：${label}`)
+    }
+
+    // 图文工作区应出现
+    await page.waitForTimeout(500)
+    const graphicVisible =
+      (await page.locator('textarea, [contenteditable="true"], .graphic-page').count()) > 0 ||
+      (await page.getByText('加载中...').count()) === 0
+    if (!graphicVisible) {
+      // 再等一下懒加载
+      await page.waitForTimeout(1500)
+    }
+
+    // 切到社媒
+    await page.getByRole('button', { name: '社媒', exact: true }).click()
+    await page.waitForTimeout(800)
+    const extractBtn = page.getByRole('button', { name: '智能提取', exact: true })
+    if ((await extractBtn.count()) === 0) {
+      // 可能还在加载列表
+      await page.waitForSelector('text=智能提取', { timeout: 10000 }).catch(() => null)
+    }
+    if ((await extractBtn.count()) === 0) fail('社媒 Tab 未出现「智能提取」')
+    else {
+      await extractBtn.click()
+      await page.waitForTimeout(500)
+      const backOrTitle =
+        (await page.getByText('智能提取').count()) > 0 ||
+        (await page.getByRole('button', { name: '开始提取完整数据' }).count()) > 0
+      if (!backOrTitle) fail('智能提取页未打开')
+      // 返回列表
+      const back = page.getByRole('button', { name: '返回' })
+      if ((await back.count()) > 0) await back.click()
+      await page.waitForTimeout(400)
+    }
+
+    // 高亮缺参提示
+    await page.getByRole('button', { name: '高亮', exact: true }).click()
+    await page.waitForTimeout(400)
+    const missing = await page.getByText('缺少 shareId').count()
+    if (missing === 0) fail('高亮缺参提示未出现')
+
+    // 回到图文
+    await page.getByRole('button', { name: '图文', exact: true }).click()
+    await page.waitForTimeout(600)
+
+    console.log('smoke ok')
+  } catch (err) {
+    fail(err instanceof Error ? err.message : String(err))
+  } finally {
+    await browser.close()
+  }
+
+  if (failures.length) {
+    console.error(`\n${failures.length} failure(s)`)
+    process.exit(1)
+  }
+}
+
+void main()
