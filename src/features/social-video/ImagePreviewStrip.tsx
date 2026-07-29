@@ -6,29 +6,30 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import { saveImagesToAlbum, type PreviewImageItem } from './saveImagesToAlbum'
+import { downloadImagesAsZip, type PreviewImageItem } from './downloadImagesAsZip'
 
 interface ImagePreviewStripProps {
   images: PreviewImageItem[]
+  zipName?: string
 }
 
-export function ImagePreviewStrip({ images }: ImagePreviewStripProps) {
+export function ImagePreviewStrip({ images, zipName = 'preview-images.zip' }: ImagePreviewStripProps) {
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
-  const [saving, setSaving] = useState(false)
+  const [downloading, setDownloading] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
 
-  async function handleSaveToAlbum() {
-    if (saving || images.length === 0) return
-    setSaving(true)
-    setStatusMessage('正在保存到相册...')
+  async function handleDownloadZip() {
+    if (downloading || images.length === 0) return
+    setDownloading(true)
+    setStatusMessage('正在打包下载...')
     try {
-      await saveImagesToAlbum(images)
-      setStatusMessage('已保存')
+      await downloadImagesAsZip(images, zipName)
+      setStatusMessage('已开始下载')
       window.setTimeout(() => setStatusMessage(''), 1800)
     } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : '保存失败')
+      setStatusMessage(error instanceof Error ? error.message : '下载失败')
     } finally {
-      setSaving(false)
+      setDownloading(false)
     }
   }
 
@@ -41,9 +42,9 @@ export function ImagePreviewStrip({ images }: ImagePreviewStripProps) {
             type="button"
             className="flex size-8 items-center justify-center rounded-full transition hover:opacity-80 disabled:opacity-40"
             style={{ color: 'var(--era-fg)' }}
-            aria-label="保存预览图到相册"
-            disabled={saving}
-            onClick={() => void handleSaveToAlbum()}
+            aria-label="下载预览图压缩包"
+            disabled={downloading}
+            onClick={() => void handleDownloadZip()}
           >
             <Download size={18} strokeWidth={2.25} />
           </button>
