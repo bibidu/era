@@ -6,45 +6,56 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import { downloadImagesAsZip, type PreviewImageItem } from './downloadImagesAsZip'
+import { saveImagesToAlbum, type PreviewImageItem } from './saveImagesToAlbum'
 
 interface ImagePreviewStripProps {
   images: PreviewImageItem[]
-  zipName?: string
 }
 
-export function ImagePreviewStrip({ images, zipName = 'preview-images.zip' }: ImagePreviewStripProps) {
+export function ImagePreviewStrip({ images }: ImagePreviewStripProps) {
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
-  const [downloading, setDownloading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
 
-  async function handleDownloadZip() {
-    if (downloading || images.length === 0) return
-    setDownloading(true)
-    setStatusMessage('正在打包下载...')
+  async function handleSaveToAlbum() {
+    if (saving || images.length === 0) return
+    setSaving(true)
+    setStatusMessage('正在保存到相册...')
     try {
-      await downloadImagesAsZip(images, zipName)
-      setStatusMessage('已开始下载')
+      await saveImagesToAlbum(images)
+      setStatusMessage('已保存')
       window.setTimeout(() => setStatusMessage(''), 1800)
     } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : '下载失败')
+      setStatusMessage(error instanceof Error ? error.message : '保存失败')
     } finally {
-      setDownloading(false)
+      setSaving(false)
     }
-  }
-
-  if (images.length === 0) {
-    return (
-      <p className="text-xs leading-5" style={{ color: 'var(--era-muted)' }}>
-        暂无图片（图片预览字段或内容中的 Markdown 图片会出现在这里）
-      </p>
-    )
   }
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-stretch gap-2">
-        <div className="flex min-w-0 flex-1 flex-nowrap gap-3 overflow-x-auto pb-1">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-medium">图片预览</span>
+        {images.length > 0 ? (
+          <button
+            type="button"
+            className="flex size-8 items-center justify-center rounded-full transition hover:opacity-80 disabled:opacity-40"
+            style={{ color: 'var(--era-fg)' }}
+            aria-label="保存预览图到相册"
+            disabled={saving}
+            onClick={() => void handleSaveToAlbum()}
+          >
+            <Download size={18} strokeWidth={2.25} />
+          </button>
+        ) : null}
+      </div>
+
+      {images.length === 0 ? (
+        <p className="text-xs leading-5" style={{ color: 'var(--era-muted)' }}>
+          暂无图片（图片预览字段或内容中的 Markdown 图片会出现在这里）
+        </p>
+      ) : (
+        <div className="flex w-full flex-nowrap gap-3 overflow-x-auto pb-1">
           {images.map((image, index) => (
             <button
               key={`${image.src}-${index}`}
@@ -65,22 +76,8 @@ export function ImagePreviewStrip({ images, zipName = 'preview-images.zip' }: Im
             </button>
           ))}
         </div>
-        <button
-          type="button"
-          className="flex h-32 w-12 shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border text-xs font-medium transition hover:opacity-90 disabled:opacity-40"
-          style={{
-            borderColor: 'var(--era-border)',
-            background: 'var(--era-panel)',
-            color: 'var(--era-fg)',
-          }}
-          aria-label="下载全部预览图为 zip"
-          disabled={downloading}
-          onClick={() => void handleDownloadZip()}
-        >
-          <Download size={18} strokeWidth={2.25} />
-          <span>{downloading ? '…' : '下载'}</span>
-        </button>
-      </div>
+      )}
+
       {statusMessage ? (
         <p className="text-xs leading-5" style={{ color: 'var(--era-muted)' }}>
           {statusMessage}

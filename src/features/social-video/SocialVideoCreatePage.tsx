@@ -286,15 +286,7 @@ export function SocialVideoCreatePage({
               />
             </label>
 
-            {isEdit ? (
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-medium">图片预览</span>
-                <ImagePreviewStrip
-                  images={previewImages}
-                  zipName={`post-${editingRecord?.id?.slice(0, 8) || 'images'}.zip`}
-                />
-              </div>
-            ) : null}
+            {isEdit ? <ImagePreviewStrip images={previewImages} /> : null}
 
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium">内容</span>
