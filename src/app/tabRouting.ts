@@ -1,37 +1,18 @@
 import type { AppMode } from '../components/TopModeTabs'
 
-const TAB_ALIASES: Record<string, AppMode> = {
+const TAB_IDS: Record<string, AppMode> = {
   graphic: 'graphic',
-  图文: 'graphic',
   data: 'data',
-  analysis: 'data',
-  数据分析: 'data',
   highlight: 'highlight',
-  'highlight-setup': 'highlight',
-  高亮: 'highlight',
 }
 
-/** 从 URL 解析当前 Tab；支持 ?tab= 与旧参数兼容 */
+/** 从 URL 解析当前 Tab：仅支持 ?tab=graphic|data|highlight */
 export function readAppTabFromSearch(
   search: string = typeof window !== 'undefined' ? window.location.search : '',
 ): AppMode {
   const params = new URLSearchParams(search)
   const raw = params.get('tab')?.trim().toLowerCase() ?? ''
-  if (raw && TAB_ALIASES[raw]) return TAB_ALIASES[raw]
-  // 中文 tab 值未 lower-case 时再试一遍
-  const rawExact = params.get('tab')?.trim() ?? ''
-  if (rawExact && TAB_ALIASES[rawExact]) return TAB_ALIASES[rawExact]
-
-  if (
-    params.get('highlightSetup') === '1' ||
-    params.get('highlightSetup') === 'true' ||
-    params.get('mode') === 'highlight-setup'
-  ) {
-    return 'highlight'
-  }
-  // 旧独立页 ?tool=social-video → 数据分析 Tab
-  if (params.get('tool') === 'social-video') return 'data'
-  return 'graphic'
+  return TAB_IDS[raw] ?? 'graphic'
 }
 
 export function readHighlightIdsFromSearch(
@@ -44,7 +25,7 @@ export function readHighlightIdsFromSearch(
   }
 }
 
-/** 写入 ?tab=，并清理已废弃的独立页参数；高亮相关 id 按需保留 */
+/** 写入 ?tab=；高亮相关 id 按需保留 */
 export function replaceAppTabInUrl(
   tab: AppMode,
   options: {
@@ -57,11 +38,6 @@ export function replaceAppTabInUrl(
   if (typeof window === 'undefined') return
   const url = new URL(window.location.href)
   url.searchParams.set('tab', tab)
-
-  url.searchParams.delete('highlightSetup')
-  url.searchParams.delete('tool')
-  url.searchParams.delete('exportShare')
-  url.searchParams.delete('mode')
 
   const keepIds = options.keepHighlightIds ?? true
   const shareId = options.shareId

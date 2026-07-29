@@ -6,8 +6,6 @@ export const DEFAULT_SUPABASE_ANON_KEY =
 
 export const ERA_HIGHLIGHT_SETUP_TABLE = 'era_highlight_setups'
 export const ERA_PUBLIC_BASE = 'https://bibidu-era-0tdhv043.edgeone.cool/'
-/** @deprecated 使用 ERA_PUBLIC_BASE；保留别名兼容旧引用 */
-export const ERA_GITHUB_PAGES_BASE = ERA_PUBLIC_BASE
 
 export interface HighlightSetupShareRecord {
   id: string
@@ -77,7 +75,7 @@ export function defaultSupabaseConfig() {
   return typeof window === 'undefined' ? serverSupabaseConfig() : browserSupabaseConfig()
 }
 
-export function highlightSetupPagesUrl(shareId: string, pagesBase = ERA_GITHUB_PAGES_BASE) {
+export function highlightSetupPagesUrl(shareId: string, pagesBase = ERA_PUBLIC_BASE) {
   const base = pagesBase.endsWith('/') ? pagesBase : `${pagesBase}/`
   const url = new URL(base)
   url.searchParams.set('tab', 'highlight')
@@ -219,8 +217,8 @@ export interface CreateExportShareInput {
   sheet?: ExportShareImage | null
 }
 
-/** Gallery 图文库已下线；保留函数供旧调用，返回空字符串 */
-export function exportSharePagesUrl(shareId: string, _pagesBase = ERA_GITHUB_PAGES_BASE) {
+/** Gallery 已下线；保留函数供旧调用方，返回空字符串 */
+export function exportSharePagesUrl(shareId: string, _pagesBase = ERA_PUBLIC_BASE) {
   void shareId
   void _pagesBase
   return ''
