@@ -62,12 +62,14 @@ jobs:
           echo "$OUT"
           URL="$(echo "$OUT" | perl -ne 'print "$1\n" if /"(?:url|domain|accessUrl|projectUrl)"\s*:\s*"(https?:[^"]+)"/' | tail -1)"
           if [ -z "$URL" ]; then
-            URL="$(echo "$OUT" | grep -Eo 'https?://[a-zA-Z0-9._/-]+\.(edgeone\.app|pages\.edgeone\.ai|edgeone\.site)[a-zA-Z0-9._/-]*' | tail -1 || true)"
+            URL="$(echo "$OUT" | grep -Eo 'https?://[a-zA-Z0-9._/-]+\.(edgeone\.app|pages\.edgeone\.ai|edgeone\.site|edgeone\.cool)[^[:space:]"<>]*' | tail -1 || true)"
           fi
           if [ -n "$URL" ]; then
             echo "url=$URL" >> "$GITHUB_OUTPUT"
-            echo "### EdgeOne 前端链接" >> "$GITHUB_STEP_SUMMARY"
+            echo "### EdgeOne 前端链接（含 eo_token，大陆访问必需）" >> "$GITHUB_STEP_SUMMARY"
             echo "$URL" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "> 预览链接约 3 小时有效；长期稳定访问请在 EdgeOne 控制台绑定自定义域名。" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "### EdgeOne 部署完成（未能自动解析 URL，请到控制台查看项目 bibidu-era）" >> "$GITHUB_STEP_SUMMARY"
           fi
