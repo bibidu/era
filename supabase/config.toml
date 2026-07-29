@@ -1,2 +1,7 @@
 [functions.dashscope-video-extract]
 verify_jwt = false
+
+[functions.aliyun-account-balance]
+verify_jwt = false
+[functions.image-proxy]
+verify_jwt = false

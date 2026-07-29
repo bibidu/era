@@ -1,4 +1,4 @@
-import { Moon, Sun } from 'lucide-react'
+import { Moon, Sun, Wallet } from 'lucide-react'
 import type { EraTheme } from '../theme/theme'
 
 export type AppMode = 'graphic' | 'data' | 'highlight'
@@ -8,6 +8,7 @@ interface TopModeTabsProps {
   onChange: (mode: AppMode) => void
   theme: EraTheme
   onToggleTheme: () => void
+  onOpenBalance?: () => void
 }
 
 const TABS: { id: AppMode; label: string }[] = [
@@ -16,7 +17,13 @@ const TABS: { id: AppMode; label: string }[] = [
   { id: 'highlight', label: '高亮' },
 ]
 
-export function TopModeTabs({ value, onChange, theme, onToggleTheme }: TopModeTabsProps) {
+export function TopModeTabs({
+  value,
+  onChange,
+  theme,
+  onToggleTheme,
+  onOpenBalance,
+}: TopModeTabsProps) {
   return (
     <div className="flex w-full max-w-lg items-center gap-2">
       <div
@@ -43,6 +50,22 @@ export function TopModeTabs({ value, onChange, theme, onToggleTheme }: TopModeTa
           </button>
         ))}
       </div>
+      {onOpenBalance ? (
+        <button
+          type="button"
+          aria-label="账户余额"
+          title="账户余额"
+          className="flex size-9 shrink-0 items-center justify-center rounded-xl border transition hover:opacity-90"
+          style={{
+            borderColor: 'var(--era-border)',
+            background: 'var(--era-panel)',
+            color: 'var(--era-fg)',
+          }}
+          onClick={onOpenBalance}
+        >
+          <Wallet size={16} />
+        </button>
+      ) : null}
       <button
         type="button"
         aria-label={theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'}
