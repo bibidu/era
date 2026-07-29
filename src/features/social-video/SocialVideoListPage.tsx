@@ -11,6 +11,7 @@ import { SocialVideoDetailSheet } from './SocialVideoDetailSheet'
 interface SocialVideoListPageProps {
   onSmartExtract: () => void
   onOpenBoard: () => void
+  onCreate: () => void
 }
 
 type StatusFilter = '' | SocialVideoPublishStatus
@@ -33,7 +34,7 @@ function statusBadgeStyle(status: SocialVideoPublishStatus): { background: strin
   }
 }
 
-export function SocialVideoListPage({ onSmartExtract, onOpenBoard }: SocialVideoListPageProps) {
+export function SocialVideoListPage({ onSmartExtract, onOpenBoard, onCreate }: SocialVideoListPageProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('')
   const [records, setRecords] = useState<SocialVideoAnalysisRecord[]>([])
   const [selectedRecord, setSelectedRecord] = useState<SocialVideoAnalysisRecord | null>(null)
@@ -76,6 +77,14 @@ export function SocialVideoListPage({ onSmartExtract, onOpenBoard }: SocialVideo
       >
         <h1 className="text-base font-semibold">分析列表</h1>
         <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            className="inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium transition hover:opacity-90"
+            style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
+            onClick={onCreate}
+          >
+            创建
+          </button>
           <button
             type="button"
             className="inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium transition hover:opacity-90"

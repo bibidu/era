@@ -20,6 +20,7 @@ export interface SocialVideoAnalysisRecord {
   published_at: string
   cover_url: string | null
   markdown?: string
+  outline?: string
   publish_status: SocialVideoPublishStatus
   work_type: SocialVideoWorkType
 }
@@ -29,6 +30,7 @@ export interface CreateSocialVideoAnalysisInput {
   publishedAt: string
   coverUrl?: string | null
   markdown: string
+  outline?: string
   publishStatus?: SocialVideoPublishStatus
   workType?: SocialVideoWorkType
 }
@@ -95,8 +97,8 @@ export async function listSocialVideoAnalyses(
   params.set(
     'select',
     options.includeMarkdown
-      ? 'id,created_at,title,published_at,cover_url,publish_status,work_type,markdown'
-      : 'id,created_at,title,published_at,cover_url,publish_status,work_type',
+      ? 'id,created_at,title,published_at,cover_url,publish_status,work_type,outline,markdown'
+      : 'id,created_at,title,published_at,cover_url,publish_status,work_type,outline',
   )
   params.set('order', 'created_at.desc')
   const status = options.publishStatus?.trim()
@@ -143,6 +145,7 @@ export async function createSocialVideoAnalysis(
         published_at: input.publishedAt,
         cover_url: input.coverUrl ?? null,
         markdown: input.markdown,
+        outline: input.outline ?? '',
         publish_status: input.publishStatus ?? DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS,
         work_type: input.workType ?? DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
       }),

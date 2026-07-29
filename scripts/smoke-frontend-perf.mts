@@ -58,6 +58,32 @@ async function main() {
       await page.getByRole('button', { name: '已发布', exact: true }).click()
       await page.waitForTimeout(600)
 
+      const createBtn = page.getByRole('button', { name: '创建', exact: true })
+      if ((await createBtn.count()) === 0) fail('社媒缺少「创建」入口')
+      else {
+        await createBtn.click()
+        await page.waitForTimeout(500)
+        if ((await page.getByText('创建帖子').count()) === 0) fail('未进入创建页')
+        for (const label of ['待AI修改', '大纲', '类型', '内容']) {
+          if ((await page.getByText(label, { exact: false }).count()) === 0) fail(`创建页缺少：${label}`)
+        }
+        // 内容入口是按钮而非 input
+        const contentEdit = page.getByRole('button', { name: /编辑|点击编辑 Markdown/ })
+        if ((await contentEdit.count()) === 0) fail('内容缺少编辑入口按钮')
+        else {
+          await contentEdit.first().click()
+          await page.waitForTimeout(400)
+          if ((await page.getByRole('button', { name: '保存', exact: true }).count()) === 0) {
+            fail('内容 drawer 缺少保存')
+          }
+          await page.getByRole('button', { name: '关闭', exact: true }).click()
+          await page.waitForTimeout(300)
+        }
+        const backCreate = page.getByRole('button', { name: '返回' })
+        if ((await backCreate.count()) > 0) await backCreate.click()
+        await page.waitForTimeout(400)
+      }
+
       const boardBtn = page.getByRole('button', { name: '看板', exact: true })
       if ((await boardBtn.count()) === 0) fail('社媒缺少「看板」入口')
       else {

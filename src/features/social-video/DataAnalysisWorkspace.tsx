@@ -1,11 +1,13 @@
 import { ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
 import { SocialVideoBoardPage } from './SocialVideoBoardPage'
+import { SocialVideoCreatePage } from './SocialVideoCreatePage'
 import { SocialVideoDataPage } from './SocialVideoDataPage'
 import { SocialVideoListPage } from './SocialVideoListPage'
 
 export function DataAnalysisWorkspace() {
-  const [view, setView] = useState<'list' | 'extract' | 'board'>('list')
+  const [view, setView] = useState<'list' | 'extract' | 'board' | 'create'>('list')
+  const [listReloadToken, setListReloadToken] = useState(0)
 
   if (view === 'extract') {
     return (
@@ -34,10 +36,21 @@ export function DataAnalysisWorkspace() {
     return <SocialVideoBoardPage onBack={() => setView('list')} />
   }
 
+  if (view === 'create') {
+    return (
+      <SocialVideoCreatePage
+        onBack={() => setView('list')}
+        onCreated={() => setListReloadToken((token) => token + 1)}
+      />
+    )
+  }
+
   return (
     <SocialVideoListPage
+      key={listReloadToken}
       onSmartExtract={() => setView('extract')}
       onOpenBoard={() => setView('board')}
+      onCreate={() => setView('create')}
     />
   )
 }
