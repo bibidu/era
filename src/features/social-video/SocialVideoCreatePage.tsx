@@ -2,7 +2,6 @@ import { ChevronLeft } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
-  ERA_SOCIAL_VIDEO_ANALYSES_TABLE,
   SOCIAL_VIDEO_PUBLISH_STATUSES,
   SOCIAL_VIDEO_WORK_TYPES,
   createSocialVideoAnalysis,
@@ -22,10 +21,6 @@ interface SocialVideoCreatePageProps {
   editingRecord?: SocialVideoAnalysisRecord | null
 }
 
-type OutlineSuggestionTab = 'outline' | 'suggestion'
-
-const REPO_NAME = 'bibidu/era'
-
 const fieldClass =
   'w-full rounded-2xl border px-4 py-3 text-sm outline-none transition focus:border-cyan-300'
 const fieldStyle = {
@@ -34,8 +29,15 @@ const fieldStyle = {
   color: 'var(--era-fg)',
 } as const
 
-function buildAiRevisionPrompt(id: string) {
-  return `你需要拉取 supabase数据库/${REPO_NAME}/${ERA_SOCIAL_VIDEO_ANALYSES_TABLE}/id=${id}的数据，并确认是否是 待AI修改 状态。如果是该状态，你需要根据: 大纲 及 修改建议，生成5个标题以及正文内容，并引导用户选择或确定一个标题，然后你需要生成封面图(对于非风水类型)以及内容图，并经由阿里云对象存储上传，并把多个图片链接依次写入 supabase 的 图片预览字段中，并告知用户: 已更新至数据库。除了这个字段，标题和内容也需要保存到supabase的这一条记录中。`
+function buildAiRevisionPrompt(outline: string, content: string, workType: SocialVideoWorkType) {
+  const outlineText = outline.trim()
+  const contentText = content.trim()
+  const coverClause = workType === '图文' ? '封面图以及' : ''
+  return `你需要按照大纲: ${outlineText}或内容:${contentText}，并使用 图文skill进行生成任务。
+
+首先，你需要生成5个标题以及正文内容(如果提供了正文，则严格按照正文进行展示)，并引导用户选择或确定一个标题。
+
+然后，当标题和内容都确认后，你需要生成 ${coverClause}内容图，并经由阿里云对象存储上传，并把多个图片链接依次写入 supabase 的 图片预览字段中，除了该字段，确定的标题和内容也需要保存到supabase的这一条记录中。`
 }
 
 export function SocialVideoCreatePage({
@@ -45,9 +47,7 @@ export function SocialVideoCreatePage({
 }: SocialVideoCreatePageProps) {
   const isEdit = Boolean(editingRecord?.id)
   const [publishStatus, setPublishStatus] = useState<SocialVideoPublishStatus>('待AI修改')
-  const [outlineTab, setOutlineTab] = useState<OutlineSuggestionTab>('outline')
   const [outline, setOutline] = useState('')
-  const [revisionSuggestion, setRevisionSuggestion] = useState('')
   const [workType, setWorkType] = useState<SocialVideoWorkType>(DEFAULT_SOCIAL_VIDEO_WORK_TYPE)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -71,18 +71,12 @@ export function SocialVideoCreatePage({
     void (async () => {
       try {
         const full =
-          editingRecord.markdown !== undefined &&
-          editingRecord.outline !== undefined &&
-          editingRecord.revision_suggestion !== undefined
+          editingRecord.markdown !== undefined && editingRecord.outline !== undefined
             ? editingRecord
             : await getSocialVideoAnalysis(editingRecord.id)
         if (cancelled) return
-        const nextOutline = full.outline || ''
-        const nextSuggestion = full.revision_suggestion || ''
         setPublishStatus(full.publish_status)
-        setOutline(nextOutline)
-        setRevisionSuggestion(nextSuggestion)
-        setOutlineTab(nextSuggestion.trim() && !nextOutline.trim() ? 'suggestion' : 'outline')
+        setOutline(full.outline || '')
         setWorkType(full.work_type)
         setTitle(full.title || '')
         setContent(full.markdown || '')
@@ -105,11 +99,7 @@ export function SocialVideoCreatePage({
     }
   }, [editingRecord])
 
-  const activeFieldValue = outlineTab === 'outline' ? outline : revisionSuggestion
-  const canSubmit = useMemo(
-    () => activeFieldValue.trim().length > 0 && Boolean(workType),
-    [activeFieldValue, workType],
-  )
+  const canSubmit = useMemo(() => outline.trim().length > 0 && Boolean(workType), [outline, workType])
 
   const previewImages = useMemo(() => {
     if (!isEdit) return []
@@ -123,8 +113,7 @@ export function SocialVideoCreatePage({
   }, [isEdit, imagePreviews, content, coverUrl])
 
   async function handleCopyPrompt() {
-    if (!editingRecord?.id) return
-    const prompt = buildAiRevisionPrompt(editingRecord.id)
+    const prompt = buildAiRevisionPrompt(outline, content, workType)
     try {
       await navigator.clipboard.writeText(prompt)
       setCopyHint('已复制')
@@ -140,23 +129,18 @@ export function SocialVideoCreatePage({
     setSaving(true)
     setStatusMessage(isEdit ? '正在保存...' : '正在创建...')
     try {
-      const outlineValue = outlineTab === 'outline' ? outline.trim() : ''
-      const suggestionValue = outlineTab === 'suggestion' ? revisionSuggestion.trim() : ''
       const payload = {
         title: title.trim(),
         publishedAt,
         coverUrl,
         markdown: content,
-        outline: outlineValue,
-        revisionSuggestion: suggestionValue,
+        outline: outline.trim(),
         imagePreviews,
         publishStatus,
         workType,
       }
       if (isEdit && editingRecord?.id) {
         await updateSocialVideoAnalysis(editingRecord.id, payload)
-        setOutline(outlineValue)
-        setRevisionSuggestion(suggestionValue)
         setStatusMessage('保存成功')
       } else {
         await createSocialVideoAnalysis(payload)
@@ -204,7 +188,7 @@ export function SocialVideoCreatePage({
               color: 'var(--era-fg)',
               border: '1px solid var(--era-border)',
             }}
-            disabled={loading || !editingRecord?.id}
+            disabled={loading}
             onClick={() => void handleCopyPrompt()}
           >
             {copyHint || '复制提示词'}
@@ -247,64 +231,18 @@ export function SocialVideoCreatePage({
           </div>
         ) : (
           <div className="mx-auto flex w-full max-w-lg flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <div
-                className="inline-flex w-full rounded-xl p-1"
-                style={{
-                  background: 'var(--era-panel)',
-                  border: '1px solid var(--era-border)',
-                }}
-                role="tablist"
-                aria-label="大纲与修改建议"
-              >
-                {(
-                  [
-                    { id: 'outline', label: '大纲' },
-                    { id: 'suggestion', label: '修改建议' },
-                  ] as const
-                ).map((tab) => {
-                  const active = outlineTab === tab.id
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      role="tab"
-                      aria-selected={active}
-                      className="flex-1 rounded-lg px-3 py-2 text-sm font-medium transition"
-                      style={
-                        active
-                          ? { background: 'var(--era-button)', color: 'var(--era-button-fg)' }
-                          : { background: 'transparent', color: 'var(--era-muted)' }
-                      }
-                      onClick={() => setOutlineTab(tab.id)}
-                    >
-                      {tab.label}
-                      {active ? <span className="ml-1 text-rose-300">*</span> : null}
-                    </button>
-                  )
-                })}
-              </div>
-              {outlineTab === 'outline' ? (
-                <textarea
-                  className={`${fieldClass} min-h-28 resize-y leading-6`}
-                  style={fieldStyle}
-                  value={outline}
-                  placeholder="填写必填大纲"
-                  onChange={(event) => setOutline(event.target.value)}
-                />
-              ) : (
-                <textarea
-                  className={`${fieldClass} min-h-28 resize-y leading-6`}
-                  style={fieldStyle}
-                  value={revisionSuggestion}
-                  placeholder="填写修改建议"
-                  onChange={(event) => setRevisionSuggestion(event.target.value)}
-                />
-              )}
-              <p className="text-xs leading-5" style={{ color: 'var(--era-muted)' }}>
-                大纲与修改建议二选一；保存时只写入当前 Tab，另一项会清空。
-              </p>
-            </div>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">
+                大纲<span className="ml-1 text-rose-400">*</span>
+              </span>
+              <textarea
+                className={`${fieldClass} min-h-28 resize-y leading-6`}
+                style={fieldStyle}
+                value={outline}
+                placeholder="填写必填大纲"
+                onChange={(event) => setOutline(event.target.value)}
+              />
+            </label>
 
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium">

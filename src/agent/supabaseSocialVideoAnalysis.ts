@@ -3,14 +3,14 @@ import { browserSupabaseConfig, resolveSupabaseConfig } from './supabaseHighligh
 export const ERA_SOCIAL_VIDEO_ANALYSES_TABLE = 'era_social_video_analyses'
 
 /** 发布状态（存库中文枚举） */
-export const SOCIAL_VIDEO_PUBLISH_STATUSES = ['已发布', '待审核', '待AI修改'] as const
+export const SOCIAL_VIDEO_PUBLISH_STATUSES = ['已发布', '待AI修改'] as const
 export type SocialVideoPublishStatus = (typeof SOCIAL_VIDEO_PUBLISH_STATUSES)[number]
 
 /** 作品类型（存库中文枚举） */
 export const SOCIAL_VIDEO_WORK_TYPES = ['图文', '风水'] as const
 export type SocialVideoWorkType = (typeof SOCIAL_VIDEO_WORK_TYPES)[number]
 
-export const DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS: SocialVideoPublishStatus = '待审核'
+export const DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS: SocialVideoPublishStatus = '待AI修改'
 export const DEFAULT_SOCIAL_VIDEO_WORK_TYPE: SocialVideoWorkType = '图文'
 
 export interface SocialVideoAnalysisRecord {
@@ -21,8 +21,6 @@ export interface SocialVideoAnalysisRecord {
   cover_url: string | null
   markdown?: string
   outline?: string
-  /** 修改建议；与大纲二选一存库 */
-  revision_suggestion?: string
   /** 图片预览 URL 列表（封面/内容图等） */
   image_previews?: string[]
   publish_status: SocialVideoPublishStatus
@@ -35,7 +33,6 @@ export interface CreateSocialVideoAnalysisInput {
   coverUrl?: string | null
   markdown: string
   outline?: string
-  revisionSuggestion?: string
   imagePreviews?: string[]
   publishStatus?: SocialVideoPublishStatus
   workType?: SocialVideoWorkType
@@ -77,6 +74,8 @@ function normalizePublishStatus(value: unknown): SocialVideoPublishStatus {
   if (typeof value === 'string' && (SOCIAL_VIDEO_PUBLISH_STATUSES as readonly string[]).includes(value)) {
     return value as SocialVideoPublishStatus
   }
+  // 历史「待审核」统一视为待 AI 修改
+  if (value === '待审核') return '待AI修改'
   return DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS
 }
 
@@ -96,7 +95,6 @@ function normalizeRecord(row: SocialVideoAnalysisRecord): SocialVideoAnalysisRec
   return {
     ...row,
     outline: typeof row.outline === 'string' ? row.outline : '',
-    revision_suggestion: typeof row.revision_suggestion === 'string' ? row.revision_suggestion : '',
     image_previews: normalizeImagePreviews(row.image_previews),
     publish_status: normalizePublishStatus(row.publish_status),
     work_type: normalizeWorkType(row.work_type),
@@ -111,8 +109,8 @@ export async function listSocialVideoAnalyses(
   params.set(
     'select',
     options.includeMarkdown
-      ? 'id,created_at,title,published_at,cover_url,publish_status,work_type,outline,revision_suggestion,image_previews,markdown'
-      : 'id,created_at,title,published_at,cover_url,publish_status,work_type,outline,revision_suggestion,image_previews',
+      ? 'id,created_at,title,published_at,cover_url,publish_status,work_type,outline,image_previews,markdown'
+      : 'id,created_at,title,published_at,cover_url,publish_status,work_type,outline,image_previews',
   )
   params.set('order', 'created_at.desc')
   const status = options.publishStatus?.trim()
@@ -160,7 +158,6 @@ export async function createSocialVideoAnalysis(
         cover_url: input.coverUrl ?? null,
         markdown: input.markdown,
         outline: input.outline ?? '',
-        revision_suggestion: input.revisionSuggestion ?? '',
         image_previews: input.imagePreviews ?? [],
         publish_status: input.publishStatus ?? DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS,
         work_type: input.workType ?? DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
@@ -191,7 +188,6 @@ export async function updateSocialVideoAnalysis(
         cover_url: input.coverUrl ?? null,
         markdown: input.markdown,
         outline: input.outline ?? '',
-        revision_suggestion: input.revisionSuggestion ?? '',
         image_previews: input.imagePreviews ?? [],
         publish_status: input.publishStatus ?? DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS,
         work_type: input.workType ?? DEFAULT_SOCIAL_VIDEO_WORK_TYPE,

@@ -29,8 +29,6 @@ function statusBadgeStyle(status: SocialVideoPublishStatus): { background: strin
   switch (status) {
     case '已发布':
       return { background: 'rgb(22 163 74 / 0.92)', color: '#ffffff' }
-    case '待审核':
-      return { background: 'rgb(245 158 11 / 0.95)', color: '#171717' }
     case '待AI修改':
       return { background: 'rgb(59 130 246 / 0.95)', color: '#ffffff' }
     default:
