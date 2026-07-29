@@ -30,13 +30,16 @@ const fieldStyle = {
   color: 'var(--era-fg)',
 } as const
 
-function buildAiRevisionPrompt(workType: SocialVideoWorkType) {
+function buildAiRevisionPrompt(outline: string, workType: SocialVideoWorkType) {
   const coverClause = workType === '图文' ? '封面图以及' : ''
+  const userRequest = outline.trim()
   return `你需要使用 图文skill进行生成任务。
 
 首先，你需要生成5个标题以及正文内容(如果提供了正文，则严格按照正文进行展示)，并引导用户选择或确定一个标题。
 
-然后，当标题和内容都确认后，你需要生成 ${coverClause}内容图，并经由阿里云对象存储上传，并把多个图片链接依次写入 supabase 的 图片预览字段中，除了该字段，确定的标题和内容也需要保存到supabase的这一条记录中。`
+然后，当标题和内容都确认后，你需要生成 ${coverClause}内容图，并经由阿里云对象存储上传，并把多个图片链接依次写入 supabase 的 图片预览字段中，除了该字段，确定的标题和内容也需要保存到supabase的这一条记录中。
+
+用户要求:${userRequest}`
 }
 
 export function SocialVideoCreatePage({
@@ -112,7 +115,7 @@ export function SocialVideoCreatePage({
   }, [isEdit, imagePreviews, content, coverUrl])
 
   async function handleCopyPrompt() {
-    const prompt = buildAiRevisionPrompt(workType)
+    const prompt = buildAiRevisionPrompt(outline, workType)
     try {
       await navigator.clipboard.writeText(prompt)
       setCopyHint('已复制')
