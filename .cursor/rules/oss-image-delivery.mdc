@@ -5,12 +5,14 @@ alwaysApply: true
 
 # 图片交付：阿里云 OSS（全局强制）
 
-本仓库**任何**需要把图片发给用户的场景（图文导出、封面、拼图总览、截图、生成图、预览确认等），一律遵守：
+本仓库需要把图片发给用户的场景（封面、拼图总览确认、截图、生成图等），一律遵守下方上传规则。
+
+**例外（图文 / 社媒多页出图最终交付）**：对用户最终只发 EdgeOne 线上预览链接，不要逐张发各页图。见 `.cursor/rules/preview-link-only.mdc`。图片仍须上传入库（OSS / 约定存储 + `image_previews`）。
 
 ## 必须
 
 1. 用 `bash scripts/oss-upload.sh <本地图片>` 上传到阿里云 OSS（私有读）
-2. 在**对话框直接发送** stdout 返回的 **12 小时签名 URL**（带 `Expires` / `Signature`）
+2. 若该场景需要在对话框发图（封面 skill、拼图确认等）：**直接发送** stdout 返回的 **12 小时签名 URL**（带 `Expires` / `Signature`）
 3. 上传脚本会在存图前自动清理 Bucket 内超过 **14 小时**的旧对象（省存储费）；不要绕过 `oss-upload.sh` 直接 `ossutil cp`
 
 ## 禁止
@@ -18,6 +20,7 @@ alwaysApply: true
 - 只发本地路径、`file://`、未签名裸 OSS URL
 - 用 HTML 嵌入图片链接代替对话框发图（用户可能看不到）
 - 把对象改成公共读（`public-read`）
+- 图文多页最终交付时在对话里堆各页独立图 URL（改发预览链接）
 
 ## 文档与实现
 
