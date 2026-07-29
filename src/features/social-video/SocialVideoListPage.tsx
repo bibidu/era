@@ -1,4 +1,3 @@
-import { ChevronLeft } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import {
   listSocialVideoAnalyses,
@@ -8,10 +7,10 @@ import {
 import { SocialVideoDetailSheet } from './SocialVideoDetailSheet'
 
 interface SocialVideoListPageProps {
-  onBack: () => void
+  onSmartExtract: () => void
 }
 
-export function SocialVideoListPage({ onBack }: SocialVideoListPageProps) {
+export function SocialVideoListPage({ onSmartExtract }: SocialVideoListPageProps) {
   const [records, setRecords] = useState<SocialVideoAnalysisRecord[]>([])
   const [selectedRecord, setSelectedRecord] = useState<SocialVideoAnalysisRecord | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -46,19 +45,18 @@ export function SocialVideoListPage({ onBack }: SocialVideoListPageProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col" style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}>
       <div
-        className="flex shrink-0 items-center gap-2 border-b px-3 py-3"
+        className="flex shrink-0 items-center justify-between gap-2 border-b px-4 py-3"
         style={{ borderColor: 'var(--era-border)' }}
       >
+        <h1 className="text-base font-semibold">分析列表</h1>
         <button
           type="button"
-          className="flex size-9 items-center justify-center rounded-full"
-          style={{ background: 'var(--era-panel)' }}
-          aria-label="返回"
-          onClick={onBack}
+          className="inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-medium transition hover:opacity-90"
+          style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
+          onClick={onSmartExtract}
         >
-          <ChevronLeft size={18} />
+          智能提取
         </button>
-        <h1 className="text-base font-semibold">分析列表</h1>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
@@ -77,7 +75,7 @@ export function SocialVideoListPage({ onBack }: SocialVideoListPageProps) {
           >
             <p className="text-base font-semibold">暂无分析作品</p>
             <p className="mt-2 text-sm leading-6" style={{ color: 'var(--era-muted)' }}>
-              提取完成后保存，作品会出现在这里。
+              点击右上角「智能提取」，完成后保存，作品会出现在这里。
             </p>
           </div>
         ) : (

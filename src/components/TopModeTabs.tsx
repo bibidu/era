@@ -12,7 +12,7 @@ interface TopModeTabsProps {
 
 const TABS: { id: AppMode; label: string }[] = [
   { id: 'graphic', label: '图文' },
-  { id: 'data', label: '数据分析' },
+  { id: 'data', label: '社媒' },
   { id: 'highlight', label: '高亮' },
 ]
 

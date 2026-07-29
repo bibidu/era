@@ -40,5 +40,5 @@
 | Tab | URL |
 | --- | --- |
 | 图文 | `?tab=graphic` |
-| 数据分析 | `?tab=data` |
+| 社媒 | `?tab=data` |
 | 高亮 | `?tab=highlight&shareId=<id>` |

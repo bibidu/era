@@ -6,7 +6,7 @@ const TAB_IDS: Record<string, AppMode> = {
   highlight: 'highlight',
 }
 
-/** 从 URL 解析当前 Tab：仅支持 ?tab=graphic|data|highlight */
+/** 从 URL 解析当前 Tab：仅支持 ?tab=graphic|data|highlight（data = 社媒） */
 export function readAppTabFromSearch(
   search: string = typeof window !== 'undefined' ? window.location.search : '',
 ): AppMode {
