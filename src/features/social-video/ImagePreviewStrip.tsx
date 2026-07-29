@@ -21,11 +21,15 @@ export function ImagePreviewStrip({ images, zipName = 'preview-images.zip' }: Im
   async function handleDownloadZip() {
     if (downloading || images.length === 0) return
     setDownloading(true)
-    setStatusMessage('正在打包下载...')
+    setStatusMessage('正在准备下载...')
     try {
-      await downloadImagesAsZip(images, zipName)
-      setStatusMessage('已开始下载')
-      window.setTimeout(() => setStatusMessage(''), 1800)
+      const result = await downloadImagesAsZip(images, zipName)
+      if (result.mode === 'ios-share') {
+        setStatusMessage('请在分享菜单选择「存储到照片」')
+      } else {
+        setStatusMessage('已开始下载压缩包')
+      }
+      window.setTimeout(() => setStatusMessage(''), 2600)
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : '下载失败')
     } finally {
@@ -42,7 +46,7 @@ export function ImagePreviewStrip({ images, zipName = 'preview-images.zip' }: Im
             type="button"
             className="flex size-8 items-center justify-center rounded-full transition hover:opacity-80 disabled:opacity-40"
             style={{ color: 'var(--era-fg)' }}
-            aria-label="下载预览图压缩包"
+            aria-label="下载预览图（iOS 可存到相册）"
             disabled={downloading}
             onClick={() => void handleDownloadZip()}
           >
