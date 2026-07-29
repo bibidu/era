@@ -19,34 +19,34 @@ export function SocialVideoDetailSheet({ record, isOpen, onOpenChange }: SocialV
   const [loadingDetail, setLoadingDetail] = useState(false)
 
   useEffect(() => {
-    if (!isOpen) {
-      setStatus('')
-      setDetail(null)
-      setLoadingDetail(false)
-      return
-    }
-
-    if (!record?.id) return
-
-    if (record.markdown) {
-      setDetail(record)
+    if (!isOpen || !record?.id) {
+      if (!isOpen) {
+        setStatus('')
+        setDetail(null)
+        setLoadingDetail(false)
+      }
       return
     }
 
     let cancelled = false
+    // 列表接口不含 markdown，打开已发布 sheet 时始终拉全量，确保 MD 渲染有内容
     setLoadingDetail(true)
+    if (typeof record.markdown === 'string' && record.markdown.length > 0) {
+      setDetail(record)
+    }
+
     void (async () => {
       try {
         const full = await getSocialVideoAnalysis(record.id)
-        if (!cancelled) {
-          setDetail(full)
-          setStatus('')
-        }
+        if (cancelled) return
+        setDetail(full)
+        setStatus('')
       } catch (err) {
-        if (!cancelled) {
+        if (cancelled) return
+        if (!(typeof record.markdown === 'string' && record.markdown.length > 0)) {
           setDetail(record)
-          setStatus(err instanceof Error ? err.message : '加载详情失败')
         }
+        setStatus(err instanceof Error ? err.message : '加载详情失败')
       } finally {
         if (!cancelled) setLoadingDetail(false)
       }
@@ -58,15 +58,16 @@ export function SocialVideoDetailSheet({ record, isOpen, onOpenChange }: SocialV
   }, [isOpen, record])
 
   const view = detail ?? record
+  const markdown = view?.markdown || ''
 
   async function copyMarkdown() {
-    if (!view?.markdown) {
+    if (!markdown) {
       setStatus('暂无可复制内容。')
       return
     }
 
     try {
-      await navigator.clipboard.writeText(view.markdown)
+      await navigator.clipboard.writeText(markdown)
       setStatus('已复制分析数据。')
     } catch {
       setStatus('复制失败，请手动复制。')
@@ -76,7 +77,7 @@ export function SocialVideoDetailSheet({ record, isOpen, onOpenChange }: SocialV
   return (
     <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
       <div
-        className="flex max-h-[52vh] flex-col overflow-hidden"
+        className="flex h-[52vh] max-h-[52vh] flex-col overflow-hidden"
         style={{ background: 'var(--era-sheet)', color: 'var(--era-fg)' }}
       >
         <div
@@ -113,7 +114,7 @@ export function SocialVideoDetailSheet({ record, isOpen, onOpenChange }: SocialV
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-          {loadingDetail ? (
+          {loadingDetail && !markdown ? (
             <p className="text-sm" style={{ color: 'var(--era-muted)' }}>
               加载中...
             </p>
@@ -122,7 +123,7 @@ export function SocialVideoDetailSheet({ record, isOpen, onOpenChange }: SocialV
               className="rounded-2xl border p-4"
               style={{ borderColor: 'var(--era-border)', background: 'var(--era-input)' }}
             >
-              <MarkdownPreview value={view?.markdown || ''} />
+              <MarkdownPreview value={markdown} />
             </div>
           )}
         </div>
