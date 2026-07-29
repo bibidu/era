@@ -67,10 +67,15 @@ interface LayoutLine {
   pageBreakBefore?: boolean
 }
 
-/** 按句末标点切开标题，使第二句可换行并用次级字号 */
+/** 按句末标点切开标题，使第二句可换行并用次级字号。
+ * 若含换行或 U+2028（行分隔符），优先按行切开（便于手动控制标题分行，且不留下句号）。 */
 export function splitTitleSentences(text: string): string[] {
   const plain = text.trim()
   if (!plain) return ['']
+  if (/[\n\u2028]/.test(plain)) {
+    const lines = plain.split(/[\n\u2028]/).map((part) => part.trim()).filter(Boolean)
+    return lines.length ? lines : [plain]
+  }
   const parts = plain.split(/(?<=[？！。!?])/).map((part) => part.trim()).filter(Boolean)
   return parts.length ? parts : [plain]
 }
@@ -358,11 +363,14 @@ function blockToLayoutLines(
   if (styleType === 'title') {
     const sentences = splitTitleSentences(plainText)
     const lines: LayoutLine[] = []
-    let charOffset = 0
     let lineIndex = 0
+    let searchFrom = 0
 
     for (let sentenceIndex = 0; sentenceIndex < sentences.length; sentenceIndex += 1) {
       const sentence = sentences[sentenceIndex]
+      const sentenceStart = plainText.indexOf(sentence, searchFrom)
+      let charOffset = sentenceStart >= 0 ? sentenceStart : searchFrom
+      searchFrom = charOffset + sentence.length
       const sentenceBlock: MarkdownBlock = { ...block, titleSentenceIndex: sentenceIndex }
       const size = blockFontSize(sentenceBlock, config, layout.exportScale)
       const availableWidth = layout.pageWidth - layout.safeX * 2
