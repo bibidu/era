@@ -2,7 +2,7 @@
 
 ## Git / PR（强制）
 
-完成功能改动并创建 PR 后，**直接合入 `main`**，不要询问用户是否合并。仅当用户明确要求先别合并 / 保持 draft 审阅时例外。约定见 `.cursor/rules/auto-merge-pr.mdc`。
+完成功能改动并创建 PR 后，**直接合入 `main`**，不要询问用户是否合并。合入推送后须等待 EdgeOne Actions 部署成功，并把**完整预览 URL**（含 `eo_token` / `eo_time`）直接发给用户。仅当用户明确要求先别合并 / 保持 draft 审阅时例外。约定见 `.cursor/rules/auto-merge-pr.mdc`。
 
 ## 图文skill（多页长图）
 
