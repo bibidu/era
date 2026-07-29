@@ -52,7 +52,7 @@ function emptyCoverPreviewText(record: SocialVideoAnalysisRecord): string {
     .replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/`[^`]*`/g, ' ')
-    .replace(/[#>*_~\[\]()>|-]/g, ' ')
+    .replace(/[#>*_~[\]()>|-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
   return content
