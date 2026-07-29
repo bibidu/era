@@ -22,6 +22,11 @@ const DataAnalysisWorkspace = lazy(() =>
     default: m.DataAnalysisWorkspace,
   })),
 )
+const AccountBalancePage = lazy(() =>
+  import('./features/account/AccountBalancePage').then((m) => ({
+    default: m.AccountBalancePage,
+  })),
+)
 
 function TabLoadingFallback() {
   return (
@@ -37,6 +42,7 @@ function TabLoadingFallback() {
 function App() {
   const [mode, setMode] = useState<AppMode>(() => readAppTabFromSearch())
   const [highlightIds, setHighlightIds] = useState(() => readHighlightIdsFromSearch())
+  const [balanceOpen, setBalanceOpen] = useState(false)
   const { theme, toggle } = useEraTheme()
 
   const syncFromUrl = useCallback(() => {
@@ -52,6 +58,7 @@ function App() {
 
   const handleModeChange = useCallback(
     (next: AppMode) => {
+      setBalanceOpen(false)
       setMode(next)
       replaceAppTabInUrl(next, {
         shareId: highlightIds.shareId,
@@ -61,7 +68,7 @@ function App() {
     [highlightIds.projectId, highlightIds.shareId],
   )
 
-  const wideLayout = mode === 'data'
+  const wideLayout = mode === 'data' && !balanceOpen
 
   return (
     <div
@@ -79,19 +86,29 @@ function App() {
           backgroundColor: 'var(--era-header)',
         }}
       />
-      <header
-        className="sticky top-0 z-40 flex shrink-0 items-center justify-center border-b px-4 py-2"
-        style={{
-          borderColor: 'var(--era-border)',
-          background: 'var(--era-header)',
-          paddingTop: 'calc(0.5rem + env(safe-area-inset-top, 0px))',
-        }}
-      >
-        <TopModeTabs value={mode} onChange={handleModeChange} theme={theme} onToggleTheme={toggle} />
-      </header>
+      {!balanceOpen ? (
+        <header
+          className="sticky top-0 z-40 flex shrink-0 items-center justify-center border-b px-4 py-2"
+          style={{
+            borderColor: 'var(--era-border)',
+            background: 'var(--era-header)',
+            paddingTop: 'calc(0.5rem + env(safe-area-inset-top, 0px))',
+          }}
+        >
+          <TopModeTabs
+            value={mode}
+            onChange={handleModeChange}
+            theme={theme}
+            onToggleTheme={toggle}
+            onOpenBalance={() => setBalanceOpen(true)}
+          />
+        </header>
+      ) : null}
 
       <Suspense fallback={<TabLoadingFallback />}>
-        {mode === 'data' ? (
+        {balanceOpen ? (
+          <AccountBalancePage onBack={() => setBalanceOpen(false)} />
+        ) : mode === 'data' ? (
           <DataAnalysisWorkspace />
         ) : mode === 'highlight' ? (
           highlightIds.shareId || highlightIds.projectId ? (

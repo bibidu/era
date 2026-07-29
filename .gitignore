@@ -35,3 +35,6 @@ era-source.zip
 
 # Supabase CLI local state
 supabase/.temp/
+
+.tools/
+.tools-home/
