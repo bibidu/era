@@ -5,11 +5,13 @@ import {
   DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
   SOCIAL_VIDEO_WORK_TYPES,
   createSocialVideoAnalysis,
+  deleteSocialVideoAnalysis,
   getSocialVideoAnalysis,
   updateSocialVideoAnalysis,
   type SocialVideoAnalysisRecord,
   type SocialVideoWorkType,
 } from '../../agent/supabaseSocialVideoAnalysis'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { MarkdownContentDrawer } from './MarkdownContentDrawer'
 import { ImagePreviewStrip } from './ImagePreviewStrip'
 import { extractMarkdownImages, truncateText } from './parseMarkdownMetrics'
@@ -17,6 +19,7 @@ import { extractMarkdownImages, truncateText } from './parseMarkdownMetrics'
 interface SocialVideoCreatePageProps {
   onBack: () => void
   onCreated?: () => void
+  onDeleted?: () => void
   /** 传入则为编辑模式 */
   editingRecord?: SocialVideoAnalysisRecord | null
 }
@@ -44,6 +47,7 @@ function buildAiRevisionPrompt(outline: string, workType: SocialVideoWorkType) {
 export function SocialVideoCreatePage({
   onBack,
   onCreated,
+  onDeleted,
   editingRecord = null,
 }: SocialVideoCreatePageProps) {
   const isEdit = Boolean(editingRecord?.id)
@@ -59,6 +63,8 @@ export function SocialVideoCreatePage({
   const [loading, setLoading] = useState(isEdit)
   const [statusMessage, setStatusMessage] = useState('')
   const [copyHint, setCopyHint] = useState('')
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (!editingRecord?.id) {
@@ -124,7 +130,7 @@ export function SocialVideoCreatePage({
   }
 
   async function handleSubmit() {
-    if (!canSubmit || saving || loading) return
+    if (!canSubmit || saving || loading || deleting) return
     setSaving(true)
     setStatusMessage(isEdit ? '正在保存...' : '正在创建...')
     try {
@@ -155,6 +161,21 @@ export function SocialVideoCreatePage({
       )
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!isEdit || !editingRecord?.id || deleting || saving) return
+    setDeleting(true)
+    setStatusMessage('正在删除...')
+    try {
+      await deleteSocialVideoAnalysis(editingRecord.id)
+      setConfirmOpen(false)
+      onDeleted?.()
+      onBack()
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? `删除失败：${error.message}` : '删除失败')
+      setDeleting(false)
     }
   }
 
@@ -307,15 +328,32 @@ export function SocialVideoCreatePage({
           background: 'var(--era-bg)',
         }}
       >
-        <button
-          type="button"
-          className="h-12 w-full rounded-2xl text-sm font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-          style={{ background: 'var(--era-button)', color: 'var(--era-button-fg)' }}
-          disabled={!canSubmit || saving || loading}
-          onClick={() => void handleSubmit()}
-        >
-          {saving ? (isEdit ? '保存中...' : '创建中...') : isEdit ? '保存' : '创建'}
-        </button>
+        <div className="flex gap-2">
+          {isEdit ? (
+            <button
+              type="button"
+              className="h-12 flex-1 rounded-2xl text-sm font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+              style={{
+                background: 'rgb(220 38 38 / 0.14)',
+                color: 'rgb(252 165 165)',
+                border: '1px solid rgb(239 68 68 / 0.35)',
+              }}
+              disabled={saving || loading || deleting}
+              onClick={() => setConfirmOpen(true)}
+            >
+              删除
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="h-12 flex-1 rounded-2xl text-sm font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ background: 'var(--era-button)', color: 'var(--era-button-fg)' }}
+            disabled={!canSubmit || saving || loading || deleting}
+            onClick={() => void handleSubmit()}
+          >
+            {saving ? (isEdit ? '保存中...' : '创建中...') : isEdit ? '保存' : '创建'}
+          </button>
+        </div>
       </div>
 
       <MarkdownContentDrawer
@@ -323,6 +361,20 @@ export function SocialVideoCreatePage({
         value={content}
         onClose={() => setContentDrawerOpen(false)}
         onSave={(next) => setContent(next)}
+      />
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="确认删除这条帖子？"
+        description="删除后无法恢复，分析数据将从库中移除。"
+        confirmLabel="确认删除"
+        cancelLabel="取消"
+        destructive
+        confirming={deleting}
+        onCancel={() => {
+          if (!deleting) setConfirmOpen(false)
+        }}
+        onConfirm={() => void handleDelete()}
       />
     </div>
   )

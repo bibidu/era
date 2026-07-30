@@ -205,6 +205,22 @@ export async function updateSocialVideoAnalysis(
   return normalizeRecord(record)
 }
 
+/** 按 id 删除社媒分析记录 */
+export async function deleteSocialVideoAnalysis(
+  id: string,
+  config = browserSupabaseConfig(),
+): Promise<void> {
+  const trimmed = id.trim()
+  if (!trimmed) {
+    throw new Error('缺少要删除的记录 id')
+  }
+  await supabaseRest(
+    config,
+    `${ERA_SOCIAL_VIDEO_ANALYSES_TABLE}?id=eq.${encodeURIComponent(trimmed)}`,
+    { method: 'DELETE' },
+  )
+}
+
 export function sortSocialVideoAnalyses(records: SocialVideoAnalysisRecord[]) {
   return [...records].sort((left, right) => {
     const leftTime = parsePublishedAtSortKey(left.published_at, left.created_at)

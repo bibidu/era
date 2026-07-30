@@ -11,7 +11,6 @@ import {
 } from '../../agent/supabaseSocialVideoAnalysis'
 import { TEXT_FONT_OPTIONS } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
-import { SocialVideoDetailSheet } from './SocialVideoDetailSheet'
 
 export type SocialListStatusFilter = '' | SocialVideoPublishStatus
 export type SocialListWorkTypeFilter = '' | SocialVideoWorkType
@@ -26,6 +25,8 @@ interface SocialVideoListPageProps {
   onOpenReview: () => void
   onCreate: () => void
   onEdit: (record: SocialVideoAnalysisRecord) => void
+  /** 已发布作品：进入查看数据二级页 */
+  onOpenDetail: (record: SocialVideoAnalysisRecord) => void
 }
 
 const STATUS_FILTERS: { value: SocialListStatusFilter; label: string }[] = [
@@ -194,10 +195,9 @@ export function SocialVideoListPage({
   onOpenReview,
   onCreate,
   onEdit,
+  onOpenDetail,
 }: SocialVideoListPageProps) {
   const [records, setRecords] = useState<SocialVideoAnalysisRecord[]>([])
-  const [selectedRecord, setSelectedRecord] = useState<SocialVideoAnalysisRecord | null>(null)
-  const [sheetOpen, setSheetOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -336,8 +336,7 @@ export function SocialVideoListPage({
                   style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
                   onClick={() => {
                     if (record.publish_status === '已发布') {
-                      setSelectedRecord(record)
-                      setSheetOpen(true)
+                      onOpenDetail(record)
                       return
                     }
                     onEdit(record)
@@ -364,12 +363,6 @@ export function SocialVideoListPage({
           </div>
         )}
       </div>
-
-      <SocialVideoDetailSheet
-        record={selectedRecord}
-        isOpen={sheetOpen}
-        onOpenChange={setSheetOpen}
-      />
     </div>
   )
 }
