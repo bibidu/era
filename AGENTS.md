@@ -38,12 +38,19 @@
 - **前端**：腾讯云 EdgeOne Makers（`npm run deploy:edgeone`；`main` 推送由 Actions 部署），交付 EdgeOne 链接。
 - 说明：`docs/cloud-hosting.md`、skill `references/cloud-hosting.md`。
 
+## 标题排版设置页
+
+用户需要精细控制标题换行 / 拉伸 / 字号 / 间距 / 字体 / 行内色时，**主动提供标题设置页**（顶栏「标题」或 `?tab=title`），发完整 EdgeOne URL（含 `eo_token` / `eo_time` 与 `tab=title`）。
+
+用户复制配置发回后，用 `node scripts/generate-title-composer.mjs --full --input <json>` 出完整 9:16 图，上传 OSS 后直发签名 URL。约定见 `.cursor/rules/title-composer.mdc`。
+
 ## 前端 Tab（URL 可深链）
 
-三个顶栏 Tab，用 `?tab=` 打开并自动切换（无参数时**默认社媒**）：
+顶栏 Tab，用 `?tab=` 打开并自动切换（无参数时**默认社媒**）：
 
 | Tab | URL |
 | --- | --- |
 | 图文 | `?tab=graphic` |
 | 社媒 | `?tab=data` |
 | 高亮 | `?tab=highlight&shareId=<id>` |
+| 标题 | `?tab=title` |
