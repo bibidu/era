@@ -46,3 +46,6 @@ supabase/.temp/
 
 .tools/
 .tools-home/
+
+# Large Chinese font binaries (download via scripts/ensure-noto-serif-sc.sh)
+public/fonts/NotoSerifSC-*.ttf

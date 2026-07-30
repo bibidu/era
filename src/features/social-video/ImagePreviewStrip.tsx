@@ -84,7 +84,7 @@ export function ImagePreviewStrip({
             <button
               key={`${image.src}-${index}`}
               type="button"
-              className="aspect-[3/4] h-32 w-auto min-w-[7.5rem] shrink-0 overflow-hidden rounded-2xl border transition hover:opacity-90"
+              className="aspect-[9/16] h-36 w-auto min-w-[6.5rem] shrink-0 overflow-hidden rounded-2xl border transition hover:opacity-90"
               style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
               aria-label={`查看第 ${index + 1} 张预览图`}
               onClick={() => setViewerIndex(index)}
@@ -94,7 +94,7 @@ export function ImagePreviewStrip({
                 alt={image.alt || `预览图 ${index + 1}`}
                 loading="lazy"
                 decoding="async"
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain"
                 draggable={false}
               />
             </button>

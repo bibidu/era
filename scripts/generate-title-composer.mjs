@@ -21,6 +21,8 @@ const FENGSHUI_TOP_TEXT = '连续观看、点赞、关注，你也是地理风�
 const FENGSHUI_BG = path.join(ROOT, 'public', 'textures', 'fengshui-bg.png')
 const SHUHEITI_WOFF2 = path.join(ROOT, 'public', 'fonts', 'AlimamaShuHeiTi-Bold.woff2')
 const SHUHEITI_TTF = path.join(ROOT, 'public', 'fonts', 'AlimamaShuHeiTi-Bold.ttf')
+const SONG_REG_TTF = path.join(ROOT, 'public', 'fonts', 'NotoSerifSC-Regular.ttf')
+const SONG_BOLD_TTF = path.join(ROOT, 'public', 'fonts', 'NotoSerifSC-Bold.ttf')
 
 function parseArgs(argv) {
   const out = {
@@ -49,6 +51,38 @@ async function shuheitiFontFaceCss() {
   ])
   const woff2Data = `data:font/woff2;base64,${woff2.toString('base64')}`
   const ttfData = `data:font/ttf;base64,${ttf.toString('base64')}`
+  let songCss = `@font-face {
+  font-family: 'Noto Serif SC';
+  src: local('Noto Serif SC'), local('Songti SC'), local('SimSun');
+  font-weight: 400 700;
+  font-style: normal;
+}`
+  // 优先内嵌本地宋体（ensure-noto-serif-sc.sh）；文件较大时改用 file:// 避免 HTML 膨胀
+  try {
+    const [songReg, songBold] = await Promise.all([
+      readFile(SONG_REG_TTF),
+      readFile(SONG_BOLD_TTF),
+    ])
+    // 用 file:// 引用，Playwright 可直接加载
+    void songReg
+    void songBold
+    songCss = `@font-face {
+  font-family: 'Noto Serif SC';
+  src: url('file://${SONG_REG_TTF}') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+@font-face {
+  font-family: 'Noto Serif SC';
+  src: url('file://${SONG_BOLD_TTF}') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}`
+  } catch {
+    console.error('警告: 未找到 Noto Serif SC，请先运行 bash scripts/ensure-noto-serif-sc.sh')
+  }
   return `@font-face {
   font-family: 'Alimama ShuHeiTi';
   src:
@@ -58,12 +92,7 @@ async function shuheitiFontFaceCss() {
   font-style: normal;
   font-display: block;
 }
-@font-face {
-  font-family: 'Noto Serif SC';
-  src: local('Noto Serif SC'), local('Songti SC'), local('SimSun');
-  font-weight: 400 700;
-  font-style: normal;
-}`
+${songCss}`
 }
 
 function fontFamilyForId(fontId) {
@@ -300,7 +329,7 @@ html, body { margin: 0; padding: 0; background: #F0F5F8; }
 }
 .heading {
   margin: ${Math.round(18 * scale)}px 0 ${Math.round(8 * scale)}px;
-  font-family: 'Alimama ShuHeiTi', 'Noto Sans SC', sans-serif;
+  font-family: 'Noto Serif SC', serif;
   font-size: ${headingFontSize}px;
   font-weight: 700;
   line-height: 1.18;
@@ -380,18 +409,30 @@ async function main() {
     })
     // 与 generate-cover 一致：file:// 打开本地 HTML，再强制 load 数黑体
     await page.goto(`file://${tmpHtml}`, { waitUntil: 'networkidle' })
-    const fontOk = await page.evaluate(async ({ needShuhei, sampleText }) => {
+    const fontOk = await page.evaluate(async ({ needShuhei, needSong, sampleText }) => {
       if (document.fonts?.ready) await document.fonts.ready
       if (needShuhei && document.fonts?.load) {
         await document.fonts.load(`700 264px "Alimama ShuHeiTi"`, sampleText)
         await document.fonts.load(`400 120px "Alimama ShuHeiTi"`, sampleText)
       }
-      return needShuhei
+      if (needSong && document.fonts?.load) {
+        await document.fonts.load(`400 48px "Noto Serif SC"`, sampleText)
+        await document.fonts.load(`700 60px "Noto Serif SC"`, sampleText)
+      }
+      const shuheiOk = needShuhei
         ? document.fonts.check(`700 264px "Alimama ShuHeiTi"`, sampleText)
         : true
-    }, { needShuhei, sampleText })
-    if (!fontOk) {
+      const songOk = needSong
+        ? document.fonts.check(`400 48px "Noto Serif SC"`, sampleText)
+        : true
+      return { shuheiOk, songOk }
+    }, { needShuhei, needSong: args.full, sampleText })
+    if (!fontOk.shuheiOk) {
       console.error('错误: 阿里妈妈数黑体未加载成功，拒绝出图（避免落到系统字体）')
+      process.exit(1)
+    }
+    if (args.full && !fontOk.songOk) {
+      console.error('错误: 宋体 Noto Serif SC 未加载成功，拒绝出图（请先 bash scripts/ensure-noto-serif-sc.sh）')
       process.exit(1)
     }
     await page.waitForTimeout(200)

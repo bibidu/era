@@ -119,6 +119,8 @@ open_bridge_page() {
 
 start_agent_if_needed
 start_dev_if_needed
+# 正文宋体（封面出图 / Era 导出）
+bash "$ROOT/scripts/ensure-noto-serif-sc.sh" || echo "警告: 宋体下载失败，导出可能回落到系统字体" >&2
 open_bridge_page
 
 echo "==> health: $(health)"

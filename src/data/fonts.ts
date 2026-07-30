@@ -27,8 +27,8 @@ export const TEXT_FONT_OPTIONS: FontOption[] = [
     label: '宋体',
     fontFamily: '"Noto Serif SC", serif',
     sample: '宋体',
-    source: 'google',
-    googleFamily: 'Noto+Serif+SC:wght@400;700',
+    source: 'cdn',
+    cdnUrl: `${import.meta.env.BASE_URL}fonts/noto-serif-sc.css`,
   },
   {
     id: 'kai',

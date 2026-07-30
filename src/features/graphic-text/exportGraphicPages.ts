@@ -17,7 +17,7 @@ import { collectGraphicFontIds, getFontConfigForStyleType } from './graphicTextF
 import { getGraphicLayout, resolveTitleFontSize } from './layout'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { getFontById } from '../../data/fonts'
-import { ensureFontReady } from '../../utils/fontLoad'
+import { ensureFontReady, ensureFontsReadyForExport } from '../../utils/fontLoad'
 import { buildCharHighlightColorSegments, stripHighlightMarkers, themeAlpha } from './inlineHighlight'
 import { blockHasHighlightInMap, resolveBlockHighlightColor } from './highlightColors'
 import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
@@ -536,10 +536,33 @@ export async function exportGraphicPages(
 ) {
   const fontIds = collectGraphicFontIds(config)
   const sample = pages.flatMap((page) => page.blocks.map((block) => block.text)).join('')
+  const sampleByFontId = new Map<string, string>()
+  const fonts = []
   for (const fontId of fontIds) {
     const font = getFontById(fontId)
-    if (font.source !== 'system') {
-      await ensureFontReady(font, sample || font.sample)
+    fonts.push(font)
+    sampleByFontId.set(fontId, sample || font.sample)
+  }
+  // 导出必须等远程字体就绪；失败则抛错，避免静默回退成黑体
+  await ensureFontsReadyForExport(fonts, sampleByFontId, {
+    fontTimeoutMs: 20000,
+    fontsReadyTimeoutMs: 8000,
+  })
+  // 再确认宋体等关键字体 check 通过
+  for (const font of fonts) {
+    if (font.source === 'system') continue
+    const ok = await ensureFontReady(font, sampleByFontId.get(font.id) || font.sample)
+    if (!ok) {
+      throw new Error(`字体「${font.label}」未就绪，拒绝导出`)
+    }
+    const family = font.fontFamily.replace(/"/g, '').split(',')[0].trim()
+    const probe = (sampleByFontId.get(font.id) || font.sample).slice(0, 32) || '汉字'
+    if (typeof document !== 'undefined' && document.fonts?.check) {
+      const checked = document.fonts.check(`400 24px "${family}"`, probe)
+        || document.fonts.check(`700 24px "${family}"`, probe)
+      if (!checked) {
+        throw new Error(`字体「${font.label}」校验失败（${family}），拒绝导出`)
+      }
     }
   }
 

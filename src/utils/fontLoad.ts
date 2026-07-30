@@ -51,6 +51,35 @@ async function waitForGlyphs(family: string, sampleText: string, fontSize = 24) 
   )
 }
 
+/** 同源 TTF 直挂 FontFace，避免仅靠 CSS 时大字体加载慢/失败后静默回退 */
+async function loadLocalTtfFaces(font: FontOption): Promise<void> {
+  if (typeof FontFace === 'undefined' || typeof document === 'undefined') return
+  if (font.id !== 'song' && font.id !== 'shuheiti') return
+
+  const base = (font.cdnUrl || '').replace(/[^/]+$/, '')
+  if (!base) return
+
+  const faces =
+    font.id === 'song'
+      ? [
+          { weight: '400', file: 'NotoSerifSC-Regular.ttf', family: 'Noto Serif SC' },
+          { weight: '700', file: 'NotoSerifSC-Bold.ttf', family: 'Noto Serif SC' },
+        ]
+      : [{ weight: '700', file: 'AlimamaShuHeiTi-Bold.ttf', family: 'Alimama ShuHeiTi' }]
+
+  await Promise.all(
+    faces.map(async ({ weight, file, family }) => {
+      const face = new FontFace(family, `url(${base}${file})`, {
+        weight,
+        style: 'normal',
+        display: 'block',
+      })
+      const loaded = await withTimeoutReject(face.load(), FONT_LOAD_TIMEOUT_MS * 3, `FontFace ${file} 超时`)
+      document.fonts.add(loaded)
+    }),
+  )
+}
+
 async function loadFontInternal(font: FontOption, sampleText: string): Promise<boolean> {
   if (font.source === 'system') return true
 
@@ -69,7 +98,16 @@ async function loadFontInternal(font: FontOption, sampleText: string): Promise<b
     await loadStylesheet(font.id, `https://fonts.googleapis.com/css2?family=${font.googleFamily}&display=swap`)
     await waitForGlyphs(primaryFamily(font.fontFamily), sampleText, 16)
   } else if (font.source === 'cdn' && font.cdnUrl) {
-    await loadStylesheet(font.id, font.cdnUrl)
+    try {
+      await loadStylesheet(font.id, font.cdnUrl)
+    } catch {
+      // CSS 失败时仍尝试直挂 TTF
+    }
+    try {
+      await loadLocalTtfFaces(font)
+    } catch {
+      // 直挂失败则依赖 CSS @font-face
+    }
     await waitForGlyphs(primaryFamily(font.fontFamily), sampleText)
   } else {
     return false

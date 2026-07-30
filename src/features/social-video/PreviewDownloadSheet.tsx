@@ -102,7 +102,7 @@ export function PreviewDownloadSheet({
                 type="button"
                 aria-label={`第 ${index + 1} 张预览图`}
                 aria-pressed={selected}
-                className="relative aspect-[3/4] h-44 w-auto min-w-[6.5rem] shrink-0 overflow-hidden rounded-2xl border transition"
+                className="relative aspect-[9/16] h-48 w-auto min-w-[6.75rem] shrink-0 overflow-hidden rounded-2xl border transition"
                 style={{
                   borderColor: selected ? 'var(--era-fg)' : 'var(--era-border)',
                   background: 'var(--era-panel)',
@@ -114,7 +114,7 @@ export function PreviewDownloadSheet({
                   alt={image.alt || `预览图 ${index + 1}`}
                   loading="lazy"
                   decoding="async"
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-contain"
                   draggable={false}
                 />
                 <span
