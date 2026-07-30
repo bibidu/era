@@ -2,6 +2,7 @@ import { ChevronLeft } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
+  formatSocialVideoLoadError,
   listSocialVideoAnalyses,
   SOCIAL_VIDEO_WORK_TYPES,
   type SocialVideoAnalysisRecord,
@@ -65,7 +66,7 @@ export function AccountReviewPage({ onBack }: AccountReviewPageProps) {
         setError('')
       } catch (err) {
         if (cancelled) return
-        setError(err instanceof Error ? err.message : '加载复盘数据失败')
+        setError(formatSocialVideoLoadError(err, '加载复盘数据失败'))
       } finally {
         if (!cancelled) setLoading(false)
       }
