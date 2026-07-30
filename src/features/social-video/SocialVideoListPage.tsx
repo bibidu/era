@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import {
   SOCIAL_VIDEO_PUBLISH_STATUSES,
   SOCIAL_VIDEO_WORK_TYPES,
+  formatSocialVideoLoadError,
   listSocialVideoAnalyses,
   sortSocialVideoAnalyses,
   type SocialVideoAnalysisRecord,
@@ -222,7 +223,7 @@ export function SocialVideoListPage({
       } catch (err) {
         if (cancelled) return
         setRecords([])
-        setError(err instanceof Error ? err.message : '加载作品列表失败')
+        setError(formatSocialVideoLoadError(err, '加载作品列表失败'))
       } finally {
         if (!cancelled) {
           setLoading(false)
@@ -247,7 +248,7 @@ export function SocialVideoListPage({
       setError('')
     } catch (err) {
       setRecords([])
-      setError(err instanceof Error ? err.message : '刷新作品列表失败')
+      setError(formatSocialVideoLoadError(err, '刷新作品列表失败'))
     } finally {
       setRefreshing(false)
     }

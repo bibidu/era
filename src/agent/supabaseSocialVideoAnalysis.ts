@@ -47,6 +47,55 @@ export interface ListSocialVideoAnalysesOptions {
   includeMarkdown?: boolean
 }
 
+const LIST_SELECT_BASE =
+  'id,created_at,title,published_at,cover_url,publish_status,work_type,outline,image_previews'
+const LIST_SELECT_WITH_MARKDOWN = `${LIST_SELECT_BASE},markdown`
+
+const NETWORK_ERROR_MARKERS = ['failed to fetch', 'networkerror', 'load failed', 'network request failed']
+
+function isTransientNetworkError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  const message = error.message.toLowerCase()
+  return (
+    error instanceof TypeError ||
+    NETWORK_ERROR_MARKERS.some((marker) => message.includes(marker))
+  )
+}
+
+export function formatSocialVideoLoadError(error: unknown, fallback = '加载失败'): string {
+  if (isTransientNetworkError(error)) {
+    return '网络不稳定，请稍后重试'
+  }
+  if (error instanceof Error && error.message.trim()) {
+    return error.message
+  }
+  return fallback
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function fetchSupabase(
+  url: string,
+  init: RequestInit,
+  retries = 2,
+): Promise<Response> {
+  let lastError: unknown
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      return await fetch(url, init)
+    } catch (error) {
+      lastError = error
+      if (attempt >= retries || !isTransientNetworkError(error)) {
+        throw error
+      }
+      await sleep(280 * (attempt + 1))
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('网络请求失败')
+}
+
 async function supabaseRest<T>(
   config: { url: string; anonKey: string },
   path: string,
@@ -60,7 +109,7 @@ async function supabaseRest<T>(
   }
   if (init.prefer) headers.set('Prefer', init.prefer)
 
-  const res = await fetch(`${config.url}/rest/v1/${path}`, {
+  const res = await fetchSupabase(`${config.url}/rest/v1/${path}`, {
     ...init,
     headers,
   })
@@ -108,10 +157,8 @@ export async function listSocialVideoAnalyses(
   config = browserSupabaseConfig(),
 ): Promise<SocialVideoAnalysisRecord[]> {
   const params = new URLSearchParams()
-  params.set(
-    'select',
-    'id,created_at,title,published_at,cover_url,publish_status,work_type,outline,image_previews,markdown',
-  )
+  // 列表默认不拉 markdown，避免大字段导致 Safari 偶发 Load failed
+  params.set('select', options.includeMarkdown ? LIST_SELECT_WITH_MARKDOWN : LIST_SELECT_BASE)
   params.set('order', 'created_at.desc')
   const status = options.publishStatus?.trim()
   if (status) {
@@ -127,7 +174,7 @@ export async function listSocialVideoAnalyses(
     `${ERA_SOCIAL_VIDEO_ANALYSES_TABLE}?${params.toString()}`,
     { method: 'GET' },
   )
-  return rows.map(normalizeRecord)
+  return (rows ?? []).map(normalizeRecord)
 }
 
 export async function getSocialVideoAnalysis(
