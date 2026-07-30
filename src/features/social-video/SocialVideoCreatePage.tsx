@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS,
   DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
+  ERA_SOCIAL_VIDEO_ANALYSES_TABLE,
   SOCIAL_VIDEO_WORK_TYPES,
   createSocialVideoAnalysis,
   deleteSocialVideoAnalysis,
@@ -11,6 +12,7 @@ import {
   type SocialVideoAnalysisRecord,
   type SocialVideoWorkType,
 } from '../../agent/supabaseSocialVideoAnalysis'
+import { browserSupabaseConfig } from '../../agent/supabaseHighlightSetup'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { MarkdownContentDrawer } from './MarkdownContentDrawer'
 import { ImagePreviewStrip } from './ImagePreviewStrip'
@@ -32,16 +34,81 @@ const fieldStyle = {
   color: 'var(--era-fg)',
 } as const
 
-function buildAiRevisionPrompt(outline: string, workType: SocialVideoWorkType) {
-  const coverClause = workType === '图文' ? '封面图以及' : ''
-  const userRequest = outline.trim()
-  return `你需要使用 图文skill进行生成任务。
+function supabaseProjectRef(url: string): string {
+  try {
+    const host = new URL(url).hostname
+    const match = host.match(/^([a-z0-9-]+)\.supabase\.co$/i)
+    if (match) return match[1]
+    return host
+  } catch {
+    return url
+  }
+}
 
-首先，你需要生成5个标题以及正文内容(如果提供了正文，则严格按照正文进行展示)，并引导用户选择或确定一个标题。
+interface AiRevisionPromptInput {
+  recordId: string
+  outline: string
+  workType: SocialVideoWorkType
+  title: string
+  content: string
+  imagePreviews: string[]
+  publishStatus: string
+}
 
-然后，当标题和内容都确认后，你需要生成 ${coverClause}内容图，并经由阿里云对象存储上传（封面须用 cover 文件名或 --cover，自动带 __cover_keep__ 永久标记），并把多个图片链接依次写入 supabase 的 图片预览字段中，除了该字段，确定的标题和内容也需要保存到supabase的这一条记录中。
+function buildAiRevisionPrompt(input: AiRevisionPromptInput) {
+  const { url } = browserSupabaseConfig()
+  const projectRef = supabaseProjectRef(url)
+  const coverClause = input.workType === '图文' ? '封面图以及' : ''
 
-用户要求:${userRequest}`
+  const formBlocks: string[] = []
+  const outline = input.outline.trim()
+  if (outline) {
+    formBlocks.push(`### 大纲\n${outline}`)
+  }
+  if (input.workType) {
+    formBlocks.push(`### 类型\n${input.workType}`)
+  }
+  const title = input.title.trim()
+  if (title) {
+    formBlocks.push(`### 标题\n${title}`)
+  }
+  const content = input.content.trim()
+  if (content) {
+    formBlocks.push(`### 内容\n${content}`)
+  }
+  const previews = input.imagePreviews.map((src) => src.trim()).filter(Boolean)
+  if (previews.length > 0) {
+    formBlocks.push(
+      `### 图片预览（image_previews，共 ${previews.length} 张）\n${previews
+        .map((src, index) => `${index + 1}. ${src}`)
+        .join('\n')}`,
+    )
+  }
+  const publishStatus = input.publishStatus.trim()
+  if (publishStatus) {
+    formBlocks.push(`### 发布状态\n${publishStatus}`)
+  }
+
+  const formSection =
+    formBlocks.length > 0
+      ? formBlocks.join('\n\n')
+      : '（当前表单无已填字段）'
+
+  return `你需要使用 图文skill 进行生成任务。
+
+## 目标记录（Supabase）
+- 项目 ref：${projectRef}
+- 项目 URL：${url}
+- 表：${ERA_SOCIAL_VIDEO_ANALYSES_TABLE}
+- 条目 id：${input.recordId}
+- 需更新字段：title、markdown、image_previews（图片链接按序写入；封面须用 cover 文件名或 --cover，自动带 __cover_keep__ 永久标记）
+
+## 任务说明
+1. 生成 5 个标题候选以及正文（若下方已提供正文，则严格按照该正文展示），并引导用户选择或确认一个标题。
+2. 标题与内容确认后，生成 ${coverClause}内容图，上传阿里云 OSS，再把图片链接依次写入上述条目的 image_previews；同时把确定的标题、内容写回同一条记录。
+
+## 当前表单（仅含非空项）
+${formSection}`
 }
 
 export function SocialVideoCreatePage({
@@ -127,7 +194,20 @@ export function SocialVideoCreatePage({
   }
 
   async function handleCopyPrompt() {
-    const prompt = buildAiRevisionPrompt(outline, workType)
+    if (!editingRecord?.id) {
+      setCopyHint('无条目 id')
+      window.setTimeout(() => setCopyHint(''), 2000)
+      return
+    }
+    const prompt = buildAiRevisionPrompt({
+      recordId: editingRecord.id,
+      outline,
+      workType,
+      title,
+      content,
+      imagePreviews,
+      publishStatus: DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS,
+    })
     try {
       await navigator.clipboard.writeText(prompt)
       setCopyHint('已复制')
