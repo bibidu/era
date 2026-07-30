@@ -11,8 +11,10 @@ import {
   TITLE_LINE_HEIGHT_OPTIONS,
   TITLE_MARGIN_OPTIONS,
 } from './configSelectOptions'
+import { GRAPHIC_PAGE_TEXT_COLOR } from './graphicContentColors'
 import type { FontSizeTarget, TextAdjustField } from './graphicConfigPanels'
 import { getFontConfigForTarget } from './graphicTextFonts'
+import { THEME_COLORS } from './highlightColors'
 import { TextAdjustNumericControl } from './TextAdjustNumericControl'
 import { GRAPHIC_ASPECT_RATIO_OPTIONS, type GraphicAspectRatio, type GraphicTextConfig } from './types'
 
@@ -146,6 +148,63 @@ interface GraphicTextAdjustFieldStripProps {
   onFontSelect: (font: FontOption) => void
 }
 
+function GraphicTitleColorStrip({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (color: string) => void
+}) {
+  const selected = value.trim()
+  const isCustom =
+    Boolean(selected) &&
+    !THEME_COLORS.some((swatch) => swatch.toLowerCase() === selected.toLowerCase())
+
+  return (
+    <StripShell>
+      <button
+        type="button"
+        aria-label="默认颜色"
+        aria-pressed={!selected}
+        className={`graphic-toolbar-strip-chip ${!selected ? 'graphic-toolbar-strip-chip--selected' : ''}`}
+        onClick={() => onChange('')}
+      >
+        默认
+      </button>
+      {THEME_COLORS.map((swatch) => {
+        const active = selected.toLowerCase() === swatch.toLowerCase()
+        return (
+          <button
+            key={swatch}
+            type="button"
+            aria-label={`标题颜色 ${swatch}`}
+            aria-pressed={active}
+            className={`graphic-highlight-color-swatch ${
+              active ? 'graphic-highlight-color-swatch--selected' : ''
+            }`}
+            style={{ backgroundColor: swatch }}
+            onClick={() => onChange(swatch)}
+          />
+        )
+      })}
+      <label
+        className={`theme-color-palette-btn graphic-highlight-color-swatch graphic-highlight-color-swatch--picker ${
+          isCustom ? 'graphic-highlight-color-swatch--selected' : ''
+        }`}
+        style={isCustom ? { backgroundColor: selected } : undefined}
+      >
+        <input
+          type="color"
+          value={selected || GRAPHIC_PAGE_TEXT_COLOR}
+          onChange={(event) => onChange(event.target.value)}
+          className="absolute inset-[-8px] size-12 cursor-pointer opacity-0"
+          aria-label="自定义标题颜色"
+        />
+      </label>
+    </StripShell>
+  )
+}
+
 function TextAdjustFieldControl({
   target,
   field,
@@ -159,6 +218,14 @@ function TextAdjustFieldControl({
   }
 
   if (target === 'title') {
+    if (field === 'color') {
+      return (
+        <GraphicTitleColorStrip
+          value={config.titlePrimaryColor}
+          onChange={(color) => onUpdate({ titlePrimaryColor: color })}
+        />
+      )
+    }
     if (field === 'fontSize') {
       return (
         <TextAdjustNumericControl
@@ -166,6 +233,17 @@ function TextAdjustFieldControl({
           value={config.titleFontSize}
           options={TITLE_FONT_SIZE_OPTIONS}
           onChange={(value) => onUpdate({ titleFontSize: value })}
+          format={(value) => `${value}px`}
+        />
+      )
+    }
+    if (field === 'secondaryFontSize') {
+      return (
+        <TextAdjustNumericControl
+          aria-label="标题次字号"
+          value={config.titleSecondaryFontSize}
+          options={TITLE_FONT_SIZE_OPTIONS}
+          onChange={(value) => onUpdate({ titleSecondaryFontSize: value })}
           format={(value) => `${value}px`}
         />
       )
@@ -190,14 +268,17 @@ function TextAdjustFieldControl({
         />
       )
     }
-    return (
-      <TextAdjustNumericControl
-        aria-label="下间距"
-        value={config.titleMarginBottom}
-        options={TITLE_MARGIN_OPTIONS}
-        onChange={(value) => onUpdate({ titleMarginBottom: value })}
-      />
-    )
+    if (field === 'marginBottom') {
+      return (
+        <TextAdjustNumericControl
+          aria-label="下间距"
+          value={config.titleMarginBottom}
+          options={TITLE_MARGIN_OPTIONS}
+          onChange={(value) => onUpdate({ titleMarginBottom: value })}
+        />
+      )
+    }
+    return null
   }
 
   if (target === 'heading') {
@@ -232,14 +313,17 @@ function TextAdjustFieldControl({
         />
       )
     }
-    return (
-      <TextAdjustNumericControl
-        aria-label="下间距"
-        value={config.headingMarginBottom}
-        options={HEADING_MARGIN_OPTIONS}
-        onChange={(value) => onUpdate({ headingMarginBottom: value })}
-      />
-    )
+    if (field === 'marginBottom') {
+      return (
+        <TextAdjustNumericControl
+          aria-label="下间距"
+          value={config.headingMarginBottom}
+          options={HEADING_MARGIN_OPTIONS}
+          onChange={(value) => onUpdate({ headingMarginBottom: value })}
+        />
+      )
+    }
+    return null
   }
 
   if (target === 'code') {
@@ -255,14 +339,18 @@ function TextAdjustFieldControl({
       )
     }
 
-    return (
-      <TextAdjustNumericControl
-        aria-label="代码块行高"
-        value={config.codeLineHeight}
-        options={CODE_LINE_HEIGHT_OPTIONS}
-        onChange={(value) => onUpdate({ codeLineHeight: value })}
-      />
-    )
+    if (field === 'lineHeight') {
+      return (
+        <TextAdjustNumericControl
+          aria-label="代码块行高"
+          value={config.codeLineHeight}
+          options={CODE_LINE_HEIGHT_OPTIONS}
+          onChange={(value) => onUpdate({ codeLineHeight: value })}
+        />
+      )
+    }
+
+    return null
   }
 
   if (field === 'fontSize') {
@@ -277,14 +365,18 @@ function TextAdjustFieldControl({
     )
   }
 
-  return (
-    <TextAdjustNumericControl
-      aria-label="正文行高"
-      value={config.bodyLineHeight}
-      options={BODY_LINE_HEIGHT_OPTIONS}
-      onChange={(value) => onUpdate({ bodyLineHeight: value })}
-    />
-  )
+  if (field === 'lineHeight') {
+    return (
+      <TextAdjustNumericControl
+        aria-label="正文行高"
+        value={config.bodyLineHeight}
+        options={BODY_LINE_HEIGHT_OPTIONS}
+        onChange={(value) => onUpdate({ bodyLineHeight: value })}
+      />
+    )
+  }
+
+  return null
 }
 
 export function GraphicTextAdjustFieldStrip(props: GraphicTextAdjustFieldStripProps) {
@@ -296,6 +388,10 @@ export function GraphicTextAdjustFieldStrip(props: GraphicTextAdjustFieldStripPr
         onSelect={props.onFontSelect}
       />
     )
+  }
+
+  if (props.field === 'color') {
+    return <TextAdjustFieldControl {...props} />
   }
 
   return (

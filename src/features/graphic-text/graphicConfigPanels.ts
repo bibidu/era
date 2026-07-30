@@ -21,7 +21,14 @@ export type TemplateNav = null | 'solid' | 'texture'
 
 export type FontSizeTarget = 'title' | 'heading' | 'body' | 'code'
 
-export type TextAdjustField = 'font' | 'fontSize' | 'lineHeight' | 'marginTop' | 'marginBottom'
+export type TextAdjustField =
+  | 'font'
+  | 'fontSize'
+  | 'secondaryFontSize'
+  | 'color'
+  | 'lineHeight'
+  | 'marginTop'
+  | 'marginBottom'
 
 export type FontSizeNav = null | 'menu' | FontSizeTarget
 
@@ -66,6 +73,8 @@ export const TEXT_ADJUST_FIELDS: Record<
   title: [
     { id: 'font', label: '字体' },
     { id: 'fontSize', label: '字号' },
+    { id: 'secondaryFontSize', label: '次字号' },
+    { id: 'color', label: '颜色' },
     { id: 'lineHeight', label: '行高' },
     { id: 'marginTop', label: '上间距' },
     { id: 'marginBottom', label: '下间距' },

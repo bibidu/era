@@ -1156,6 +1156,10 @@ body.is-dragging {
   border-top: none;
 }
 
+.graphic-content-text-adjust-field .graphic-toolbar-strip-scroll {
+  gap: 0.5rem;
+}
+
 .graphic-config-preview-layer {
   position: absolute;
   top: 0;

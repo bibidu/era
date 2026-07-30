@@ -316,8 +316,14 @@ export function GraphicTextWorkspace() {
   }
 
   const handleSelectTextAdjustTarget = (target: FontSizeTarget) => {
-    setTextAdjustField(null)
-    setFontSizeNav((current) => (current === target ? 'menu' : target))
+    if (fontSizeNav === target) {
+      setTextAdjustField(null)
+      setFontSizeNav('menu')
+      return
+    }
+    setFontSizeNav(target)
+    // 进入层级后默认展开字号，避免「字号没了」的错觉
+    setTextAdjustField('fontSize')
   }
 
   const handleSelectTextAdjustField = (field: TextAdjustField) => {
