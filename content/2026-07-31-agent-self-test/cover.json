@@ -1,0 +1,13 @@
+{
+  "bigTitle": "3 行规则\n它自己跑测试",
+  "bigTitleFont": "shuheiti",
+  "bigTitleColor": "#111111",
+  "bigTitleLineColors": ["#111111", "#1D4ED8"],
+  "smallTitle": "让 Agent 改完代码自己跑测试，不用我催",
+  "description": "完整 3 行在评论区置顶，直接抄",
+  "tags": ["完成条件", "失败剧本", "重试刹车"],
+  "secondaryTitles": ["写死命令", "只修第一条", "3 轮封顶"],
+  "themeColor": "#1D4ED8",
+  "blobCorner": "bottom-right",
+  "out": "output/cover-11.png"
+}
