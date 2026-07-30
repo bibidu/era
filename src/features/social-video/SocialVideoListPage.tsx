@@ -1,4 +1,4 @@
-import { Plus, Sparkles, TrendingUp } from 'lucide-react'
+import { Plus, RefreshCw, Sparkles, TrendingUp } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import {
   SOCIAL_VIDEO_PUBLISH_STATUSES,
@@ -199,6 +199,7 @@ export function SocialVideoListPage({
 }: SocialVideoListPageProps) {
   const [records, setRecords] = useState<SocialVideoAnalysisRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -220,6 +221,7 @@ export function SocialVideoListPage({
         setError('')
       } catch (err) {
         if (cancelled) return
+        setRecords([])
         setError(err instanceof Error ? err.message : '加载作品列表失败')
       } finally {
         if (!cancelled) {
@@ -233,8 +235,26 @@ export function SocialVideoListPage({
     }
   }, [statusFilter, workTypeFilter, reloadToken])
 
+  async function handleRefresh() {
+    if (refreshing || loading) return
+    setRefreshing(true)
+    try {
+      const rows = await listSocialVideoAnalyses({
+        publishStatus: statusFilter || null,
+        workType: workTypeFilter || null,
+      })
+      setRecords(sortSocialVideoAnalyses(rows))
+      setError('')
+    } catch (err) {
+      setRecords([])
+      setError(err instanceof Error ? err.message : '刷新作品列表失败')
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
   const actionBtnClass =
-    'flex size-9 items-center justify-center transition hover:opacity-90 active:opacity-80'
+    'flex size-9 items-center justify-center transition hover:opacity-90 active:opacity-80 disabled:opacity-40'
   const actionBtnStyle = {
     color: 'var(--era-fg)',
   } as const
@@ -283,6 +303,22 @@ export function SocialVideoListPage({
             onClick={onSmartExtract}
           >
             <Sparkles size={18} strokeWidth={2} />
+          </button>
+          <span className="h-5 w-px shrink-0" style={{ background: 'var(--era-border)' }} aria-hidden />
+          <button
+            type="button"
+            className={actionBtnClass}
+            style={actionBtnStyle}
+            aria-label="刷新"
+            title="刷新"
+            disabled={refreshing || loading}
+            onClick={() => void handleRefresh()}
+          >
+            <RefreshCw
+              size={18}
+              strokeWidth={2}
+              className={refreshing ? 'animate-spin' : undefined}
+            />
           </button>
         </div>
       </div>
