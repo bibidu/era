@@ -1,8 +1,11 @@
 import { ChevronLeft } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
+  DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
   listSocialVideoAnalyses,
+  SOCIAL_VIDEO_WORK_TYPES,
   type SocialVideoAnalysisRecord,
+  type SocialVideoWorkType,
 } from '../../agent/supabaseSocialVideoAnalysis'
 import {
   BENCHMARKS,
@@ -48,6 +51,8 @@ export function AccountReviewPage({ onBack }: AccountReviewPageProps) {
   const [records, setRecords] = useState<SocialVideoAnalysisRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  /** 不同类型对应不同账号，默认只看图文 */
+  const [workType, setWorkType] = useState<SocialVideoWorkType>(DEFAULT_SOCIAL_VIDEO_WORK_TYPE)
 
   useEffect(() => {
     let cancelled = false
@@ -70,7 +75,10 @@ export function AccountReviewPage({ onBack }: AccountReviewPageProps) {
     }
   }, [])
 
-  const review = useMemo(() => buildAccountReview(records), [records])
+  const review = useMemo(
+    () => buildAccountReview(records.filter((record) => record.work_type === workType)),
+    [records, workType],
+  )
 
   return (
     <div className="flex min-h-0 flex-1 flex-col" style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}>
@@ -87,15 +95,44 @@ export function AccountReviewPage({ onBack }: AccountReviewPageProps) {
         >
           <ChevronLeft size={18} />
         </button>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="text-base font-semibold">账号复盘</h1>
           <p className="truncate text-xs" style={{ color: 'var(--era-muted)' }}>
-            {loading ? '加载中...' : `已发布 ${review.totals.postCount} 篇 · 跨作品汇总`}
+            {loading
+              ? '加载中...'
+              : `${workType}账号 · 已发布 ${review.totals.postCount} 篇 · 跨作品汇总`}
           </p>
         </div>
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+        <div className="mb-4 flex gap-2" role="tablist" aria-label="账号类型">
+          {SOCIAL_VIDEO_WORK_TYPES.map((type) => {
+            const active = workType === type
+            return (
+              <button
+                key={type}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                className="rounded-full px-4 py-2 text-sm font-medium transition"
+                style={
+                  active
+                    ? { background: 'var(--era-button)', color: 'var(--era-button-fg)' }
+                    : {
+                        background: 'var(--era-panel)',
+                        color: 'var(--era-muted)',
+                        border: '1px solid var(--era-border)',
+                      }
+                }
+                onClick={() => setWorkType(type)}
+              >
+                {type}
+              </button>
+            )
+          })}
+        </div>
+
         {loading ? (
           <div className="flex h-48 items-center justify-center text-sm" style={{ color: 'var(--era-muted)' }}>
             加载中...
@@ -109,14 +146,14 @@ export function AccountReviewPage({ onBack }: AccountReviewPageProps) {
             className="flex h-64 flex-col items-center justify-center rounded-3xl border border-dashed px-6 text-center"
             style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
           >
-            <p className="text-base font-semibold">暂无已发布作品</p>
+            <p className="text-base font-semibold">暂无已发布的{workType}作品</p>
             <p className="mt-2 text-sm leading-6" style={{ color: 'var(--era-muted)' }}>
-              在「智能提取」里录入后台数据并标记为已发布，这里会自动算出账号级复盘。
+              在「智能提取」里录入后台数据、选择类型「{workType}」并标记为已发布，这里会自动算出该账号复盘。
             </p>
           </div>
         ) : (
           <div className="flex flex-col gap-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            <OverviewGrid review={review} />
+            <OverviewGrid review={review} workType={workType} />
             <DiagnosticsSection review={review} />
             <FunnelSection review={review} />
             <TrendSection review={review} />
@@ -172,10 +209,13 @@ function StatCard({
   )
 }
 
-function OverviewGrid({ review }: { review: AccountReview }) {
+function OverviewGrid({ review, workType }: { review: AccountReview; workType: SocialVideoWorkType }) {
   const { totals } = review
   return (
-    <SectionCard title="账号总览" subtitle="全部已发布作品累计，与抖音图文健康基准线对照">
+    <SectionCard
+      title="账号总览"
+      subtitle={`仅统计「${workType}」已发布作品累计，与抖音图文健康基准线对照`}
+    >
       <div className="grid grid-cols-2 gap-2">
         <StatCard label="累计播放" value={formatCount(totals.play)} hint={`中位 ${formatCount(totals.medianPlay)}/篇`} />
         <StatCard
