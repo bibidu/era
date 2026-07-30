@@ -58,12 +58,11 @@ interface AiRevisionPromptInput {
 function buildAiRevisionPrompt(input: AiRevisionPromptInput) {
   const { url } = browserSupabaseConfig()
   const projectRef = supabaseProjectRef(url)
-  const coverClause = input.workType === '图文' ? '封面图以及' : ''
 
   const formBlocks: string[] = []
   const outline = input.outline.trim()
   if (outline) {
-    formBlocks.push(`### 大纲\n${outline}`)
+    formBlocks.push(`### 要求\n${outline}`)
   }
   if (input.workType) {
     formBlocks.push(`### 类型\n${input.workType}`)
@@ -102,10 +101,6 @@ function buildAiRevisionPrompt(input: AiRevisionPromptInput) {
 - 表：${ERA_SOCIAL_VIDEO_ANALYSES_TABLE}
 - 条目 id：${input.recordId}
 - 需更新字段：title、markdown、image_previews（图片链接按序写入；封面须用 cover 文件名或 --cover，自动带 __cover_keep__ 永久标记）
-
-## 任务说明
-1. 生成 5 个标题候选以及正文（若下方已提供正文，则严格按照该正文展示），并引导用户选择或确认一个标题。
-2. 标题与内容确认后，生成 ${coverClause}内容图，上传阿里云 OSS，再把图片链接依次写入上述条目的 image_previews；同时把确定的标题、内容写回同一条记录。
 
 ## 当前表单（仅含非空项）
 ${formSection}`
@@ -326,13 +321,13 @@ export function SocialVideoCreatePage({
           <div className="mx-auto flex w-full max-w-lg flex-col gap-4">
             <label className="flex flex-col gap-2">
               <span className="text-sm font-medium">
-                大纲<span className="ml-1 text-rose-400">*</span>
+                要求<span className="ml-1 text-rose-400">*</span>
               </span>
               <textarea
                 className={`${fieldClass} min-h-28 resize-y leading-6`}
                 style={fieldStyle}
                 value={outline}
-                placeholder="填写必填大纲"
+                placeholder="填写必填要求"
                 onChange={(event) => setOutline(event.target.value)}
               />
             </label>
