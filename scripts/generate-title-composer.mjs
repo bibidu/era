@@ -40,11 +40,12 @@ function shuheitiFontFaceCss() {
 }
 
 function fontFamilyForId(fontId) {
-  if (fontId === 'shuheiti') return `"Alimama ShuHeiTi", "Noto Sans SC", sans-serif`
-  if (fontId === 'song') return `"Noto Serif SC", serif`
-  if (fontId === 'heiti') return `"Noto Sans SC", sans-serif`
-  if (fontId === 'kai') return `"LXGW WenKai GB", serif`
-  return `"Alimama ShuHeiTi", "Noto Sans SC", sans-serif`
+  // 用单引号，避免打断 HTML style="..." 属性
+  if (fontId === 'shuheiti') return `'Alimama ShuHeiTi', 'Noto Sans SC', sans-serif`
+  if (fontId === 'song') return `'Noto Serif SC', serif`
+  if (fontId === 'heiti') return `'Noto Sans SC', sans-serif`
+  if (fontId === 'kai') return `'LXGW WenKai GB', serif`
+  return `'Alimama ShuHeiTi', 'Noto Sans SC', sans-serif`
 }
 
 function buildHtml(config) {
@@ -66,17 +67,18 @@ function buildHtml(config) {
       const gapAfter = Math.round((line.gapAfter ?? 0) * scale)
       const stretch = line.stretch ?? 1
       const marginBottom = index < (config.lines?.length ?? 0) - 1 ? gapAfter : 0
-      return `<div class="line" style="
-        font-family:${fontFamilyForId(line.fontId)};
-        font-size:${fontSize}px;
-        font-weight:700;
-        line-height:1.05;
-        transform:scaleX(${stretch});
-        transform-origin:left center;
-        margin-bottom:${marginBottom}px;
-        white-space:nowrap;
-        letter-spacing:${stretch > 1.2 ? '-0.02em' : '0'};
-      ">${chars}</div>`
+      const style = [
+        `font-family:${fontFamilyForId(line.fontId)}`,
+        `font-size:${fontSize}px`,
+        'font-weight:700',
+        'line-height:1.05',
+        `transform:scaleX(${stretch})`,
+        'transform-origin:left center',
+        `margin-bottom:${marginBottom}px`,
+        'white-space:nowrap',
+        `letter-spacing:${stretch > 1.2 ? '-0.02em' : '0'}`,
+      ].join(';')
+      return `<div class="line" style="${style}">${chars}</div>`
     })
     .join('\n')
 
