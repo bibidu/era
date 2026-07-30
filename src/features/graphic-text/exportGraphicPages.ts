@@ -14,7 +14,7 @@ import {
 import { buildCircleHighlightColorRuns, drawHandDrawnCircleAroundTextBounds, HAND_DRAWN_CIRCLE_STROKE_WIDTH } from './circleHighlight'
 import { drawHandDrawnUnderline, buildHandUnderlineColorRuns, HAND_DRAWN_UNDERLINE_TILE_WIDTH } from './handDrawnUnderlinePath'
 import { collectGraphicFontIds, getFontConfigForStyleType } from './graphicTextFonts'
-import { getGraphicLayout } from './layout'
+import { getGraphicLayout, resolveTitleFontSize } from './layout'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { getFontById } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
@@ -192,10 +192,7 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
   const styleType = resolveStyleType(block)
   const { fontFamily } = getFontConfigForStyleType(config, styleType)
   if (styleType === 'title') {
-    const titleSize =
-      (block.titleSentenceIndex ?? 0) > 0
-        ? (config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72))
-        : config.titleFontSize
+    const titleSize = resolveTitleFontSize(block, config)
     return {
       size: titleSize * exportScale,
       weight: 700,

@@ -246,10 +246,24 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
   return blocks
 }
 
-function resolveTitleFontSize(block: MarkdownBlock, config: GraphicTextConfig) {
-  const secondary = (block.titleSentenceIndex ?? 0) > 0
-  const secondarySize = config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72)
-  return secondary ? secondarySize : config.titleFontSize
+/**
+ * 标题分行字号：
+ * - 第 1 行用 titleFontSize
+ * - 其后默认用 titleSecondaryFontSize（常小于主字号）
+ * - 若 secondary > primary（强调行模式）：仅第 2 行用大字号，第 3 行及以后回到 titleFontSize
+ */
+export function resolveTitleFontSize(
+  block: Pick<MarkdownBlock, 'titleSentenceIndex'>,
+  config: Pick<GraphicTextConfig, 'titleFontSize' | 'titleSecondaryFontSize'>,
+) {
+  const index = block.titleSentenceIndex ?? 0
+  const primary = config.titleFontSize
+  const secondary = config.titleSecondaryFontSize ?? Math.round(primary * 0.72)
+  if (index === 0) return primary
+  if (secondary > primary) {
+    return index === 1 ? secondary : primary
+  }
+  return secondary
 }
 
 function blockFontSize(block: MarkdownBlock, config: GraphicTextConfig, exportScale: number) {

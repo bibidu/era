@@ -14,7 +14,7 @@ import {
   GRAPHIC_TOP_BAR_TEXT_COLOR,
 } from './graphicContentColors'
 import { HandDrawnUnderline } from './HandDrawnUnderline'
-import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH } from './layout'
+import { getGraphicLayout, GRAPHIC_DISPLAY_BASE_WIDTH, resolveTitleFontSize } from './layout'
 import { getFontConfigForStyleType } from './graphicTextFonts'
 import { TOP_BAR_FONT_SIZE_PX } from './graphicPreviewLayout'
 import {
@@ -105,10 +105,7 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
   const styleType = resolveStyleType(block)
   const bodyUnit = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const codeUnit = `${(config.codeFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
-  const titleFontPx =
-    (block.titleSentenceIndex ?? 0) > 0
-      ? (config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72))
-      : config.titleFontSize
+  const titleFontPx = resolveTitleFontSize(block, config)
   const titleUnit = `${(titleFontPx / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const headingUnit = `${(config.headingFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const gap = '1.1cqw'
@@ -131,10 +128,7 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
 function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSProperties {
   const styleType = resolveStyleType(block)
   const { fontFamily } = getFontConfigForStyleType(config, styleType)
-  const titleFontPx =
-    (block.titleSentenceIndex ?? 0) > 0
-      ? (config.titleSecondaryFontSize ?? Math.round(config.titleFontSize * 0.72))
-      : config.titleFontSize
+  const titleFontPx = resolveTitleFontSize(block, config)
   const titleSize = `${(titleFontPx / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const headingSize = `${(config.headingFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const bodySize = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`

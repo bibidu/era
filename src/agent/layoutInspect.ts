@@ -1,4 +1,4 @@
-import { getGraphicLayout, paginateDocument } from '../features/graphic-text/layout'
+import { getGraphicLayout, paginateDocument, resolveTitleFontSize } from '../features/graphic-text/layout'
 import { stripHighlightMarkers } from '../features/graphic-text/inlineHighlight'
 import { getFontConfigForStyleType } from '../features/graphic-text/graphicTextFonts'
 import type { GraphicDocument } from '../features/graphic-text/document'
@@ -368,10 +368,7 @@ export function inspectGraphicLayout(
 
       const styleType = block.styleType ?? block.type
       const { fontFamily } = getFontConfigForStyleType(config, styleType)
-      const titleSize =
-        (block.titleSentenceIndex ?? 0) > 0
-          ? (config.titleSecondaryFontSize ?? config.titleFontSize)
-          : config.titleFontSize
+      const titleSize = resolveTitleFontSize(block, config)
       const fontSize =
         styleType === 'title'
           ? titleSize * layout.exportScale
