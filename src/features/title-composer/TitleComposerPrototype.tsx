@@ -7,7 +7,7 @@ import { BreakPointBar } from './BreakPointBar'
 import { CharPickerStrip } from './CharPickerStrip'
 import {
   applyLineColor,
-  createDemoDocument,
+  createInitialTitleDocument,
   documentPlainText,
   mergeWithNext,
   rebuildFromPlainText,
@@ -28,8 +28,14 @@ import {
 } from './types'
 import { readCachedTitleSheetHeight } from './titleSheetHeight'
 
-export function TitleComposerPrototype() {
-  const initial = useMemo(() => createDemoDocument(), [])
+export function TitleComposerPrototype({
+  initialText,
+}: {
+  /** 来自 URL ?text= / ?title= 的当前帖子标题；缺省则用 demo */
+  initialText?: string | null
+} = {}) {
+  const seedText = initialText?.trim() || null
+  const initial = useMemo(() => createInitialTitleDocument(seedText), [seedText])
   const [doc, setDoc] = useState<TitleDocument>(initial)
   const [selectedLineId, setSelectedLineId] = useState<string | null>(
     () => initial.lines[1]?.id ?? initial.lines[0]?.id ?? null,
@@ -51,6 +57,16 @@ export function TitleComposerPrototype() {
   )
 
   useEffect(() => {
+    // URL 注入标题变化时整页重置到该文案
+    setDoc(initial)
+    setDraftText(documentPlainText(initial))
+    setSelectedLineId(initial.lines[1]?.id ?? initial.lines[0]?.id ?? null)
+    setSelectedCharId(initial.lines[0]?.chars.find((c) => c.color)?.id ?? null)
+    setActiveTool('size')
+    setCopyState('idle')
+  }, [initial])
+
+  useEffect(() => {
     if (!selectedLineId && doc.lines[0]) {
       setSelectedLineId(doc.lines[0].id)
     }
@@ -65,11 +81,12 @@ export function TitleComposerPrototype() {
 
   useEffect(() => {
     const fontIds = new Set(doc.lines.map((line) => line.fontId))
+    const sample = documentPlainText(doc).replace(/\n/g, '') || '标题'
     for (const id of fontIds) {
       const font = TEXT_FONT_OPTIONS.find((item) => item.id === id)
-      if (font) void loadFont(font, '西北绝不能做厨房火烧天门')
+      if (font) void loadFont(font, sample)
     }
-  }, [doc.lines, loadFont])
+  }, [doc, loadFont])
 
   const selectLine = (lineId: string) => {
     setSelectedLineId(lineId)
@@ -77,7 +94,7 @@ export function TitleComposerPrototype() {
   }
 
   const resetDemo = () => {
-    const next = createDemoDocument()
+    const next = createInitialTitleDocument(seedText)
     setDoc(next)
     setDraftText(documentPlainText(next))
     setSelectedLineId(next.lines[1]?.id ?? next.lines[0]?.id ?? null)
@@ -139,12 +156,14 @@ export function TitleComposerPrototype() {
       <div className="title-composer__stage">
         <div className="title-composer__stage-bar">
           <div>
-            <div className="title-composer__badge">草稿原型</div>
+            <div className="title-composer__badge">
+              {seedText ? '当前标题' : '草稿原型'}
+            </div>
             <h1 className="title-composer__title">标题排版</h1>
           </div>
           <button type="button" className="title-composer__reset" onClick={resetDemo}>
             <RotateCcw size={14} strokeWidth={2} />
-            示例
+            重置
           </button>
         </div>
 

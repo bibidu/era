@@ -3,6 +3,7 @@ import { TopModeTabs, type AppMode } from './components/TopModeTabs'
 import {
   readAppTabFromSearch,
   readHighlightIdsFromSearch,
+  readTitleTextFromSearch,
   replaceAppTabInUrl,
 } from './app/tabRouting'
 import { useEraTheme } from './theme/useEraTheme'
@@ -47,16 +48,21 @@ function TabLoadingFallback() {
 function App() {
   const [mode, setMode] = useState<AppMode>(() => readAppTabFromSearch())
   const [highlightIds, setHighlightIds] = useState(() => readHighlightIdsFromSearch())
+  const [titleText, setTitleText] = useState(() => readTitleTextFromSearch())
   const [balanceOpen, setBalanceOpen] = useState(false)
   const { theme, toggle } = useEraTheme()
 
   const syncFromUrl = useCallback(() => {
     setMode(readAppTabFromSearch())
     setHighlightIds(readHighlightIdsFromSearch())
+    setTitleText(readTitleTextFromSearch())
   }, [])
 
   useEffect(() => {
-    replaceAppTabInUrl(readAppTabFromSearch(), readHighlightIdsFromSearch())
+    replaceAppTabInUrl(readAppTabFromSearch(), {
+      ...readHighlightIdsFromSearch(),
+      titleText: readTitleTextFromSearch(),
+    })
     window.addEventListener('popstate', syncFromUrl)
     return () => window.removeEventListener('popstate', syncFromUrl)
   }, [syncFromUrl])
@@ -68,9 +74,10 @@ function App() {
       replaceAppTabInUrl(next, {
         shareId: highlightIds.shareId,
         projectId: highlightIds.projectId,
+        titleText,
       })
     },
-    [highlightIds.projectId, highlightIds.shareId],
+    [highlightIds.projectId, highlightIds.shareId, titleText],
   )
 
   const wideLayout = mode === 'data' && !balanceOpen
@@ -135,7 +142,10 @@ function App() {
             </div>
           )
         ) : mode === 'title' ? (
-          <TitleComposerPrototype />
+          <TitleComposerPrototype
+            key={titleText ?? ''}
+            initialText={titleText}
+          />
         ) : (
           <GraphicTextWorkspace />
         )}

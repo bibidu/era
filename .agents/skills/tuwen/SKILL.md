@@ -51,7 +51,7 @@ description: >-
 
 1. **收集选题**：用户未给标题/大纲 → 主动询问，拿到前不要写正文。
 2. **正文（多轮确认）**：据标题/大纲写含 `#` 一级标题与适量 `##` 的 Markdown，展示后明确询问是否继续；改完再展示再问；确认后 `era_create_project` / `era_set_markdown`（`pageOverlay: 'fengshui'` + `9:16` + `showWordCount: false` + `topText: '连续观看、点赞、关注，你也是地理风水达人（阳宅篇）'`，**不写** `shuheiti`）。
-3. **社媒标题（5 个 + 确认）**：给 5 个抓眼球、贴合正文的标题；技术名词首字母大写（`Memory`/`Agent`/`Token`）；用户选定后 `era_set_title`。
+3. **社媒标题（5 个 + 确认）**：给 5 个抓眼球、贴合正文的标题；技术名词首字母大写（`Memory`/`Agent`/`Token`）；用户选定后 `era_set_title`。若用户要精细调标题排版（换行/字号/拉伸/行内色），**主动发标题设置页**：完整 EdgeOne URL + `?tab=title&text=<用户选定的标题>`（可用 `titleComposerPagesUrl(标题)`）。**禁止**只发裸 `?tab=title`（会显示固定 demo「西北绝不能…」）。用户复制配置发回后按 `.cursor/rules/title-composer.mdc` 出图。
 4. **高亮**：按 **§高亮** 流程（优先设置页）。
 5. **校验与导出**：按 **§校验与导出**。
 6. **发图**：按 **§发图（先拼图确认，再发分图）**。
@@ -81,7 +81,7 @@ description: >-
 
 内容确认后，与用户确认两类信息：
 
-1. **标题**：给 **5 个**抓眼球、贴合内容的社媒标题；技术名词首字母大写（`Memory`/`Agent`/`Token`）；多轮修改到用户选定。
+1. **标题**：给 **5 个**抓眼球、贴合内容的社媒标题；技术名词首字母大写（`Memory`/`Agent`/`Token`）；多轮修改到用户选定。若用户要精细调标题排版，发标题设置页时**必须**带 `?tab=title&text=<选定标题>`（禁止裸 `?tab=title`）。
 2. **封面所需信息**：从内容中提取并让用户确认——副标题 / 小标题、标签、以及封面 skill 需要的其它字段。**完整字段以仓库中的「封面 skill」为准**。
 
 ### B4. 生成封面图
@@ -235,6 +235,7 @@ npm run deploy:edgeone
 | 图片混排 | markdown 整行 `![alt](url =宽x高)`（url 支持远程或 dataURL） |
 | 高亮 | `era_apply_highlights` · `POST .../highlights`（可带 `replace: true`） |
 | 高亮设置分享 | `era_create_highlight_setup_share` · `POST .../highlight-setup-share` → EdgeOne `url`（`?tab=highlight&shareId=...`，自动打开高亮 Tab） |
+| 标题排版页 | 发完整 EdgeOne URL + `?tab=title&text=<当前标题>`（`titleComposerPagesUrl`）；禁止裸 `?tab=title` |
 | 校验 | `era_preview_layout` · `POST .../preview-layout` |
 | 导出 | `era_export_images` · `POST .../export`（含拼图 `sheetPath`） |
 | 封面图 | 见仓库中的 **封面 skill**（非风水流程） |

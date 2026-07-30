@@ -40,7 +40,7 @@
 
 ## 标题排版设置页
 
-用户需要精细控制标题换行 / 拉伸 / 字号 / 间距 / 字体 / 行内色时，**主动提供标题设置页**（顶栏「标题」或 `?tab=title`），发完整 EdgeOne URL（含 `eo_token` / `eo_time` 与 `tab=title`）。
+用户需要精细控制标题换行 / 拉伸 / 字号 / 间距 / 字体 / 行内色时，**主动提供标题设置页**（顶栏「标题」或 `?tab=title&text=…`），发完整 EdgeOne URL（含 `eo_token` / `eo_time`、`tab=title` 与 **`text=当前帖子标题`**）。**禁止**只发裸 `?tab=title`（会显示固定 demo「西北绝不能…」）。可用 `titleComposerPagesUrl(标题)` 拼链接。
 
 用户复制配置发回后，用 `node scripts/generate-title-composer.mjs --full --input <json>` 出完整 9:16 图，上传 OSS 后直发签名 URL。约定见 `.cursor/rules/title-composer.mdc`。
 
@@ -53,4 +53,4 @@
 | 图文 | `?tab=graphic` |
 | 社媒 | `?tab=data` |
 | 高亮 | `?tab=highlight&shareId=<id>` |
-| 标题 | `?tab=title` |
+| 标题 | `?tab=title&text=<当前帖子标题>` |

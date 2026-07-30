@@ -83,6 +83,19 @@ export function highlightSetupPagesUrl(shareId: string, pagesBase = ERA_PUBLIC_B
   return url.toString()
 }
 
+/**
+ * 标题排版设置页 URL：必须带上当前帖子标题（?text=），避免打开固定 demo「西北绝不能…」。
+ * 多行标题可用换行；调用方若只有完整 EdgeOne 预览链，在其上追加 `&tab=title&text=…` 亦可。
+ */
+export function titleComposerPagesUrl(titleText: string, pagesBase = ERA_PUBLIC_BASE) {
+  const base = pagesBase.endsWith('/') ? pagesBase : `${pagesBase}/`
+  const url = new URL(base)
+  url.searchParams.set('tab', 'title')
+  const text = titleText.replace(/\r\n/g, '\n').trim()
+  if (text) url.searchParams.set('text', text)
+  return url.toString()
+}
+
 function shareDocumentForStorage(document?: unknown): unknown | null {
   if (!document || typeof document !== 'object') return null
   const blocks = (document as { blocks?: { kind?: string; text?: string }[] }).blocks

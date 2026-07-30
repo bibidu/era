@@ -40,7 +40,7 @@ export function createLine(
   }
 }
 
-/** 示例：西北绝不能做厨房 / 火烧天门 / 是八宅最大禁忌 */
+/** 示例：西北绝不能做厨房 / 火烧天门 / 是八宅最大禁忌（无 URL 注入时的兜底） */
 export function createDemoDocument(): TitleDocument {
   return {
     lines: [
@@ -69,6 +69,58 @@ export function createDemoDocument(): TitleDocument {
       }),
     ],
   }
+}
+
+/**
+ * 用帖子标题纯文本生成初始排版文档。
+ * - 含换行：按行拆分；三行时中间行加大字号（与 demo 节奏相近）
+ * - 单行：整段作为一行，字多则略缩小字号
+ * - 空文本：回落 demo
+ */
+export function createDocumentFromPlainText(plain: string): TitleDocument {
+  const parts = plain
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((row) => row.trim())
+    .filter((row) => row.length > 0)
+  if (parts.length === 0) return createDemoDocument()
+
+  if (parts.length === 1) {
+    const text = parts[0]
+    const len = Array.from(text).length
+    return {
+      lines: [
+        createLine(text, {
+          fontSize: len > 16 ? 40 : len > 10 ? 48 : 56,
+          stretch: 1,
+          fontId: 'shuheiti',
+          color: TITLE_INK,
+          gapAfter: 0,
+        }),
+      ],
+    }
+  }
+
+  return {
+    lines: parts.map((text, index) => {
+      const isHero = parts.length >= 3 && index === 1
+      const isLast = index === parts.length - 1
+      return createLine(text, {
+        fontSize: isHero ? 88 : 40,
+        stretch: isHero ? 1.35 : 1,
+        fontId: 'shuheiti',
+        color: isHero ? TITLE_ACCENT : TITLE_INK,
+        gapAfter: isLast ? 0 : isHero ? 14 : 10,
+      })
+    }),
+  }
+}
+
+/** 有注入标题用注入文案，否则 demo */
+export function createInitialTitleDocument(injectedText?: string | null): TitleDocument {
+  const text = injectedText?.trim()
+  if (text) return createDocumentFromPlainText(text)
+  return createDemoDocument()
 }
 
 /** 在全局字符索引处断行（index 为断点前已有字符数） */
