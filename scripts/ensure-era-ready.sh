@@ -93,7 +93,8 @@ start_dev_if_needed() {
 }
 
 open_bridge_page() {
-  local url="http://${DEV_HOST}:${DEV_PORT}/era/"
+  # Bridge 的 WebSocket 挂在图文工作区里，默认 Tab 是社媒，必须显式带 ?tab=graphic 才会连上
+  local url="http://${DEV_HOST}:${DEV_PORT}/era/?tab=graphic"
   if bridge_connected; then
     echo "==> Bridge 已连接"
     return
@@ -111,7 +112,8 @@ open_bridge_page() {
     nohup npx tsx "$ROOT/scripts/keep-bridge-open.mts" "$url" >"$STATE_DIR/bridge.log" 2>&1 &
     echo $! >"$STATE_DIR/bridge.pid"
   fi
-  for _ in $(seq 1 40); do
+  # 云端首次启动 Chromium + 加载工作区实测约 18s，留足余量
+  for _ in $(seq 1 120); do
     bridge_connected && break
     sleep 0.5
   done
@@ -130,13 +132,13 @@ if ! agent_up; then
 fi
 
 if ! bridge_connected; then
-  echo "!! Bridge 未连接：请手动打开 $DEV_HOST:$DEV_PORT/era/ 并确认右上角 Agent 指示" >&2
+  echo "!! Bridge 未连接：请手动打开 $DEV_HOST:$DEV_PORT/era/?tab=graphic 并确认右上角 Agent 指示" >&2
   echo "ERA_READY=0"
   exit 2
 fi
 
 echo "ERA_READY=1"
-echo "OPEN_URL=http://${DEV_HOST}:${DEV_PORT}/era/"
+echo "OPEN_URL=http://${DEV_HOST}:${DEV_PORT}/era/?tab=graphic"
 echo "AGENT_URL=http://${HOST}:${PORT}"
 echo "HIGHLIGHT_SETUP_PAGES_BASE=https://bibidu-era-0tdhv043.edgeone.cool/"
 echo "HIGHLIGHT_SETUP_URL_HINT=先 POST /v1/projects/<id>/highlight-setup-share 取 url（?tab=highlight&shareId=...）"
