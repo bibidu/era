@@ -291,7 +291,8 @@ html, body { margin: 0; padding: 0; background: #F0F5F8; }
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  margin-bottom: ${Math.round(28 * scale)}px;
+  /* 标题与下方正文间距（displayWidth 基准；约等于 titleMarginBottom 加宽一档） */
+  margin-bottom: ${Math.round(48 * scale)}px;
 }
 .heading {
   margin: ${Math.round(18 * scale)}px 0 ${Math.round(8 * scale)}px;
