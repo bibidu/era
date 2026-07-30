@@ -2,18 +2,25 @@ import { Plus, Sparkles, TrendingUp } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import {
   SOCIAL_VIDEO_PUBLISH_STATUSES,
+  SOCIAL_VIDEO_WORK_TYPES,
   listSocialVideoAnalyses,
   sortSocialVideoAnalyses,
   type SocialVideoAnalysisRecord,
   type SocialVideoPublishStatus,
+  type SocialVideoWorkType,
 } from '../../agent/supabaseSocialVideoAnalysis'
 import { TEXT_FONT_OPTIONS } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
 import { SocialVideoDetailSheet } from './SocialVideoDetailSheet'
 
+export type SocialListStatusFilter = '' | SocialVideoPublishStatus
+export type SocialListWorkTypeFilter = '' | SocialVideoWorkType
+
 interface SocialVideoListPageProps {
-  statusFilter: '' | SocialVideoPublishStatus
-  onStatusFilterChange: (value: '' | SocialVideoPublishStatus) => void
+  statusFilter: SocialListStatusFilter
+  onStatusFilterChange: (value: SocialListStatusFilter) => void
+  workTypeFilter: SocialListWorkTypeFilter
+  onWorkTypeFilterChange: (value: SocialListWorkTypeFilter) => void
   reloadToken?: number
   onSmartExtract: () => void
   onOpenReview: () => void
@@ -21,11 +28,14 @@ interface SocialVideoListPageProps {
   onEdit: (record: SocialVideoAnalysisRecord) => void
 }
 
-type StatusFilter = '' | SocialVideoPublishStatus
-
-const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+const STATUS_FILTERS: { value: SocialListStatusFilter; label: string }[] = [
   { value: '', label: '全部' },
   ...SOCIAL_VIDEO_PUBLISH_STATUSES.map((status) => ({ value: status, label: status })),
+]
+
+const WORK_TYPE_FILTERS: { value: SocialListWorkTypeFilter; label: string }[] = [
+  { value: '', label: '全部' },
+  ...SOCIAL_VIDEO_WORK_TYPES.map((type) => ({ value: type, label: type })),
 ]
 
 const SHUHEITI_FONT =
@@ -117,9 +127,68 @@ function CoverThumb({ record }: { record: SocialVideoAnalysisRecord }) {
   )
 }
 
+function SegmentedFilter<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string
+  options: { value: T; label: string }[]
+  value: T
+  onChange: (value: T) => void
+}) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="w-8 shrink-0 text-xs leading-none" style={{ color: 'var(--era-muted)' }}>
+        {label}
+      </span>
+      <div
+        className="flex min-w-0 flex-1 overflow-x-auto rounded-full p-0.5"
+        style={{ background: 'var(--era-input)', border: '1px solid var(--era-border)' }}
+        role="tablist"
+        aria-label={label}
+      >
+        {options.map((item) => {
+          const active = value === item.value
+          return (
+            <button
+              key={item.label}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              className="min-w-0 flex-1 shrink-0 truncate rounded-full px-2.5 py-1.5 text-xs font-medium transition"
+              style={
+                active
+                  ? { background: 'var(--era-button)', color: 'var(--era-button-fg)' }
+                  : { background: 'transparent', color: 'var(--era-muted)' }
+              }
+              onClick={() => onChange(item.value)}
+            >
+              {item.label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function emptyFilterHint(statusFilter: SocialListStatusFilter, workTypeFilter: SocialListWorkTypeFilter) {
+  const parts: string[] = []
+  if (workTypeFilter) parts.push(`类型「${workTypeFilter}」`)
+  if (statusFilter) parts.push(`状态「${statusFilter}」`)
+  if (parts.length === 0) {
+    return '点击右上角智能提取图标，完成后保存，作品会出现在这里。'
+  }
+  return `当前筛选（${parts.join(' · ')}）下没有作品。`
+}
+
 export function SocialVideoListPage({
   statusFilter,
   onStatusFilterChange,
+  workTypeFilter,
+  onWorkTypeFilterChange,
   reloadToken = 0,
   onSmartExtract,
   onOpenReview,
@@ -144,6 +213,7 @@ export function SocialVideoListPage({
       try {
         const rows = await listSocialVideoAnalyses({
           publishStatus: statusFilter || null,
+          workType: workTypeFilter || null,
         })
         if (cancelled) return
         setRecords(sortSocialVideoAnalyses(rows))
@@ -161,7 +231,7 @@ export function SocialVideoListPage({
     return () => {
       cancelled = true
     }
-  }, [statusFilter, reloadToken])
+  }, [statusFilter, workTypeFilter, reloadToken])
 
   const actionBtnClass =
     'flex size-9 items-center justify-center transition hover:opacity-90 active:opacity-80'
@@ -218,31 +288,21 @@ export function SocialVideoListPage({
       </div>
 
       <div
-        className="flex shrink-0 gap-2 overflow-x-auto border-b px-4 py-2.5"
-        style={{ borderColor: 'var(--era-border)' }}
+        className="flex shrink-0 flex-col gap-2 border-b px-4 py-3"
+        style={{ borderColor: 'var(--era-border)', background: 'var(--era-bg)' }}
       >
-        {STATUS_FILTERS.map((item) => {
-          const active = statusFilter === item.value
-          return (
-            <button
-              key={item.label}
-              type="button"
-              className="shrink-0 rounded-full px-3 py-1 text-xs font-medium transition"
-              style={
-                active
-                  ? { background: 'var(--era-button)', color: 'var(--era-button-fg)' }
-                  : {
-                      background: 'var(--era-panel)',
-                      color: 'var(--era-muted)',
-                      border: '1px solid var(--era-border)',
-                    }
-              }
-              onClick={() => onStatusFilterChange(item.value)}
-            >
-              {item.label}
-            </button>
-          )
-        })}
+        <SegmentedFilter
+          label="类型"
+          options={WORK_TYPE_FILTERS}
+          value={workTypeFilter}
+          onChange={onWorkTypeFilterChange}
+        />
+        <SegmentedFilter
+          label="状态"
+          options={STATUS_FILTERS}
+          value={statusFilter}
+          onChange={onStatusFilterChange}
+        />
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
@@ -261,9 +321,7 @@ export function SocialVideoListPage({
           >
             <p className="text-base font-semibold">暂无分析作品</p>
             <p className="mt-2 text-sm leading-6" style={{ color: 'var(--era-muted)' }}>
-              {statusFilter
-                ? `当前筛选「${statusFilter}」下没有作品。`
-                : '点击右上角智能提取图标，完成后保存，作品会出现在这里。'}
+              {emptyFilterHint(statusFilter, workTypeFilter)}
             </p>
           </div>
         ) : (
@@ -288,7 +346,13 @@ export function SocialVideoListPage({
                   <div className="aspect-[3/4] w-full">
                     <CoverThumb record={record} />
                     <span
-                      className="absolute right-1.5 top-1.5 max-w-[calc(100%-0.75rem)] truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide shadow-sm"
+                      className="absolute left-1.5 top-1.5 max-w-[calc(50%-0.5rem)] truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide shadow-sm"
+                      style={{ background: 'rgb(0 0 0 / 0.55)', color: '#ffffff' }}
+                    >
+                      {record.work_type}
+                    </span>
+                    <span
+                      className="absolute right-1.5 top-1.5 max-w-[calc(50%-0.5rem)] truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide shadow-sm"
                       style={badge}
                     >
                       {record.publish_status}
