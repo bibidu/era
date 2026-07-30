@@ -199,6 +199,12 @@ export function GraphicTextWorkspace() {
     setTextAdjustField(null)
   }
 
+  const openContentTextAdjust = () => {
+    // 内容 sheet 打开即展示标题字号/颜色入口，无需再点「文字调节」
+    setFontSizeNav('title')
+    setTextAdjustField('fontSize')
+  }
+
   const resetTemplateNav = () => {
     setTemplateNav(null)
   }
@@ -272,13 +278,17 @@ export function GraphicTextWorkspace() {
     setEditorOpen(false)
     setToolbarStrip(null)
     resetTemplateNav()
-    resetTextAdjust()
-    setConfigPanel((current) => (current === panel ? null : panel))
-  }
-
-  const handleOpenTextAdjustMenu = () => {
-    setTextAdjustField(null)
-    setFontSizeNav((current) => (current === null ? 'menu' : current))
+    if (configPanel === panel) {
+      resetTextAdjust()
+      setConfigPanel(null)
+      return
+    }
+    if (panel === 'content') {
+      openContentTextAdjust()
+    } else {
+      resetTextAdjust()
+    }
+    setConfigPanel(panel)
   }
 
   const handleTextAdjustBack = () => {
@@ -288,9 +298,8 @@ export function GraphicTextWorkspace() {
     }
     if (isTextAdjustTarget(fontSizeNav)) {
       setFontSizeNav('menu')
-      return
     }
-    resetTextAdjust()
+    // menu 级不再收起成入口按钮
   }
 
   const handleTemplateBack = () => {
@@ -331,6 +340,7 @@ export function GraphicTextWorkspace() {
   }
 
   const handleEdit = () => {
+    openContentTextAdjust()
     setConfigPanel('content')
     setToolbarStrip(null)
     resetTemplateNav()
@@ -483,7 +493,6 @@ export function GraphicTextWorkspace() {
           onDocumentChange={setDocument}
           onSelectBlock={setSelectedContentBlockId}
           onEditMarkdownBlock={handleEditMarkdownBlock}
-          onOpenTextAdjustMenu={handleOpenTextAdjustMenu}
           onTextAdjustBack={handleTextAdjustBack}
           onSelectTextAdjustTarget={handleSelectTextAdjustTarget}
           onSelectTextAdjustField={handleSelectTextAdjustField}

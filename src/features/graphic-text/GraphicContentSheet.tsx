@@ -33,7 +33,10 @@ import {
   writeCachedSheetHeight,
 } from './topBar'
 import type { FontSizeNav, FontSizeTarget, TextAdjustField } from './graphicConfigPanels'
-import { GraphicContentTextAdjust } from './GraphicContentTextAdjust'
+import {
+  GraphicContentTextAdjust,
+  GraphicContentTextAdjustField,
+} from './GraphicContentTextAdjust'
 import type { GraphicTextConfig } from './types'
 
 interface GraphicContentSheetProps {
@@ -50,7 +53,6 @@ interface GraphicContentSheetProps {
   onDocumentChange: (document: GraphicDocument) => void
   onSelectBlock: (blockId: string | null) => void
   onEditMarkdownBlock: (blockId: string) => void
-  onOpenTextAdjustMenu: () => void
   onTextAdjustBack: () => void
   onSelectTextAdjustTarget: (target: FontSizeTarget) => void
   onSelectTextAdjustField: (field: TextAdjustField) => void
@@ -81,7 +83,6 @@ export function GraphicContentSheet({
   onDocumentChange,
   onSelectBlock,
   onEditMarkdownBlock,
-  onOpenTextAdjustMenu,
   onTextAdjustBack,
   onSelectTextAdjustTarget,
   onSelectTextAdjustField,
@@ -210,15 +211,6 @@ export function GraphicContentSheet({
         }}
       />
 
-      <button
-        type="button"
-        aria-label="关闭"
-        className="graphic-sheet-close"
-        onClick={() => onOpenChange(false)}
-      >
-        <X size={18} />
-      </button>
-
       <div
         className="graphic-config-sheet-handle"
         role="separator"
@@ -229,19 +221,33 @@ export function GraphicContentSheet({
         <span className="graphic-config-sheet-handle-bar" />
       </div>
 
-      <div className="graphic-content-sheet-body">
+      <div className="graphic-content-sheet-header">
         <GraphicContentTextAdjust
           fontSizeNav={fontSizeNav}
           textAdjustField={textAdjustField}
-          config={config}
-          onOpenMenu={onOpenTextAdjustMenu}
           onBack={onTextAdjustBack}
           onSelectTarget={onSelectTextAdjustTarget}
           onSelectField={onSelectTextAdjustField}
-          onUpdate={onConfigUpdate}
-          onFontSelect={onFontSelect}
         />
+        <button
+          type="button"
+          aria-label="关闭"
+          className="graphic-sheet-close graphic-content-sheet-close"
+          onClick={() => onOpenChange(false)}
+        >
+          <X size={18} />
+        </button>
+      </div>
 
+      <GraphicContentTextAdjustField
+        fontSizeNav={fontSizeNav}
+        textAdjustField={textAdjustField}
+        config={config}
+        onUpdate={onConfigUpdate}
+        onFontSelect={onFontSelect}
+      />
+
+      <div className="graphic-content-sheet-body">
         {uploadError && <p className="graphic-content-sheet-error">{uploadError}</p>}
 
         <div ref={scrollRef} className="graphic-content-sheet-scroll">
