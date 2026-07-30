@@ -22,6 +22,11 @@ const DataAnalysisWorkspace = lazy(() =>
     default: m.DataAnalysisWorkspace,
   })),
 )
+const TitleComposerPrototype = lazy(() =>
+  import('./features/title-composer/TitleComposerPrototype').then((m) => ({
+    default: m.TitleComposerPrototype,
+  })),
+)
 const AccountBalancePage = lazy(() =>
   import('./features/account/AccountBalancePage').then((m) => ({
     default: m.AccountBalancePage,
@@ -129,6 +134,8 @@ function App() {
               </p>
             </div>
           )
+        ) : mode === 'title' ? (
+          <TitleComposerPrototype />
         ) : (
           <GraphicTextWorkspace />
         )}
