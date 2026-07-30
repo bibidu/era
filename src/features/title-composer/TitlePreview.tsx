@@ -73,14 +73,6 @@ export function TitlePreview({
 
   return (
     <div className="title-preview">
-      <div className="title-preview__meta">
-        <span>
-          整页 {TITLE_EXPORT_WIDTH}×{layout.pageHeight} · 安全区宽{' '}
-          {layout.pageWidth - TITLE_SAFE_X * 2}px
-        </span>
-        <span>预览 = 最终图同比例同位置</span>
-      </div>
-
       <div className="title-preview__frame">
         <div
           ref={pageRef}
@@ -166,11 +158,12 @@ export function TitlePreview({
 
       {overflowLineIndexes.length > 0 ? (
         <p className="title-preview__warn">
-          第 {overflowLineIndexes.map((i) => i + 1).join('、')} 行超出安全区右边（最终图同样会溢出）
+          第 {overflowLineIndexes.map((i) => i + 1).join('、')} 行超出安全区右边
         </p>
       ) : (
         <p className="title-preview__tip">
-          蓝框宽度与位置 = 最终整图文字区；所见即所得
+          {TITLE_EXPORT_WIDTH}×{layout.pageHeight} · 安全区宽 {layout.pageWidth - TITLE_SAFE_X * 2}
+          px · 拖底部面板边缘可放大预览
         </p>
       )}
     </div>
