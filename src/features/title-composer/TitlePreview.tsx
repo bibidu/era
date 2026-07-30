@@ -1,6 +1,12 @@
-import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { FONT_OPTIONS } from '../../data/fonts'
-import { TITLE_EXPORT_WIDTH, TITLE_SAFE_X, TITLE_SAFE_X_PERCENT, toCqw } from './canvas'
+import {
+  getTitlePageLayout,
+  TITLE_DEFAULT_ASPECT,
+  TITLE_EXPORT_WIDTH,
+  TITLE_SAFE_X,
+  toCqw,
+} from './canvas'
 import type { TitleDocument, TitleTool } from './types'
 
 interface TitlePreviewProps {
@@ -12,6 +18,10 @@ interface TitlePreviewProps {
   onSelectChar: (lineId: string, charId: string) => void
 }
 
+/**
+ * 整页 9:16 预览：宽高比、安全边、顶栏、标题起点与最终出图同一套 getGraphicLayout。
+ * 蓝虚线框 = 文字安全区（最终图里标题所在的那一列宽度与位置）。
+ */
 export function TitlePreview({
   doc,
   selectedLineId,
@@ -21,7 +31,8 @@ export function TitlePreview({
   onSelectChar,
 }: TitlePreviewProps) {
   const pickChar = activeTool === 'color'
-  const canvasRef = useRef<HTMLDivElement>(null)
+  const layout = useMemo(() => getTitlePageLayout(TITLE_DEFAULT_ASPECT), [])
+  const pageRef = useRef<HTMLDivElement>(null)
   const safeRef = useRef<HTMLDivElement>(null)
   const lineRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const [overflowLineIndexes, setOverflowLineIndexes] = useState<number[]>([])
@@ -38,56 +49,55 @@ export function TitlePreview({
       doc.lines.forEach((line, index) => {
         const el = lineRefs.current[line.id]
         if (!el) return
-        // getBoundingClientRect 含 scaleX，与最终视觉宽度一致
-        if (el.getBoundingClientRect().right > safeRight + 0.5) {
-          next.push(index)
-        }
+        if (el.getBoundingClientRect().right > safeRight + 0.5) next.push(index)
       })
       setOverflowLineIndexes(next)
     }
 
     measure()
-    const canvas = canvasRef.current
-    if (!canvas || typeof ResizeObserver === 'undefined') return
+    const page = pageRef.current
+    if (!page || typeof ResizeObserver === 'undefined') return
     const ro = new ResizeObserver(() => measure())
-    ro.observe(canvas)
+    ro.observe(page)
     return () => ro.disconnect()
   }, [doc])
+
+  const pageStyle = {
+    '--title-safe-x': `${layout.percent.safeX}%`,
+    '--title-safe-top': `${layout.percent.safeTop}%`,
+    '--title-safe-bottom': `${layout.percent.contentBottom}%`,
+    '--title-topbar-top': `${layout.percent.topBarTop}%`,
+    '--title-topbar-height': `${layout.percent.topBarHeight}%`,
+    aspectRatio: `${layout.aspectRatio.width} / ${layout.aspectRatio.height}`,
+  } as CSSProperties
 
   return (
     <div className="title-preview">
       <div className="title-preview__meta">
         <span>
-          画布 {TITLE_EXPORT_WIDTH}px · 左右安全边各 {TITLE_SAFE_X}px
+          整页 {TITLE_EXPORT_WIDTH}×{layout.pageHeight} · 安全区宽{' '}
+          {layout.pageWidth - TITLE_SAFE_X * 2}px
         </span>
-        <span>字号相对整页宽（与导出一致）</span>
+        <span>预览 = 最终图同比例同位置</span>
       </div>
 
-      <div className="title-preview__frame" aria-label="标题预览（等比最终图片宽度）">
-        {/*
-          canvas = 整页宽，作为 cqw 容器（与图文 GraphicPage 一致）。
-          切勿把左右安全边做成 canvas 的 padding，否则 cqw 会按「内容区」算，
-          预览字偏小、看起来不溢出，导出却会超出右边。
-        */}
+      <div className="title-preview__frame">
         <div
-          ref={canvasRef}
-          className="title-preview__canvas"
-          style={
-            {
-              '--title-safe-x': `${TITLE_SAFE_X_PERCENT}%`,
-            } as CSSProperties
-          }
+          ref={pageRef}
+          className="title-preview__page"
+          style={pageStyle}
+          aria-label="完整页面预览（与导出同布局）"
         >
-          <div className="title-preview__safe-guide" aria-hidden>
-            <span className="title-preview__safe-label title-preview__safe-label--left">
-              左 {TITLE_SAFE_X}
-            </span>
-            <span className="title-preview__safe-label title-preview__safe-label--right">
-              右 {TITLE_SAFE_X}
-            </span>
+          <div className="title-preview__topbar" aria-hidden>
+            <span>连续观看、点赞、关注，你也是地理风水达人（阳宅篇）</span>
           </div>
 
-          <div ref={safeRef} className="title-preview__safe">
+          {/* 蓝虚线：最终图文字安全区的精确宽与位置 */}
+          <div ref={safeRef} className="title-preview__safe" aria-hidden={false}>
+            <div className="title-preview__safe-guide" aria-hidden>
+              <span className="title-preview__safe-label">文字安全区</span>
+            </div>
+
             <div className="title-preview__stack">
               {doc.lines.map((line, index) => {
                 const font = FONT_OPTIONS.find((f) => f.id === line.fontId) ?? FONT_OPTIONS[0]
@@ -156,12 +166,11 @@ export function TitlePreview({
 
       {overflowLineIndexes.length > 0 ? (
         <p className="title-preview__warn">
-          第 {overflowLineIndexes.map((i) => i + 1).join('、')} 行已超出右侧安全边（与最终出图一致）·
-          请减小字号或拉伸
+          第 {overflowLineIndexes.map((i) => i + 1).join('、')} 行超出安全区右边（最终图同样会溢出）
         </p>
       ) : (
         <p className="title-preview__tip">
-          蓝虚线 = 文字安全区；字号按整页宽度缩放，与导出 1080 图一致
+          蓝框宽度与位置 = 最终整图文字区；所见即所得
         </p>
       )}
     </div>

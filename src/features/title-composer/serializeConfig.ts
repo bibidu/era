@@ -1,5 +1,10 @@
 import { TEXT_FONT_OPTIONS } from '../../data/fonts'
-import { TITLE_DISPLAY_WIDTH, TITLE_EXPORT_WIDTH, TITLE_SAFE_X } from './canvas'
+import {
+  getTitlePageLayout,
+  TITLE_DISPLAY_WIDTH,
+  TITLE_EXPORT_WIDTH,
+  TITLE_SAFE_X,
+} from './canvas'
 import { lineText } from './model'
 import type { TitleDocument } from './types'
 
@@ -27,7 +32,7 @@ export interface TitleConfigPayload {
 
 /** 安全区内容宽（display 单位）：整页宽减去左右 safeX */
 export function titleContentWidthDisplay(): number {
-  return TITLE_DISPLAY_WIDTH * (1 - (2 * TITLE_SAFE_X) / TITLE_EXPORT_WIDTH)
+  return getTitlePageLayout().contentWidthDisplay
 }
 
 /** 粗估行宽（CJK≈方块字）；用于复制配置时提示是否会超出安全区 */

@@ -157,7 +157,11 @@ function parseAspect(aspect) {
   return { w, h }
 }
 
-/** 完整图文页：风水底 + 顶栏 + 配置标题 + 正文 */
+/**
+ * 完整图文页：风水底 + 顶栏 + 配置标题 + 正文。
+ * 几何必须与 src/features/graphic-text/layout.ts getGraphicLayout 一致，
+ * 也与标题 Tab 预览（TitlePreview）同一套百分比。
+ */
 function buildFullPageHtml(config, aspect = '9:16') {
   const exportWidth = config.canvas?.exportWidth ?? 1080
   const displayWidth = config.canvas?.displayWidth ?? 360
@@ -168,6 +172,7 @@ function buildFullPageHtml(config, aspect = '9:16') {
   const refHeight = 1440
   const heightScale = pageHeight / refHeight
 
+  // = getGraphicLayout({ aspectRatio }) 同一公式
   const topBarY = Math.round(84 * heightScale)
   const topBarHeight = Math.round(44 * heightScale)
   const contentPaddingBelowTop = Math.round(40 * heightScale)

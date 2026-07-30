@@ -137,7 +137,7 @@ export function TitleComposerPrototype() {
         <div>
           <div className="title-composer__badge">草稿原型</div>
           <h1 className="title-composer__title">标题排版</h1>
-          <p className="title-composer__desc">同宽画布 · 选行/选字 · 复制配置给 AI</p>
+          <p className="title-composer__desc">9:16 整页预览 · 与最终出图同位置</p>
         </div>
         <button type="button" className="title-composer__reset" onClick={resetDemo}>
           <RotateCcw size={14} strokeWidth={2} />
