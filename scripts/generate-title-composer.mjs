@@ -1,26 +1,40 @@
 #!/usr/bin/env node
 /**
  * 按标题排版配置（Title Composer JSON）渲染 PNG。
+ *
  * 用法：
  *   node scripts/generate-title-composer.mjs --input title.json --out output/title.png
- *   node scripts/generate-title-composer.mjs --stdin < title.json
+ *   node scripts/generate-title-composer.mjs --full --input title.json --out output/page.png
+ *
+ * --full：导出完整 9:16 风水图文页（底图 + 顶栏 + 配置标题 + 正文）
  */
 
 import { chromium } from 'playwright'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
 
+const FENGSHUI_TOP_TEXT = '连续观看、点赞、关注，你也是地理风水达人（阳宅篇）'
+const FENGSHUI_BG = path.join(ROOT, 'public', 'textures', 'fengshui-bg.png')
+
 function parseArgs(argv) {
-  const out = { input: null, out: path.join(ROOT, 'output', 'title-composer.png'), stdin: false }
+  const out = {
+    input: null,
+    out: path.join(ROOT, 'output', 'title-composer.png'),
+    stdin: false,
+    full: false,
+    aspect: '9:16',
+  }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--input' || a === '-i') out.input = argv[++i]
     else if (a === '--out' || a === '-o') out.out = path.resolve(argv[++i])
     else if (a === '--stdin') out.stdin = true
+    else if (a === '--full' || a === '--page') out.full = true
+    else if (a === '--aspect') out.aspect = String(argv[++i] || '9:16')
   }
   return out
 }
@@ -36,11 +50,16 @@ function shuheitiFontFaceCss() {
   font-weight: 400 700;
   font-style: normal;
   font-display: block;
+}
+@font-face {
+  font-family: 'Noto Serif SC';
+  src: local('Noto Serif SC'), local('Songti SC'), local('SimSun');
+  font-weight: 400 700;
+  font-style: normal;
 }`
 }
 
 function fontFamilyForId(fontId) {
-  // 用单引号，避免打断 HTML style="..." 属性
   if (fontId === 'shuheiti') return `'Alimama ShuHeiTi', 'Noto Sans SC', sans-serif`
   if (fontId === 'song') return `'Noto Serif SC', serif`
   if (fontId === 'heiti') return `'Noto Sans SC', sans-serif`
@@ -48,13 +67,16 @@ function fontFamilyForId(fontId) {
   return `'Alimama ShuHeiTi', 'Noto Sans SC', sans-serif`
 }
 
-function buildHtml(config) {
-  const exportWidth = config.canvas?.exportWidth ?? 1080
-  const displayWidth = config.canvas?.displayWidth ?? 360
-  const safeX = config.canvas?.safeX ?? 96
-  const scale = exportWidth / displayWidth
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+}
 
-  const linesHtml = (config.lines ?? [])
+function buildTitleLinesHtml(config, scale) {
+  return (config.lines ?? [])
     .map((line, index) => {
       const colorMap = new Map((line.charColors ?? []).map((c) => [c.index, c.color]))
       const chars = Array.from(line.text)
@@ -78,58 +100,44 @@ function buildHtml(config) {
         'white-space:nowrap',
         `letter-spacing:${stretch > 1.2 ? '-0.02em' : '0'}`,
       ].join(';')
-      return `<div class="line" style="${style}">${chars}</div>`
+      return `<div class="title-line" style="${style}">${chars}</div>`
     })
     .join('\n')
+}
 
-  // 高度随内容；上下各留一截空白便于查看
-  const padY = Math.round(120 * scale / 3)
+/** 标题条预览（非完整页） */
+function buildStripHtml(config) {
+  const exportWidth = config.canvas?.exportWidth ?? 1080
+  const displayWidth = config.canvas?.displayWidth ?? 360
+  const safeX = config.canvas?.safeX ?? 96
+  const scale = exportWidth / displayWidth
+  const padY = Math.round(120)
+  const linesHtml = buildTitleLinesHtml(config, scale)
+
   return `<!doctype html>
 <html>
 <head>
 <meta charset="utf-8" />
 <style>
 ${shuheitiFontFaceCss()}
-html, body {
-  margin: 0;
-  padding: 0;
-  background: #fbf7ed;
-}
+html, body { margin: 0; padding: 0; background: #fbf7ed; }
 #canvas {
   position: relative;
   width: ${exportWidth}px;
   box-sizing: border-box;
   padding: ${padY}px ${safeX}px;
   background:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 23px,
-      rgba(0,0,0,0.035) 23px,
-      rgba(0,0,0,0.035) 24px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 23px,
-      rgba(0,0,0,0.035) 23px,
-      rgba(0,0,0,0.035) 24px
-    ),
+    repeating-linear-gradient(0deg, transparent, transparent 23px, rgba(0,0,0,0.035) 23px, rgba(0,0,0,0.035) 24px),
+    repeating-linear-gradient(90deg, transparent, transparent 23px, rgba(0,0,0,0.035) 23px, rgba(0,0,0,0.035) 24px),
     #fbf7ed;
   overflow: hidden;
 }
-.stack {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
+.stack { display: flex; flex-direction: column; align-items: flex-start; }
 .guide {
   pointer-events: none;
   position: absolute;
-  left: ${safeX}px;
-  right: ${safeX}px;
-  top: ${Math.round(padY * 0.45)}px;
-  bottom: ${Math.round(padY * 0.45)}px;
+  left: ${safeX}px; right: ${safeX}px;
+  top: ${Math.round(padY * 0.45)}px; bottom: ${Math.round(padY * 0.45)}px;
   border: 2px dashed rgba(14, 165, 233, 0.55);
 }
 </style>
@@ -143,12 +151,165 @@ html, body {
 </html>`
 }
 
-function escapeHtml(s) {
-  return String(s)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
+function parseAspect(aspect) {
+  const [w, h] = String(aspect).split(':').map(Number)
+  if (!w || !h) return { w: 9, h: 16 }
+  return { w, h }
+}
+
+/** 完整图文页：风水底 + 顶栏 + 配置标题 + 正文 */
+function buildFullPageHtml(config, aspect = '9:16') {
+  const exportWidth = config.canvas?.exportWidth ?? 1080
+  const displayWidth = config.canvas?.displayWidth ?? 360
+  const safeX = config.canvas?.safeX ?? 96
+  const scale = exportWidth / displayWidth
+  const { w: aw, h: ah } = parseAspect(aspect)
+  const pageHeight = Math.round((exportWidth * ah) / aw)
+  const refHeight = 1440
+  const heightScale = pageHeight / refHeight
+
+  const topBarY = Math.round(84 * heightScale)
+  const topBarHeight = Math.round(44 * heightScale)
+  const contentPaddingBelowTop = Math.round(40 * heightScale)
+  const safeTop = topBarY + topBarHeight + contentPaddingBelowTop
+  const bottomPadding = Math.round(56 * heightScale)
+  const topBarFontSize = Math.round(10 * scale)
+  const bodyFontSize = Math.round(13 * scale)
+  const bodyLineHeight = 1.64
+  const headingFontSize = Math.round(20 * scale)
+
+  const linesHtml = buildTitleLinesHtml(config, scale)
+  const bgUrl = `file://${FENGSHUI_BG}`
+
+  const bodyBlocks = [
+    {
+      type: 'heading',
+      text: '为什么西北不能做厨房',
+    },
+    {
+      type: 'body',
+      text: '八宅风水里，西北为乾位，主天门、男主人与贵人运。厨房属火，一旦落在西北，即成「火烧天门」——是阳宅里最忌讳的格局之一。',
+    },
+    {
+      type: 'body',
+      text: '轻则口舌、失眠、事业阻滞，重则伤家长、耗财。看到家里西北角起火开灶，先别硬扛，优先调整功能分区。',
+    },
+  ]
+
+  const bodyHtml = bodyBlocks
+    .map((block) => {
+      if (block.type === 'heading') {
+        return `<h2 class="heading">${escapeHtml(block.text)}</h2>`
+      }
+      return `<p class="body">${escapeHtml(block.text)}</p>`
+    })
+    .join('\n')
+
+  return `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+${shuheitiFontFaceCss()}
+html, body { margin: 0; padding: 0; background: #F0F5F8; }
+#canvas {
+  position: relative;
+  width: ${exportWidth}px;
+  height: ${pageHeight}px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #F0F5F8;
+  color: #171717;
+}
+.bg {
+  position: absolute;
+  inset: 0;
+  background-image: url('${bgUrl}');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.68;
+}
+.mist-top {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(240,245,248,0.5) 0%, rgba(240,245,248,0.16) 38%, rgba(240,245,248,0) 58%);
+}
+.mist-mid {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 42%, rgba(170,190,205,0.08) 0%, rgba(170,190,205,0) 70%);
+}
+.mist-bottom {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(180,205,220,0) 55%, rgba(180,205,220,0.06) 100%);
+}
+.topbar {
+  position: absolute;
+  left: ${safeX}px;
+  right: ${safeX}px;
+  top: ${topBarY}px;
+  height: ${topBarHeight}px;
+  box-sizing: border-box;
+  border-bottom: 2px solid #E5E5E5;
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 8px;
+  font-size: ${topBarFontSize}px;
+  font-weight: 400;
+  color: #A3A3A3;
+  font-family: 'Noto Serif SC', serif;
+  z-index: 2;
+}
+.content {
+  position: absolute;
+  left: ${safeX}px;
+  right: ${safeX}px;
+  top: ${safeTop}px;
+  bottom: ${bottomPadding}px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.title-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: ${Math.round(28 * scale)}px;
+}
+.heading {
+  margin: ${Math.round(18 * scale)}px 0 ${Math.round(8 * scale)}px;
+  font-family: 'Alimama ShuHeiTi', 'Noto Sans SC', sans-serif;
+  font-size: ${headingFontSize}px;
+  font-weight: 700;
+  line-height: 1.18;
+  color: #171717;
+}
+.body {
+  margin: 0 0 ${Math.round(12 * scale)}px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: ${bodyFontSize}px;
+  font-weight: 400;
+  line-height: ${bodyLineHeight};
+  color: #171717;
+}
+</style>
+</head>
+<body>
+  <div id="canvas">
+    <div class="bg"></div>
+    <div class="mist-top"></div>
+    <div class="mist-mid"></div>
+    <div class="mist-bottom"></div>
+    <div class="topbar">${escapeHtml(FENGSHUI_TOP_TEXT)}</div>
+    <div class="content">
+      <div class="title-stack">${linesHtml}</div>
+      ${bodyHtml}
+    </div>
+  </div>
+</body>
+</html>`
 }
 
 async function readConfig(args) {
@@ -159,7 +320,6 @@ async function readConfig(args) {
   }
   if (!args.input) throw new Error('请提供 --input title.json 或 --stdin')
   const raw = await readFile(path.resolve(args.input), 'utf8')
-  // 允许粘贴「# JSON」后的整段文本：取最后一个 JSON 对象
   const trimmed = raw.trim()
   if (trimmed.startsWith('{')) return JSON.parse(trimmed)
   const start = trimmed.lastIndexOf('{')
@@ -171,28 +331,37 @@ async function readConfig(args) {
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   const config = await readConfig(args)
-  const html = buildHtml(config)
+  const exportWidth = config.canvas?.exportWidth ?? 1080
+  const { w: aw, h: ah } = parseAspect(args.aspect)
+  const pageHeight = Math.round((exportWidth * ah) / aw)
+
+  const html = args.full ? buildFullPageHtml(config, args.aspect) : buildStripHtml(config)
   const outPath = args.out
   await mkdir(path.dirname(outPath), { recursive: true })
 
   const browser = await chromium.launch({ headless: true })
   try {
     const page = await browser.newPage({
-      viewport: { width: config.canvas?.exportWidth ?? 1080, height: 800 },
+      viewport: {
+        width: exportWidth,
+        height: args.full ? pageHeight : 800,
+      },
       deviceScaleFactor: 1,
     })
     await page.setContent(html, { waitUntil: 'load' })
     await page.evaluate(async () => {
       if (document.fonts?.ready) await document.fonts.ready
     })
-    // 再等一拍，确保本地字体文件绘出
-    await page.waitForTimeout(200)
-    const box = await page.locator('#canvas').boundingBox()
-    if (box) {
-      await page.setViewportSize({
-        width: Math.ceil(box.width),
-        height: Math.ceil(box.height),
-      })
+    // 等底图与字体
+    await page.waitForTimeout(400)
+    if (!args.full) {
+      const box = await page.locator('#canvas').boundingBox()
+      if (box) {
+        await page.setViewportSize({
+          width: Math.ceil(box.width),
+          height: Math.ceil(box.height),
+        })
+      }
     }
     await page.locator('#canvas').screenshot({ path: outPath, type: 'png' })
     console.log(outPath)
