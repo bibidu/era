@@ -41,6 +41,8 @@ export interface CreateSocialVideoAnalysisInput {
 export interface ListSocialVideoAnalysesOptions {
   /** 不传或空 = 全部；后端 eq 筛选 */
   publishStatus?: SocialVideoPublishStatus | '' | null
+  /** 不传或空 = 全部；后端 eq 筛选 */
+  workType?: SocialVideoWorkType | '' | null
   /** 复盘等需要全文时拉 markdown */
   includeMarkdown?: boolean
 }
@@ -114,6 +116,10 @@ export async function listSocialVideoAnalyses(
   const status = options.publishStatus?.trim()
   if (status) {
     params.set('publish_status', `eq.${status}`)
+  }
+  const workType = options.workType?.trim()
+  if (workType) {
+    params.set('work_type', `eq.${workType}`)
   }
 
   const rows = await supabaseRest<SocialVideoAnalysisRecord[]>(

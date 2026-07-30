@@ -1,21 +1,23 @@
 import { ChevronLeft } from 'lucide-react'
 import { useState } from 'react'
-import {
-  type SocialVideoAnalysisRecord,
-  type SocialVideoPublishStatus,
-} from '../../agent/supabaseSocialVideoAnalysis'
+import { type SocialVideoAnalysisRecord } from '../../agent/supabaseSocialVideoAnalysis'
 import { AccountReviewPage } from './AccountReviewPage'
 import { SocialVideoCreatePage } from './SocialVideoCreatePage'
 import { SocialVideoDataPage } from './SocialVideoDataPage'
-import { SocialVideoListPage } from './SocialVideoListPage'
+import {
+  SocialVideoListPage,
+  type SocialListStatusFilter,
+  type SocialListWorkTypeFilter,
+} from './SocialVideoListPage'
 
-export type SocialListStatusFilter = '' | SocialVideoPublishStatus
+export type { SocialListStatusFilter, SocialListWorkTypeFilter }
 
 export function DataAnalysisWorkspace() {
   const [view, setView] = useState<'list' | 'extract' | 'review' | 'create'>('list')
   const [listReloadToken, setListReloadToken] = useState(0)
   const [editingRecord, setEditingRecord] = useState<SocialVideoAnalysisRecord | null>(null)
   const [statusFilter, setStatusFilter] = useState<SocialListStatusFilter>('')
+  const [workTypeFilter, setWorkTypeFilter] = useState<SocialListWorkTypeFilter>('')
 
   if (view === 'extract') {
     return (
@@ -67,6 +69,8 @@ export function DataAnalysisWorkspace() {
     <SocialVideoListPage
       statusFilter={statusFilter}
       onStatusFilterChange={setStatusFilter}
+      workTypeFilter={workTypeFilter}
+      onWorkTypeFilterChange={setWorkTypeFilter}
       reloadToken={listReloadToken}
       onSmartExtract={() => setView('extract')}
       onOpenReview={() => setView('review')}
