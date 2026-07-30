@@ -862,6 +862,31 @@ body.is-dragging {
   color: var(--era-fg);
 }
 
+.graphic-content-sheet-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  gap: 0.25rem;
+  min-width: 0;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.graphic-content-sheet-header .graphic-content-text-adjust {
+  flex: 1;
+  min-width: 0;
+  border-bottom: none;
+}
+
+.graphic-content-sheet-close {
+  position: relative;
+  top: auto;
+  right: auto;
+  flex-shrink: 0;
+  margin: 0.375rem 0.5rem 0 0;
+}
+
 .graphic-content-sheet-body {
   display: flex;
   min-height: 0;
@@ -1061,23 +1086,10 @@ body.is-dragging {
 .graphic-content-text-adjust {
   flex-shrink: 0;
   overflow: hidden;
-  border-bottom: 1px solid #e5e5e5;
 }
 
 .graphic-content-text-adjust-nav {
-  padding: 0.5rem 1rem 0.625rem;
-}
-
-.graphic-content-text-adjust-entry {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  border: none;
-  background: transparent;
-  padding: 0.25rem 0;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--era-fg);
+  padding: 0.375rem 0.25rem 0.5rem 0.75rem;
 }
 
 .graphic-content-text-adjust-toolbar {
@@ -1148,12 +1160,16 @@ body.is-dragging {
 }
 
 .graphic-content-text-adjust-field {
+  flex-shrink: 0;
   overflow: hidden;
-  border-top: 1px solid #f0f0f0;
+  border-bottom: 1px solid #e5e5e5;
 }
 
 .graphic-content-text-adjust-field .graphic-toolbar-strip {
+  margin: 0.375rem 0.75rem 0.625rem;
   border-top: none;
+  box-shadow: none;
+  background: #f7f7f7;
 }
 
 .graphic-content-text-adjust-field .graphic-toolbar-strip-scroll {
