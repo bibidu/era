@@ -25,21 +25,37 @@ export interface TitleConfigPayload {
   }>
 }
 
+/** 安全区内容宽（display 单位）：整页宽减去左右 safeX */
+export function titleContentWidthDisplay(): number {
+  return TITLE_DISPLAY_WIDTH * (1 - (2 * TITLE_SAFE_X) / TITLE_EXPORT_WIDTH)
+}
+
+/** 粗估行宽（CJK≈方块字）；用于复制配置时提示是否会超出安全区 */
+export function estimateLineWidthDisplay(line: {
+  text: string
+  fontSize: number
+  stretch: number
+}): number {
+  return Array.from(line.text).length * line.fontSize * line.stretch
+}
+
 export function buildTitleConfigPayload(doc: TitleDocument): TitleConfigPayload {
+  const contentWidth = titleContentWidthDisplay()
   return {
     version: 1,
     canvas: {
       displayWidth: TITLE_DISPLAY_WIDTH,
       exportWidth: TITLE_EXPORT_WIDTH,
       safeX: TITLE_SAFE_X,
-      note: 'fontSize/gapAfter 单位与图文一致（相对 displayWidth=360）；导出时 ×3 到 1080',
+      note: `fontSize/gapAfter 相对整页 displayWidth=${TITLE_DISPLAY_WIDTH}（不是安全区宽）；导出 ×${TITLE_EXPORT_WIDTH / TITLE_DISPLAY_WIDTH} 到 ${TITLE_EXPORT_WIDTH}。安全区内容宽≈${Math.round(contentWidth)}。字号勿按内容区缩放。`,
     },
     text: doc.lines.map(lineText).join('\n'),
     lines: doc.lines.map((line, index) => {
       const font = TEXT_FONT_OPTIONS.find((item) => item.id === line.fontId)
+      const text = lineText(line)
       return {
         index,
-        text: lineText(line),
+        text,
         fontId: line.fontId,
         fontLabel: font?.label ?? line.fontId,
         fontSize: line.fontSize,
@@ -80,9 +96,19 @@ export function formatTitleConfigForClipboard(doc: TitleDocument): string {
     })
     .join('\n')
 
+  const contentWidth = titleContentWidthDisplay()
+  const overflowHints = payload.lines
+    .map((line) => {
+      const est = estimateLineWidthDisplay(line)
+      if (est <= contentWidth) return null
+      return `  [!] line ${line.index} 粗估宽 ${Math.round(est)} > 安全区 ${Math.round(contentWidth)}（会超出右边）`
+    })
+    .filter(Boolean)
+
   return [
     '# 标题排版配置（请按此设置）',
-    `canvas: exportWidth=${payload.canvas.exportWidth}, displayWidth=${payload.canvas.displayWidth}, safeX=${payload.canvas.safeX}`,
+    `canvas: exportWidth=${payload.canvas.exportWidth}, displayWidth=${payload.canvas.displayWidth}, safeX=${payload.canvas.safeX}, contentWidth≈${Math.round(contentWidth)}`,
+    `note: ${payload.canvas.note}`,
     `text:`,
     payload.text
       .split('\n')
@@ -90,6 +116,9 @@ export function formatTitleConfigForClipboard(doc: TitleDocument): string {
       .join('\n'),
     `lines:`,
     lines,
+    ...(overflowHints.length
+      ? ['overflowWarnings:', ...overflowHints]
+      : ['overflowWarnings: none']),
     '',
     '# JSON',
     JSON.stringify(payload, null, 2),

@@ -2275,7 +2275,8 @@ html[data-theme="dark"] .era-primary-btn:disabled {
 .title-char-picker,
 .title-composer__panel,
 .title-preview__meta,
-.title-preview__tip {
+.title-preview__tip,
+.title-preview__warn {
   margin-inline: 14px;
 }
 
@@ -2349,7 +2350,12 @@ html[data-theme="dark"] .era-primary-btn:disabled {
   background: var(--era-panel);
 }
 
-/* 与图文页同宽：整列宽度 = 最终图片显示宽度；字号用 cqw 随容器缩放 */
+/*
+ * 与图文 GraphicPage 一致：
+ * - canvas = 整页宽，作为 cqw 容器（字号相对 1080/360）
+ * - safe = 左右各 inset safeX，标题落在此区
+ * 不能把 safeX 做成 canvas padding，否则 cqw 按内容区算，预览偏小、与导出不一致。
+ */
 .title-preview__canvas {
   --title-safe-x: 8.8889%;
   position: relative;
@@ -2375,7 +2381,7 @@ html[data-theme="dark"] .era-primary-btn:disabled {
       rgb(0 0 0 / 0.035) 2.315cqw
     ),
     #fbf7ed;
-  padding: 7cqw var(--title-safe-x) 8cqw;
+  padding: 7cqw 0 8cqw;
 }
 
 html[data-theme='dark'] .title-preview__canvas {
@@ -2398,12 +2404,23 @@ html[data-theme='dark'] .title-preview__canvas {
     #1a1916;
 }
 
+.title-preview__safe {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  width: 100%;
+  padding-inline: var(--title-safe-x);
+  /* 允许标题视觉上越过安全边，进入左右页边（与导出一致） */
+  overflow: visible;
+}
+
 .title-preview__safe-guide {
   pointer-events: none;
   position: absolute;
   inset: 4cqw var(--title-safe-x);
   border: 1.5px dashed rgb(14 165 233 / 0.75);
   border-radius: 2px;
+  z-index: 2;
 }
 
 .title-preview__safe-label {
@@ -2454,6 +2471,14 @@ html[data-theme='dark'] .title-preview__canvas {
   box-shadow: inset 0 0 0 1.5px rgb(194 65 12 / 0.45);
 }
 
+.title-preview__line.is-overflow {
+  box-shadow: inset 0 0 0 1.5px rgb(220 38 38 / 0.75);
+}
+
+.title-preview__line.is-selected.is-overflow {
+  box-shadow: inset 0 0 0 1.5px rgb(220 38 38 / 0.85);
+}
+
 .title-preview__char {
   display: inline-block;
 }
@@ -2472,10 +2497,20 @@ html[data-theme='dark'] .title-preview__canvas {
   background: rgb(225 29 72 / 0.12);
 }
 
-.title-preview__tip {
+.title-preview__tip,
+.title-preview__warn {
   margin: 0;
   font-size: 11px;
   color: var(--era-muted);
+}
+
+.title-preview__warn {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+html[data-theme='dark'] .title-preview__warn {
+  color: #fca5a5;
 }
 
 .title-char-picker {
