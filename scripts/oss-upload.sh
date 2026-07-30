@@ -159,14 +159,31 @@ sign_url() {
   fi
 }
 
+# 设置对象 ACL（兼容 ossutil v2 set-props / api，以及 v1 set-acl）
+set_object_acl() {
+  local key="$1"
+  local acl="$2"
+  if "$OSSUTIL" set-props "oss://${BUCKET}/${key}" --acl "$acl" >/dev/null 2>&1; then
+    return 0
+  fi
+  if "$OSSUTIL" api put-object-acl --bucket "$BUCKET" --key "$key" --object-acl "$acl" >/dev/null 2>&1; then
+    return 0
+  fi
+  if "$OSSUTIL" set-acl "oss://${BUCKET}/${key}" "$acl" -f >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "警告: 未能设置对象 ACL=${acl} key=${key}" >&2
+  return 1
+}
+
 # 封面：公共读 + 永久 URL；其它：私有 + 12h 签名
 deliver_url() {
   local key="$1"
   if is_cover_keep_key "$key"; then
-    "$OSSUTIL" set-acl "oss://${BUCKET}/${key}" public-read -f >/dev/null 2>&1 || true
+    set_object_acl "$key" public-read || true
     public_url "$key"
   else
-    "$OSSUTIL" set-acl "oss://${BUCKET}/${key}" private -f >/dev/null 2>&1 || true
+    set_object_acl "$key" private || true
     sign_url "$key"
   fi
 }
@@ -179,11 +196,18 @@ upload_one() {
     echo "错误: 文件不存在: $local_path" >&2
     exit 1
   fi
+  local is_cover=0
   if [[ "$force_cover" == "1" ]] || looks_like_cover_name "$local_path" || looks_like_cover_name "$key"; then
+    is_cover=1
     key="$(ensure_cover_keep_key "$key")"
     echo "oss-upload: 封面永久保留 ${key}" >&2
   fi
-  "$OSSUTIL" cp "$local_path" "oss://${BUCKET}/${key}" -f >/dev/null
+  # 封面在上传时直接带 public-read，避免仅依赖事后 set-acl（ossutil v1/v2 语法不同）
+  if [[ "$is_cover" == "1" ]]; then
+    "$OSSUTIL" cp "$local_path" "oss://${BUCKET}/${key}" -f --acl public-read >/dev/null
+  else
+    "$OSSUTIL" cp "$local_path" "oss://${BUCKET}/${key}" -f >/dev/null
+  fi
   deliver_url "$key"
 }
 
