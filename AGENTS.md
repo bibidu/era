@@ -17,9 +17,9 @@
 
 高亮步骤：先用 `era_create_highlight_setup_share` 上传正文到 Supabase，再把返回的 **EdgeOne** URL（`?tab=highlight&shareId=...`）发给用户；打开后自动进入「高亮」Tab；用户复制配置发回后 `era_apply_highlights(replace: true)`。
 
-出图步骤：导出后图片仍须上传（OSS / 约定存储）并写入业务库（如 Supabase `image_previews`）；**对话框里只发线上预览链接**（EdgeOne 完整 URL，含 `eo_token` / `eo_time`），**不要**再逐张发送各页图片链接。不要再发 Gallery / `/gallery/` 链接。
+出图步骤：导出后图片须上传（OSS / 约定存储）并**按序写入**业务库（如 Supabase `era_social_video_analyses.image_previews`，[0]=封面永久链）；**对话框里只发线上预览链接**（EdgeOne 完整 URL，含 `eo_token` / `eo_time`），**不要**再逐张发送各页图片、也不要为确认来回贴图。不要再发 Gallery / `/gallery/` 链接。
 
-**发图硬性规则**：交付物须上传私有存储；**对用户可见的交付**以**线上预览链接**为准，禁止在对话框堆各页独立图 URL，禁止用 HTML 嵌入代替。封面 skill 单张封面仍可直发一张签名 URL。
+**发图硬性规则**：交付物须上传存储；社媒任务以写入 `image_previews` + **线上预览链接**为准，禁止在对话框堆各页独立图 URL，禁止用 HTML 嵌入代替。封面 skill 单张封面仍可直发一张签名 URL（用户明确要求逐张发图时除外）。
 
 ## 封面skill（单张 9:16 封面）
 

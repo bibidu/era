@@ -196,20 +196,22 @@ async function buildFullPageHtml(config, aspect = '9:16') {
   const fontCss = await shuheitiFontFaceCss()
   const bgUrl = `file://${FENGSHUI_BG}`
 
-  const bodyBlocks = [
-    {
-      type: 'heading',
-      text: '为什么西北不能做厨房',
-    },
-    {
-      type: 'body',
-      text: '八宅风水里，西北为乾位，主天门、男主人与贵人运。厨房属火，一旦落在西北，即成「火烧天门」——是阳宅里最忌讳的格局之一。',
-    },
-    {
-      type: 'body',
-      text: '轻则口舌、失眠、事业阻滞，重则伤家长、耗财。看到家里西北角起火开灶，先别硬扛，优先调整功能分区。',
-    },
-  ]
+  const bodyBlocks = Array.isArray(config.bodyBlocks) && config.bodyBlocks.length > 0
+    ? config.bodyBlocks
+    : [
+        {
+          type: 'heading',
+          text: '为什么西北不能做厨房',
+        },
+        {
+          type: 'body',
+          text: '八宅风水里，西北为乾位，主天门、男主人与贵人运。厨房属火，一旦落在西北，即成「火烧天门」——是阳宅里最忌讳的格局之一。',
+        },
+        {
+          type: 'body',
+          text: '轻则口舌、失眠、事业阻滞，重则伤家长、耗财。看到家里西北角起火开灶，先别硬扛，优先调整功能分区。',
+        },
+      ]
 
   const bodyHtml = bodyBlocks
     .map((block) => {
@@ -291,7 +293,9 @@ html, body { margin: 0; padding: 0; background: #F0F5F8; }
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  /* 标题与下方正文间距（displayWidth 基准；约等于 titleMarginBottom 加宽一档） */
+  /* 标题相对安全区顶再下移一档 */
+  margin-top: ${Math.round(28 * scale)}px;
+  /* 标题与下方正文间距（displayWidth 基准） */
   margin-bottom: ${Math.round(48 * scale)}px;
 }
 .heading {

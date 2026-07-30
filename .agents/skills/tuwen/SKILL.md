@@ -179,9 +179,9 @@ description: >-
 
 ### 交付硬性规则
 
-1. 导出图须上传私有存储（OSS / 约定桶）并写入业务库（如 `image_previews`）
-2. **最终对用户**：只发 **EdgeOne 完整预览 URL**（含 `eo_token` / `eo_time`）；**禁止**逐张发各页图
-3. 确认阶段最多发一张拼图总览签名 URL；封面 skill 单张封面仍可直发一张签名 URL
+1. 导出图须上传私有存储（OSS / 约定桶）并**按序写入**业务库（如 Supabase `image_previews`；[0]=封面永久链，同步 `cover_url`）
+2. **最终对用户**：只发 **EdgeOne 完整预览 URL**（含 `eo_token` / `eo_time`）；**禁止**逐张发各页图，也**禁止**为确认来回贴图（用户到社媒页看 `image_previews`）
+3. 确认阶段默认不贴图；用户明确要总览时最多发一张拼图总览签名 URL；封面 skill 单张封面仍可直发一张签名 URL
 4. **禁止**用 HTML 嵌入代替对话框发链接；禁止只发本地路径 / 未签名裸 URL
 
 约定见 `.cursor/rules/preview-link-only.mdc`。

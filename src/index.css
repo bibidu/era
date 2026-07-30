@@ -2527,6 +2527,10 @@ html[data-theme='dark'] .title-preview__topbar {
   display: flex;
   width: 100%;
   flex-direction: column;
+  /* 与 generate-title-composer --full 一致：标题相对安全区顶再下移 */
+  margin-top: 7.778cqw; /* 28 / 360 */
+  padding-top: 1.2cqw;
+}
   align-items: flex-start;
   padding-top: 1cqw;
 }
