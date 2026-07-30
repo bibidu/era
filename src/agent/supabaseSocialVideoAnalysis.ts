@@ -7,7 +7,7 @@ export const SOCIAL_VIDEO_PUBLISH_STATUSES = ['已发布', '待AI修改'] as con
 export type SocialVideoPublishStatus = (typeof SOCIAL_VIDEO_PUBLISH_STATUSES)[number]
 
 /** 作品类型（存库中文枚举） */
-export const SOCIAL_VIDEO_WORK_TYPES = ['图文', '风水'] as const
+export const SOCIAL_VIDEO_WORK_TYPES = ['图文', '风水', '健身'] as const
 export type SocialVideoWorkType = (typeof SOCIAL_VIDEO_WORK_TYPES)[number]
 
 export const DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS: SocialVideoPublishStatus = '待AI修改'

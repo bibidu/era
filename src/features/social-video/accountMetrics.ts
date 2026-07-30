@@ -413,7 +413,7 @@ function computeGapDays(posts: PostMetrics[]) {
 
 /**
  * 汇总已发布作品，产出账号级复盘。
- * 调用方应按账号类型（图文 / 风水）先过滤 records，避免混算不同账号。
+ * 调用方应按账号类型（图文 / 风水 / 健身）先过滤 records，避免混算不同账号。
  */
 export function buildAccountReview(records: SocialVideoAnalysisRecord[]): AccountReview {
   const posts = records
