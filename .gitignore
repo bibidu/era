@@ -26,7 +26,15 @@ output
 era-source.zip
 
 # Local Cursor / MCP config (machine-specific paths)
-.cursor/
+.cursor/*
+# Keep shared project hooks / rules / skills in repo
+!.cursor/hooks/
+!.cursor/hooks/**
+!.cursor/hooks.json
+!.cursor/rules/
+!.cursor/rules/**
+!.cursor/skills/
+!.cursor/skills/**
 
 # Tencent Cloud EdgeOne
 .env
