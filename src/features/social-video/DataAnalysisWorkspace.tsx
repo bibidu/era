@@ -4,6 +4,7 @@ import { type SocialVideoAnalysisRecord } from '../../agent/supabaseSocialVideoA
 import { AccountReviewPage } from './AccountReviewPage'
 import { SocialVideoCreatePage } from './SocialVideoCreatePage'
 import { SocialVideoDataPage } from './SocialVideoDataPage'
+import { SocialVideoDetailPage } from './SocialVideoDetailPage'
 import {
   SocialVideoListPage,
   type SocialListStatusFilter,
@@ -13,9 +14,10 @@ import {
 export type { SocialListStatusFilter, SocialListWorkTypeFilter }
 
 export function DataAnalysisWorkspace() {
-  const [view, setView] = useState<'list' | 'extract' | 'review' | 'create'>('list')
+  const [view, setView] = useState<'list' | 'extract' | 'review' | 'create' | 'detail'>('list')
   const [listReloadToken, setListReloadToken] = useState(0)
   const [editingRecord, setEditingRecord] = useState<SocialVideoAnalysisRecord | null>(null)
+  const [detailRecord, setDetailRecord] = useState<SocialVideoAnalysisRecord | null>(null)
   const [statusFilter, setStatusFilter] = useState<SocialListStatusFilter>('')
   const [workTypeFilter, setWorkTypeFilter] = useState<SocialListWorkTypeFilter>('')
 
@@ -52,6 +54,19 @@ export function DataAnalysisWorkspace() {
     return <AccountReviewPage onBack={() => setView('list')} />
   }
 
+  if (view === 'detail' && detailRecord) {
+    return (
+      <SocialVideoDetailPage
+        record={detailRecord}
+        onBack={() => {
+          setDetailRecord(null)
+          setView('list')
+        }}
+        onDeleted={() => setListReloadToken((token) => token + 1)}
+      />
+    )
+  }
+
   if (view === 'create') {
     return (
       <SocialVideoCreatePage
@@ -61,6 +76,7 @@ export function DataAnalysisWorkspace() {
           setView('list')
         }}
         onCreated={() => setListReloadToken((token) => token + 1)}
+        onDeleted={() => setListReloadToken((token) => token + 1)}
       />
     )
   }
@@ -81,6 +97,10 @@ export function DataAnalysisWorkspace() {
       onEdit={(record) => {
         setEditingRecord(record)
         setView('create')
+      }}
+      onOpenDetail={(record) => {
+        setDetailRecord(record)
+        setView('detail')
       }}
     />
   )
