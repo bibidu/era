@@ -10,7 +10,7 @@
  */
 
 import { chromium } from 'playwright'
-import { mkdir, readFile } from 'node:fs/promises'
+import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -19,6 +19,8 @@ const ROOT = path.resolve(__dirname, '..')
 
 const FENGSHUI_TOP_TEXT = '连续观看、点赞、关注，你也是地理风水达人（阳宅篇）'
 const FENGSHUI_BG = path.join(ROOT, 'public', 'textures', 'fengshui-bg.png')
+const SHUHEITI_WOFF2 = path.join(ROOT, 'public', 'fonts', 'AlimamaShuHeiTi-Bold.woff2')
+const SHUHEITI_TTF = path.join(ROOT, 'public', 'fonts', 'AlimamaShuHeiTi-Bold.ttf')
 
 function parseArgs(argv) {
   const out = {
@@ -39,14 +41,19 @@ function parseArgs(argv) {
   return out
 }
 
-function shuheitiFontFaceCss() {
-  const woff2 = path.join(ROOT, 'public', 'fonts', 'AlimamaShuHeiTi-Bold.woff2')
-  const ttf = path.join(ROOT, 'public', 'fonts', 'AlimamaShuHeiTi-Bold.ttf')
+/** 内嵌 base64，避免 Playwright setContent / file:// 字体加载失败落到系统黑体 */
+async function shuheitiFontFaceCss() {
+  const [woff2, ttf] = await Promise.all([
+    readFile(SHUHEITI_WOFF2),
+    readFile(SHUHEITI_TTF),
+  ])
+  const woff2Data = `data:font/woff2;base64,${woff2.toString('base64')}`
+  const ttfData = `data:font/ttf;base64,${ttf.toString('base64')}`
   return `@font-face {
   font-family: 'Alimama ShuHeiTi';
   src:
-    url('file://${woff2}') format('woff2'),
-    url('file://${ttf}') format('truetype');
+    url('${woff2Data}') format('woff2'),
+    url('${ttfData}') format('truetype');
   font-weight: 400 700;
   font-style: normal;
   font-display: block;
@@ -60,11 +67,12 @@ function shuheitiFontFaceCss() {
 }
 
 function fontFamilyForId(fontId) {
-  if (fontId === 'shuheiti') return `'Alimama ShuHeiTi', 'Noto Sans SC', sans-serif`
+  // 与 src/data/fonts.ts 一致：数黑体不掺其它 fallback，避免未加载时 silently 用系统黑
+  if (fontId === 'shuheiti') return `'Alimama ShuHeiTi', sans-serif`
   if (fontId === 'song') return `'Noto Serif SC', serif`
   if (fontId === 'heiti') return `'Noto Sans SC', sans-serif`
   if (fontId === 'kai') return `'LXGW WenKai GB', serif`
-  return `'Alimama ShuHeiTi', 'Noto Sans SC', sans-serif`
+  return `'Alimama ShuHeiTi', sans-serif`
 }
 
 function escapeHtml(s) {
@@ -106,20 +114,21 @@ function buildTitleLinesHtml(config, scale) {
 }
 
 /** 标题条预览（非完整页） */
-function buildStripHtml(config) {
+async function buildStripHtml(config) {
   const exportWidth = config.canvas?.exportWidth ?? 1080
   const displayWidth = config.canvas?.displayWidth ?? 360
   const safeX = config.canvas?.safeX ?? 96
   const scale = exportWidth / displayWidth
   const padY = Math.round(120)
   const linesHtml = buildTitleLinesHtml(config, scale)
+  const fontCss = await shuheitiFontFaceCss()
 
   return `<!doctype html>
 <html>
 <head>
 <meta charset="utf-8" />
 <style>
-${shuheitiFontFaceCss()}
+${fontCss}
 html, body { margin: 0; padding: 0; background: #fbf7ed; }
 #canvas {
   position: relative;
@@ -162,7 +171,7 @@ function parseAspect(aspect) {
  * 几何必须与 src/features/graphic-text/layout.ts getGraphicLayout 一致，
  * 也与标题 Tab 预览（TitlePreview）同一套百分比。
  */
-function buildFullPageHtml(config, aspect = '9:16') {
+async function buildFullPageHtml(config, aspect = '9:16') {
   const exportWidth = config.canvas?.exportWidth ?? 1080
   const displayWidth = config.canvas?.displayWidth ?? 360
   const safeX = config.canvas?.safeX ?? 96
@@ -184,6 +193,7 @@ function buildFullPageHtml(config, aspect = '9:16') {
   const headingFontSize = Math.round(20 * scale)
 
   const linesHtml = buildTitleLinesHtml(config, scale)
+  const fontCss = await shuheitiFontFaceCss()
   const bgUrl = `file://${FENGSHUI_BG}`
 
   const bodyBlocks = [
@@ -215,7 +225,7 @@ function buildFullPageHtml(config, aspect = '9:16') {
 <head>
 <meta charset="utf-8" />
 <style>
-${shuheitiFontFaceCss()}
+${fontCss}
 html, body { margin: 0; padding: 0; background: #F0F5F8; }
 #canvas {
   position: relative;
@@ -340,9 +350,19 @@ async function main() {
   const { w: aw, h: ah } = parseAspect(args.aspect)
   const pageHeight = Math.round((exportWidth * ah) / aw)
 
-  const html = args.full ? buildFullPageHtml(config, args.aspect) : buildStripHtml(config)
+  const html = args.full
+    ? await buildFullPageHtml(config, args.aspect)
+    : await buildStripHtml(config)
   const outPath = args.out
   await mkdir(path.dirname(outPath), { recursive: true })
+
+  const tmpHtml = path.join(path.dirname(outPath), `.title-render-${process.pid}.html`)
+  await writeFile(tmpHtml, html, 'utf8')
+
+  const sampleText = (config.lines ?? []).map((l) => l.text).join('') || '标题'
+  const needShuhei = (config.lines ?? []).some(
+    (l) => !l.fontId || l.fontId === 'shuheiti',
+  )
 
   const browser = await chromium.launch({ headless: true })
   try {
@@ -353,12 +373,23 @@ async function main() {
       },
       deviceScaleFactor: 1,
     })
-    await page.setContent(html, { waitUntil: 'load' })
-    await page.evaluate(async () => {
+    // 与 generate-cover 一致：file:// 打开本地 HTML，再强制 load 数黑体
+    await page.goto(`file://${tmpHtml}`, { waitUntil: 'networkidle' })
+    const fontOk = await page.evaluate(async ({ needShuhei, sampleText }) => {
       if (document.fonts?.ready) await document.fonts.ready
-    })
-    // 等底图与字体
-    await page.waitForTimeout(400)
+      if (needShuhei && document.fonts?.load) {
+        await document.fonts.load(`700 264px "Alimama ShuHeiTi"`, sampleText)
+        await document.fonts.load(`400 120px "Alimama ShuHeiTi"`, sampleText)
+      }
+      return needShuhei
+        ? document.fonts.check(`700 264px "Alimama ShuHeiTi"`, sampleText)
+        : true
+    }, { needShuhei, sampleText })
+    if (!fontOk) {
+      console.error('错误: 阿里妈妈数黑体未加载成功，拒绝出图（避免落到系统字体）')
+      process.exit(1)
+    }
+    await page.waitForTimeout(200)
     if (!args.full) {
       const box = await page.locator('#canvas').boundingBox()
       if (box) {
@@ -372,6 +403,11 @@ async function main() {
     console.log(outPath)
   } finally {
     await browser.close()
+    try {
+      await unlink(tmpHtml)
+    } catch {
+      /* ignore */
+    }
   }
 }
 
