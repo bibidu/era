@@ -58,6 +58,8 @@ export function SocialVideoCreatePage({
   const [publishedAt, setPublishedAt] = useState('')
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  /** 用户在本页主动清空预览后，不再回退到 Markdown 内嵌图，避免「清空」无效感 */
+  const [previewsExplicitlyCleared, setPreviewsExplicitlyCleared] = useState(false)
   const [contentDrawerOpen, setContentDrawerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(isEdit)
@@ -88,6 +90,7 @@ export function SocialVideoCreatePage({
         setPublishedAt(full.published_at || '')
         setCoverUrl(full.cover_url)
         setImagePreviews(full.image_previews || [])
+        setPreviewsExplicitlyCleared(false)
         setStatusMessage('')
         setCopyHint('')
       } catch (error) {
@@ -114,8 +117,14 @@ export function SocialVideoCreatePage({
         alt: index === 0 ? '封面' : `预览图 ${index + 1}`,
       }))
     }
+    if (previewsExplicitlyCleared) return []
     return extractMarkdownImages(content, coverUrl)
-  }, [isEdit, imagePreviews, content, coverUrl])
+  }, [isEdit, imagePreviews, content, coverUrl, previewsExplicitlyCleared])
+
+  function handleClearPreviewImages() {
+    setImagePreviews([])
+    setPreviewsExplicitlyCleared(true)
+  }
 
   async function handleCopyPrompt() {
     const prompt = buildAiRevisionPrompt(outline, workType)
@@ -289,7 +298,9 @@ export function SocialVideoCreatePage({
               />
             </label>
 
-            {isEdit ? <ImagePreviewStrip images={previewImages} /> : null}
+            {isEdit ? (
+              <ImagePreviewStrip images={previewImages} onClearImages={handleClearPreviewImages} />
+            ) : null}
 
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium">内容</span>

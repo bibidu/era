@@ -1,4 +1,4 @@
-import { Download, X } from 'lucide-react'
+import { Download, Trash2, X } from 'lucide-react'
 import {
   useCallback,
   useEffect,
@@ -6,35 +6,42 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
-import { downloadImagesAsZip, type PreviewImageItem } from './downloadImagesAsZip'
+import { ConfirmDialog } from '../../components/ConfirmDialog'
+import type { PreviewImageItem } from './downloadImagesAsZip'
+import { PreviewDownloadSheet } from './PreviewDownloadSheet'
 
 interface ImagePreviewStripProps {
   images: PreviewImageItem[]
   zipName?: string
+  /** 清空图片预览字段（仅本地状态，需用户点保存才持久化） */
+  onClearImages?: () => void
 }
 
-export function ImagePreviewStrip({ images, zipName = 'preview-images.zip' }: ImagePreviewStripProps) {
+export function ImagePreviewStrip({
+  images,
+  zipName = 'preview-images.zip',
+  onClearImages,
+}: ImagePreviewStripProps) {
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
-  const [downloading, setDownloading] = useState(false)
+  const [downloadSheetOpen, setDownloadSheetOpen] = useState(false)
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
 
-  async function handleDownloadZip() {
-    if (downloading || images.length === 0) return
-    setDownloading(true)
-    setStatusMessage('正在准备下载...')
-    try {
-      const result = await downloadImagesAsZip(images, zipName)
-      if (result.mode === 'ios-share') {
-        setStatusMessage('请在分享菜单选择「存储到照片」')
-      } else {
-        setStatusMessage('已开始下载压缩包')
-      }
+  function handleStatus(message: string) {
+    setStatusMessage(message)
+    if (message && !message.includes('失败') && !message.includes('请在分享')) {
       window.setTimeout(() => setStatusMessage(''), 2600)
-    } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : '下载失败')
-    } finally {
-      setDownloading(false)
+    } else if (message.includes('请在分享')) {
+      window.setTimeout(() => setStatusMessage(''), 4000)
     }
+  }
+
+  function handleConfirmClear() {
+    onClearImages?.()
+    setClearConfirmOpen(false)
+    setViewerIndex(null)
+    setStatusMessage('已清空预览图，保存后生效')
+    window.setTimeout(() => setStatusMessage(''), 2600)
   }
 
   return (
@@ -42,16 +49,28 @@ export function ImagePreviewStrip({ images, zipName = 'preview-images.zip' }: Im
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium">图片预览</span>
         {images.length > 0 ? (
-          <button
-            type="button"
-            className="flex size-8 items-center justify-center rounded-full transition hover:opacity-80 disabled:opacity-40"
-            style={{ color: 'var(--era-fg)' }}
-            aria-label="下载预览图（iOS 可存到相册）"
-            disabled={downloading}
-            onClick={() => void handleDownloadZip()}
-          >
-            <Download size={18} strokeWidth={2.25} />
-          </button>
+          <div className="flex items-center gap-1">
+            {onClearImages ? (
+              <button
+                type="button"
+                className="flex size-8 items-center justify-center rounded-full transition hover:opacity-80"
+                style={{ color: 'var(--era-fg)' }}
+                aria-label="清空所有预览图"
+                onClick={() => setClearConfirmOpen(true)}
+              >
+                <Trash2 size={18} strokeWidth={2.25} />
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="flex size-8 items-center justify-center rounded-full transition hover:opacity-80"
+              style={{ color: 'var(--era-fg)' }}
+              aria-label="下载预览图（iOS 可存到相册）"
+              onClick={() => setDownloadSheetOpen(true)}
+            >
+              <Download size={18} strokeWidth={2.25} />
+            </button>
+          </div>
         ) : null}
       </div>
 
@@ -97,6 +116,25 @@ export function ImagePreviewStrip({ images, zipName = 'preview-images.zip' }: Im
           onClose={() => setViewerIndex(null)}
         />
       ) : null}
+
+      <PreviewDownloadSheet
+        isOpen={downloadSheetOpen}
+        images={images}
+        zipName={zipName}
+        onOpenChange={setDownloadSheetOpen}
+        onStatus={handleStatus}
+      />
+
+      <ConfirmDialog
+        open={clearConfirmOpen}
+        title="确认删除所有预览图片？"
+        description="将清空本帖的图片预览字段。点保存后才会写入数据库；内容中的 Markdown 图片不受影响。"
+        confirmLabel="确认清空"
+        cancelLabel="取消"
+        destructive
+        onCancel={() => setClearConfirmOpen(false)}
+        onConfirm={handleConfirmClear}
+      />
     </div>
   )
 }
