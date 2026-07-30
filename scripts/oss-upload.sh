@@ -21,6 +21,9 @@
 #   OSS_SIGN_TIMEOUT  签名有效期秒数，默认 43200（12 小时）；封面图不使用签名
 #   OSSUTIL           ossutil 可执行路径
 #   OSS_SKIP_CLEANUP=1  跳过上传前的过期清理
+#   OSS_READ_TIMEOUT    客户端读超时秒数，默认 180（Cloud Agent 美西→北京跨境约需 2–3 分钟传 3MB）
+#   OSS_CONNECT_TIMEOUT 连接超时秒数，默认 30
+#   OSS_RETRY_TIMES     失败重试次数，默认 3（勿用默认 10×20s，会空耗数分钟）
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,6 +34,10 @@ PREFIX="${OSS_PREFIX:-era/assets}"
 SIGN_TIMEOUT="${OSS_SIGN_TIMEOUT:-43200}"
 ENDPOINT="${OSS_ENDPOINT:-oss-cn-beijing.aliyuncs.com}"
 CONFIG_PATH="${HOME}/.ossutilconfig"
+# Cloud Agent（常在 us-west-2）→ cn-beijing 有效吞吐约 20–40KiB/s；默认 read-timeout=20 会导致 3MB 图必超时并空重试。
+READ_TIMEOUT="${OSS_READ_TIMEOUT:-180}"
+CONNECT_TIMEOUT="${OSS_CONNECT_TIMEOUT:-30}"
+RETRY_TIMES="${OSS_RETRY_TIMES:-3}"
 
 # 对象 key / 文件名中的永久封面标记（清理脚本会跳过）
 COVER_KEEP_MARK="__cover_keep__"
@@ -188,6 +195,23 @@ deliver_url() {
   fi
 }
 
+ossutil_cp_flags() {
+  echo --read-timeout "$READ_TIMEOUT" --connect-timeout "$CONNECT_TIMEOUT" --retry-times "$RETRY_TIMES"
+}
+
+# 远端对象是否已是完整上传（超时后常见：服务端已写入但客户端报 i/o timeout）
+remote_object_matches_local() {
+  local key="$1"
+  local local_path="$2"
+  local local_size remote_size
+  local_size="$(wc -c <"$local_path" | tr -d ' ')"
+  remote_size="$(
+    "$OSSUTIL" stat "oss://${BUCKET}/${key}" 2>/dev/null \
+      | awk -F: '/Content-Length/ { gsub(/[[:space:]]/, "", $2); print $2; exit }'
+  )"
+  [[ -n "$remote_size" && "$remote_size" == "$local_size" ]]
+}
+
 upload_one() {
   local local_path="$1"
   local key="$2"
@@ -203,10 +227,22 @@ upload_one() {
     echo "oss-upload: 封面永久保留 ${key}" >&2
   fi
   # 封面在上传时直接带 public-read，避免仅依赖事后 set-acl（ossutil v1/v2 语法不同）
+  # shellcheck disable=SC2046
+  local cp_rc=0
   if [[ "$is_cover" == "1" ]]; then
-    "$OSSUTIL" cp "$local_path" "oss://${BUCKET}/${key}" -f --acl public-read >/dev/null
+    "$OSSUTIL" cp "$local_path" "oss://${BUCKET}/${key}" -f --acl public-read \
+      $(ossutil_cp_flags) >/dev/null || cp_rc=$?
   else
-    "$OSSUTIL" cp "$local_path" "oss://${BUCKET}/${key}" -f >/dev/null
+    "$OSSUTIL" cp "$local_path" "oss://${BUCKET}/${key}" -f \
+      $(ossutil_cp_flags) >/dev/null || cp_rc=$?
+  fi
+  if [[ "$cp_rc" -ne 0 ]]; then
+    if remote_object_matches_local "$key" "$local_path"; then
+      echo "oss-upload: cp 返回 ${cp_rc} 但远端已完整（${key}），按成功继续" >&2
+    else
+      echo "错误: 上传失败 oss://${BUCKET}/${key}（exit=${cp_rc}）" >&2
+      exit "$cp_rc"
+    fi
   fi
   deliver_url "$key"
 }

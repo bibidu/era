@@ -39,6 +39,16 @@ Cursor 全局规则：`.cursor/rules/oss-image-delivery.mdc`（`alwaysApply`）�
 - 也可手动：`npm run oss:cleanup` 或 `bash scripts/oss-cleanup-expired.sh --dry-run`
 - 紧急跳过清理：`OSS_SKIP_CLEANUP=1 bash scripts/oss-upload.sh ...`
 
+### Cloud Agent 跨境上传（美西 → 北京）
+
+Cloud Agent 出口常在 **AWS us-west-2**，Bucket 在 **cn-beijing**。实测约 3MB PNG 单次成功需 **~2–3 分钟**（有效吞吐约 20–40KiB/s）。
+
+- `oss-upload.sh` 默认 `--read-timeout 180`、`--retry-times 3`（覆盖 ossutil 默认 20s×10 次空重试）
+- `cp` 报 `i/o timeout` 时会 **`stat` 校验远端大小**；完整则视为成功（服务端已写入、客户端等响应超时）
+- 进度条 `100%` 且 `done:(0 objects)` **不等于**上传成功
+- 传输加速未开通前不要改用 `oss-accelerate` 域名
+- 详解：`.agents/skills/oss-upload/SKILL.md`
+
 凭证优先用 Cursor Cloud Secrets（推荐，Cloud Agent 自动注入）：
 
 - `OSS_ACCESS_KEY_ID`

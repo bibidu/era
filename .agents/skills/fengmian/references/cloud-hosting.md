@@ -28,6 +28,10 @@
 
 签名 12h 过期后对象仍计费。每次 `oss-upload.sh` 存图前会删除 `era/assets/` 下 LastModified **超过 14 小时**的对象；**含 `__cover_keep__` 的封面永不删**。详见 `docs/cloud-hosting.md`。
 
+### Cloud Agent 注意
+
+出口常在美西、Bucket 在北京：约 3MB 图单次需 2–3 分钟。脚本已加长 `read-timeout`；超时后会 `stat` 兜底。批量连传用 `OSS_SKIP_CLEANUP=1`。详见 `.agents/skills/oss-upload/SKILL.md`。
+
 ## 前端 → 腾讯云 EdgeOne Makers
 
 - 项目名：`bibidu-era`

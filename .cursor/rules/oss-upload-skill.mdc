@@ -1,0 +1,9 @@
+# OSS 上传 Skill 强制路由
+
+只要用户提到以下任一意图，**必须**读取并严格执行项目 skill `.agents/skills/oss-upload/SKILL.md`（也可用 `/oss-upload` 或 `.cursor/skills/oss-upload`）：
+
+- OSS 上传慢 / 超时 / i/o timeout / PutObject 失败
+- oss-upload、存图入库、封面永久链排障
+- Cloud Agent 发图上传失败但对象可能已存在
+
+重点：Cloud Agent 常在 **美西**，Bucket 在 **北京**；默认 ossutil `read-timeout=20` 会导致约 3MB 图空转数分钟。必须用仓库 `scripts/oss-upload.sh`（已加长超时 + timeout 后 `stat` 兜底），批量连传时 `OSS_SKIP_CLEANUP=1`。
