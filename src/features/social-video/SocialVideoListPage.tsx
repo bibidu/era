@@ -75,14 +75,26 @@ function CoverFallbackLabel({ text }: { text: string }) {
   )
 }
 
+function coverImageCandidates(record: SocialVideoAnalysisRecord): string[] {
+  const urls: string[] = []
+  const cover = (record.cover_url || '').trim()
+  if (cover) urls.push(cover)
+  const firstPreview = (record.image_previews?.[0] || '').trim()
+  if (firstPreview && firstPreview !== cover) urls.push(firstPreview)
+  return urls
+}
+
+/** 有封面/首图且能加载时直接展示图片；全部失败再退回标题/大纲文案 */
 function CoverThumb({ record }: { record: SocialVideoAnalysisRecord }) {
-  const [broken, setBroken] = useState(false)
+  const candidates = coverImageCandidates(record)
+  const [candidateIndex, setCandidateIndex] = useState(0)
   const fallback = coverFallbackText(record)
-  const showImg = Boolean(record.cover_url) && !broken
+  const src = candidates[candidateIndex] || ''
+  const showImg = Boolean(src)
 
   useEffect(() => {
-    setBroken(false)
-  }, [record.cover_url, record.id])
+    setCandidateIndex(0)
+  }, [record.id, record.cover_url, record.image_previews?.[0]])
 
   if (!showImg) {
     return <CoverFallbackLabel text={fallback} />
@@ -90,12 +102,17 @@ function CoverThumb({ record }: { record: SocialVideoAnalysisRecord }) {
 
   return (
     <img
-      src={record.cover_url!}
+      src={src}
       alt=""
       loading="lazy"
       decoding="async"
       className="h-full w-full object-cover"
-      onError={() => setBroken(true)}
+      onError={() => {
+        setCandidateIndex((i) => {
+          if (i + 1 < candidates.length) return i + 1
+          return candidates.length
+        })
+      }}
     />
   )
 }
