@@ -1,0 +1,23 @@
+---
+description: 标题排版设置页（Title Composer）何时提供给用户
+alwaysApply: true
+---
+
+# 标题排版设置页
+
+用户需要精细控制标题（换行、拉伸、字号、间距、字体、行内色）时，**主动提供标题设置页**，不要只口头描述。
+
+## 入口
+
+- 顶栏 Tab「标题」，或 URL：`?tab=title`
+- 发给用户时用**完整 EdgeOne 预览 URL**（含 `eo_token` / `eo_time`）并带上 `&tab=title`
+
+## 流程约定
+
+1. 用户在设置页调好后，点「一键复制配置参数」把配置发回
+2. Agent 用 `node scripts/generate-title-composer.mjs --full --input <json> --out <png>` 按配置出完整 9:16 图
+3. 出图须加载阿里妈妈数黑体；上传 OSS 后对话框直发签名 URL
+
+## 布局
+
+预览与最终图共用 `getGraphicLayout`；配置在底部可拖高弹簧层。
