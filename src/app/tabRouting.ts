@@ -1,4 +1,9 @@
 import type { AppMode } from '../components/TopModeTabs'
+import {
+  normalizePreviewUrl,
+  parsePreviewSearchParams,
+  recoverPreviewUrlInBrowser,
+} from '../agent/supabaseHighlightSetup'
 
 const TAB_IDS: Record<string, AppMode> = {
   graphic: 'graphic',
@@ -11,7 +16,7 @@ const TAB_IDS: Record<string, AppMode> = {
 export function readAppTabFromSearch(
   search: string = typeof window !== 'undefined' ? window.location.search : '',
 ): AppMode {
-  const params = new URLSearchParams(search)
+  const params = parsePreviewSearchParams(search)
   const raw = params.get('tab')?.trim().toLowerCase() ?? ''
   return TAB_IDS[raw] ?? 'data'
 }
@@ -19,7 +24,7 @@ export function readAppTabFromSearch(
 export function readHighlightIdsFromSearch(
   search: string = typeof window !== 'undefined' ? window.location.search : '',
 ): { shareId: string | null; projectId: string | null } {
-  const params = new URLSearchParams(search)
+  const params = parsePreviewSearchParams(search)
   return {
     shareId: params.get('shareId')?.trim() || null,
     projectId: params.get('projectId')?.trim() || null,
@@ -33,7 +38,7 @@ export function readHighlightIdsFromSearch(
 export function readTitleTextFromSearch(
   search: string = typeof window !== 'undefined' ? window.location.search : '',
 ): string | null {
-  const params = new URLSearchParams(search)
+  const params = parsePreviewSearchParams(search)
   const raw = params.get('text') ?? params.get('title')
   if (raw == null) return null
   const normalized = raw.replace(/\\n/g, '\n').trim()
@@ -55,7 +60,9 @@ export function replaceAppTabInUrl(
   } = {},
 ): void {
   if (typeof window === 'undefined') return
-  const url = new URL(window.location.href)
+  // 先还原二次编码，避免在 mangled query 上再 set tab=data 把 shareId 弄丢
+  recoverPreviewUrlInBrowser()
+  const url = new URL(normalizePreviewUrl(window.location.href))
   url.searchParams.set('tab', tab)
 
   const keepIds = options.keepHighlightIds ?? true
