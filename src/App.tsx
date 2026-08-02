@@ -8,6 +8,21 @@ import {
 } from './app/tabRouting'
 import { useEraTheme } from './theme/useEraTheme'
 
+/** 切换到图文/标题前预取默认字体 CSS，缩短正文空白窗口 */
+function preloadGraphicFonts() {
+  const base = import.meta.env.BASE_URL || '/'
+  const hrefs = [`${base}fonts/noto-serif-sc.css`, `${base}fonts/alimama-shuheiti.css`]
+  for (const href of hrefs) {
+    if (document.querySelector(`link[data-era-font-preload="${href}"]`)) continue
+    const link = document.createElement('link')
+    link.rel = 'preload'
+    link.as = 'style'
+    link.href = href
+    link.dataset.eraFontPreload = href
+    document.head.appendChild(link)
+  }
+}
+
 const GraphicTextWorkspace = lazy(() =>
   import('./features/graphic-text/GraphicTextWorkspace').then((m) => ({
     default: m.GraphicTextWorkspace,
@@ -66,6 +81,12 @@ function App() {
     window.addEventListener('popstate', syncFromUrl)
     return () => window.removeEventListener('popstate', syncFromUrl)
   }, [syncFromUrl])
+
+  useEffect(() => {
+    if (mode === 'graphic' || mode === 'title' || mode === 'highlight') {
+      preloadGraphicFonts()
+    }
+  }, [mode])
 
   const handleModeChange = useCallback(
     (next: AppMode) => {

@@ -72,7 +72,8 @@ async function loadLocalTtfFaces(font: FontOption): Promise<void> {
       const face = new FontFace(family, `url(${base}${file})`, {
         weight,
         style: 'normal',
-        display: 'block',
+        // 与 CSS 一致用 swap：编辑预览不能在加载期把正文藏成空白
+        display: 'swap',
       })
       const loaded = await withTimeoutReject(face.load(), FONT_LOAD_TIMEOUT_MS * 3, `FontFace ${file} 超时`)
       document.fonts.add(loaded)
