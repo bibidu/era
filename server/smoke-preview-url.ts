@@ -7,8 +7,13 @@ import {
   buildAppPagesUrl,
   highlightSetupPagesUrl,
   normalizePreviewUrl,
+  parsePreviewSearchParams,
   titleComposerPagesUrl,
 } from '../src/agent/supabaseHighlightSetup.ts'
+import {
+  readAppTabFromSearch,
+  readHighlightIdsFromSearch,
+} from '../src/app/tabRouting.ts'
 
 const edgeBase =
   'https://bibidu-era-0tdhv043.edgeone.cool/?eo_token=37d84b1f9d92753698735ac65e7e4f51&eo_time=1785661112'
@@ -46,5 +51,17 @@ assert.equal(fromBroken.searchParams.get('shareId'), '1dac7255-16f2-413f-a84d-df
 const bare = new URL(highlightSetupPagesUrl('abc-share'))
 assert.equal(bare.searchParams.get('tab'), 'highlight')
 assert.equal(bare.searchParams.get('shareId'), 'abc-share')
+
+// 前端深链：二次编码时不得落回社媒 / 丢 shareId
+const mangledSearch =
+  '?eo_token%3D37d84b1f9d92753698735ac65e7e4f51%26eo_time%3D1785661112%26tab%3Dhighlight%26shareId%3D1dac7255-16f2-413f-a84d-df3c2cadb87d'
+assert.equal(readAppTabFromSearch(mangledSearch), 'highlight')
+assert.equal(
+  readHighlightIdsFromSearch(mangledSearch).shareId,
+  '1dac7255-16f2-413f-a84d-df3c2cadb87d',
+)
+const recoveredParams = parsePreviewSearchParams(mangledSearch)
+assert.equal(recoveredParams.get('tab'), 'highlight')
+assert.equal(recoveredParams.get('eo_token'), '37d84b1f9d92753698735ac65e7e4f51')
 
 console.log('preview url normalize/merge ok')

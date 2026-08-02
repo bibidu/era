@@ -100,6 +100,33 @@ export function resolvePublicPagesBase(
 }
 
 /**
+ * 判断 search / URLSearchParams 是否为「整段 query 被二次编码」形态：
+ * `?eo_token%3D…%26eo_time%3D…%26tab%3Dhighlight%26shareId%3D…`
+ * 此时 URLSearchParams 只会得到一个 key（含 `=`/`&`）且 value 为空，
+ * `tab` / `shareId` 都会读成 null → 前端落回默认社媒 Tab 并提示缺少 shareId。
+ */
+export function isDoubleEncodedSearchParams(params: URLSearchParams): boolean {
+  const entries = [...params.entries()]
+  if (entries.length !== 1) return false
+  const [key, value] = entries[0]!
+  return (
+    value === '' &&
+    /[=&]/.test(key) &&
+    (/%3D|%26/i.test(params.toString()) || key.includes('='))
+  )
+}
+
+/** 从 location.search / 裸 query 解析参数；若整段被二次编码则先还原 */
+export function parsePreviewSearchParams(search: string): URLSearchParams {
+  const raw = search.startsWith('?') ? search.slice(1) : search
+  if (!raw) return new URLSearchParams()
+  const params = new URLSearchParams(raw)
+  if (!isDoubleEncodedSearchParams(params)) return params
+  const [key] = [...params.entries()][0]!
+  return new URLSearchParams(key)
+}
+
+/**
  * 规范化预览 URL：
  * - 修复「整段 query 被 encodeURIComponent」→ `?eo_token%3D…%26eo_time%3D…`（EdgeOne Error -100）
  * - 不在已有 query 末尾错误追加 `/`（会污染 eo_time）
@@ -117,15 +144,8 @@ export function normalizePreviewUrl(raw: string): string {
 
   if (!url.pathname) url.pathname = '/'
 
-  const entries = [...url.searchParams.entries()]
-  const looksDoubleEncoded =
-    entries.length === 1 &&
-    entries[0]![1] === '' &&
-    /[=&]/.test(entries[0]![0]) &&
-    (/%3D|%26/i.test(url.search) || entries[0]![0].includes('='))
-
-  if (looksDoubleEncoded) {
-    const recovered = new URLSearchParams(entries[0]![0])
+  if (isDoubleEncodedSearchParams(url.searchParams)) {
+    const recovered = parsePreviewSearchParams(url.search)
     url.search = ''
     for (const [key, value] of recovered.entries()) {
       url.searchParams.append(key, value)
@@ -133,6 +153,31 @@ export function normalizePreviewUrl(raw: string): string {
   }
 
   return url.toString()
+}
+
+/**
+ * 浏览器启动时：若地址栏 query 被整段二次编码，立即 replaceState 还原。
+ * 必须在首次读 tab/shareId 之前调用，否则会落回社媒 Tab 且丢失 shareId。
+ * @returns 是否改写了地址栏
+ */
+export function recoverPreviewUrlInBrowser(
+  href: string = typeof window !== 'undefined' ? window.location.href : '',
+): boolean {
+  if (typeof window === 'undefined' || !href) return false
+  let current: URL
+  try {
+    current = new URL(href)
+  } catch {
+    return false
+  }
+  if (!isDoubleEncodedSearchParams(current.searchParams)) return false
+
+  const recovered = new URL(normalizePreviewUrl(href))
+  const next = `${recovered.pathname}${recovered.search}${recovered.hash || current.hash}`
+  const prev = `${current.pathname}${current.search}${current.hash}`
+  if (next === prev) return false
+  window.history.replaceState(window.history.state, '', next)
+  return true
 }
 
 /** 在预览基址上合并 tab 等参数；保留已有 eo_token/eo_time，绝不二次编码整段 query */
