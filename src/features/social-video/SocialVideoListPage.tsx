@@ -10,8 +10,7 @@ import {
   type SocialVideoPublishStatus,
   type SocialVideoWorkType,
 } from '../../agent/supabaseSocialVideoAnalysis'
-import { TEXT_FONT_OPTIONS } from '../../data/fonts'
-import { ensureFontReady } from '../../utils/fontLoad'
+import { ossListThumbUrl } from '../../utils/ossListThumbUrl'
 
 export type SocialListStatusFilter = '' | SocialVideoPublishStatus
 export type SocialListWorkTypeFilter = '' | SocialVideoWorkType
@@ -40,11 +39,6 @@ const WORK_TYPE_FILTERS: { value: SocialListWorkTypeFilter; label: string }[] = 
   ...SOCIAL_VIDEO_WORK_TYPES.map((type) => ({ value: type, label: type })),
 ]
 
-const SHUHEITI_FONT =
-  TEXT_FONT_OPTIONS.find((font) => font.id === 'shuheiti') ?? TEXT_FONT_OPTIONS[0]
-
-const SHUHEITI_FAMILY = '"Alimama ShuHeiTi", sans-serif'
-
 function statusBadgeStyle(status: SocialVideoPublishStatus): { background: string; color: string } {
   switch (status) {
     case '已发布':
@@ -56,15 +50,9 @@ function statusBadgeStyle(status: SocialVideoPublishStatus): { background: strin
   }
 }
 
-/** 封面缺失/裂图时：优先标题，否则大纲；单行由 CSS truncate */
+/** 封面缺失/裂图时：用标题；单行由 CSS truncate（列表不再拉 outline） */
 function coverFallbackText(record: SocialVideoAnalysisRecord): string {
-  const title = (record.title || '').replace(/\s+/g, ' ').trim()
-  if (title) return title
-
-  const outline = (record.outline || '').replace(/\s+/g, ' ').trim()
-  if (outline) return outline
-
-  return ''
+  return (record.title || '').replace(/\s+/g, ' ').trim()
 }
 
 function CoverFallbackLabel({ text }: { text: string }) {
@@ -75,10 +63,7 @@ function CoverFallbackLabel({ text }: { text: string }) {
     >
       <p
         className="w-full truncate text-center text-xs font-medium leading-5"
-        style={{
-          fontFamily: SHUHEITI_FAMILY,
-          color: 'var(--era-fg)',
-        }}
+        style={{ color: 'var(--era-fg)' }}
         title={text || undefined}
       >
         {text || '暂无内容'}
@@ -96,16 +81,19 @@ function coverImageCandidates(record: SocialVideoAnalysisRecord): string[] {
   return urls
 }
 
-/** 有封面/首图且能加载时直接展示图片；全部失败再退回标题/大纲文案 */
+/** 有封面且能加载时展示 OSS 缩略图；失败回退原图/下一候选，再退回标题文案 */
 function CoverThumb({ record }: { record: SocialVideoAnalysisRecord }) {
   const candidates = coverImageCandidates(record)
   const [candidateIndex, setCandidateIndex] = useState(0)
+  const [useThumb, setUseThumb] = useState(true)
   const fallback = coverFallbackText(record)
-  const src = candidates[candidateIndex] || ''
-  const showImg = Boolean(src)
+  const original = candidates[candidateIndex] || ''
+  const showImg = Boolean(original)
+  const src = showImg ? (useThumb ? ossListThumbUrl(original) : original) : ''
 
   useEffect(() => {
     setCandidateIndex(0)
+    setUseThumb(true)
   }, [record.id, record.cover_url, record.image_previews?.[0]])
 
   if (!showImg) {
@@ -118,10 +106,18 @@ function CoverThumb({ record }: { record: SocialVideoAnalysisRecord }) {
       alt=""
       loading="lazy"
       decoding="async"
+      sizes="120px"
       className="h-full w-full object-cover"
       onError={() => {
+        if (useThumb && src !== original) {
+          setUseThumb(false)
+          return
+        }
         setCandidateIndex((i) => {
-          if (i + 1 < candidates.length) return i + 1
+          if (i + 1 < candidates.length) {
+            setUseThumb(true)
+            return i + 1
+          }
           return candidates.length
         })
       }}
@@ -202,10 +198,6 @@ export function SocialVideoListPage({
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
-
-  useEffect(() => {
-    void ensureFontReady(SHUHEITI_FONT, '大纲内容预览')
-  }, [])
 
   useEffect(() => {
     let cancelled = false

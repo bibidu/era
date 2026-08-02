@@ -8,6 +8,7 @@ import {
   ZoomOut,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import '../../styles/graphic.css'
 import { agentHttpBase } from '../../agent/agentHttp'
 import {
   buildHighlightSetupPayload,

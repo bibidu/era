@@ -51,21 +51,21 @@ async function waitForGlyphs(family: string, sampleText: string, fontSize = 24) 
   )
 }
 
-/** 同源 TTF 直挂 FontFace，避免仅靠 CSS 时大字体加载慢/失败后静默回退 */
+/**
+ * 宋体等无可靠 woff2 时直挂 TTF。
+ * 数黑体（shuheiti）走 CSS woff2，禁止再拉 TTF，避免双格式合计 ~2MB。
+ */
 async function loadLocalTtfFaces(font: FontOption): Promise<void> {
   if (typeof FontFace === 'undefined' || typeof document === 'undefined') return
-  if (font.id !== 'song' && font.id !== 'shuheiti') return
+  if (font.id !== 'song') return
 
   const base = (font.cdnUrl || '').replace(/[^/]+$/, '')
   if (!base) return
 
-  const faces =
-    font.id === 'song'
-      ? [
-          { weight: '400', file: 'NotoSerifSC-Regular.ttf', family: 'Noto Serif SC' },
-          { weight: '700', file: 'NotoSerifSC-Bold.ttf', family: 'Noto Serif SC' },
-        ]
-      : [{ weight: '700', file: 'AlimamaShuHeiTi-Bold.ttf', family: 'Alimama ShuHeiTi' }]
+  const faces = [
+    { weight: '400', file: 'NotoSerifSC-Regular.ttf', family: 'Noto Serif SC' },
+    { weight: '700', file: 'NotoSerifSC-Bold.ttf', family: 'Noto Serif SC' },
+  ]
 
   await Promise.all(
     faces.map(async ({ weight, file, family }) => {

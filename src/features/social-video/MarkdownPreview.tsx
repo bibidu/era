@@ -1,5 +1,6 @@
 import { marked } from 'marked'
 import { useMemo } from 'react'
+import '../../styles/graphic.css'
 
 marked.setOptions({
   gfm: true,

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import '../styles/graphic.css'
 
 interface BottomSheetProps {
   isOpen: boolean

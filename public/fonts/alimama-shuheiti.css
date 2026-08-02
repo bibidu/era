@@ -1,8 +1,7 @@
 @font-face {
   font-family: 'Alimama ShuHeiTi';
-  src:
-    url('./AlimamaShuHeiTi-Bold.woff2') format('woff2'),
-    url('./AlimamaShuHeiTi-Bold.ttf') format('truetype');
+  /* 浏览器只走 woff2，避免再拉 1.3MB TTF；导出脚本仍用本地 TTF */
+  src: url('./AlimamaShuHeiTi-Bold.woff2') format('woff2');
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;

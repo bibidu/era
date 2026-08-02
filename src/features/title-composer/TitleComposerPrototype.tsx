@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Check, Copy, RotateCcw } from 'lucide-react'
+import '../../styles/graphic.css'
+import '../../styles/title.css'
 import { TEXT_FONT_OPTIONS } from '../../data/fonts'
 import { useFontLoader } from '../../hooks/useFontLoader'
 import { TextAdjustNumericControl } from '../graphic-text/TextAdjustNumericControl'

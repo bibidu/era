@@ -1,10 +1,6 @@
 import { ChevronLeft } from 'lucide-react'
-import { useState } from 'react'
+import { Suspense, lazy, useState } from 'react'
 import { type SocialVideoAnalysisRecord } from '../../agent/supabaseSocialVideoAnalysis'
-import { AccountReviewPage } from './AccountReviewPage'
-import { SocialVideoCreatePage } from './SocialVideoCreatePage'
-import { SocialVideoDataPage } from './SocialVideoDataPage'
-import { SocialVideoDetailPage } from './SocialVideoDetailPage'
 import {
   SocialVideoListPage,
   type SocialListStatusFilter,
@@ -12,6 +8,30 @@ import {
 } from './SocialVideoListPage'
 
 export type { SocialListStatusFilter, SocialListWorkTypeFilter }
+
+const AccountReviewPage = lazy(() =>
+  import('./AccountReviewPage').then((m) => ({ default: m.AccountReviewPage })),
+)
+const SocialVideoCreatePage = lazy(() =>
+  import('./SocialVideoCreatePage').then((m) => ({ default: m.SocialVideoCreatePage })),
+)
+const SocialVideoDataPage = lazy(() =>
+  import('./SocialVideoDataPage').then((m) => ({ default: m.SocialVideoDataPage })),
+)
+const SocialVideoDetailPage = lazy(() =>
+  import('./SocialVideoDetailPage').then((m) => ({ default: m.SocialVideoDetailPage })),
+)
+
+function SecondaryLoadingFallback() {
+  return (
+    <div
+      className="flex min-h-0 flex-1 items-center justify-center text-sm"
+      style={{ color: 'var(--era-muted)' }}
+    >
+      加载中...
+    </div>
+  )
+}
 
 export function DataAnalysisWorkspace() {
   const [view, setView] = useState<'list' | 'extract' | 'review' | 'create' | 'detail'>('list')
@@ -73,39 +93,49 @@ export function DataAnalysisWorkspace() {
             </button>
             <h1 className="text-base font-semibold">智能提取</h1>
           </header>
-          <SocialVideoDataPage
-            embedded
-            onSaved={() => {
-              bumpListReload()
-              setView('list')
-            }}
-          />
+          <Suspense fallback={<SecondaryLoadingFallback />}>
+            <SocialVideoDataPage
+              embedded
+              onSaved={() => {
+                bumpListReload()
+                setView('list')
+              }}
+            />
+          </Suspense>
         </div>
       ) : null}
 
-      {view === 'review' ? <AccountReviewPage onBack={() => setView('list')} /> : null}
+      {view === 'review' ? (
+        <Suspense fallback={<SecondaryLoadingFallback />}>
+          <AccountReviewPage onBack={() => setView('list')} />
+        </Suspense>
+      ) : null}
 
       {view === 'detail' && detailRecord ? (
-        <SocialVideoDetailPage
-          record={detailRecord}
-          onBack={() => {
-            setDetailRecord(null)
-            setView('list')
-          }}
-          onDeleted={bumpListReload}
-        />
+        <Suspense fallback={<SecondaryLoadingFallback />}>
+          <SocialVideoDetailPage
+            record={detailRecord}
+            onBack={() => {
+              setDetailRecord(null)
+              setView('list')
+            }}
+            onDeleted={bumpListReload}
+          />
+        </Suspense>
       ) : null}
 
       {view === 'create' ? (
-        <SocialVideoCreatePage
-          editingRecord={editingRecord}
-          onBack={() => {
-            setEditingRecord(null)
-            setView('list')
-          }}
-          onCreated={bumpListReload}
-          onDeleted={bumpListReload}
-        />
+        <Suspense fallback={<SecondaryLoadingFallback />}>
+          <SocialVideoCreatePage
+            editingRecord={editingRecord}
+            onBack={() => {
+              setEditingRecord(null)
+              setView('list')
+            }}
+            onCreated={bumpListReload}
+            onDeleted={bumpListReload}
+          />
+        </Suspense>
       ) : null}
     </div>
   )

@@ -47,9 +47,12 @@ export interface ListSocialVideoAnalysesOptions {
   includeMarkdown?: boolean
 }
 
+/** 列表轻量字段：不含 outline / image_previews，避免数百 KB～MB 级 JSON */
 const LIST_SELECT_BASE =
-  'id,created_at,title,published_at,cover_url,publish_status,work_type,outline,image_previews'
-const LIST_SELECT_WITH_MARKDOWN = `${LIST_SELECT_BASE},markdown`
+  'id,created_at,title,published_at,cover_url,publish_status,work_type'
+/** 复盘等需要正文时再拉 markdown（及大纲/预览链） */
+const LIST_SELECT_WITH_MARKDOWN =
+  `${LIST_SELECT_BASE},outline,image_previews,markdown`
 
 const NETWORK_ERROR_MARKERS = ['failed to fetch', 'networkerror', 'load failed', 'network request failed']
 

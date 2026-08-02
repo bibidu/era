@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
+import './styles/base.css'
 import App from './App.tsx'
 import { recoverPreviewUrlInBrowser } from './agent/supabaseHighlightSetup'
 import { applyTheme, readStoredTheme } from './theme/theme'

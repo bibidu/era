@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import '../../styles/graphic.css'
 import type { FontOption } from '../../data/fonts'
 import { getFontById } from '../../data/fonts'
 import { ensureFontReady } from '../../utils/fontLoad'
