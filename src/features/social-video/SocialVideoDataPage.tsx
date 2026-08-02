@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { browserSupabaseConfig } from '../../agent/supabaseHighlightSetup'
+import { LEGACY_SUPABASE_ANON_KEY } from '../../agent/supabaseHighlightSetup'
 import {
   getSocialVideoAnalysis,
   listSocialVideoAnalyses,
@@ -402,13 +402,12 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
         media = [{ type: 'video', url: videoUrl.trim(), fps: normalizedFps }]
       }
 
-      const { anonKey } = browserSupabaseConfig()
       const response = await fetch(SUPABASE_PROXY_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          apikey: anonKey,
-          Authorization: `Bearer ${anonKey}`,
+          apikey: LEGACY_SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${LEGACY_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
           model: model.trim(),

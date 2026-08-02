@@ -1,6 +1,6 @@
 import { ChevronLeft, RefreshCw, Wallet } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { DEFAULT_SUPABASE_ANON_KEY } from '../../agent/supabaseHighlightSetup'
+import { LEGACY_SUPABASE_ANON_KEY } from '../../agent/supabaseHighlightSetup'
 
 const BALANCE_ENDPOINT =
   'https://kzoxyextxjwscrpjowud.functions.supabase.co/aliyun-account-balance'
@@ -41,8 +41,8 @@ export function AccountBalancePage({ onBack }: AccountBalancePageProps) {
       const res = await fetch(BALANCE_ENDPOINT, {
         method: 'GET',
         headers: {
-          apikey: DEFAULT_SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${DEFAULT_SUPABASE_ANON_KEY}`,
+          apikey: LEGACY_SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${LEGACY_SUPABASE_ANON_KEY}`,
         },
       })
       const json = (await res.json()) as BalancePayload

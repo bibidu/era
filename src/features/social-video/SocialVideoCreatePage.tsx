@@ -12,7 +12,7 @@ import {
   type SocialVideoAnalysisRecord,
   type SocialVideoWorkType,
 } from '../../agent/supabaseSocialVideoAnalysis'
-import { browserSupabaseConfig } from '../../agent/supabaseHighlightSetup'
+import { LEGACY_SUPABASE_URL } from '../../agent/supabaseHighlightSetup'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { MarkdownContentDrawer } from './MarkdownContentDrawer'
 import { ImagePreviewStrip } from './ImagePreviewStrip'
@@ -56,8 +56,7 @@ interface AiRevisionPromptInput {
 }
 
 function buildAiRevisionPrompt(input: AiRevisionPromptInput) {
-  const { url } = browserSupabaseConfig()
-  const projectRef = supabaseProjectRef(url)
+  const projectRef = supabaseProjectRef(LEGACY_SUPABASE_URL)
 
   const formBlocks: string[] = []
   const outline = input.outline.trim()
