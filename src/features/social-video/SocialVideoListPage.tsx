@@ -90,11 +90,12 @@ function CoverThumb({ record }: { record: SocialVideoAnalysisRecord }) {
   const original = candidates[candidateIndex] || ''
   const showImg = Boolean(original)
   const src = showImg ? (useThumb ? ossListThumbUrl(original) : original) : ''
+  const firstPreview = record.image_previews?.[0]
 
   useEffect(() => {
     setCandidateIndex(0)
     setUseThumb(true)
-  }, [record.id, record.cover_url, record.image_previews?.[0]])
+  }, [record.id, record.cover_url, firstPreview])
 
   if (!showImg) {
     return <CoverFallbackLabel text={fallback} />
