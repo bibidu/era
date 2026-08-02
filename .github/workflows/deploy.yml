@@ -61,8 +61,24 @@ jobs:
         run: |
           set -euo pipefail
           unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY all_proxy || true
+          if [ -z "${EDGEONE_API_TOKEN:-}" ]; then
+            echo "::error::EDGEONE_API_TOKEN secret is empty"
+            exit 1
+          fi
+          # 与 scripts/deploy-edgeone.sh 一致：先捕获 CLI 输出再判断退出码，避免失败时日志被吞
+          set +e
           OUT="$(npx --yes edgeone@latest makers deploy ./dist -n bibidu-era -e production -t "$EDGEONE_API_TOKEN" --json 2>&1)"
+          CODE=$?
+          set -e
           echo "$OUT"
+          if [ "$CODE" -ne 0 ]; then
+            echo "::error::EdgeOne deploy failed (exit=$CODE)"
+            echo "### EdgeOne 部署失败 (exit=$CODE)" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "$OUT" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            exit "$CODE"
+          fi
           URL="$(echo "$OUT" | perl -ne 'print "$1\n" if /"(?:url|domain|accessUrl|projectUrl)"\s*:\s*"(https?:[^"]+)"/' | tail -1)"
           if [ -z "$URL" ]; then
             URL="$(echo "$OUT" | grep -Eo 'https?://[a-zA-Z0-9._/-]+\.(edgeone\.app|pages\.edgeone\.ai|edgeone\.site|edgeone\.cool)[^[:space:]"<>]*' | tail -1 || true)"
