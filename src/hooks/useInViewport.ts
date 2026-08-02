@@ -5,22 +5,21 @@ export type UseInViewportOptions = {
   root?: Element | null
   /** 进入一次后保持 true 并 disconnect */
   once?: boolean
-  /** 覆盖默认 rootMargin */
+  /** 覆盖默认 rootMargin；封面懒加载宜用 `0px`，避免提前预取 */
   rootMargin?: string
+  /**
+   * 可见比例阈值（0–1）。
+   * 默认 0：任意相交即触发；封面图用 `1/3` 表示露出三分之一以上才加载。
+   */
+  threshold?: number
 }
 
-function defaultRootMargin(): string {
-  if (typeof window === 'undefined') return '120px 0px'
-  // 移动端预加载更短，PC 多预取一屏
-  return window.matchMedia('(max-width: 639px)').matches ? '96px 0px' : '240px 0px'
-}
-
-/** 元素进入（滚动）视口后为 true；用于封面等重资源按需加载 */
+/** 元素在滚动视口内达到可见比例后为 true；用于封面等重资源按需加载 */
 export function useInViewport(
   targetRef: RefObject<Element | null>,
   options: UseInViewportOptions = {},
 ): boolean {
-  const { root = null, once = true, rootMargin } = options
+  const { root = null, once = true, rootMargin = '0px', threshold = 0 } = options
   const [active, setActive] = useState(false)
 
   useEffect(() => {
@@ -31,23 +30,28 @@ export function useInViewport(
       return
     }
 
+    const ratioThreshold = Math.min(1, Math.max(0, threshold))
+
     const obs = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
+          // isIntersecting 在 threshold>0 时表示已达该比例
           if (!entry.isIntersecting) continue
+          if (ratioThreshold > 0 && entry.intersectionRatio + 1e-6 < ratioThreshold) continue
           setActive(true)
           if (once) obs.disconnect()
         }
       },
       {
         root: root ?? null,
-        rootMargin: rootMargin ?? defaultRootMargin(),
-        threshold: 0.01,
+        rootMargin,
+        // 同时观察 0 与目标阈值，滚动过程中能收到足够回调
+        threshold: ratioThreshold > 0 ? [0, ratioThreshold, 1] : 0,
       },
     )
     obs.observe(el)
     return () => obs.disconnect()
-  }, [active, once, root, rootMargin, targetRef])
+  }, [active, once, root, rootMargin, targetRef, threshold])
 
   return active
 }

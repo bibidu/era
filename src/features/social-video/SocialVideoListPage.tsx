@@ -101,7 +101,13 @@ function CoverThumb({
   scrollRoot: Element | null
 }) {
   const hostRef = useRef<HTMLDivElement>(null)
-  const inView = useInViewport(hostRef, { root: scrollRoot, once: true })
+  // 露出三分之一以上才挂 src，避免刚擦边就请求封面
+  const inView = useInViewport(hostRef, {
+    root: scrollRoot,
+    once: true,
+    rootMargin: '0px',
+    threshold: 1 / 3,
+  })
   const candidates = coverImageCandidates(record)
   const [candidateIndex, setCandidateIndex] = useState(0)
   const [useThumb, setUseThumb] = useState(true)
