@@ -1,5 +1,5 @@
 import { Plus, RefreshCw, Sparkles, TrendingUp } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   SOCIAL_VIDEO_PUBLISH_STATUSES,
   SOCIAL_VIDEO_WORK_TYPES,
@@ -10,7 +10,8 @@ import {
   type SocialVideoPublishStatus,
   type SocialVideoWorkType,
 } from '../../agent/supabaseSocialVideoAnalysis'
-import { ossListThumbUrl } from '../../utils/ossListThumbUrl'
+import { useInViewport } from '../../hooks/useInViewport'
+import { listThumbWidthForViewport, ossListThumbUrl } from '../../utils/ossListThumbUrl'
 
 export type SocialListStatusFilter = '' | SocialVideoPublishStatus
 export type SocialListWorkTypeFilter = '' | SocialVideoWorkType
@@ -75,21 +76,45 @@ function CoverFallbackLabel({ text }: { text: string }) {
 function coverImageCandidates(record: SocialVideoAnalysisRecord): string[] {
   const urls: string[] = []
   const cover = (record.cover_url || '').trim()
-  if (cover) urls.push(cover)
+  // 优先 https CDN；残留 data: 仅作回退（应由 migrate-base64-covers-to-oss 清掉）
+  if (cover.startsWith('http://') || cover.startsWith('https://')) urls.push(cover)
+  else if (cover.startsWith('data:image/')) urls.push(cover)
   const firstPreview = (record.image_previews?.[0] || '').trim()
-  if (firstPreview && firstPreview !== cover) urls.push(firstPreview)
+  if (
+    firstPreview &&
+    firstPreview !== cover &&
+    (firstPreview.startsWith('http://') ||
+      firstPreview.startsWith('https://') ||
+      firstPreview.startsWith('data:image/'))
+  ) {
+    urls.push(firstPreview)
+  }
   return urls
 }
 
-/** 有封面且能加载时展示 OSS 缩略图；失败回退原图/下一候选，再退回标题文案 */
-function CoverThumb({ record }: { record: SocialVideoAnalysisRecord }) {
+/** 仅在滚动可见时挂 src；OSS 图按 PC/移动选缩略宽度 */
+function CoverThumb({
+  record,
+  scrollRoot,
+}: {
+  record: SocialVideoAnalysisRecord
+  scrollRoot: Element | null
+}) {
+  const hostRef = useRef<HTMLDivElement>(null)
+  const inView = useInViewport(hostRef, { root: scrollRoot, once: true })
   const candidates = coverImageCandidates(record)
   const [candidateIndex, setCandidateIndex] = useState(0)
   const [useThumb, setUseThumb] = useState(true)
+  const [thumbWidth, setThumbWidth] = useState(() => listThumbWidthForViewport())
   const fallback = coverFallbackText(record)
-  const original = candidates[candidateIndex] || ''
-  const showImg = Boolean(original)
-  const src = showImg ? (useThumb ? ossListThumbUrl(original) : original) : ''
+  const exhausted = candidateIndex >= candidates.length
+  const original = exhausted ? '' : candidates[candidateIndex] || ''
+  const src =
+    original && inView
+      ? useThumb && !original.startsWith('data:')
+        ? ossListThumbUrl(original, { width: thumbWidth })
+        : original
+      : ''
   const firstPreview = record.image_previews?.[0]
 
   useEffect(() => {
@@ -97,32 +122,42 @@ function CoverThumb({ record }: { record: SocialVideoAnalysisRecord }) {
     setUseThumb(true)
   }, [record.id, record.cover_url, firstPreview])
 
-  if (!showImg) {
+  useEffect(() => {
+    const sync = () => setThumbWidth(listThumbWidthForViewport())
+    sync()
+    window.addEventListener('resize', sync)
+    return () => window.removeEventListener('resize', sync)
+  }, [])
+
+  if (candidates.length === 0 || exhausted) {
     return <CoverFallbackLabel text={fallback} />
   }
 
   return (
-    <img
-      src={src}
-      alt=""
-      loading="lazy"
-      decoding="async"
-      sizes="120px"
-      className="h-full w-full object-cover"
-      onError={() => {
-        if (useThumb && src !== original) {
-          setUseThumb(false)
-          return
-        }
-        setCandidateIndex((i) => {
-          if (i + 1 < candidates.length) {
-            setUseThumb(true)
-            return i + 1
-          }
-          return candidates.length
-        })
-      }}
-    />
+    <div ref={hostRef} className="h-full w-full" style={{ background: 'var(--era-panel)' }}>
+      {src ? (
+        <img
+          src={src}
+          alt=""
+          decoding="async"
+          sizes="(max-width: 639px) 33vw, 120px"
+          className="h-full w-full object-cover"
+          onError={() => {
+            if (useThumb && !original.startsWith('data:') && src !== original) {
+              setUseThumb(false)
+              return
+            }
+            setCandidateIndex((i) => {
+              if (i + 1 < candidates.length) {
+                setUseThumb(true)
+                return i + 1
+              }
+              return candidates.length
+            })
+          }}
+        />
+      ) : null}
+    </div>
   )
 }
 
@@ -199,6 +234,12 @@ export function SocialVideoListPage({
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [scrollRoot, setScrollRoot] = useState<Element | null>(null)
+
+  useEffect(() => {
+    setScrollRoot(scrollRef.current)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -335,7 +376,7 @@ export function SocialVideoListPage({
         />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {loading ? (
           <div className="flex h-48 items-center justify-center text-sm" style={{ color: 'var(--era-muted)' }}>
             加载中...
@@ -373,7 +414,7 @@ export function SocialVideoListPage({
                   }}
                 >
                   <div className="aspect-[3/4] w-full">
-                    <CoverThumb record={record} />
+                    <CoverThumb record={record} scrollRoot={scrollRoot} />
                     <span
                       className="absolute left-1.5 top-1.5 max-w-[calc(50%-0.5rem)] truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide shadow-sm"
                       style={{ background: 'rgb(0 0 0 / 0.55)', color: '#ffffff' }}
