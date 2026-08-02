@@ -96,7 +96,7 @@ function buildAiRevisionPrompt(input: AiRevisionPromptInput) {
 
 ## 目标记录（Supabase）
 - 项目 ref：${projectRef}
-- 项目 URL：${url}
+- 项目 URL：${LEGACY_SUPABASE_URL}
 - 表：${ERA_SOCIAL_VIDEO_ANALYSES_TABLE}
 - 条目 id：${input.recordId}
 - 需更新字段：title、markdown、image_previews（图片链接按序写入；封面须用 cover 文件名或 --cover，自动带 __cover_keep__ 永久标记）、cover_url（封面永久 URL）
