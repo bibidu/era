@@ -233,6 +233,8 @@ function shareDocumentForStorage(document?: unknown): unknown | null {
   return hasContent ? document : null
 }
 
+const REST_FETCH_TIMEOUT_MS = 10_000
+
 async function supabaseRest<T>(
   config: { url: string; anonKey: string },
   path: string,
@@ -246,10 +248,29 @@ async function supabaseRest<T>(
   }
   if (init.prefer) headers.set('Prefer', init.prefer)
 
-  const res = await fetch(`${config.url}/rest/v1/${path}`, {
-    ...init,
-    headers,
-  })
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), REST_FETCH_TIMEOUT_MS)
+  const onAbort = () => controller.abort()
+  if (init.signal) {
+    if (init.signal.aborted) controller.abort()
+    else init.signal.addEventListener('abort', onAbort, { once: true })
+  }
+  let res: Response
+  try {
+    res = await fetch(`${config.url}/rest/v1/${path}`, {
+      ...init,
+      headers,
+      signal: controller.signal,
+    })
+  } catch (error) {
+    const aborted =
+      (error instanceof DOMException && error.name === 'AbortError') ||
+      (error instanceof Error && error.name === 'AbortError')
+    throw aborted ? new TypeError('Failed to fetch') : error
+  } finally {
+    clearTimeout(timeoutId)
+    init.signal?.removeEventListener('abort', onAbort)
+  }
   const text = await res.text()
   if (!res.ok) {
     throw new Error(`Supabase ${res.status}: ${text || res.statusText}`)
