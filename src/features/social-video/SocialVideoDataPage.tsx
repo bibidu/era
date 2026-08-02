@@ -14,8 +14,12 @@ const SUPABASE_PROXY_ENDPOINT =
 
 const DEFAULT_MODEL = 'qwen3.7-flash'
 const DEFAULT_FPS = '1'
-const MAX_FRAME_COUNT = 24
-const FRAME_MAX_WIDTH = 640
+/** 过多/过大的 base64 帧会打爆 Supabase Edge Function（WORKER_RESOURCE_LIMIT） */
+const MAX_FRAME_COUNT = 10
+const FRAME_MAX_WIDTH = 512
+const FRAME_JPEG_QUALITY = 0.58
+/** data URL 合计字符上限（约 2.2MB），超出则降质/减帧 */
+const MAX_FRAMES_PAYLOAD_CHARS = 2_200_000
 const VIDEO_EVENT_TIMEOUT_MS = 10000
 
 const NETWORK_ERROR_MARKERS = ['failed to fetch', 'networkerror', 'load failed', 'type error']
@@ -83,7 +87,9 @@ const DEFAULT_PROMPT = `你只需要提取以下信息，并最终按照同样�
 interface SocialVideoProxyResponse {
   markdown?: string
   error?: string
+  code?: string
   requestId?: string | null
+  message?: string
 }
 
 interface MediaInput {
@@ -151,6 +157,10 @@ async function seekVideo(video: HTMLVideoElement, time: number) {
   await seeked
 }
 
+function framePayloadChars(frames: string[]) {
+  return frames.reduce((sum, frame) => sum + frame.length, 0)
+}
+
 async function extractVideoFrames(file: File, fps: number) {
   const objectUrl = URL.createObjectURL(file)
   const video = document.createElement('video')
@@ -165,11 +175,9 @@ async function extractVideoFrames(file: File, fps: number) {
     await waitForVideoFrame(video)
 
     const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 1
-    const frameCount = Math.max(1, Math.min(MAX_FRAME_COUNT, Math.ceil(duration * fps)))
-    const times =
-      frameCount === 1
-        ? [0]
-        : Array.from({ length: frameCount }, (_, index) => (duration * index) / (frameCount - 1))
+    let frameCount = Math.max(1, Math.min(MAX_FRAME_COUNT, Math.ceil(duration * fps)))
+    let maxWidth = FRAME_MAX_WIDTH
+    let quality = FRAME_JPEG_QUALITY
 
     const canvas = document.createElement('canvas')
     const context = canvas.getContext('2d')
@@ -177,20 +185,48 @@ async function extractVideoFrames(file: File, fps: number) {
       throw new Error('当前浏览器无法抽取视频帧。')
     }
 
-    const frames: string[] = []
+    const capture = async () => {
+      const times =
+        frameCount === 1
+          ? [0]
+          : Array.from({ length: frameCount }, (_, index) => (duration * index) / (frameCount - 1))
+      const frames: string[] = []
 
-    for (const time of times) {
-      await seekVideo(video, time)
+      for (const time of times) {
+        await seekVideo(video, time)
 
-      if (!video.videoWidth || !video.videoHeight) {
-        throw new Error('无法读取视频画面尺寸。')
+        if (!video.videoWidth || !video.videoHeight) {
+          throw new Error('无法读取视频画面尺寸。')
+        }
+
+        const scale = Math.min(1, maxWidth / video.videoWidth)
+        canvas.width = Math.max(1, Math.round(video.videoWidth * scale))
+        canvas.height = Math.max(1, Math.round(video.videoHeight * scale))
+        context.drawImage(video, 0, 0, canvas.width, canvas.height)
+        frames.push(canvas.toDataURL('image/jpeg', quality))
       }
 
-      const scale = Math.min(1, FRAME_MAX_WIDTH / video.videoWidth)
-      canvas.width = Math.max(1, Math.round(video.videoWidth * scale))
-      canvas.height = Math.max(1, Math.round(video.videoHeight * scale))
-      context.drawImage(video, 0, 0, canvas.width, canvas.height)
-      frames.push(canvas.toDataURL('image/jpeg', 0.72))
+      return frames
+    }
+
+    let frames = await capture()
+    for (let attempt = 0; attempt < 4 && framePayloadChars(frames) > MAX_FRAMES_PAYLOAD_CHARS; attempt++) {
+      if (quality > 0.42) {
+        quality = Math.max(0.4, quality - 0.1)
+      } else if (maxWidth > 360) {
+        maxWidth = 360
+      } else if (frameCount > 5) {
+        frameCount = Math.max(5, Math.ceil(frameCount * 0.7))
+      } else {
+        break
+      }
+      frames = await capture()
+    }
+
+    if (framePayloadChars(frames) > MAX_FRAMES_PAYLOAD_CHARS) {
+      throw new Error(
+        '视频抽帧后体积仍过大，无法通过代理调用。请缩短视频、降低 FPS，或改用公网可访问的视频 URL。',
+      )
     }
 
     return frames
@@ -386,10 +422,19 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
       const data = text ? (JSON.parse(text) as SocialVideoProxyResponse) : {}
 
       if (!response.ok) {
-        const message = data.error || text || `HTTP ${response.status}`
+        const message = data.error || data.message || text || `HTTP ${response.status}`
         if (response.status === 401) {
           throw new Error(
             '鉴权失败（401）：Supabase 代理或 DashScope API Key 无效。请检查 Supabase 函数密钥 DASHSCOPE_API_KEY，或刷新页面后重试。',
+          )
+        }
+        if (
+          data.code === 'WORKER_RESOURCE_LIMIT' ||
+          message.includes('WORKER_RESOURCE_LIMIT') ||
+          message.includes('not having enough compute resources')
+        ) {
+          throw new Error(
+            '视频帧过大导致代理函数资源不足。请缩短视频、把 FPS 调低（如 0.5），或改用公网视频 URL 后重试。',
           )
         }
         throw new Error(message)
