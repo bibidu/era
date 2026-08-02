@@ -122,6 +122,10 @@ function normalizeMedia(body: ExtractRequest, defaultFps: number) {
     .filter((item): item is { image: string } | { video: string; fps: number } => Boolean(item))
 }
 
+/** 过大请求体易触发 WORKER_RESOURCE_LIMIT；约 3.5MB 字符提前拒绝 */
+const MAX_REQUEST_CHARS = 3_500_000
+const MAX_MEDIA_ITEMS = 12
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: CORS_HEADERS })
@@ -132,18 +136,51 @@ Deno.serve(async (request) => {
   }
 
   try {
-    const body = (await request.json()) as ExtractRequest
+    const contentLength = Number(request.headers.get('content-length') || 0)
+    if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_CHARS) {
+      return jsonResponse(
+        {
+          error:
+            'Request payload too large for Edge Function. Shorten the video, lower FPS, or use a public video URL.',
+          code: 'PAYLOAD_TOO_LARGE',
+        },
+        { status: 413 },
+      )
+    }
+
+    const rawBody = await request.text()
+    if (rawBody.length > MAX_REQUEST_CHARS) {
+      return jsonResponse(
+        {
+          error:
+            'Request payload too large for Edge Function. Shorten the video, lower FPS, or use a public video URL.',
+          code: 'PAYLOAD_TOO_LARGE',
+        },
+        { status: 413 },
+      )
+    }
+
+    let body: ExtractRequest
+    try {
+      body = JSON.parse(rawBody) as ExtractRequest
+    } catch {
+      return jsonResponse({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+
     const apiKey = Deno.env.get('DASHSCOPE_API_KEY')?.trim()
     const model = body.model?.trim() || 'qwen3.7-flash'
     const prompt = body.prompt?.trim()
     const fps = Number.isFinite(body.fps) && body.fps && body.fps > 0 ? body.fps : 1
-    const mediaContent = normalizeMedia(body, fps)
+    let mediaContent = normalizeMedia(body, fps)
 
     if (!apiKey) {
       return jsonResponse({ error: 'Server missing DashScope API key' }, { status: 500 })
     }
     if (mediaContent.length === 0) {
       return jsonResponse({ error: 'Missing video input' }, { status: 400 })
+    }
+    if (mediaContent.length > MAX_MEDIA_ITEMS) {
+      mediaContent = mediaContent.slice(0, MAX_MEDIA_ITEMS)
     }
     if (!prompt) {
       return jsonResponse({ error: 'Missing extraction prompt' }, { status: 400 })
