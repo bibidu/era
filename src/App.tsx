@@ -105,7 +105,7 @@ function App() {
 
   return (
     <div
-      className={`relative mx-auto flex h-dvh w-full flex-col overflow-hidden ${
+      className={`era-app-shell relative mx-auto flex h-dvh w-full flex-col overflow-hidden ${
         wideLayout ? 'max-w-5xl' : 'max-w-lg'
       }`}
       style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}
@@ -116,12 +116,12 @@ function App() {
         className="pointer-events-none fixed inset-x-0 top-0 z-[10000]"
         style={{
           height: 'max(8px, env(safe-area-inset-top, 0px))',
-          backgroundColor: 'var(--era-header)',
+          backgroundColor: 'var(--era-shell-bg, var(--era-header))',
         }}
       />
       {!balanceOpen ? (
         <header
-          className="sticky top-0 z-40 flex shrink-0 items-center justify-center border-b px-4 py-2"
+          className="sticky top-0 z-40 flex w-full shrink-0 items-center justify-center border-b px-4 py-2"
           style={{
             borderColor: 'var(--era-border)',
             background: 'var(--era-header)',

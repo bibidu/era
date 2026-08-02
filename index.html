@@ -19,12 +19,16 @@
           var theme = localStorage.getItem('era-theme')
           if (theme !== 'light' && theme !== 'dark') theme = 'dark'
           var color = theme === 'light' ? '#ffffff' : '#0a0a0a'
+          // 宽度 >500px：两侧壳层 #EDF2FB，内容列仍用主题色
+          var wide = window.matchMedia('(min-width: 501px)').matches
+          var shell = wide ? '#EDF2FB' : color
           document.documentElement.dataset.theme = theme
           document.documentElement.style.colorScheme = theme
-          document.documentElement.style.backgroundColor = color
+          document.documentElement.style.backgroundColor = shell
           document.documentElement.style.setProperty('--era-header', color)
+          document.documentElement.style.setProperty('--era-shell-bg', shell)
           document.querySelectorAll('meta[name="theme-color"]').forEach(function (node) {
-            node.setAttribute('content', color)
+            node.setAttribute('content', shell)
           })
           var statusBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
           if (statusBar) statusBar.setAttribute('content', 'black-translucent')
@@ -32,11 +36,14 @@
           var boot = document.createElement('style')
           boot.setAttribute('data-era-theme-boot', '1')
           boot.textContent =
-            'html,body,#root{background:' + color + '!important;}' +
-            '#era-safari-tint{background:' + color + '!important;}'
+            'html,body,#root{background:' + shell + '!important;}' +
+            '#era-safari-tint{background:' + shell + '!important;}' +
+            (wide ? '#root{display:flex;justify-content:center;}' : '')
           document.head.appendChild(boot)
           document.addEventListener('DOMContentLoaded', function () {
-            document.body.style.backgroundColor = color
+            document.body.style.backgroundColor = shell
+            var root = document.getElementById('root')
+            if (root) root.style.backgroundColor = shell
           })
         } catch (e) {}
       })()

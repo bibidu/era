@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   applyTheme,
+  ERA_DESKTOP_SHELL_MQ,
   readStoredTheme,
   toggleTheme,
   type EraTheme,
@@ -16,6 +17,13 @@ export function useEraTheme() {
 
   useEffect(() => {
     applyTheme(theme)
+  }, [theme])
+
+  useEffect(() => {
+    const mq = window.matchMedia(ERA_DESKTOP_SHELL_MQ)
+    const onChange = () => applyTheme(theme)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
   }, [theme])
 
   return {

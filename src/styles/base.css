@@ -67,6 +67,25 @@ body,
   -webkit-tap-highlight-color: transparent;
 }
 
+/* PC / 宽度 >500px：浅蓝壳层 + 内容列始终水平居中 */
+@media (min-width: 501px) {
+  html,
+  body,
+  #root {
+    background: #edf2fb;
+  }
+
+  #root {
+    display: flex;
+    justify-content: center;
+  }
+
+  .era-app-shell {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
 body {
   overscroll-behavior: none;
   position: fixed;

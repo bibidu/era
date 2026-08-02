@@ -6,6 +6,22 @@ export const ERA_THEME_COLORS: Record<EraTheme, string> = {
   light: '#ffffff',
 }
 
+/** PC / 宽度 >500px：页面两侧壳层背景 */
+export const ERA_DESKTOP_SHELL_BG = '#EDF2FB'
+export const ERA_DESKTOP_SHELL_MQ = '(min-width: 501px)'
+
+export function isDesktopShellViewport(
+  media: Pick<MediaQueryList, 'matches'> | null | undefined =
+    typeof window !== 'undefined' ? window.matchMedia(ERA_DESKTOP_SHELL_MQ) : null,
+): boolean {
+  return Boolean(media?.matches)
+}
+
+/** 壳层（html/body/#root 两侧）背景；内容列仍用 ERA_THEME_COLORS */
+export function shellBackgroundColor(theme: EraTheme): string {
+  return isDesktopShellViewport() ? ERA_DESKTOP_SHELL_BG : ERA_THEME_COLORS[theme]
+}
+
 export function readStoredTheme(): EraTheme {
   try {
     const value = localStorage.getItem(ERA_THEME_STORAGE_KEY)
@@ -44,24 +60,31 @@ function replaceMeta(name: string, content: string, media?: string) {
  */
 export function applyTheme(theme: EraTheme) {
   const color = ERA_THEME_COLORS[theme]
+  const shell = shellBackgroundColor(theme)
   document.documentElement.dataset.theme = theme
   document.documentElement.style.colorScheme = theme
-  document.documentElement.style.backgroundColor = color
+  document.documentElement.style.backgroundColor = shell
+  // 顶栏仍跟主题；宽屏两侧露出来的壳层用 shell
   document.documentElement.style.setProperty('--era-header', color)
+  document.documentElement.style.setProperty('--era-shell-bg', shell)
   if (document.body) {
-    document.body.style.backgroundColor = color
+    document.body.style.backgroundColor = shell
+  }
+  const root = document.getElementById('root')
+  if (root) {
+    root.style.backgroundColor = shell
   }
 
   // Keep for older browsers / Android Chrome; Safari 26+ ignores this.
-  replaceMeta('theme-color', color)
-  replaceMeta('theme-color', color, '(prefers-color-scheme: light)')
-  replaceMeta('theme-color', color, '(prefers-color-scheme: dark)')
+  replaceMeta('theme-color', shell)
+  replaceMeta('theme-color', shell, '(prefers-color-scheme: light)')
+  replaceMeta('theme-color', shell, '(prefers-color-scheme: dark)')
   // black-translucent: let page top edge show through; tint comes from fixed sampler / body.
   replaceMeta('apple-mobile-web-app-status-bar-style', 'black-translucent')
 
   const sampler = document.getElementById('era-safari-tint')
   if (sampler) {
-    sampler.style.backgroundColor = color
+    sampler.style.backgroundColor = shell
   }
 
   try {
