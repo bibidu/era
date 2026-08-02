@@ -76,6 +76,8 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+const FETCH_TIMEOUT_MS = 10_000
+
 async function fetchSupabase(
   url: string,
   init: RequestInit,
@@ -83,14 +85,27 @@ async function fetchSupabase(
 ): Promise<Response> {
   let lastError: unknown
   for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+    const onAbort = () => controller.abort()
+    if (init.signal) {
+      if (init.signal.aborted) controller.abort()
+      else init.signal.addEventListener('abort', onAbort, { once: true })
+    }
     try {
-      return await fetch(url, init)
+      return await fetch(url, { ...init, signal: controller.signal })
     } catch (error) {
-      lastError = error
-      if (attempt >= retries || !isTransientNetworkError(error)) {
-        throw error
+      const aborted =
+        (error instanceof DOMException && error.name === 'AbortError') ||
+        (error instanceof Error && error.name === 'AbortError')
+      lastError = aborted ? new TypeError('Failed to fetch') : error
+      if (attempt >= retries || !isTransientNetworkError(lastError)) {
+        throw lastError
       }
       await sleep(280 * (attempt + 1))
+    } finally {
+      clearTimeout(timeoutId)
+      init.signal?.removeEventListener('abort', onAbort)
     }
   }
   throw lastError instanceof Error ? lastError : new Error('网络请求失败')
