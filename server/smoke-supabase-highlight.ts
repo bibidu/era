@@ -8,7 +8,12 @@ import {
 } from '../src/agent/supabaseHighlightSetup.ts'
 
 const config = serverSupabaseConfig()
-assert.ok(config.url.includes('supabase.co'))
+assert.ok(
+  config.url.includes('supabase.co') ||
+    config.url.includes('39.106.179.17') ||
+    config.url.includes('sslip.io'),
+  `unexpected supabase url: ${config.url}`,
+)
 assert.ok(config.anonKey.length > 40)
 
 const markdown = `# Supabase 分享测试\n\n这是一段用于验证高亮设置分享的正文，包含关键词 Memory 与 Agent。`

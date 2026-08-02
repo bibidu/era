@@ -1,5 +1,8 @@
 import { zipSync } from 'fflate'
-import { browserSupabaseConfig } from '../../agent/supabaseHighlightSetup'
+import {
+  LEGACY_SUPABASE_ANON_KEY,
+  LEGACY_SUPABASE_URL,
+} from '../../agent/supabaseHighlightSetup'
 
 export interface PreviewImageItem {
   src: string
@@ -55,21 +58,19 @@ function isLikelyIos(): boolean {
 }
 
 function buildImageProxyUrl(imageUrl: string): string {
-  const { url } = browserSupabaseConfig()
-  const endpoint = new URL(`${url}/functions/v1/image-proxy`)
+  const endpoint = new URL(`${LEGACY_SUPABASE_URL}/functions/v1/image-proxy`)
   endpoint.searchParams.set('url', imageUrl)
   return endpoint.toString()
 }
 
 async function fetchViaProxy(imageUrl: string): Promise<Response> {
-  const { anonKey } = browserSupabaseConfig()
   return fetch(buildImageProxyUrl(imageUrl), {
     method: 'GET',
     mode: 'cors',
     credentials: 'omit',
     headers: {
-      apikey: anonKey,
-      Authorization: `Bearer ${anonKey}`,
+      apikey: LEGACY_SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${LEGACY_SUPABASE_ANON_KEY}`,
     },
   })
 }

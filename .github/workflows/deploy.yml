@@ -41,6 +41,10 @@ jobs:
         run: npm run smoke:highlights
 
       - name: Smoke supabase highlight share
+        # CI 出口在海外时访问国内 443 可能握手失败，冒烟走 HTTP :3000
+        env:
+          SUPABASE_URL: http://39.106.179.17:3000
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6ImVyYS1zZWxmaG9zdCIsImlhdCI6MTc4NTY3OTQ2NCwiZXhwIjoyMTAxMDM5NDY0fQ.EZAtzZ4yHkA8eB49KBQClsQqVdX9W4KF7FPeHsXhzjU
         run: npm run smoke:supabase-highlight
 
       - name: Build (EdgeOne root base)
