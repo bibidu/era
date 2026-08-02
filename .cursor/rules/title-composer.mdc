@@ -12,7 +12,7 @@ alwaysApply: true
 - 顶栏 Tab「标题」，或 URL：`?tab=title&text=<当前帖子标题>`
 - 发给用户时用**完整 EdgeOne 预览 URL**（含 `eo_token` / `eo_time`），并带上 `&tab=title&text=…`
 - **必须注入当前帖子标题**：用 `text`（或别名 `title`）参数传入用户已确认的社媒标题；多行可用换行（URL 编码 `%0A` 或字面 `\n`）。**禁止**只发裸 `?tab=title`（会落回固定 demo「西北绝不能…」）
-- 可用：`titleComposerPagesUrl(当前标题)`（`src/agent/supabaseHighlightSetup.ts`）在 EdgeOne 基址上拼好链接；若已有完整预览链，在其上追加参数亦可
+- 可用：`titleComposerPagesUrl(当前标题, 完整EdgeOne预览链)`（`src/agent/supabaseHighlightSetup.ts`）合并参数；**禁止**对整段 query 再 `encodeURIComponent`（会变成 `?eo_token%3D…`，EdgeOne Error -100）
 
 ## 流程约定
 

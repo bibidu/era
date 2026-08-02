@@ -17,6 +17,7 @@
     "repo-card": "node scripts/generate-github-repo-card.mjs",
     "smoke:highlights": "tsx server/smoke-highlights.ts",
     "smoke:supabase-highlight": "tsx server/smoke-supabase-highlight.ts",
+    "smoke:preview-url": "tsx server/smoke-preview-url.ts",
     "deploy:edgeone": "bash scripts/deploy-edgeone.sh",
     "oss:upload": "bash scripts/oss-upload.sh",
     "oss:cleanup": "bash scripts/oss-cleanup-expired.sh",

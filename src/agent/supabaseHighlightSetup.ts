@@ -33,6 +33,13 @@ function trimSlash(url: string) {
   return url.replace(/\/$/, '')
 }
 
+function readProcessEnv(): Record<string, string | undefined> {
+  const maybeProcess = (globalThis as unknown as {
+    process?: { env?: Record<string, string | undefined> }
+  }).process
+  return maybeProcess?.env ?? {}
+}
+
 export function resolveSupabaseConfig(env: {
   url?: string
   anonKey?: string
@@ -61,10 +68,7 @@ export function browserSupabaseConfig() {
 
 /** Node / Agent 侧 */
 export function serverSupabaseConfig() {
-  const maybeProcess = (globalThis as unknown as {
-    process?: { env?: Record<string, string | undefined> }
-  }).process
-  const env = maybeProcess?.env ?? {}
+  const env = readProcessEnv()
   return resolveSupabaseConfig({
     url: env.SUPABASE_URL || env.VITE_SUPABASE_URL,
     anonKey: env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY,
@@ -75,25 +79,99 @@ export function defaultSupabaseConfig() {
   return typeof window === 'undefined' ? serverSupabaseConfig() : browserSupabaseConfig()
 }
 
-export function highlightSetupPagesUrl(shareId: string, pagesBase = ERA_PUBLIC_BASE) {
-  const base = pagesBase.endsWith('/') ? pagesBase : `${pagesBase}/`
-  const url = new URL(base)
-  url.searchParams.set('tab', 'highlight')
-  url.searchParams.set('shareId', shareId)
+/**
+ * 公网页基址：优先环境变量里的完整 EdgeOne 预览链（可含 eo_token/eo_time），否则默认裸域名。
+ * 注意：token 约 3 小时过期；Agent 发链时应传入最新部署 URL。
+ */
+export function resolvePublicPagesBase(
+  override?: string,
+  env: Record<string, string | undefined> = {
+    ...readProcessEnv(),
+    ...readViteEnv(),
+  },
+): string {
+  const fromEnv =
+    override?.trim() ||
+    env.ERA_PUBLIC_BASE?.trim() ||
+    env.EDGEONE_PREVIEW_URL?.trim() ||
+    env.VITE_ERA_PUBLIC_BASE?.trim() ||
+    ''
+  return fromEnv || ERA_PUBLIC_BASE
+}
+
+/**
+ * 规范化预览 URL：
+ * - 修复「整段 query 被 encodeURIComponent」→ `?eo_token%3D…%26eo_time%3D…`（EdgeOne Error -100）
+ * - 不在已有 query 末尾错误追加 `/`（会污染 eo_time）
+ */
+export function normalizePreviewUrl(raw: string): string {
+  const input = raw.trim()
+  if (!input) return input
+
+  let url: URL
+  try {
+    url = new URL(input)
+  } catch {
+    return input
+  }
+
+  if (!url.pathname) url.pathname = '/'
+
+  const entries = [...url.searchParams.entries()]
+  const looksDoubleEncoded =
+    entries.length === 1 &&
+    entries[0]![1] === '' &&
+    /[=&]/.test(entries[0]![0]) &&
+    (/%3D|%26/i.test(url.search) || entries[0]![0].includes('='))
+
+  if (looksDoubleEncoded) {
+    const recovered = new URLSearchParams(entries[0]![0])
+    url.search = ''
+    for (const [key, value] of recovered.entries()) {
+      url.searchParams.append(key, value)
+    }
+  }
+
   return url.toString()
+}
+
+/** 在预览基址上合并 tab 等参数；保留已有 eo_token/eo_time，绝不二次编码整段 query */
+export function buildAppPagesUrl(
+  pagesBase: string,
+  params: Record<string, string | null | undefined>,
+): string {
+  const url = new URL(normalizePreviewUrl(pagesBase || ERA_PUBLIC_BASE))
+  if (!url.pathname) url.pathname = '/'
+  for (const [key, value] of Object.entries(params)) {
+    if (value == null || value === '') continue
+    url.searchParams.set(key, value)
+  }
+  return url.toString()
+}
+
+export function highlightSetupPagesUrl(
+  shareId: string,
+  pagesBase: string = resolvePublicPagesBase(),
+) {
+  return buildAppPagesUrl(pagesBase, {
+    tab: 'highlight',
+    shareId,
+  })
 }
 
 /**
  * 标题排版设置页 URL：必须带上当前帖子标题（?text=），避免打开固定 demo「西北绝不能…」。
- * 多行标题可用换行；调用方若只有完整 EdgeOne 预览链，在其上追加 `&tab=title&text=…` 亦可。
+ * 多行标题可用换行；调用方应传入完整 EdgeOne 预览链（含 eo_token/eo_time）作为 pagesBase。
  */
-export function titleComposerPagesUrl(titleText: string, pagesBase = ERA_PUBLIC_BASE) {
-  const base = pagesBase.endsWith('/') ? pagesBase : `${pagesBase}/`
-  const url = new URL(base)
-  url.searchParams.set('tab', 'title')
+export function titleComposerPagesUrl(
+  titleText: string,
+  pagesBase: string = resolvePublicPagesBase(),
+) {
   const text = titleText.replace(/\r\n/g, '\n').trim()
-  if (text) url.searchParams.set('text', text)
-  return url.toString()
+  return buildAppPagesUrl(pagesBase, {
+    tab: 'title',
+    text: text || undefined,
+  })
 }
 
 function shareDocumentForStorage(document?: unknown): unknown | null {

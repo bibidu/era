@@ -1,7 +1,7 @@
 import { ERA_AGENT_DEFAULT_HOST, ERA_AGENT_DEFAULT_PORT } from './protocol'
 import {
-  ERA_PUBLIC_BASE,
   highlightSetupPagesUrl,
+  resolvePublicPagesBase,
   titleComposerPagesUrl,
 } from './supabaseHighlightSetup'
 
@@ -29,12 +29,12 @@ export function highlightSetupPageUrl(projectId: string): string {
 }
 
 export function highlightSetupSharePageUrl(shareId: string) {
-  return highlightSetupPagesUrl(shareId, ERA_PUBLIC_BASE)
+  return highlightSetupPagesUrl(shareId, resolvePublicPagesBase())
 }
 
 /** 标题排版页：注入当前帖子标题（EdgeOne 公网基址） */
 export function titleComposerSharePageUrl(titleText: string) {
-  return titleComposerPagesUrl(titleText, ERA_PUBLIC_BASE)
+  return titleComposerPagesUrl(titleText, resolvePublicPagesBase())
 }
 
 /** 本地调试用标题排版页（同源 + ?tab=title&text=） */

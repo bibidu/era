@@ -137,7 +137,7 @@ description: >-
    - MCP：`era_create_highlight_setup_share`（`projectId`）
    - 或 REST：`POST /v1/projects/:projectId/highlight-setup-share`
    - 返回 `shareId`、`url`（EdgeOne 链接）
-3. **主动把 `url` 发给用户**（形如 `https://bibidu-era-0tdhv043.edgeone.cool/?tab=highlight&shareId=<SHARE_ID>`）。云端 Agent **必须**发 EdgeOne 链接，不要发 `127.0.0.1`。打开后会自动切到「高亮」Tab。
+3. **主动把完整预览 URL 发给用户**：用最新 EdgeOne 部署链（含 `eo_token` / `eo_time`）作为基址，调用 `highlightSetupPagesUrl(shareId, edgeonePreviewUrl)` 合并 `tab` / `shareId`。**禁止**对整段 query 再 `encodeURIComponent`（否则会变成 `?eo_token%3D…%26…`，EdgeOne 报 Error -100）。不要发 `127.0.0.1`。打开后会自动切到「高亮」Tab。
 4. 说明操作：打开链接 → 顶部选样式/颜色 → 在文字上点击或滑动标记 → 底部可翻页 → 完成后点 **「复制并应用高亮配置」**（写回 Supabase 并复制到剪贴板）→ 把剪贴板内容粘贴发回。
 5. 收到粘贴后：识别 `ERA_HIGHLIGHT_SETUP_V1` / `"type":"era_highlight_setup"`，解析 `projectId` 与 `ranges`，调用 `era_apply_highlights`（`replace: true`），简要确认后继续。
 6. 用户迟迟未回传或不会操作：可改用自动高亮（下），并说明你在代为设置。

@@ -15,7 +15,7 @@
 
 非风水默认：二级标题（`##`）用阿里妈妈数黑体（`headingFontId`: `shuheiti`）；高亮色板不含灰色；**默认直接导出抖音 9:16**，无需询问平台（用户明确要求小红书时再用 3:4）。
 
-高亮步骤：先用 `era_create_highlight_setup_share` 上传正文到 Supabase，再把返回的 **EdgeOne** URL（`?tab=highlight&shareId=...`）发给用户；打开后自动进入「高亮」Tab；用户复制配置发回后 `era_apply_highlights(replace: true)`。
+高亮步骤：先用 `era_create_highlight_setup_share` 上传正文到 Supabase，再用最新 EdgeOne 部署链（含 `eo_token` / `eo_time`）调用 `highlightSetupPagesUrl(shareId, edgeonePreviewUrl)` 合并后发给用户；**禁止**对整段 query 再 `encodeURIComponent`（会触发 EdgeOne Error -100）。打开后自动进入「高亮」Tab；用户复制配置发回后 `era_apply_highlights(replace: true)`。
 
 出图步骤：导出后图片须上传（OSS / 约定存储）并**按序写入**业务库（如 Supabase `era_social_video_analyses.image_previews`，[0]=封面永久链）；**对话框里只发线上预览链接**（EdgeOne 完整 URL，含 `eo_token` / `eo_time`），**不要**再逐张发送各页图片、也不要为确认来回贴图。不要再发 Gallery / `/gallery/` 链接。
 

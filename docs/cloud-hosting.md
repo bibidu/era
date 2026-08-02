@@ -92,5 +92,6 @@ bash scripts/oss-upload.sh --sign <object-key>
 
 - 项目加速区域含**中国大陆**时，裸域名在大陆网络会返回 **401**；须带 `eo_token` / `eo_time`（约 **3 小时**有效）
 - 海外网络可能可无参访问，不代表大陆可用
+- 追加 `tab` / `shareId` / `text` 时用 `highlightSetupPagesUrl` / `titleComposerPagesUrl` / `buildAppPagesUrl` 合并；**禁止**对整段 query 再 `encodeURIComponent`（否则变成 `?eo_token%3D…%26…`，EdgeOne 报 **Error -100**）
 
 长期稳定访问：在 [EdgeOne 控制台](https://console.cloud.tencent.com/edgeone/pages) 为项目 `bibidu-era` **绑定自定义域名**（全球不含大陆区域可免备案）。
