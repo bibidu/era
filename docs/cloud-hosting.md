@@ -79,19 +79,14 @@ npm run oss:rewrite-html -- <index.html>
 bash scripts/oss-upload.sh --sign <object-key>
 ```
 
-## 腾讯云 EdgeOne Makers（前端）
+## 阿里云轻量自建站（前端 + 业务 REST）
 
-- 项目名: `bibidu-era`
-- CLI: `edgeone makers deploy ./dist -n bibidu-era`
-- GitHub Actions Secret: `EDGEONE_API_TOKEN`
-- 本地: `npm run deploy:edgeone`
+- 公网 IP: `39.106.179.17`（北京轻量）
+- 交付: **`http://39.106.179.17/`**（可带 `?tab=data` / `highlight` / `title`）
+- 栈: Caddy（静态 `dist` + `/rest/v1`）+ PostgREST + Postgres（仅本机 5432）
+- 配置: `deploy/swas/`
+- 发布前端: `npm run deploy:swas`（`ERA_BASE=/` 构建后 rsync 到 `/opt/era-web`）
 
-### 预览链接与 401
+同机部署时浏览器用 `location.origin` 调 REST，无需跨域。追加 `tab` / `shareId` / `text` 时用 `highlightSetupPagesUrl` / `titleComposerPagesUrl` / `buildAppPagesUrl`；**禁止**对整段 query 再 `encodeURIComponent`。
 
-部署输出形如 `https://<project>.edgeone.cool?eo_token=...&eo_time=...`。**必须整段复制**（含 `?` 后参数）：
-
-- 项目加速区域含**中国大陆**时，裸域名在大陆网络会返回 **401**；须带 `eo_token` / `eo_time`（约 **3 小时**有效）
-- 海外网络可能可无参访问，不代表大陆可用
-- 追加 `tab` / `shareId` / `text` 时用 `highlightSetupPagesUrl` / `titleComposerPagesUrl` / `buildAppPagesUrl` 合并；**禁止**对整段 query 再 `encodeURIComponent`（否则变成 `?eo_token%3D…%26…`，EdgeOne 报 **Error -100**）
-
-长期稳定访问：在 [EdgeOne 控制台](https://console.cloud.tencent.com/edgeone/pages) 为项目 `bibidu-era` **绑定自定义域名**（全球不含大陆区域可免备案）。
+Edge Functions（余额 / 视频抽取 / image-proxy）仍在旧 Supabase。历史 EdgeOne 部署脚本保留为 `npm run deploy:edgeone`，**默认不再用作交付入口**。

@@ -1,5 +1,5 @@
 ---
-description: 改动完成后的 PR 直接合入 main，无需询问；合入后必须回传最新 EdgeOne URL
+description: 改动完成后的 PR 直接合入 main，无需询问；合入后部署自建站并回传固定 URL
 alwaysApply: true
 ---
 
@@ -12,9 +12,9 @@ alwaysApply: true
 1. 实现、自测通过后：commit → push → 创建/更新 PR
 2. 随即把该改动分支 **merge 进 `main` 并 push**（或等价合入），无需二次确认
 3. 合入后可关闭对应 PR（若 GitHub 未自动关闭）
-4. **等待** `main` 上 `Deploy to EdgeOne Makers` Actions 成功结束后，从该次 run 的日志 / Job Summary 解析 **完整** EdgeOne URL（须含 `eo_token` / `eo_time`），并在对话里**直接发给用户**
-5. 可用：`gh run list --branch main` → `gh run view <id> --log`，用正则提取 `https://…edgeone.cool?eo_token=…&eo_time=…`
-6. 禁止只发裸域名（大陆可能 401）；禁止只发 Actions 页面链接代替预览 URL
+4. **执行** `npm run deploy:swas`（同步前端到 `39.106.179.17`），确认 `http://39.106.179.17/` 可访问
+5. 在对话里**直接发给用户**固定站点 URL：`http://39.106.179.17/`（可按需带 `?tab=data` / `highlight` / `title`）
+6. 禁止再依赖 EdgeOne `eo_token` / `eo_time` 临时链作为默认交付；禁止只发 Actions 页面链接代替预览 URL
 
 ## 例外
 

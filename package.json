@@ -19,6 +19,7 @@
     "smoke:supabase-highlight": "tsx server/smoke-supabase-highlight.ts",
     "smoke:preview-url": "tsx server/smoke-preview-url.ts",
     "deploy:edgeone": "bash scripts/deploy-edgeone.sh",
+    "deploy:swas": "bash scripts/deploy-swas.sh",
     "oss:upload": "bash scripts/oss-upload.sh",
     "oss:cleanup": "bash scripts/oss-cleanup-expired.sh",
     "oss:rewrite-html": "node scripts/oss-rewrite-html.mjs",

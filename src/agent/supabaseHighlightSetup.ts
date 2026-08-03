@@ -1,7 +1,7 @@
 /** Supabase 存放高亮设置草稿（公开 anon key + RLS；勿提交 service_role） */
 
-/** 自建 PostgREST（阿里云轻量 / PostgreSQL）；Edge Functions 仍走下方旧 Supabase 域名 */
-export const DEFAULT_SUPABASE_URL = 'https://39.106.179.17.sslip.io'
+/** 自建站（阿里云轻量 39.106）；业务 REST 与前端同机。Edge Functions 仍走下方旧 Supabase */
+export const DEFAULT_SUPABASE_URL = 'http://39.106.179.17'
 export const DEFAULT_SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6ImVyYS1zZWxmaG9zdCIsImlhdCI6MTc4NTY3OTQ2NCwiZXhwIjoyMTAxMDM5NDY0fQ.EZAtzZ4yHkA8eB49KBQClsQqVdX9W4KF7FPeHsXhzjU'
 /** 旧 Supabase 项目（Edge Functions / 回退） */
@@ -10,7 +10,8 @@ export const LEGACY_SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6b3h5ZXh0eGp3c2NycGpvd3VkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxMDM4MjYsImV4cCI6MjEwMDY3OTgyNn0.FZuvFtxaMOUUGg3y7kNDxv_p4Etz2KrVpkCHpPKbmDU'
 
 export const ERA_HIGHLIGHT_SETUP_TABLE = 'era_highlight_setups'
-export const ERA_PUBLIC_BASE = 'https://bibidu-era-0tdhv043.edgeone.cool/'
+/** 固定公网页（不再依赖 EdgeOne eo_token 临时链） */
+export const ERA_PUBLIC_BASE = 'http://39.106.179.17/'
 
 export interface HighlightSetupShareRecord {
   id: string
@@ -62,11 +63,33 @@ function readViteEnv(): Record<string, string | undefined> {
   }
 }
 
-/** 浏览器侧：优先读 Vite 环境变量 */
+function isSelfHostFrontendOrigin(origin: string): boolean {
+  try {
+    const host = new URL(origin).hostname
+    return host === '39.106.179.17' || host.endsWith('.sslip.io')
+  } catch {
+    return false
+  }
+}
+
+/** 浏览器侧：同机部署时用 location.origin，避免跨域；否则读 Vite 环境变量 */
 export function browserSupabaseConfig() {
   const env = readViteEnv()
+  const fromEnv = env.VITE_SUPABASE_URL?.trim()
+  if (fromEnv) {
+    return resolveSupabaseConfig({
+      url: fromEnv,
+      anonKey: env.VITE_SUPABASE_ANON_KEY,
+    })
+  }
+  if (typeof window !== 'undefined' && isSelfHostFrontendOrigin(window.location.origin)) {
+    return resolveSupabaseConfig({
+      url: window.location.origin,
+      anonKey: env.VITE_SUPABASE_ANON_KEY,
+    })
+  }
   return resolveSupabaseConfig({
-    url: env.VITE_SUPABASE_URL,
+    url: undefined,
     anonKey: env.VITE_SUPABASE_ANON_KEY,
   })
 }
@@ -85,8 +108,8 @@ export function defaultSupabaseConfig() {
 }
 
 /**
- * 公网页基址：优先环境变量里的完整 EdgeOne 预览链（可含 eo_token/eo_time），否则默认裸域名。
- * 注意：token 约 3 小时过期；Agent 发链时应传入最新部署 URL。
+ * 公网页基址：优先显式传入 / 环境变量，否则默认自建站固定地址（无需 eo_token）。
+ * 仍兼容 EDGEONE_PREVIEW_URL，便于临时回退旧预览链。
  */
 export function resolvePublicPagesBase(
   override?: string,
@@ -98,8 +121,8 @@ export function resolvePublicPagesBase(
   const fromEnv =
     override?.trim() ||
     env.ERA_PUBLIC_BASE?.trim() ||
-    env.EDGEONE_PREVIEW_URL?.trim() ||
     env.VITE_ERA_PUBLIC_BASE?.trim() ||
+    env.EDGEONE_PREVIEW_URL?.trim() ||
     ''
   return fromEnv || ERA_PUBLIC_BASE
 }

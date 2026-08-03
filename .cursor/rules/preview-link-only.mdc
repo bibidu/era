@@ -4,8 +4,8 @@
 
 ## 必须
 
-1. 导出图须上传并**按序写入** Supabase `image_previews`（及 `cover_url`）；[0]=封面（`__cover_keep__` 永久链）
-2. 对用户最终回复：**只给 EdgeOne 完整预览 URL**（须含 `eo_token` / `eo_time`；社媒任务建议带 `?tab=data`）
+1. 导出图须上传并**按序写入**业务库 `image_previews`（及 `cover_url`）；[0]=封面（`__cover_keep__` 永久链）
+2. 对用户最终回复：**只给自建站预览 URL**（`http://39.106.179.17/`；社媒任务建议带 `?tab=data`）
 3. 确认阶段默认不贴图；用户明确要看总览时最多发一张拼图签名 URL
 
 ## 禁止

@@ -1,4 +1,4 @@
-name: Deploy to EdgeOne Makers
+name: CI and self-host smoke
 
 on:
   push:
@@ -9,11 +9,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: edgeone-deploy
+  group: main-ci
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -41,13 +41,14 @@ jobs:
         run: npm run smoke:highlights
 
       - name: Smoke supabase highlight share
-        # CI 出口在海外时访问国内 443 可能握手失败，冒烟走 HTTP :3000
+        # 自建站 HTTP；CI 海外出口走 80/3000
         env:
-          SUPABASE_URL: http://39.106.179.17:3000
+          SUPABASE_URL: http://39.106.179.17
           SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6ImVyYS1zZWxmaG9zdCIsImlhdCI6MTc4NTY3OTQ2NCwiZXhwIjoyMTAxMDM5NDY0fQ.EZAtzZ4yHkA8eB49KBQClsQqVdX9W4KF7FPeHsXhzjU
+          ERA_PUBLIC_BASE: http://39.106.179.17/
         run: npm run smoke:supabase-highlight
 
-      - name: Build (EdgeOne root base)
+      - name: Build (self-host root base)
         run: npm run verify:fonts
         env:
           ERA_BASE: /
@@ -57,42 +58,7 @@ jobs:
         env:
           GITHUB_SHA: ${{ github.sha }}
 
-      - name: Deploy to EdgeOne Makers
-        id: deploy
-        env:
-          EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
-          NO_PROXY: '*'
+      - name: Summary
         run: |
-          set -euo pipefail
-          unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY all_proxy || true
-          if [ -z "${EDGEONE_API_TOKEN:-}" ]; then
-            echo "::error::EDGEONE_API_TOKEN secret is empty"
-            exit 1
-          fi
-          # 与 scripts/deploy-edgeone.sh 一致：先捕获 CLI 输出再判断退出码，避免失败时日志被吞
-          set +e
-          OUT="$(npx --yes edgeone@latest makers deploy ./dist -n bibidu-era -e production -t "$EDGEONE_API_TOKEN" --json 2>&1)"
-          CODE=$?
-          set -e
-          echo "$OUT"
-          if [ "$CODE" -ne 0 ]; then
-            echo "::error::EdgeOne deploy failed (exit=$CODE)"
-            echo "### EdgeOne 部署失败 (exit=$CODE)" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            echo "$OUT" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            exit "$CODE"
-          fi
-          URL="$(echo "$OUT" | perl -ne 'print "$1\n" if /"(?:url|domain|accessUrl|projectUrl)"\s*:\s*"(https?:[^"]+)"/' | tail -1)"
-          if [ -z "$URL" ]; then
-            URL="$(echo "$OUT" | grep -Eo 'https?://[a-zA-Z0-9._/-]+\.(edgeone\.app|pages\.edgeone\.ai|edgeone\.site|edgeone\.cool)[^[:space:]"<>]*' | tail -1 || true)"
-          fi
-          if [ -n "$URL" ]; then
-            echo "url=$URL" >> "$GITHUB_OUTPUT"
-            echo "### EdgeOne 前端链接（含 eo_token，大陆访问必需）" >> "$GITHUB_STEP_SUMMARY"
-            echo "$URL" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "> 预览链接约 3 小时有效；长期稳定访问请在 EdgeOne 控制台绑定自定义域名。" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "### EdgeOne 部署完成（未能自动解析 URL，请到控制台查看项目 bibidu-era）" >> "$GITHUB_STEP_SUMMARY"
-          fi
+          echo "### 自建站前端" >> "$GITHUB_STEP_SUMMARY"
+          echo "CI 已构建 \`dist\`。线上发布请在有 SSH 的环境执行 \`npm run deploy:swas\` → \`http://39.106.179.17/\`" >> "$GITHUB_STEP_SUMMARY"

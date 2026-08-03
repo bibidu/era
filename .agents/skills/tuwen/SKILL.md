@@ -51,7 +51,7 @@ description: >-
 
 1. **收集选题**：用户未给标题/大纲 → 主动询问，拿到前不要写正文。
 2. **正文（多轮确认）**：据标题/大纲写含 `#` 一级标题与适量 `##` 的 Markdown，展示后明确询问是否继续；改完再展示再问；确认后 `era_create_project` / `era_set_markdown`（`pageOverlay: 'fengshui'` + `9:16` + `showWordCount: false` + `topText: '连续观看、点赞、关注，你也是地理风水达人（阳宅篇）'`，**不写** `shuheiti`）。
-3. **社媒标题（5 个 + 确认）**：给 5 个抓眼球、贴合正文的标题；技术名词首字母大写（`Memory`/`Agent`/`Token`）；用户选定后 `era_set_title`。若用户要精细调标题排版（换行/字号/拉伸/行内色），**主动发标题设置页**：完整 EdgeOne URL + `?tab=title&text=<用户选定的标题>`（可用 `titleComposerPagesUrl(标题)`）。**禁止**只发裸 `?tab=title`（会显示固定 demo「西北绝不能…」）。用户复制配置发回后按 `.cursor/rules/title-composer.mdc` 出图。
+3. **社媒标题（5 个 + 确认）**：给 5 个抓眼球、贴合正文的标题；技术名词首字母大写（`Memory`/`Agent`/`Token`）；用户选定后 `era_set_title`。若用户要精细调标题排版（换行/字号/拉伸/行内色），**主动发标题设置页**：`http://39.106.179.17/?tab=title&text=<用户选定的标题>`（可用 `titleComposerPagesUrl(标题)`）。**禁止**只发裸 `?tab=title`（会显示固定 demo「西北绝不能…」）。用户复制配置发回后按 `.cursor/rules/title-composer.mdc` 出图。
 4. **高亮**：按 **§高亮** 流程（优先设置页）。
 5. **校验与导出**：按 **§校验与导出**。
 6. **发图**：按 **§发图（先拼图确认，再发分图）**。
@@ -136,8 +136,8 @@ description: >-
 2. **创建云端分享**（把正文存到 Supabase，避免 URL 过长）：
    - MCP：`era_create_highlight_setup_share`（`projectId`）
    - 或 REST：`POST /v1/projects/:projectId/highlight-setup-share`
-   - 返回 `shareId`、`url`（EdgeOne 链接）
-3. **主动把完整预览 URL 发给用户**：用最新 EdgeOne 部署链（含 `eo_token` / `eo_time`）作为基址，调用 `highlightSetupPagesUrl(shareId, edgeonePreviewUrl)` 合并 `tab` / `shareId`。**禁止**对整段 query 再 `encodeURIComponent`（否则会变成 `?eo_token%3D…%26…`，EdgeOne 报 Error -100）。不要发 `127.0.0.1`。打开后会自动切到「高亮」Tab。
+   - 返回 `shareId`、`url`（`http://39.106.179.17/?tab=highlight&shareId=…`）
+3. **主动把完整预览 URL 发给用户**：调用 `highlightSetupPagesUrl(shareId)`（默认自建站）。**禁止**对整段 query 再 `encodeURIComponent`。不要发 `127.0.0.1`。打开后会自动切到「高亮」Tab。
 4. 说明操作：打开链接 → 顶部选样式/颜色 → 在文字上点击或滑动标记 → 底部可翻页 → 完成后点 **「复制并应用高亮配置」**（写回 Supabase 并复制到剪贴板）→ 把剪贴板内容粘贴发回。
 5. 收到粘贴后：识别 `ERA_HIGHLIGHT_SETUP_V1` / `"type":"era_highlight_setup"`，解析 `projectId` 与 `ranges`，调用 `era_apply_highlights`（`replace: true`），简要确认后继续。
 6. 用户迟迟未回传或不会操作：可改用自动高亮（下），并说明你在代为设置。
@@ -180,7 +180,7 @@ description: >-
 ### 交付硬性规则
 
 1. 导出图须上传私有存储（OSS / 约定桶）并**按序写入**业务库（如 Supabase `image_previews`；[0]=封面永久链，同步 `cover_url`）
-2. **最终对用户**：只发 **EdgeOne 完整预览 URL**（含 `eo_token` / `eo_time`）；**禁止**逐张发各页图，也**禁止**为确认来回贴图（用户到社媒页看 `image_previews`）
+2. **最终对用户**：只发 **自建站预览 URL**（`http://39.106.179.17/`，建议带 `?tab=data`）；**禁止**逐张发各页图，也**禁止**为确认来回贴图（用户到社媒页看 `image_previews`）
 3. 确认阶段默认不贴图；用户明确要总览时最多发一张拼图总览签名 URL；封面 skill 单张封面仍可直发一张签名 URL
 4. **禁止**用 HTML 嵌入代替对话框发链接；禁止只发本地路径 / 未签名裸 URL
 
@@ -202,7 +202,7 @@ bash scripts/oss-upload.sh <本地png路径>
 1. 导出后上传各页/拼图（OSS 或约定存储），并写入业务库字段（如 Supabase `image_previews`）。
 2. 确认环节：可发**一张**拼图总览签名 URL（非风水须含封面），询问是否 OK；**不要**附各页独立图。
 3. 用户要改 → 修改 → 重新校验/导出/上传 → 再问。
-4. **最终交付（对用户）**：**只发线上预览链接**（EdgeOne 完整 URL，含 `eo_token` / `eo_time`）。**禁止**在对话框逐张发送各页图片链接。
+4. **最终交付（对用户）**：**只发线上预览链接**（`http://39.106.179.17/?tab=data`）。**禁止**在对话框逐张发送各页图片链接。
 5. 若用户同时要小红书与抖音：每个比例各自确认后，仍只汇总发预览链接，不混发分图。
 
 ---
@@ -211,15 +211,15 @@ bash scripts/oss-upload.sh <本地png路径>
 
 Gallery 图文库已下线。出图后图片入库保存；**对话框只回线上预览链接**，不要发各页图、不要发 Gallery / `/gallery/`。
 
-### 前端部署 EdgeOne
+### 前端部署（自建站）
 
-代码推到 GitHub `main` 后由 Actions 部署；也可本地：
+合入 `main` 后执行：
 
 ```bash
-npm run deploy:edgeone
+npm run deploy:swas
 ```
 
-部署成功后把 EdgeOne URL 回传给用户。
+部署成功后把 `http://39.106.179.17/` 回传给用户。
 
 ---
 
@@ -234,8 +234,8 @@ npm run deploy:edgeone
 | 顶部文案 | 非风水固定「点赞关注不迷路～」且不显示全文数字；风水 `topText` 固定为「连续观看、点赞、关注，你也是地理风水达人（阳宅篇）」 |
 | 图片混排 | markdown 整行 `![alt](url =宽x高)`（url 支持远程或 dataURL） |
 | 高亮 | `era_apply_highlights` · `POST .../highlights`（可带 `replace: true`） |
-| 高亮设置分享 | `era_create_highlight_setup_share` · `POST .../highlight-setup-share` → EdgeOne `url`（`?tab=highlight&shareId=...`，自动打开高亮 Tab） |
-| 标题排版页 | 发完整 EdgeOne URL + `?tab=title&text=<当前标题>`（`titleComposerPagesUrl`）；禁止裸 `?tab=title` |
+| 高亮设置分享 | `era_create_highlight_setup_share` · `POST .../highlight-setup-share` → `http://39.106.179.17/?tab=highlight&shareId=...` |
+| 标题排版页 | 发 `http://39.106.179.17/?tab=title&text=<当前标题>`（`titleComposerPagesUrl`）；禁止裸 `?tab=title` |
 | 校验 | `era_preview_layout` · `POST .../preview-layout` |
 | 导出 | `era_export_images` · `POST .../export`（含拼图 `sheetPath`） |
 | 封面图 | 见仓库中的 **封面 skill**（非风水流程） |
