@@ -21,6 +21,15 @@
 
 **发图硬性规则**：交付物须上传存储；社媒任务以写入 `image_previews` + **线上预览链接**为准，禁止在对话框堆各页独立图 URL，禁止用 HTML 嵌入代替。封面 skill 单张封面仍可直发一张签名 URL（用户明确要求逐张发图时除外）。
 
+## 写意意象图 skill（无文字泥纸图）
+
+根据主题 / 大纲生成**画面无任何文字**的中文写意泥纸意象图，风格继承 [poetic-ink-quote-poster](https://github.com/Yuuhann1999/poetic-ink-quote-poster)：
+
+- `.agents/skills/poetic-ink-visual-poster/SKILL.md`
+- `.cursor/skills/poetic-ink-visual-poster`（符号链接）
+
+用户只给主题、大纲或版面描述时：提炼每章一个核心隐喻，调用内置出图；竖版泥纸留白 + 角落抽象水墨意象群；**禁止**题名/正文/署名/水印。上传 OSS 后对话框直发签名 URL。
+
 ## 封面skill（单张 9:16 封面）
 
 社媒封面由 skill **封面skill**（目录 `fengmian`）定义：
