@@ -1,0 +1,81 @@
+# 阿里云轻量自建：Postgres + PostgREST + Caddy（前端静态 + /rest/v1）
+# 容器名固定为 era-db / era-rest / era-gateway，与现网一致。
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: era-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: era
+      POSTGRES_PASSWORD: ${PG_PASS}
+      POSTGRES_DB: era
+    volumes:
+      - era-pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "127.0.0.1:5432:5432"
+    networks: [era-net]
+    command:
+      - postgres
+      - -c
+      - shared_buffers=64MB
+      - -c
+      - max_connections=50
+      - -c
+      - work_mem=4MB
+    mem_limit: 384m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U era -d era"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  rest:
+    image: postgrest/postgrest:v12.2.8
+    container_name: era-rest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${PG_PASS}@db:5432/era
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_OPENAPI_SERVER_PROXY_URI: http://39.106.179.17/rest/v1
+    networks: [era-net]
+    mem_limit: 128m
+
+  gateway:
+    image: caddy:2-alpine
+    container_name: era-gateway
+    restart: unless-stopped
+    depends_on:
+      - rest
+    ports:
+      - "80:80"
+      - "443:443"
+      - "3000:3000"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/era-web:/srv:ro
+      - era-caddy-data:/data
+      - era-caddy-config:/config
+    networks: [era-net]
+    mem_limit: 96m
+
+networks:
+  era-net:
+    name: era-net
+    external: true
+
+volumes:
+  era-pgdata:
+    name: era-pgdata
+    external: true
+  era-caddy-data:
+    name: era-caddy-data
+    external: true
+  era-caddy-config:
+    name: era-caddy-config
+    external: true

@@ -1,0 +1,87 @@
+{
+	email era-db@sslip.io
+	# 裸 IP 走 HTTP（无备案）；禁止把 http://39.106.179.17 永久跳到 https
+	auto_https disable_redirects
+}
+
+(cors_once) {
+	@options method OPTIONS
+	handle @options {
+		header {
+			Access-Control-Allow-Origin *
+			Access-Control-Allow-Methods "GET,POST,PATCH,PUT,DELETE,OPTIONS"
+			Access-Control-Allow-Headers "Authorization,apikey,Content-Type,Prefer,X-Client-Info,Range"
+			Access-Control-Expose-Headers "Content-Range,Preference-Applied"
+			-Access-Control-Allow-Credentials
+		}
+		respond 204
+	}
+	header {
+		Access-Control-Allow-Origin *
+		Access-Control-Allow-Methods "GET,POST,PATCH,PUT,DELETE,OPTIONS"
+		Access-Control-Allow-Headers "Authorization,apikey,Content-Type,Prefer,X-Client-Info,Range"
+		Access-Control-Expose-Headers "Content-Range,Preference-Applied"
+		-Access-Control-Allow-Credentials
+	}
+}
+
+(api_routes) {
+	handle_path /rest/v1/* {
+		reverse_proxy era-rest:3000 {
+			header_down -Access-Control-Allow-Origin
+			header_down -Access-Control-Allow-Methods
+			header_down -Access-Control-Allow-Headers
+			header_down -Access-Control-Expose-Headers
+			header_down -Access-Control-Allow-Credentials
+			header_down -Access-Control-Max-Age
+		}
+	}
+	handle /rest/v1 {
+		reverse_proxy era-rest:3000 {
+			header_down -Access-Control-Allow-Origin
+			header_down -Access-Control-Allow-Methods
+			header_down -Access-Control-Allow-Headers
+			header_down -Access-Control-Expose-Headers
+			header_down -Access-Control-Allow-Credentials
+			header_down -Access-Control-Max-Age
+		}
+	}
+	handle /healthz {
+		respond "ok" 200
+	}
+}
+
+(spa_routes) {
+	handle {
+		root * /srv
+		encode gzip
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+# 公网 IP：前端 + REST（默认交付入口）
+:80 {
+	import cors_once
+	import api_routes
+	import spa_routes
+}
+
+# 兼容旧 REST 端口
+:3000 {
+	import cors_once
+	import api_routes
+	import spa_routes
+}
+
+http://39.106.179.17.sslip.io {
+	import cors_once
+	import api_routes
+	import spa_routes
+}
+
+https://39.106.179.17.sslip.io {
+	import cors_once
+	import api_routes
+	import spa_routes
+}

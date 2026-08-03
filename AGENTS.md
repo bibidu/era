@@ -2,7 +2,7 @@
 
 ## Git / PR（强制）
 
-完成功能改动并创建 PR 后，**直接合入 `main`**，不要询问用户是否合并。合入推送后须等待 EdgeOne Actions 部署成功，并把**完整预览 URL**（含 `eo_token` / `eo_time`）直接发给用户。仅当用户明确要求先别合并 / 保持 draft 审阅时例外。约定见 `.cursor/rules/auto-merge-pr.mdc`。
+完成功能改动并创建 PR 后，**直接合入 `main`**，不要询问用户是否合并。合入后执行 `npm run deploy:swas`（或等价同步 `dist` 到 39.106），并把**固定站点 URL**发给用户：`http://39.106.179.17/`（可带 `?tab=`）。无需再发 EdgeOne `eo_token` 临时链。仅当用户明确要求先别合并 / 保持 draft 审阅时例外。约定见 `.cursor/rules/auto-merge-pr.mdc`。
 
 ## 图文skill（多页长图）
 
@@ -15,9 +15,9 @@
 
 非风水默认：二级标题（`##`）用阿里妈妈数黑体（`headingFontId`: `shuheiti`）；高亮色板不含灰色；**默认直接导出抖音 9:16**，无需询问平台（用户明确要求小红书时再用 3:4）。
 
-高亮步骤：先用 `era_create_highlight_setup_share` 上传正文到 Supabase，再用最新 EdgeOne 部署链（含 `eo_token` / `eo_time`）调用 `highlightSetupPagesUrl(shareId, edgeonePreviewUrl)` 合并后发给用户；**禁止**对整段 query 再 `encodeURIComponent`（会触发 EdgeOne Error -100）。打开后自动进入「高亮」Tab；用户复制配置发回后 `era_apply_highlights(replace: true)`。
+高亮步骤：先用 `era_create_highlight_setup_share` 上传正文到自建库，再发 `highlightSetupPagesUrl(shareId)`（默认 `http://39.106.179.17/?tab=highlight&shareId=…`）。**禁止**对整段 query 再 `encodeURIComponent`。打开后自动进入「高亮」Tab；用户复制配置发回后 `era_apply_highlights(replace: true)`。
 
-出图步骤：导出后图片须上传（OSS / 约定存储）并**按序写入**业务库（如 Supabase `era_social_video_analyses.image_previews`，[0]=封面永久链）；**对话框里只发线上预览链接**（EdgeOne 完整 URL，含 `eo_token` / `eo_time`），**不要**再逐张发送各页图片、也不要为确认来回贴图。不要再发 Gallery / `/gallery/` 链接。
+出图步骤：导出后图片须上传（OSS / 约定存储）并**按序写入**业务库（如 `era_social_video_analyses.image_previews`，[0]=封面永久链）；**对话框里只发线上预览链接**（`http://39.106.179.17/`，可带 `?tab=data`），**不要**再逐张发送各页图片、也不要为确认来回贴图。不要再发 Gallery / `/gallery/` 链接。
 
 **发图硬性规则**：交付物须上传存储；社媒任务以写入 `image_previews` + **线上预览链接**为准，禁止在对话框堆各页独立图 URL，禁止用 HTML 嵌入代替。封面 skill 单张封面仍可直发一张签名 URL（用户明确要求逐张发图时除外）。
 
@@ -36,12 +36,13 @@
 - **封面永久**：对象 key 含 `__cover_keep__`（`cover.png` 等会自动加标，或 `--cover`）；清理脚本跳过；公共读、查看无过期。写入社媒 `cover_url` / 预览首图必须用此 URL。
 - **过期清理**：每次存图前自动删除 `era/assets/` 下超过 **14 小时**的旧对象（`scripts/oss-cleanup-expired.sh`），避免签名过期后仍占存储计费；跳过 `__cover_keep__` 封面。
 - **Cloud Agent 上传**：Agent 常在美西、Bucket 在北京，约 3MB 需 2–3 分钟；`oss-upload.sh` 已加长读超时并在 `i/o timeout` 后 `stat` 兜底。排障见 skill **oss-upload**（`.agents/skills/oss-upload/SKILL.md`）。
-- **前端**：腾讯云 EdgeOne Makers（`npm run deploy:edgeone`；`main` 推送由 Actions 部署），交付 EdgeOne 链接。
+- **前端 + 业务 REST**：阿里云轻量 `39.106.179.17`（Caddy 托管 `dist` + PostgREST）。发布：`npm run deploy:swas`。交付 `http://39.106.179.17/`。
+- **Edge Functions**（余额 / 视频抽取 / image-proxy）仍在旧 Supabase。
 - 说明：`docs/cloud-hosting.md`、skill `references/cloud-hosting.md`。
 
 ## 标题排版设置页
 
-用户需要精细控制标题换行 / 拉伸 / 字号 / 间距 / 字体 / 行内色时，**主动提供标题设置页**（顶栏「标题」或 `?tab=title&text=…`），发完整 EdgeOne URL（含 `eo_token` / `eo_time`、`tab=title` 与 **`text=当前帖子标题`**）。**禁止**只发裸 `?tab=title`（会显示固定 demo「西北绝不能…」）。可用 `titleComposerPagesUrl(标题)` 拼链接。
+用户需要精细控制标题换行 / 拉伸 / 字号 / 间距 / 字体 / 行内色时，**主动提供标题设置页**（顶栏「标题」或 `?tab=title&text=…`），发 `http://39.106.179.17/?tab=title&text=当前帖子标题`。**禁止**只发裸 `?tab=title`（会显示固定 demo「西北绝不能…」）。可用 `titleComposerPagesUrl(标题)` 拼链接。
 
 用户复制配置发回后，用 `node scripts/generate-title-composer.mjs --full --input <json>` 出完整 9:16 图，上传 OSS 后直发签名 URL。约定见 `.cursor/rules/title-composer.mdc`。
 

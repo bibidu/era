@@ -1,4 +1,4 @@
-# 云托管与发图回链（OSS 私有读签名 + EdgeOne）
+# 云托管与发图回链（OSS 私有读签名 + 自建站）
 
 本仓库所有 skill（图文 `tuwen` / 封面 `fengmian`）以及**任何**需要把图片发给用户的场景，统一走下列托管。
 
@@ -14,7 +14,7 @@
   - 仅清理：`bash scripts/oss-cleanup-expired.sh`（或 `--dry-run`；跳过 `__cover_keep__`）
   - 仅重签：`bash scripts/oss-upload.sh --sign <object-key>`
   - 目录：`bash scripts/oss-upload.sh --dir <dir> [prefix]`
-  - HTML 内多图：`node scripts/oss-rewrite-html.mjs <index.html>`（只替换图片 URL 为签名/封面永久链接）
+  - HTML 多图：`node scripts/oss-rewrite-html.mjs <index.html>`（只替换图片 URL 为签名/封面永久链接）
 
 ### Skill 发图硬性要求
 
@@ -32,10 +32,11 @@
 
 出口常在美西、Bucket 在北京：约 3MB 图单次需 2–3 分钟。脚本已加长 `read-timeout`；超时后会 `stat` 兜底。批量连传用 `OSS_SKIP_CLEANUP=1`。详见 `.agents/skills/oss-upload/SKILL.md`。
 
-## 前端 → 腾讯云 EdgeOne Makers
+## 前端 → 阿里云轻量自建站
 
-- 项目名：`bibidu-era`
-- 推送 `main` → Actions 自动部署；本地：`npm run deploy:edgeone`
-- 部署成功后回传 EdgeOne URL；正式预览以 EdgeOne 为准。
+- 固定 URL：`http://39.106.179.17/`
+- 发布：`npm run deploy:swas`（构建 `dist` 并 rsync 到服务器 `/opt/era-web`）
+- 配置：`deploy/swas/`
+- 图文最终交付只发该预览链接（可带 `?tab=data`），不要逐张发各页图。
 
 更多说明：`docs/cloud-hosting.md`。全局规则：`.cursor/rules/oss-image-delivery.mdc`。
