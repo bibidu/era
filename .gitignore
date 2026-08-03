@@ -36,10 +36,7 @@ era-source.zip
 !.cursor/skills/
 !.cursor/skills/**
 
-# Tencent Cloud EdgeOne
 .env
-.edgeone/*
-.tef_dist/*
 
 # Supabase CLI local state
 supabase/.temp/

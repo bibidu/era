@@ -7,7 +7,7 @@ alwaysApply: true
 
 本仓库需要把图片发给用户的场景（封面、拼图总览确认、截图、生成图等），一律遵守下方上传规则。
 
-**例外（图文 / 社媒多页出图最终交付）**：对用户最终只发 EdgeOne 线上预览链接，不要逐张发各页图。见 `.cursor/rules/preview-link-only.mdc`。图片仍须上传入库（OSS / 约定存储 + `image_previews`）。
+**例外（图文 / 社媒多页出图最终交付）**：对用户最终只发自建站预览链接（`http://39.106.179.17/`），不要逐张发各页图。见 `.cursor/rules/preview-link-only.mdc`。图片仍须上传入库（OSS / 约定存储 + `image_previews`）。
 
 ## 必须
 

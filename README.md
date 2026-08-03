@@ -2,7 +2,7 @@
 
 移动端优先的编辑器：支持图文分页排版、高亮与导出图片。
 
-在线预览（EdgeOne）：部署后从 Actions 摘要或 `npm run deploy:edgeone` 输出复制**完整**链接（含 `?eo_token=...&eo_time=...`）。裸域名 `https://bibidu-era-0tdhv043.edgeone.cool/` 在大陆可能 **401**，见 [docs/cloud-hosting.md](./docs/cloud-hosting.md)。
+在线预览（自建站）：[http://39.106.179.17/](http://39.106.179.17/)，见 [docs/cloud-hosting.md](./docs/cloud-hosting.md)。
 
 顶栏 Tab（可用 `?tab=` 深链自动切换；**默认社媒** `?tab=data`）：
 
@@ -26,10 +26,10 @@ npm install
 npm run dev
 ```
 
-推送到 `main` 后会自动构建并部署到 **腾讯云 EdgeOne Makers**（项目 `bibidu-era`）。本地也可：
+前端发布到阿里云轻量自建站：
 
 ```bash
-npm run deploy:edgeone
+npm run deploy:swas
 ```
 
 图片资源统一上传 **阿里云 OSS 私有桶**（bucket `agent-17718139319`），交付 **12 小时签名 URL**（防盗刷）；存图前会自动清理超过 14 小时的旧对象。见 [docs/cloud-hosting.md](./docs/cloud-hosting.md)。

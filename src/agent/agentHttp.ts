@@ -14,7 +14,7 @@ export function agentHttpBase(): string {
   return `http://${host}:${port}`
 }
 
-/** 本地调试用（含 projectId）；云端请用 shareId 的 EdgeOne 链接 */
+/** 本地调试用（含 projectId）；云端请用 shareId 的自建站链接 */
 export function highlightSetupPageUrl(projectId: string): string {
   const origin =
     typeof window !== 'undefined'
@@ -32,7 +32,7 @@ export function highlightSetupSharePageUrl(shareId: string) {
   return highlightSetupPagesUrl(shareId, resolvePublicPagesBase())
 }
 
-/** 标题排版页：注入当前帖子标题（EdgeOne 公网基址） */
+/** 标题排版页：注入当前帖子标题（自建站公网基址） */
 export function titleComposerSharePageUrl(titleText: string) {
   return titleComposerPagesUrl(titleText, resolvePublicPagesBase())
 }

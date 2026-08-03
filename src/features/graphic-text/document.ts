@@ -1,3 +1,4 @@
+import { createId } from '../../utils/id'
 import { parseMarkdown } from './layout'
 import { stripHighlightMarkers } from './inlineHighlight'
 import {
@@ -126,11 +127,11 @@ export function createDefaultDocument(): GraphicDocument {
 }
 
 export function createBlockId() {
-  return crypto.randomUUID()
+  return createId()
 }
 
 export function createAssetId() {
-  return crypto.randomUUID()
+  return createId()
 }
 
 export function getDocumentMarkdown(document: GraphicDocument): string {

@@ -104,7 +104,7 @@ function buildAiRevisionPrompt(input: AiRevisionPromptInput) {
 ## 交付约定（强制）
 1. 出图上传 OSS 后，按序写入本条目 \`image_previews\`（[0]=封面永久链，其后为内容页）；同步写回 title、markdown、cover_url。
 2. **不要**在对话里逐张发送各页图片 URL，也**不要**为确认来回贴图；用户到社媒页看预览图即可。
-3. 对用户最终只发 **EdgeOne 完整预览 URL**（含 eo_token / eo_time，建议 \`?tab=data\`）。
+3. 对用户最终只发自建站预览 URL（\`http://39.106.179.17/?tab=data\`）。
 
 ## 当前表单（仅含非空项）
 ${formSection}`
