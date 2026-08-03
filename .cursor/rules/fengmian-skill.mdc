@@ -11,4 +11,10 @@ alwaysApply: true
 - 按大标题、小标题、描述、标签、二级标题、主题色出一张封面图
 
 不要与图文skill（Era 多页长图）混淆。必须运行 `scripts/generate-cover.mjs` 真实出 PNG，禁止只描述不发图。
-交付时必须在对话框**直接发送**阿里云 OSS **12 小时签名 URL**，禁止用 HTML 嵌入或只发本地路径。
+
+交付（见 `.cursor/rules/image-preview-delivery.mdc`）：
+
+- **属于社媒帖子**：封面写入 `cover_url` / `image_previews[0]`，对话框只发 `http://39.106.179.17/?tab=data`
+- **非社媒 / 仅看封面**：`make-oss-preview-html.mjs` 出 HTML 预览页，只发 HTML URL，并询问用完是否删除
+
+禁止在对话框直接发送 OSS 图片链接。

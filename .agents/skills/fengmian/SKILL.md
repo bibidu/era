@@ -95,23 +95,32 @@ node scripts/generate-cover.mjs \
 
 ---
 
-## 4. 交付（对话框直发 OSS 封面永久 URL）
+## 4. 交付（禁止对话框直发 OSS 图链）
 
-**硬性规则：交付图片时，必须在对话框里直接发送阿里云 OSS 返回的 URL。**  
-否则用户可能看不到图。禁止用 HTML 嵌入图片、禁止只发本地路径。
+全局规则见 `.cursor/rules/image-preview-delivery.mdc`。
 
-1. 把生成的 PNG（`path`）**先上传阿里云 OSS**。封面文件名（如 `cover.png`）会自动带上 **`__cover_keep__`** 标记：公共读、**查看无过期**、清理脚本永不删除（读 `references/cloud-hosting.md`）：
+1. 把生成的 PNG（`path`）**先上传阿里云 OSS**。封面文件名（如 `cover.png`）会自动带上 **`__cover_keep__`**（或 `--cover`）：
 
 ```bash
-bash scripts/oss-upload.sh <path>
-# 或强制封面：bash scripts/oss-upload.sh --cover <path>
-# stdout：无 Expires 的永久公共 URL（key 含 __cover_keep__）
+bash scripts/oss-upload.sh --cover <path>
 ```
 
-2. 简短说明：主题色、大标题颜色、输出尺寸 `1080×1920 / 9:16`、封面链接长期有效
-3. 询问是否要改文案或换主题色；若要改 → 改字段后重新跑脚本，再上传并在对话框发新 URL
-4. 若相关前端代码已推 GitHub：执行 `npm run deploy:swas` 后可回传 `http://39.106.179.17/`，但**封面图本身仍须对话框直发 OSS URL**
-5. **禁止**用口头描述代替真实出图；**禁止**假装已生成；**禁止**只发本地路径；**禁止**用 HTML 页面代替对话框发图
+2. **属于社媒帖子**：写入 `cover_url` / `image_previews[0]`，对话框只发 `http://39.106.179.17/?tab=data`
+3. **非社媒 / 仅预览封面**：
+
+```bash
+node scripts/make-oss-preview-html.mjs --title "封面预览" --image <path>
+# stdout：HTML 公共 URL —— 对话框只发此 URL
+```
+
+并询问用户：用完后是否删除该预览 HTML（及同批图）？确认后：
+
+```bash
+node scripts/make-oss-preview-html.mjs --delete-manifest <manifest.json>
+```
+
+4. 简短说明主题色、尺寸 `1080×1920 / 9:16`；若要改文案/主题色 → 重跑脚本再按上面分支交付
+5. **禁止**对话框直发 OSS 图片 URL；**禁止**只发本地路径；**禁止**口头描述代替真实出图
 
 ---
 
@@ -123,6 +132,6 @@ bash scripts/oss-upload.sh <path>
 | 引擎 | `scripts/generate-cover.mjs` | Era + Bridge 导出 |
 | 输入 | 标题/标签等短字段 | Markdown 正文 + 高亮 |
 | 确认流 | 出图后可改 | 正文→标题→高亮逐步确认 |
-| 发图 | 对话框直发 OSS 12h 签名 URL | 同左（拼图/分图均直发） |
+| 发图 | 社媒入库发自建站；非社媒发 HTML 预览页 | 入库 + 只发自建站预览 |
 
 用户只要封面时只用本 skill；只要图文分页时用图文skill。

@@ -13,16 +13,24 @@ description: >-
 ## 0. 基本用法
 
 ```bash
-# 普通图 → 私有 + 12h 签名 URL（stdout）
+# 普通图 → 私有 + 12h 签名 URL（stdout；勿贴进对话框预览）
 bash scripts/oss-upload.sh <local.png>
 
 # 封面 / 入库长期图 → __cover_keep__ + public-read 永久 URL
 bash scripts/oss-upload.sh --cover <cover.png>
 bash scripts/oss-upload.sh --cover <graphic-page-01.png>   # 社媒 image_previews 也常用永久链
 
+# 预览 HTML / 临时公开对象（非封面；可被 14h 清理或用户确认后删除）
+bash scripts/oss-upload.sh --public <preview.html>
+
+# 非社媒预览页（推荐）：生成 HTML 并上传，stdout 仅 HTML URL
+node scripts/make-oss-preview-html.mjs --title "预览" --image a.png --image b.png
+
 # 跳过上传前 14h 清理（批量连传时建议）
 OSS_SKIP_CLEANUP=1 bash scripts/oss-upload.sh --cover <file>
 ```
+
+对用户预览：**禁止**直发 OSS 图链；社媒走入库 + 自建站，非社媒走 HTML 预览页（见 `.cursor/rules/image-preview-delivery.mdc`）。
 
 禁止绕过脚本直接 `ossutil cp`（会漏清理、封面标记、超时/stat 兜底）。
 

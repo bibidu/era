@@ -18,5 +18,5 @@ alwaysApply: true
 - **非风水（默认）**：先问大纲 → 生成内容并确认 → 确认标题＋封面所需信息（字段见「封面 skill」）→ 按封面 skill 出封面图 → 用户自设高亮 → 封面＋内容高亮页拼成横版总览确认。内容图**不含一级标题**，只含二级标题/正文/图片/代码块等；需要配图时在预览环节混排展示。默认直接导出**抖音 9:16**，无需询问平台。
 
 高亮步骤：创建 share 后，用 `highlightSetupPagesUrl(shareId)` 发给用户（默认 `http://39.106.179.17/?tab=highlight&shareId=…`）；禁止对整段 query 二次 `encodeURIComponent`；打开后自动进入高亮 Tab，引导用户复制配置发回。
-导出后可先发一张拼图总览供确认（OSS 12h 签名 URL）；**最终对用户只发线上预览链接**（`http://39.106.179.17/`，建议 `?tab=data`），**不要**逐张发各页图。约定见 `.cursor/rules/preview-link-only.mdc`。
+确认可用 HTML 预览页；**最终对用户只发线上预览链接**（`http://39.106.179.17/`，建议 `?tab=data`），**禁止**对话框直发 OSS 图链。约定见 `.cursor/rules/preview-link-only.mdc`、`image-preview-delivery.mdc`。
 不要再发 Gallery 图文库链接。高亮色板不含灰色。

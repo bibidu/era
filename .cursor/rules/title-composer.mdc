@@ -18,7 +18,7 @@ alwaysApply: true
 
 1. 用户在设置页调好后，点「一键复制配置参数」把配置发回
 2. Agent 用 `node scripts/generate-title-composer.mjs --full --input <json> --out <png>` 按配置出完整 9:16 图
-3. 出图须加载阿里妈妈数黑体；上传 OSS 后对话框直发签名 URL
+3. 出图须加载阿里妈妈数黑体；上传 OSS 后按 `.cursor/rules/image-preview-delivery.mdc` 交付（社媒入库发自建站；非社媒发 HTML 预览页）。**禁止**对话框直发 OSS 图链
 
 ## 布局
 

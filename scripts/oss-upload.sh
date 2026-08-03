@@ -7,6 +7,7 @@
 # 用法:
 #   bash scripts/oss-upload.sh <local-file> [remote-key]
 #   bash scripts/oss-upload.sh --cover <local-file> [remote-key]   # 强制按封面（永久）上传
+#   bash scripts/oss-upload.sh --public <local-file> [remote-key]  # 公共读（预览 HTML/临时图，非封面）
 #   bash scripts/oss-upload.sh --dir <local-dir> [remote-prefix]
 #   bash scripts/oss-upload.sh --rewrite-html <index.html>
 #   bash scripts/oss-upload.sh --sign <remote-key>   # 仅对已有对象重新签名（不触发清理）
@@ -183,10 +184,11 @@ set_object_acl() {
   return 1
 }
 
-# 封面：公共读 + 永久 URL；其它：私有 + 12h 签名
+# 封面 / --public：公共读 + 永久 URL；其它：私有 + 12h 签名
 deliver_url() {
   local key="$1"
-  if is_cover_keep_key "$key"; then
+  local force_public="${2:-0}"
+  if is_cover_keep_key "$key" || [[ "$force_public" == "1" ]]; then
     set_object_acl "$key" public-read || true
     public_url "$key"
   else
@@ -216,6 +218,7 @@ upload_one() {
   local local_path="$1"
   local key="$2"
   local force_cover="${3:-0}"
+  local force_public="${4:-0}"
   if [[ ! -f "$local_path" ]]; then
     echo "错误: 文件不存在: $local_path" >&2
     exit 1
@@ -225,11 +228,13 @@ upload_one() {
     is_cover=1
     key="$(ensure_cover_keep_key "$key")"
     echo "oss-upload: 封面永久保留 ${key}" >&2
+  elif [[ "$force_public" == "1" ]]; then
+    echo "oss-upload: 公共读预览对象 ${key}" >&2
   fi
-  # 封面在上传时直接带 public-read，避免仅依赖事后 set-acl（ossutil v1/v2 语法不同）
+  # 封面 / --public 上传时直接带 public-read，避免仅依赖事后 set-acl（ossutil v1/v2 语法不同）
   # shellcheck disable=SC2046
   local cp_rc=0
-  if [[ "$is_cover" == "1" ]]; then
+  if [[ "$is_cover" == "1" || "$force_public" == "1" ]]; then
     "$OSSUTIL" cp "$local_path" "oss://${BUCKET}/${key}" -f --acl public-read \
       $(ossutil_cp_flags) >/dev/null || cp_rc=$?
   else
@@ -244,7 +249,11 @@ upload_one() {
       exit "$cp_rc"
     fi
   fi
-  deliver_url "$key"
+  if [[ "$is_cover" == "1" ]]; then
+    deliver_url "$key" 0
+  else
+    deliver_url "$key" "$force_public"
+  fi
 }
 
 rewrite_html() {
@@ -253,11 +262,16 @@ rewrite_html() {
 }
 
 FORCE_COVER=0
+FORCE_PUBLIC=0
 ARGS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --cover)
       FORCE_COVER=1
+      shift
+      ;;
+    --public)
+      FORCE_PUBLIC=1
       shift
       ;;
     *)
@@ -276,7 +290,7 @@ case "${1:-}" in
     find "$local_dir" -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' -o -iname '*.gif' -o -iname '*.svg' \) | while read -r f; do
       rel="${f#"$local_dir"/}"
       key="${remote_prefix%/}/${rel}"
-      url="$(upload_one "$f" "$key" "$FORCE_COVER")"
+      url="$(upload_one "$f" "$key" "$FORCE_COVER" "$FORCE_PUBLIC")"
       echo "$url"
     done
     ;;
@@ -289,15 +303,15 @@ case "${1:-}" in
     if looks_like_cover_name "$key" || is_cover_keep_key "$key"; then
       key="$(ensure_cover_keep_key "$key")"
     fi
-    deliver_url "$key"
+    deliver_url "$key" 0
     ;;
   -h|--help)
-    sed -n '2,26p' "$0"
+    sed -n '2,27p' "$0"
     ;;
   *)
     run_cleanup_before_store
     local_file="${1:?需要本地文件路径}"
     remote_key="${2:-${PREFIX}/$(date +%Y%m%d-%H%M%S)/$(basename "$local_file")}"
-    upload_one "$local_file" "$remote_key" "$FORCE_COVER"
+    upload_one "$local_file" "$remote_key" "$FORCE_COVER" "$FORCE_PUBLIC"
     ;;
 esac

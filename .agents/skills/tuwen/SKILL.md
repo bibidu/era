@@ -88,7 +88,7 @@ description: >-
 
 用户确认标题 + 封面信息后，**按仓库中的「封面 skill」生成封面图**，把封面发给用户确认；用户要改 → 改完再确认。
 
-封面交付同样必须走 **§发图 · 上传 OSS**：在对话框**直接发送**阿里云 OSS 返回的封面永久 URL（`cover*.png` 自动带 `__cover_keep__`，查看无过期；不要用 HTML 嵌入、不要只发本地路径）。
+封面上传 OSS（`__cover_keep__`）后：若尚未入库，用 `make-oss-preview-html.mjs` 发 **HTML 预览 URL** 供确认；**禁止**对话框直发 OSS 图链。也可先写入 `image_previews` 后发自建站预览。
 
 ### B5. 用户自行设置高亮（内容图）
 
@@ -96,11 +96,11 @@ description: >-
 
 ### B6. 拼合横版总览并确认
 
-高亮效果确认后，把 **封面图 ＋ 各内容高亮页** 横向拼成**一张总览图**（横版拼图），上传 OSS 后在对话框**直接发送签名 URL** 供用户确认整体效果；用户要改 → 回到相应步骤修改后重新拼图再确认。
+高亮效果确认后，把 **封面图 ＋ 各内容高亮页** 横向拼成**一张总览图**（横版拼图）。确认阶段用 HTML 预览页（`make-oss-preview-html.mjs`）或入库后发自建站链接；**禁止**对话框直发 OSS 图链。用户要改 → 回到相应步骤修改后重新确认。
 
-### B7. 逐张发送
+### B7. 入库交付（不再逐张发图）
 
-用户确认总览后，**逐张单独**发送封面图与每一页内容图：每张上传 OSS，在对话框**直接发送**返回的 URL（封面为 `__cover_keep__` 永久链，内容页为 12h 签名）。
+用户确认后：各页上传 OSS，**按序写入** `image_previews`（[0]=封面），对话框**只发** `http://39.106.179.17/?tab=data`。**禁止**逐张发送各页 OSS URL。
 
 ### 内容图构建要点（Era）
 
@@ -179,30 +179,30 @@ description: >-
 
 ### 交付硬性规则
 
-1. 导出图须上传私有存储（OSS / 约定桶）并**按序写入**业务库（如 Supabase `image_previews`；[0]=封面永久链，同步 `cover_url`）
-2. **最终对用户**：只发 **自建站预览 URL**（`http://39.106.179.17/`，建议带 `?tab=data`）；**禁止**逐张发各页图，也**禁止**为确认来回贴图（用户到社媒页看 `image_previews`）
-3. 确认阶段默认不贴图；用户明确要总览时最多发一张拼图总览签名 URL；封面 skill 单张封面仍可直发一张签名 URL
-4. **禁止**用 HTML 嵌入代替对话框发链接；禁止只发本地路径 / 未签名裸 URL
+1. 导出图须上传存储（OSS / 约定桶）并**按序写入**业务库（`era_social_video_analyses.image_previews`；[0]=封面永久链，同步 `cover_url`）
+2. **最终对用户**：只发 **自建站预览 URL**（`http://39.106.179.17/`，建议带 `?tab=data`）
+3. **禁止**在对话框直接发送任何 OSS 图片链接（签名 / 永久 / 裸链均禁止）
+4. 确认阶段若尚未入库：可用 `make-oss-preview-html.mjs` 发 HTML 预览 URL（非社媒临时页）；入库后改发自建站
+5. 禁止只发本地路径
 
-约定见 `.cursor/rules/preview-link-only.mdc`。
+约定见 `.cursor/rules/preview-link-only.mdc`、`.cursor/rules/image-preview-delivery.mdc`。
 
 ### 上传 OSS
 
 读 `references/cloud-hosting.md`：
 
 ```bash
-bash scripts/oss-upload.sh <本地png路径>
-# 普通图：12h 签名 URL；cover*.png / --cover：__cover_keep__ 永久公共 URL
+bash scripts/oss-upload.sh --cover <本地png路径>   # 社媒页/封面常用永久链
+# 非社媒临时预览页：
+node scripts/make-oss-preview-html.mjs --title "…" --image <png>
 ```
-
-若交付物是含多图的 HTML：`node scripts/oss-rewrite-html.mjs <index.html>`（只替换图片 URL）——但**图文确认与发图仍以对话框直发为准**，不要用 HTML 替代。
 
 ### 硬性顺序，不得颠倒
 
-1. 导出后上传各页/拼图（OSS 或约定存储），并写入业务库字段（如 Supabase `image_previews`）。
-2. 确认环节：可发**一张**拼图总览签名 URL（非风水须含封面），询问是否 OK；**不要**附各页独立图。
+1. 导出后上传各页/拼图，并写入业务库 `image_previews`。
+2. 确认环节：发 HTML 预览或自建站链接询问是否 OK；**不要**附各页 OSS 图链。
 3. 用户要改 → 修改 → 重新校验/导出/上传 → 再问。
-4. **最终交付（对用户）**：**只发线上预览链接**（`http://39.106.179.17/?tab=data`）。**禁止**在对话框逐张发送各页图片链接。
+4. **最终交付（对用户）**：**只发线上预览链接**（`http://39.106.179.17/?tab=data`）。
 5. 若用户同时要小红书与抖音：每个比例各自确认后，仍只汇总发预览链接，不混发分图。
 
 ---

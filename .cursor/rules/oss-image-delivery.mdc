@@ -1,31 +1,37 @@
 ---
-description: 凡交付图片必须走阿里云 OSS 私有桶，并在对话框发送 12 小时签名 URL
+description: 图片须上传阿里云 OSS；对用户预览禁止直发图链，走社媒入库或 HTML 预览页
 alwaysApply: true
 ---
 
 # 图片交付：阿里云 OSS（全局强制）
 
-本仓库需要把图片发给用户的场景（封面、拼图总览确认、截图、生成图等），一律遵守下方上传规则。
-
-**例外（图文 / 社媒多页出图最终交付）**：对用户最终只发自建站预览链接（`http://39.106.179.17/`），不要逐张发各页图。见 `.cursor/rules/preview-link-only.mdc`。图片仍须上传入库（OSS / 约定存储 + `image_previews`）。
+本仓库需要存图的场景，一律先上传阿里云 OSS。对用户**如何展示**见 `.cursor/rules/image-preview-delivery.mdc`（禁止对话框直发 OSS 图链）。
 
 ## 必须
 
-1. 用 `bash scripts/oss-upload.sh <本地图片>` 上传到阿里云 OSS（私有读）
-2. 若该场景需要在对话框发图（封面 skill、拼图确认等）：**直接发送** stdout 返回的 URL  
-   - 普通图：**12 小时签名 URL**（带 `Expires` / `Signature`）  
-   - **封面图**：文件名自动带 `__cover_keep__`，公共读、**查看无过期**；也可用 `--cover` 强制
+1. 用 `bash scripts/oss-upload.sh <本地图片>` 上传到阿里云 OSS
+2. **对用户预览**：
+   - **社媒帖子**：写入 `image_previews` 后只发 `http://39.106.179.17/`（见 preview-link-only / 图文 skill）
+   - **非社媒**：`node scripts/make-oss-preview-html.mjs` 生成 HTML 嵌入图链并上传，对话框只发 HTML URL；用完后询问是否删除
 3. 上传脚本会在存图前自动清理 Bucket 内超过 **14 小时**的旧对象（省存储费）；**含 `__cover_keep__` 的封面永不删**；不要绕过 `oss-upload.sh` 直接 `ossutil cp`
+
+### 上传形态
+
+- 普通私有图：默认私有 + 可签 12h URL（仅供 HTML 内嵌或入库，**不要**贴进对话框）
+- **封面 / 社媒首图**：`--cover` 或文件名识别 → `__cover_keep__`、公共读、查看无过期
+- **预览 HTML / 临时公开图**：`--public` → 公共读、无签名 URL（可被 14h 清理或用户确认后删除）
 
 ## 禁止
 
-- 只发本地路径、`file://`、未签名裸 OSS URL（封面永久公共 URL 除外）
-- 用 HTML 嵌入图片链接代替对话框发图（用户可能看不到）
-- 把**非封面**对象改成公共读（`public-read`）；仅 `__cover_keep__` 封面允许
-- 图文多页最终交付时在对话里堆各页独立图 URL（改发预览链接）
+- 在对话框直接发送 OSS 图片链接（签名 / 永久 / 裸链均禁止）
+- 只发本地路径、`file://`
+- 把**非封面且非预览交付所需**的对象随意改成公共读；社媒长期首图用 `__cover_keep__`，临时预览用 `--public`
+- 社媒最终交付时在对话里堆各页独立图 URL
 
 ## 文档与实现
 
-- 约定说明：`docs/cloud-hosting.md`、各 skill 的 `references/cloud-hosting.md`、`AGENTS.md`
+- 预览分支：`.cursor/rules/image-preview-delivery.mdc`
+- 说明：`docs/cloud-hosting.md`、各 skill 的 `references/cloud-hosting.md`、`AGENTS.md`
 - 上传：`scripts/oss-upload.sh`（内部会调用 `scripts/oss-cleanup-expired.sh`）
+- HTML 预览：`scripts/make-oss-preview-html.mjs`
 - 仅清理：`bash scripts/oss-cleanup-expired.sh` 或 `npm run oss:cleanup`

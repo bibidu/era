@@ -78,7 +78,7 @@ Prompt 必须是具体的可渲染指令。优先写“右上角一枚不完整�
 4. 使用内置 image generation 生成；风格应对齐上游示例（https://github.com/Yuuhann1999/poetic-ink-quote-poster/tree/main/examples），生成时可下载 1–2 张示例作 `reference_image_paths`。
 5. 检查：是否零文字、意象群是否有主次、是否仍有 70%-85% 留白、是否风格一致。
 6. 若出现文字、意象变成完整厨房/风景、背景变脏，只做一次针对性重生。
-7. 按仓库发图规则上传（如 OSS）后交付；返回图片、最终 Prompt、配方与一句意象解释。
+7. **交付（非社媒）**：上传图后用 `node scripts/make-oss-preview-html.mjs --title … --image …` 生成 HTML 预览页，对话框**只发 HTML URL**；**禁止**直发 OSS 图链。询问用户用完是否删除该预览文件。若属于社媒帖子则按图文 skill 入库并发自建站链接。返回 HTML 链接、最终 Prompt、配方与一句意象解释。
 
 ## 负面约束
 
@@ -87,9 +87,9 @@ Prompt 必须是具体的可渲染指令。优先写“右上角一枚不完整�
 ## 输出格式
 
 ```markdown
-**生成图**
+**预览**
 
-![写意意象图](absolute-image-path-or-rendered-image)
+[HTML 预览 URL — 勿贴各张 OSS 图链]
 
 **最终 Prompt**
 
@@ -103,6 +103,7 @@ Prompt 必须是具体的可渲染指令。优先写“右上角一枚不完整�
 - Recipe: [布局 / 意象群层次 / 纸色 / 墨色]
 - Source: [主题或章节标题，仅说明用，不入图]
 - 意象： [一句话说明]
+- 用完后是否删除该预览文件？
 ```
 
 ## 质量门槛
