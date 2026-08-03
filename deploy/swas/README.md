@@ -3,7 +3,7 @@
 - **前端**：Caddy 托管 `/opt/era-web`（`npm run deploy:swas` 同步 `dist`）
 - **业务 REST**：PostgREST，路径 `/rest/v1/*`
 - **Postgres**：仅监听 `127.0.0.1:5432`
-- **交付 URL**：`http://39.106.179.17/`（可带 `?tab=data` / `highlight` / `title`）
+- **交付 URL**：`http://39.106.179.17/`（可带 `?tab=data` / `highlight` / `title` / `stitch`）
 
 ## 更新网关配置
 
