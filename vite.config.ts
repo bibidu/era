@@ -20,7 +20,7 @@ export default defineConfig({
       },
     },
   ],
-  // 本地默认 /era/；EdgeOne 生产构建用 ERA_BASE=/
+  // 本地默认 /era/；自建站生产构建用 ERA_BASE=/
   base: process.env.ERA_BASE ?? '/era/',
   build: {
     target: 'es2020',

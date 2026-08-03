@@ -2,7 +2,7 @@
 
 ## Git / PR（强制）
 
-完成功能改动并创建 PR 后，**直接合入 `main`**，不要询问用户是否合并。合入后执行 `npm run deploy:swas`（或等价同步 `dist` 到 39.106），并把**固定站点 URL**发给用户：`http://39.106.179.17/`（可带 `?tab=`）。无需再发 EdgeOne `eo_token` 临时链。仅当用户明确要求先别合并 / 保持 draft 审阅时例外。约定见 `.cursor/rules/auto-merge-pr.mdc`。
+完成功能改动并创建 PR 后，**直接合入 `main`**，不要询问用户是否合并。合入后执行 `npm run deploy:swas`（或等价同步 `dist` 到 39.106），并把**固定站点 URL**发给用户：`http://39.106.179.17/`（可带 `?tab=`）。仅当用户明确要求先别合并 / 保持 draft 审阅时例外。约定见 `.cursor/rules/auto-merge-pr.mdc`。
 
 ## 图文skill（多页长图）
 

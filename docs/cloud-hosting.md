@@ -89,4 +89,4 @@ bash scripts/oss-upload.sh --sign <object-key>
 
 同机部署时浏览器用 `location.origin` 调 REST，无需跨域。追加 `tab` / `shareId` / `text` 时用 `highlightSetupPagesUrl` / `titleComposerPagesUrl` / `buildAppPagesUrl`；**禁止**对整段 query 再 `encodeURIComponent`。
 
-Edge Functions（余额 / 视频抽取 / image-proxy）仍在旧 Supabase。历史 EdgeOne 部署脚本保留为 `npm run deploy:edgeone`，**默认不再用作交付入口**。
+Edge Functions（余额 / 视频抽取 / image-proxy）仍在旧 Supabase。

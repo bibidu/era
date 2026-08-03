@@ -10,7 +10,7 @@ export const LEGACY_SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6b3h5ZXh0eGp3c2NycGpvd3VkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxMDM4MjYsImV4cCI6MjEwMDY3OTgyNn0.FZuvFtxaMOUUGg3y7kNDxv_p4Etz2KrVpkCHpPKbmDU'
 
 export const ERA_HIGHLIGHT_SETUP_TABLE = 'era_highlight_setups'
-/** 固定公网页（不再依赖 EdgeOne eo_token 临时链） */
+/** 固定公网页（阿里云轻量自建站） */
 export const ERA_PUBLIC_BASE = 'http://39.106.179.17/'
 
 export interface HighlightSetupShareRecord {
@@ -108,8 +108,7 @@ export function defaultSupabaseConfig() {
 }
 
 /**
- * 公网页基址：优先显式传入 / 环境变量，否则默认自建站固定地址（无需 eo_token）。
- * 仍兼容 EDGEONE_PREVIEW_URL，便于临时回退旧预览链。
+ * 公网页基址：优先显式传入 / 环境变量，否则默认自建站固定地址。
  */
 export function resolvePublicPagesBase(
   override?: string,
@@ -122,14 +121,13 @@ export function resolvePublicPagesBase(
     override?.trim() ||
     env.ERA_PUBLIC_BASE?.trim() ||
     env.VITE_ERA_PUBLIC_BASE?.trim() ||
-    env.EDGEONE_PREVIEW_URL?.trim() ||
     ''
   return fromEnv || ERA_PUBLIC_BASE
 }
 
 /**
  * 判断 search / URLSearchParams 是否为「整段 query 被二次编码」形态：
- * `?eo_token%3D…%26eo_time%3D…%26tab%3Dhighlight%26shareId%3D…`
+ * `?tab%3Dhighlight%26shareId%3D…`
  * 此时 URLSearchParams 只会得到一个 key（含 `=`/`&`）且 value 为空，
  * `tab` / `shareId` 都会读成 null → 前端落回默认社媒 Tab 并提示缺少 shareId。
  */
@@ -156,8 +154,8 @@ export function parsePreviewSearchParams(search: string): URLSearchParams {
 
 /**
  * 规范化预览 URL：
- * - 修复「整段 query 被 encodeURIComponent」→ `?eo_token%3D…%26eo_time%3D…`（EdgeOne Error -100）
- * - 不在已有 query 末尾错误追加 `/`（会污染 eo_time）
+ * - 修复「整段 query 被 encodeURIComponent」→ `?tab%3D…%26shareId%3D…`
+ * - 不在已有 query 末尾错误追加 `/`
  */
 export function normalizePreviewUrl(raw: string): string {
   const input = raw.trim()
@@ -208,7 +206,7 @@ export function recoverPreviewUrlInBrowser(
   return true
 }
 
-/** 在预览基址上合并 tab 等参数；保留已有 eo_token/eo_time，绝不二次编码整段 query */
+/** 在预览基址上合并 tab 等参数；绝不二次编码整段 query */
 export function buildAppPagesUrl(
   pagesBase: string,
   params: Record<string, string | null | undefined>,
@@ -234,7 +232,7 @@ export function highlightSetupPagesUrl(
 
 /**
  * 标题排版设置页 URL：必须带上当前帖子标题（?text=），避免打开固定 demo「西北绝不能…」。
- * 多行标题可用换行；调用方应传入完整 EdgeOne 预览链（含 eo_token/eo_time）作为 pagesBase。
+ * 多行标题可用换行；默认自建站基址。
  */
 export function titleComposerPagesUrl(
   titleText: string,

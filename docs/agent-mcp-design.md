@@ -58,7 +58,7 @@ Agent（严格执行图文 skill / tuwen）
 | `era_set_title` | 设置/更新一级标题 |
 | `era_update_config` | 部分更新配置（含 `aspectRatio`） |
 | `era_apply_highlights` | 按 range 批量高亮 |
-| `era_create_highlight_setup_share` | 上传正文到 Supabase，返回 EdgeOne 高亮设置页 URL |
+| `era_create_highlight_setup_share` | 上传正文到自建库，返回高亮设置页 URL |
 | `era_preview_layout` | 分页预览 + 异常检测（需浏览器） |
 | `era_export_images` | 导出各页 PNG + 纵向拼图 `graphic-review-sheet.png`（需浏览器）；skill 要求先发拼图确认、再发分图 |
 | `era_create_export_share` | 导出各页 PNG + 拼图并上传 Supabase（可选存储）；Gallery 已下线，交付以对话框 OSS 签名 URL 为准 |
@@ -85,12 +85,12 @@ Agent（严格执行图文 skill / tuwen）
 
 云端流程：
 
-1. `POST /v1/projects/:id/highlight-setup-share`（或 MCP `era_create_highlight_setup_share`）把正文/标题写入 Supabase，返回 `shareId` + EdgeOne `url`
+1. `POST /v1/projects/:id/highlight-setup-share`（或 MCP `era_create_highlight_setup_share`）把正文/标题写入自建库，返回 `shareId` + `url`
 2. 用户打开（自动切到「高亮」Tab）：
    ```
-   https://bibidu-era-0tdhv043.edgeone.cool/?tab=highlight&shareId=<SHARE_ID>
+   http://39.106.179.17/?tab=highlight&shareId=<SHARE_ID>
    ```
-3. 用户点选/滑动后点「复制并应用」：写回 Supabase `result_ranges`，并复制 `ERA_HIGHLIGHT_SETUP_V1` JSON 给 Agent
+3. 用户点选/滑动后点「复制并应用」：写回 `result_ranges`，并复制 `ERA_HIGHLIGHT_SETUP_V1` JSON 给 Agent
 
 本机调试仍可用 `?tab=highlight&projectId=<id>` 直连 Agent。
 

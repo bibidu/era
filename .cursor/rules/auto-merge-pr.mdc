@@ -14,7 +14,7 @@ alwaysApply: true
 3. 合入后可关闭对应 PR（若 GitHub 未自动关闭）
 4. **执行** `npm run deploy:swas`（同步前端到 `39.106.179.17`），确认 `http://39.106.179.17/` 可访问
 5. 在对话里**直接发给用户**固定站点 URL：`http://39.106.179.17/`（可按需带 `?tab=data` / `highlight` / `title`）
-6. 禁止再依赖 EdgeOne `eo_token` / `eo_time` 临时链作为默认交付；禁止只发 Actions 页面链接代替预览 URL
+6. 禁止只发 Actions 页面链接代替预览 URL
 
 ## 例外
 

@@ -33,6 +33,7 @@ import type {
 } from './graphicConfigPanels'
 import { paginateDocument, getGraphicLayout } from './layout'
 import {
+  createBlockId,
   createDefaultDocument,
   getDocumentMarkdown,
   normalizeDocument,
@@ -217,14 +218,14 @@ export function GraphicTextWorkspace() {
         if (!current.blocks.length) {
           return {
             ...current,
-            blocks: [{ id: crypto.randomUUID(), kind: 'markdown', text }],
+            blocks: [{ id: createBlockId(), kind: 'markdown', text }],
           }
         }
         const firstMarkdown = current.blocks.find((block) => block.kind === 'markdown')
         if (!firstMarkdown || firstMarkdown.kind !== 'markdown') {
           return {
             ...current,
-            blocks: [{ id: crypto.randomUUID(), kind: 'markdown', text }, ...current.blocks],
+            blocks: [{ id: createBlockId(), kind: 'markdown', text }, ...current.blocks],
           }
         }
         return updateContentBlock(current, firstMarkdown.id, (block) =>
