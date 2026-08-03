@@ -8,7 +8,7 @@ description: >-
 
 # OSS 上传 Skill（Cloud Agent 必读）
 
-本仓库图片一律经 `bash scripts/oss-upload.sh` 上传。图文最终对用户只发 EdgeOne 预览链；封面 skill 可直发一张 OSS URL。约定见 `docs/cloud-hosting.md`、`.cursor/rules/oss-image-delivery.mdc`。
+本仓库图片一律经 `bash scripts/oss-upload.sh` 上传。图文最终对用户只发自建站预览链（`http://39.106.179.17/`）；封面 skill 可直发一张 OSS URL。约定见 `docs/cloud-hosting.md`、`.cursor/rules/oss-image-delivery.mdc`。
 
 ## 0. 基本用法
 
