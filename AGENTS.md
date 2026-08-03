@@ -56,3 +56,4 @@
 | 社媒 | `?tab=data` |
 | 高亮 | `?tab=highlight&shareId=<id>` |
 | 标题 | `?tab=title&text=<当前帖子标题>` |
+| 拼图 | `?tab=stitch` |

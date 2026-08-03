@@ -10,12 +10,14 @@
 - 社媒：`?tab=data`
 - 高亮：`?tab=highlight&shareId=...`
 - 标题：`?tab=title&text=当前帖子标题`（必须带 `text=`，否则落回 demo）
+- 拼图：`?tab=stitch`（多图上传、拖拽排序、纵向拼成长图）
 
 ## 功能
 
 - 图文模式：Markdown 分页、字体/纸色/高亮、多页导出
 - 社媒：「社媒」Tab 展示分析列表；右上角「智能提取」进入视频数据提取页（上传抽帧或填写视频 URL，经 Supabase 代理调用 DashScope 返回 Markdown）
 - 高亮设置：「高亮」Tab；`?tab=highlight&shareId=...` 自动打开并加载分享内容
+- 拼图：「拼图」Tab；多图上传、拖拽调序后纵向拼接为长图并下载
 - 画幅：`3:4` 小红书风格；`9:16` 抖音风格
 - 发图：阿里云 OSS 私有桶 + 对话框直发 **12 小时签名 URL**（无 Gallery 页）
 

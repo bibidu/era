@@ -43,6 +43,11 @@ const TitleComposerPrototype = lazy(() =>
     default: m.TitleComposerPrototype,
   })),
 )
+const ImageStitchPage = lazy(() =>
+  import('./features/image-stitch/ImageStitchPage').then((m) => ({
+    default: m.ImageStitchPage,
+  })),
+)
 const AccountBalancePage = lazy(() =>
   import('./features/account/AccountBalancePage').then((m) => ({
     default: m.AccountBalancePage,
@@ -167,6 +172,8 @@ function App() {
             key={titleText ?? ''}
             initialText={titleText}
           />
+        ) : mode === 'stitch' ? (
+          <ImageStitchPage />
         ) : (
           <GraphicTextWorkspace />
         )}

@@ -10,9 +10,10 @@ const TAB_IDS: Record<string, AppMode> = {
   data: 'data',
   highlight: 'highlight',
   title: 'title',
+  stitch: 'stitch',
 }
 
-/** 从 URL 解析当前 Tab：?tab=graphic|data|highlight|title（data = 社媒；缺省默认 data） */
+/** 从 URL 解析当前 Tab：?tab=graphic|data|highlight|title|stitch（data = 社媒；缺省默认 data） */
 export function readAppTabFromSearch(
   search: string = typeof window !== 'undefined' ? window.location.search : '',
 ): AppMode {

@@ -82,7 +82,7 @@ bash scripts/oss-upload.sh --sign <object-key>
 ## 阿里云轻量自建站（前端 + 业务 REST）
 
 - 公网 IP: `39.106.179.17`（北京轻量）
-- 交付: **`http://39.106.179.17/`**（可带 `?tab=data` / `highlight` / `title`）
+- 交付: **`http://39.106.179.17/`**（可带 `?tab=data` / `highlight` / `title` / `stitch`）
 - 栈: Caddy（静态 `dist` + `/rest/v1`）+ PostgREST + Postgres（仅本机 5432）
 - 配置: `deploy/swas/`
 - 发布前端: `npm run deploy:swas`（`ERA_BASE=/` 构建后 rsync 到 `/opt/era-web`）
