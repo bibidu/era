@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>纵向拼图</title>
+    <style>
+      :root {
+        --bg: #0a0a0a;
+        --fg: #f5f5f5;
+        --muted: #9ca3af;
+        --border: #2a2a2a;
+        --panel: #141414;
+        --input: #1a1a1a;
+        --track: #222;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        font-family: "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+      }
+      .shell {
+        max-width: 32rem;
+        margin: 0 auto;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+      }
+      .main { flex: 1; overflow: auto; padding: 1rem; padding-bottom: 5.5rem; }
+      h1 { font-size: 1rem; margin: 0 0 0.35rem; }
+      .sub { font-size: 0.75rem; color: var(--muted); line-height: 1.5; margin: 0 0 1rem; }
+      .drop {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 0.4rem; padding: 2rem 1rem; border: 1px dashed var(--border); border-radius: 1rem;
+        background: var(--input); cursor: pointer; margin-bottom: 1rem; text-align: center;
+      }
+      .drop.over { border-color: var(--fg); background: var(--panel); }
+      .drop strong { font-size: 0.875rem; font-weight: 500; }
+      .drop span { font-size: 0.75rem; color: var(--muted); }
+      .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; font-size: 0.75rem; color: var(--muted); }
+      .row input {
+        width: 4rem; margin: 0 0.35rem; padding: 0.4rem 0.5rem; border-radius: 0.5rem;
+        border: 1px solid var(--border); background: var(--input); color: var(--fg);
+      }
+      .btn-text { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 0.75rem; }
+      ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+      li {
+        display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem;
+        border: 1px solid var(--border); border-radius: 1rem; background: var(--panel);
+        user-select: none;
+      }
+      li.dragging { opacity: 0.45; }
+      li.over { box-shadow: inset 0 0 0 1px var(--fg); border-color: var(--fg); }
+      .grip { color: var(--muted); cursor: grab; }
+      .idx {
+        width: 1.75rem; height: 1.75rem; border-radius: 0.5rem; display: grid; place-items: center;
+        background: var(--track); font-size: 0.75rem;
+      }
+      li img { width: 3.5rem; height: 3.5rem; object-fit: cover; border-radius: 0.5rem; background: var(--input); }
+      .meta { flex: 1; min-width: 0; }
+      .meta .name { font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .meta .dim { font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; }
+      .rm { border: 0; background: none; color: var(--muted); font-size: 1.1rem; cursor: pointer; width: 2rem; height: 2rem; }
+      .empty { text-align: center; color: var(--muted); font-size: 0.75rem; padding: 2rem 0; }
+      .err { color: #ef4444; font-size: 0.75rem; margin-top: 0.75rem; }
+      .result { margin-top: 1.25rem; border: 1px solid var(--border); border-radius: 1rem; overflow: hidden; background: var(--panel); }
+      .result-bar {
+        display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+        padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); font-size: 0.75rem; color: var(--muted);
+      }
+      .result-bar button {
+        border: 0; border-radius: 0.5rem; padding: 0.35rem 0.6rem; background: var(--track); color: var(--fg);
+        cursor: pointer; font-size: 0.75rem;
+      }
+      .result-body { max-height: 50vh; overflow: auto; padding: 0.75rem; }
+      .result-body img { width: 100%; max-width: 24rem; display: block; margin: 0 auto; background: #fff; }
+      .footer {
+        position: sticky; bottom: 0; padding: 0.75rem 1rem;
+        padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+        border-top: 1px solid var(--border); background: #111;
+      }
+      .footer button {
+        width: 100%; height: 2.75rem; border: 0; border-radius: 0.75rem;
+        background: var(--fg); color: var(--bg); font-size: 0.875rem; font-weight: 600; cursor: pointer;
+      }
+      .footer button:disabled { opacity: 0.4; cursor: not-allowed; }
+      input[type="file"] { display: none; }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="main">
+        <h1>纵向拼图</h1>
+        <p class="sub">上传多张图片，拖拽调整顺序，按顺序纵向拼成一张长图。</p>
+        <label class="drop" id="drop">
+          <strong>点击或拖入图片</strong>
+          <span>支持多选 · png / jpg / webp</span>
+          <input id="file" type="file" accept="image/*" multiple />
+        </label>
+        <div class="row">
+          <label>间距 <input id="gap" type="number" min="0" max="200" value="0" /> px</label>
+          <button type="button" class="btn-text" id="clear">清空</button>
+        </div>
+        <ul id="list"></ul>
+        <p class="empty" id="empty">尚未添加图片</p>
+        <p class="err" id="err" hidden></p>
+        <div class="result" id="result" hidden>
+          <div class="result-bar">
+            <span id="resultMeta"></span>
+            <button type="button" id="download">下载 PNG</button>
+          </div>
+          <div class="result-body"><img id="resultImg" alt="纵向拼图结果" /></div>
+        </div>
+      </div>
+      <div class="footer">
+        <button type="button" id="stitch" disabled>按顺序纵向拼接（0 张）</button>
+      </div>
+    </div>
+    <script>
+      const items = []
+      let dragId = null
+      let resultUrl = null
+
+      const drop = document.getElementById('drop')
+      const fileInput = document.getElementById('file')
+      const list = document.getElementById('list')
+      const empty = document.getElementById('empty')
+      const err = document.getElementById('err')
+      const gapInput = document.getElementById('gap')
+      const stitchBtn = document.getElementById('stitch')
+      const result = document.getElementById('result')
+      const resultImg = document.getElementById('resultImg')
+      const resultMeta = document.getElementById('resultMeta')
+
+      function uid() {
+        return crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random())
+      }
+
+      function showError(msg) {
+        err.hidden = !msg
+        err.textContent = msg || ''
+      }
+
+      function clearResult() {
+        if (resultUrl) URL.revokeObjectURL(resultUrl)
+        resultUrl = null
+        result.hidden = true
+        resultImg.removeAttribute('src')
+      }
+
+      function loadDims(url) {
+        return new Promise((resolve, reject) => {
+          const img = new Image()
+          img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight })
+          img.onerror = () => reject(new Error('图片读取失败'))
+          img.src = url
+        })
+      }
+
+      async function addFiles(fileList) {
+        const files = [...fileList].filter((f) => f.type.startsWith('image/'))
+        if (!files.length) {
+          showError('请选择图片文件（png / jpg / webp 等）')
+          return
+        }
+        showError('')
+        clearResult()
+        for (const file of files) {
+          const previewUrl = URL.createObjectURL(file)
+          const dims = await loadDims(previewUrl)
+          items.push({ id: uid(), file, previewUrl, width: dims.w, height: dims.h })
+        }
+        render()
+      }
+
+      function render() {
+        empty.hidden = items.length > 0
+        stitchBtn.disabled = items.length === 0
+        stitchBtn.textContent = `按顺序纵向拼接（${items.length} 张）`
+        list.innerHTML = ''
+        items.forEach((item, index) => {
+          const li = document.createElement('li')
+          li.draggable = true
+          li.dataset.id = item.id
+          li.innerHTML = `
+            <span class="grip" aria-hidden="true">⋮⋮</span>
+            <span class="idx">${index + 1}</span>
+            <img src="${item.previewUrl}" alt="" draggable="false" />
+            <div class="meta">
+              <div class="name">${item.file.name}</div>
+              <div class="dim">${item.width}×${item.height}</div>
+            </div>
+            <button type="button" class="rm" aria-label="移除">×</button>
+          `
+          li.querySelector('.rm').onclick = () => {
+            URL.revokeObjectURL(item.previewUrl)
+            const i = items.findIndex((x) => x.id === item.id)
+            if (i >= 0) items.splice(i, 1)
+            clearResult()
+            render()
+          }
+          li.addEventListener('dragstart', (e) => {
+            dragId = item.id
+            li.classList.add('dragging')
+            e.dataTransfer.effectAllowed = 'move'
+            e.dataTransfer.setData('text/plain', item.id)
+          })
+          li.addEventListener('dragend', () => {
+            dragId = null
+            li.classList.remove('dragging')
+            ;[...list.children].forEach((n) => n.classList.remove('over'))
+          })
+          li.addEventListener('dragover', (e) => {
+            e.preventDefault()
+            e.dataTransfer.dropEffect = 'move'
+            li.classList.add('over')
+          })
+          li.addEventListener('dragleave', () => li.classList.remove('over'))
+          li.addEventListener('drop', (e) => {
+            e.preventDefault()
+            const fromId = e.dataTransfer.getData('text/plain') || dragId
+            const toId = item.id
+            if (!fromId || fromId === toId) return
+            const from = items.findIndex((x) => x.id === fromId)
+            const to = items.findIndex((x) => x.id === toId)
+            if (from < 0 || to < 0) return
+            const [moved] = items.splice(from, 1)
+            items.splice(to, 0, moved)
+            clearResult()
+            render()
+          })
+          list.appendChild(li)
+        })
+      }
+
+      async function stitchImages() {
+        if (!items.length) return
+        stitchBtn.disabled = true
+        stitchBtn.textContent = '拼接中…'
+        showError('')
+        clearResult()
+        try {
+          const gapPx = Math.max(0, Math.min(200, Number(gapInput.value) || 0))
+          const bitmaps = await Promise.all(items.map((item) => createImageBitmap(item.file)))
+          const width = Math.max(...bitmaps.map((b) => b.width))
+          const heights = bitmaps.map((b) => Math.max(1, Math.round((b.height * width) / b.width)))
+          const height = heights.reduce((a, b) => a + b, 0) + gapPx * (bitmaps.length - 1)
+          const canvas = document.createElement('canvas')
+          canvas.width = width
+          canvas.height = Math.max(1, height)
+          const ctx = canvas.getContext('2d')
+          if (gapPx > 0) {
+            ctx.fillStyle = '#FFFFFF'
+            ctx.fillRect(0, 0, width, height)
+          }
+          let y = 0
+          bitmaps.forEach((bitmap, i) => {
+            ctx.drawImage(bitmap, 0, y, width, heights[i])
+            y += heights[i] + gapPx
+            bitmap.close()
+          })
+          const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 1))
+          if (!blob) throw new Error('拼图生成失败')
+          resultUrl = URL.createObjectURL(blob)
+          resultImg.src = resultUrl
+          resultMeta.textContent = `结果 ${width}×${height} · ${(blob.size / 1024).toFixed(1)} KB`
+          result.hidden = false
+        } catch (e) {
+          showError(e instanceof Error ? e.message : '拼接失败')
+        } finally {
+          stitchBtn.disabled = items.length === 0
+          stitchBtn.textContent = `按顺序纵向拼接（${items.length} 张）`
+        }
+      }
+
+      drop.addEventListener('dragenter', (e) => { e.preventDefault(); drop.classList.add('over') })
+      drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over') })
+      drop.addEventListener('dragleave', () => drop.classList.remove('over'))
+      drop.addEventListener('drop', (e) => {
+        e.preventDefault()
+        drop.classList.remove('over')
+        addFiles(e.dataTransfer.files)
+      })
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files) addFiles(fileInput.files)
+        fileInput.value = ''
+      })
+      document.getElementById('clear').onclick = () => {
+        items.splice(0).forEach((item) => URL.revokeObjectURL(item.previewUrl))
+        clearResult()
+        showError('')
+        render()
+      }
+      gapInput.addEventListener('change', clearResult)
+      stitchBtn.onclick = stitchImages
+      document.getElementById('download').onclick = () => {
+        if (!resultUrl) return
+        const a = document.createElement('a')
+        a.href = resultUrl
+        a.download = `stitch-vertical-${Date.now()}.png`
+        a.click()
+      }
+      render()
+    </script>
+  </body>
+</html>
