@@ -36,7 +36,7 @@
 - **封面永久**：对象 key 含 `__cover_keep__`（`cover.png` 等会自动加标，或 `--cover`）；清理脚本跳过；公共读、查看无过期。写入社媒 `cover_url` / 预览首图必须用此 URL。
 - **过期清理**：每次存图前自动删除 `era/assets/` 下超过 **14 小时**的旧对象（`scripts/oss-cleanup-expired.sh`），避免签名过期后仍占存储计费；跳过 `__cover_keep__` 封面。
 - **Cloud Agent 上传**：Agent 常在美西、Bucket 在北京，约 3MB 需 2–3 分钟；`oss-upload.sh` 已加长读超时并在 `i/o timeout` 后 `stat` 兜底。排障见 skill **oss-upload**（`.agents/skills/oss-upload/SKILL.md`）。
-- **前端 + 业务 REST**：阿里云轻量 `39.106.179.17`（Caddy 托管 `dist` + PostgREST）。发布：`npm run deploy:swas`。交付 `http://39.106.179.17/`。
+- **前端 + 业务 REST**：阿里云轻量 `39.106.179.17`（Caddy 托管 `/opt/era-web` + PostgREST）。发布：`npm run deploy:swas`（先 push `main`，再服务器 git pull + build；配置在 `deploy/swas/server.env`）。Skill：`.agents/skills/swas-deploy/SKILL.md`。交付 `http://39.106.179.17/`。
 - **Edge Functions**（余额 / 视频抽取 / image-proxy）仍在旧 Supabase。
 - 说明：`docs/cloud-hosting.md`、skill `references/cloud-hosting.md`。
 

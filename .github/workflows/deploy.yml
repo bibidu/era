@@ -61,4 +61,4 @@ jobs:
       - name: Summary
         run: |
           echo "### 自建站前端" >> "$GITHUB_STEP_SUMMARY"
-          echo "CI 已构建 \`dist\`。线上发布请在有 SSH 的环境执行 \`npm run deploy:swas\` → \`http://39.106.179.17/\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "CI 已构建 \`dist\`。线上发布：合入后执行 \`npm run deploy:swas\`（服务器 git pull + build）→ \`http://39.106.179.17/\`" >> "$GITHUB_STEP_SUMMARY"

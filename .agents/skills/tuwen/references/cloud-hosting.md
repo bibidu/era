@@ -35,7 +35,7 @@
 ## 前端 → 阿里云轻量自建站
 
 - 固定 URL：`http://39.106.179.17/`
-- 发布：`npm run deploy:swas`（构建 `dist` 并 rsync 到服务器 `/opt/era-web`）
+- 发布：`npm run deploy:swas`（push `main` 后服务器 git pull + build → `/opt/era-web`；见 skill **swas-deploy**）
 - 配置：`deploy/swas/`
 - 图文最终交付只发该预览链接（可带 `?tab=data`），不要逐张发各页图。
 

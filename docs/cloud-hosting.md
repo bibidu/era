@@ -83,9 +83,10 @@ bash scripts/oss-upload.sh --sign <object-key>
 
 - 公网 IP: `39.106.179.17`（北京轻量）
 - 交付: **`http://39.106.179.17/`**（可带 `?tab=data` / `highlight` / `title` / `stitch`）
-- 栈: Caddy（静态 `dist` + `/rest/v1`）+ PostgREST + Postgres（仅本机 5432）
-- 配置: `deploy/swas/`
-- 发布前端: `npm run deploy:swas`（`ERA_BASE=/` 构建后 rsync 到 `/opt/era-web`）
+- 栈: Caddy（静态 `/opt/era-web` + `/rest/v1`）+ PostgREST + Postgres（仅本机 5432）
+- 配置: `deploy/swas/server.env` + `id_rsa`；AccessKey 见 `server.secrets.env`（gitignore）
+- 源码目录: `/opt/era`
+- 发布前端: `npm run deploy:swas`（**先 push `main`**，再 SSH 到服务器 `git pull` + build）。Skill：`.agents/skills/swas-deploy/SKILL.md`
 
 同机部署时浏览器用 `location.origin` 调 REST，无需跨域。追加 `tab` / `shareId` / `text` 时用 `highlightSetupPagesUrl` / `titleComposerPagesUrl` / `buildAppPagesUrl`；**禁止**对整段 query 再 `encodeURIComponent`。
 

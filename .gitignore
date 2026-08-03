@@ -46,3 +46,6 @@ supabase/.temp/
 
 # Large Chinese font binaries (download via scripts/ensure-noto-serif-sc.sh)
 public/fonts/NotoSerifSC-*.ttf
+
+# SWAS AccessKey（GitHub push protection 会拦明文 AK）
+deploy/swas/server.secrets.env

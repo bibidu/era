@@ -28,11 +28,13 @@ npm install
 npm run dev
 ```
 
-前端发布到阿里云轻量自建站：
+前端发布到阿里云轻量自建站（先 push `main`，再服务器 git pull + 构建）：
 
 ```bash
 npm run deploy:swas
 ```
+
+配置见 `deploy/swas/server.env`；Agent 流程见 skill **swas-deploy**。
 
 图片资源统一上传 **阿里云 OSS 私有桶**（bucket `agent-17718139319`），交付 **12 小时签名 URL**（防盗刷）；存图前会自动清理超过 14 小时的旧对象。见 [docs/cloud-hosting.md](./docs/cloud-hosting.md)。
 
