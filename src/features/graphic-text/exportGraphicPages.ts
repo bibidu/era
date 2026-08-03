@@ -278,7 +278,13 @@ async function drawPage(
     if (shouldDrawReferenceBackground(config) && config.backgroundUrl) {
       const image = await loadImage(config.backgroundUrl)
       drawCoverImage(ctx, image, width, height)
-      ctx.fillStyle = 'rgba(255,255,255,.82)'
+      // 中上偏实、底部偏透：保留左下/右下角意象，同时保证正文可读
+      const wash = ctx.createLinearGradient(0, 0, 0, height)
+      wash.addColorStop(0, 'rgba(255,255,255,0.58)')
+      wash.addColorStop(0.52, 'rgba(255,255,255,0.7)')
+      wash.addColorStop(0.78, 'rgba(255,255,255,0.42)')
+      wash.addColorStop(1, 'rgba(255,255,255,0.18)')
+      ctx.fillStyle = wash
       ctx.fillRect(0, 0, width, height)
     }
   } else if (config.pageOverlay === 'gradient') {
@@ -303,7 +309,13 @@ async function drawPage(
     drawPageWiremeshOverlay(ctx, width, height, true)
   }
 
-  if (shouldDrawPageOverlay(config) && config.pageOverlay === 'fengshui' && config.overlayStacked) {
+  // 已用 reference 诗意/自定义底图时，不再叠风水村舍纹理，只保留风水顶栏与排版气质
+  if (
+    shouldDrawPageOverlay(config) &&
+    config.pageOverlay === 'fengshui' &&
+    config.overlayStacked &&
+    !shouldDrawReferenceBackground(config)
+  ) {
     await drawPageFengshuiOverlay(ctx, width, height, true, loadImage)
   }
 

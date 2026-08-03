@@ -42,7 +42,7 @@ import { PageGradientOverlay } from './PageGradientOverlay'
 import { PageFengshuiOverlay } from './PageFengshuiOverlay'
 import { PagePixelOverlay } from './PagePixelOverlay'
 import { PageWiremeshOverlay } from './PageWiremeshOverlay'
-import { shouldDrawPageOverlay } from './pageLayering'
+import { shouldDrawPageOverlay, shouldDrawReferenceBackground } from './pageLayering'
 import { resolveTopBarParts } from './topBar'
 import { FENGSHUI_TOP_BAR_LINE_COLOR, FENGSHUI_TOP_BAR_TEXT_COLOR } from './pageFengshuiTokens'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
@@ -602,7 +602,9 @@ export function GraphicPage({
       {shouldDrawPageOverlay(config) && config.pageOverlay === 'wiremesh' && (
         <PageWiremeshOverlay stacked={config.overlayStacked} />
       )}
-      {shouldDrawPageOverlay(config) && config.pageOverlay === 'fengshui' && (
+      {shouldDrawPageOverlay(config) &&
+        config.pageOverlay === 'fengshui' &&
+        !shouldDrawReferenceBackground(config) && (
         <PageFengshuiOverlay stacked={config.overlayStacked} />
       )}
       {shouldDrawPageOverlay(config) &&

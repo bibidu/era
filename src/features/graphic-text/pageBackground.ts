@@ -38,7 +38,7 @@ export function resolvePageBackgroundStyle(config: GraphicTextConfig): CSSProper
       style.backgroundColor = FENGSHUI_CANVAS_COLOR
     }
   } else if (shouldDrawReferenceBackground(config)) {
-    style.backgroundImage = `linear-gradient(rgba(255,255,255,.82), rgba(255,255,255,.82)), url("${config.backgroundUrl}")`
+    style.backgroundImage = `linear-gradient(180deg, rgba(255,255,255,0.58) 0%, rgba(255,255,255,0.7) 52%, rgba(255,255,255,0.42) 78%, rgba(255,255,255,0.18) 100%), url("${config.backgroundUrl}")`
     style.backgroundSize = 'cover'
     style.backgroundPosition = 'center'
   } else if (usesConfiguredBaseBackground(config) && config.backgroundType === 'solid') {
