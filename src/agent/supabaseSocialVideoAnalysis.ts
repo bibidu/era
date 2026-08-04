@@ -19,12 +19,15 @@ export interface SocialVideoAnalysisRecord {
   title: string
   published_at: string
   cover_url: string | null
+  /** 帖子正文（图文内容），不被智能提取覆盖 */
   markdown?: string
   outline?: string
   /** 图片预览 URL 列表（封面/内容图等） */
   image_previews?: string[]
   /** 后台数据截图（智能提取上传） */
   extract_images?: string[]
+  /** 智能提取结果（JSON/文本），与 markdown 分离 */
+  extract_data?: string
   extract_status: SocialVideoExtractStatus
   work_type: SocialVideoWorkType
 }
@@ -37,6 +40,7 @@ export interface CreateSocialVideoAnalysisInput {
   outline?: string
   imagePreviews?: string[]
   extractImages?: string[]
+  extractData?: string
   extractStatus?: SocialVideoExtractStatus
   workType?: SocialVideoWorkType
 }
@@ -46,16 +50,16 @@ export interface ListSocialVideoAnalysesOptions {
   extractStatus?: SocialVideoExtractStatus | '' | null
   /** 不传或空 = 全部；后端 eq 筛选 */
   workType?: SocialVideoWorkType | '' | null
-  /** 复盘等需要全文时拉 markdown */
+  /** 复盘等需要全文时拉 markdown / extract_data */
   includeMarkdown?: boolean
 }
 
-/** 列表轻量字段：不含 outline / image_previews / markdown */
+/** 列表轻量字段：不含 outline / image_previews / markdown / extract_data */
 const LIST_SELECT_BASE =
   'id,created_at,title,published_at,cover_url,extract_status,work_type'
-/** 复盘等需要正文时再拉 markdown（及大纲/预览链/提取图） */
+/** 复盘等需要正文与提取结果时再拉大字段 */
 const LIST_SELECT_WITH_MARKDOWN =
-  `${LIST_SELECT_BASE},outline,image_previews,extract_images,markdown`
+  `${LIST_SELECT_BASE},outline,image_previews,extract_images,extract_data,markdown`
 
 const NETWORK_ERROR_MARKERS = ['failed to fetch', 'networkerror', 'load failed', 'network request failed']
 
@@ -164,9 +168,11 @@ function normalizeImagePreviews(value: unknown): string[] {
 function normalizeRecord(row: SocialVideoAnalysisRecord): SocialVideoAnalysisRecord {
   return {
     ...row,
+    markdown: typeof row.markdown === 'string' ? row.markdown : '',
     outline: typeof row.outline === 'string' ? row.outline : '',
     image_previews: normalizeImagePreviews(row.image_previews),
     extract_images: normalizeImagePreviews(row.extract_images),
+    extract_data: typeof row.extract_data === 'string' ? row.extract_data : '',
     extract_status: normalizeExtractStatus(row.extract_status),
     work_type: normalizeWorkType(row.work_type),
   }
@@ -231,6 +237,7 @@ export async function createSocialVideoAnalysis(
         outline: input.outline ?? '',
         image_previews: input.imagePreviews ?? [],
         extract_images: input.extractImages ?? [],
+        extract_data: input.extractData ?? '',
         extract_status: input.extractStatus ?? DEFAULT_SOCIAL_VIDEO_EXTRACT_STATUS,
         work_type: input.workType ?? DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
       }),
@@ -262,6 +269,7 @@ export async function updateSocialVideoAnalysis(
         outline: input.outline ?? '',
         image_previews: input.imagePreviews ?? [],
         extract_images: input.extractImages ?? [],
+        extract_data: input.extractData ?? '',
         extract_status: input.extractStatus ?? DEFAULT_SOCIAL_VIDEO_EXTRACT_STATUS,
         work_type: input.workType ?? DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
       }),
@@ -284,6 +292,7 @@ export async function patchSocialVideoAnalysis(
     outline: string
     imagePreviews: string[]
     extractImages: string[]
+    extractData: string
     extractStatus: SocialVideoExtractStatus
     publishedAt: string
     coverUrl: string | null
@@ -297,6 +306,7 @@ export async function patchSocialVideoAnalysis(
   if (patch.outline !== undefined) body.outline = patch.outline
   if (patch.imagePreviews !== undefined) body.image_previews = patch.imagePreviews
   if (patch.extractImages !== undefined) body.extract_images = patch.extractImages
+  if (patch.extractData !== undefined) body.extract_data = patch.extractData
   if (patch.extractStatus !== undefined) body.extract_status = patch.extractStatus
   if (patch.publishedAt !== undefined) body.published_at = patch.publishedAt
   if (patch.coverUrl !== undefined) body.cover_url = patch.coverUrl

@@ -111,17 +111,23 @@ if [[ -x scripts/ensure-noto-serif-sc.sh ]]; then
   bash scripts/ensure-noto-serif-sc.sh || true
 fi
 
-echo "    apply extract_status migration"
-if [[ -f supabase/migrations/20260804120000_era_social_video_extract_status.sql ]]; then
-  # 注意：SSH 远端脚本走 bash -s（stdin=heredoc），docker exec 不能挂 -i 抢 stdin
-  docker exec -i era-db psql -U era -d era < supabase/migrations/20260804120000_era_social_video_extract_status.sql \
-    || echo "    warn: migration apply failed (may already be applied)"
-  # 迁移后必须刷新 PostgREST schema cache，否则 PATCH extract_* 会 PGRST204
-  echo "    reload PostgREST schema cache"
-  docker exec era-db psql -U era -d era -c "NOTIFY pgrst, 'reload schema';" </dev/null \
-    || docker restart era-rest \
-    || echo "    warn: schema reload failed"
-fi
+echo "    apply social video migrations"
+# 注意：SSH 远端脚本走 bash -s（stdin=heredoc），docker exec 不能挂 -i 抢 stdin（除重定向文件外）
+for migration in \
+  supabase/migrations/20260804120000_era_social_video_extract_status.sql \
+  supabase/migrations/20260804140000_era_social_video_extract_data.sql
+do
+  if [[ -f "$migration" ]]; then
+    echo "    apply $(basename "$migration")"
+    docker exec -i era-db psql -U era -d era < "$migration" \
+      || echo "    warn: migration apply failed (may already be applied): $migration"
+  fi
+done
+# 迁移后必须刷新 PostgREST schema cache，否则 PATCH extract_* 会 PGRST204
+echo "    reload PostgREST schema cache"
+docker exec era-db psql -U era -d era -c "NOTIFY pgrst, 'reload schema';" </dev/null \
+  || docker restart era-rest \
+  || echo "    warn: schema reload failed"
 
 echo "    build (ERA_BASE=/)"
 ERA_BASE=/ npm run build

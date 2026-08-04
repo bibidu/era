@@ -5,7 +5,7 @@
  * body: { items: [{ postId, images: string[] }] }  images 为 data URL 或 http(s) URL
  *
  * 1) 上传/归一化图片链接 → 写入 extract_images，状态改为「提取中」，立即返回成功
- * 2) 后台调用 dashscope-video-extract，写回 markdown，状态改为成功/失败
+ * 2) 后台调用 dashscope-video-extract，写回 extract_data（不覆盖 markdown），状态改为成功/失败
  */
 import crypto from 'node:crypto'
 import http from 'node:http'
@@ -274,7 +274,7 @@ async function processExtractBackground(jobs) {
     try {
       const result = await runDashScopeExtract(job.imageUrls)
       await patchPost(job.postId, {
-        markdown: JSON.stringify(result),
+        extract_data: JSON.stringify(result),
         extract_status: '提取成功',
       })
       console.log(`[extract-task] success ${job.postId}`)

@@ -1,7 +1,7 @@
 import { extractMarkdownField } from './parseMarkdownFields'
 import { parsePublishedAtSortKey, type SocialVideoAnalysisRecord } from '../../agent/supabaseSocialVideoAnalysis'
 
-/** 单篇作品从 markdown 解析出的结构化指标 */
+/** 单篇作品从 extract_data（兼容旧 markdown）解析出的结构化指标 */
 export interface PostMetrics {
   id: string
   title: string
@@ -223,8 +223,17 @@ function safeRate(numerator: number, denominator: number, scale = 100) {
   return (numerator / denominator) * scale
 }
 
+function resolveExtractContent(record: SocialVideoAnalysisRecord) {
+  const data = (record.extract_data || '').trim()
+  if (data) return data
+  const md = (record.markdown || '').trim()
+  // 仅兼容历史：结果曾被写进 markdown 的 JSON
+  if (md.startsWith('{') || md.startsWith('[')) return md
+  return ''
+}
+
 export function parsePostMetrics(record: SocialVideoAnalysisRecord): PostMetrics {
-  const content = record.markdown || ''
+  const content = resolveExtractContent(record)
   const publishedAt = record.published_at || readMetricText(content, '发布日期') || ''
   const publishedTime = parsePublishedAtSortKey(publishedAt, record.created_at)
 

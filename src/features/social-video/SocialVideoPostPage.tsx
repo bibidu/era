@@ -122,6 +122,7 @@ function mergeRecord(
     outline: next.outline ?? prev.outline,
     image_previews: next.image_previews ?? prev.image_previews,
     extract_images: next.extract_images ?? prev.extract_images,
+    extract_data: next.extract_data ?? prev.extract_data,
     cover_url: next.cover_url ?? prev.cover_url,
   }
 }
@@ -207,14 +208,16 @@ export function SocialVideoPostPage({
     [extractImages],
   )
 
-  const extractText = useMemo(() => prettyExtractData(view.markdown), [view.markdown])
-  const contentSource = useMemo(() => {
+  const extractRaw = useMemo(() => {
+    const data = (view.extract_data || '').trim()
+    if (data) return data
+    // 兼容尚未回填的历史：提取结果曾写进 markdown
     const md = (view.markdown || '').trim()
-    const outline = (view.outline || '').trim()
-    // 提取成功后 markdown 多为 JSON，详情「内容」优先展示大纲
-    if (md && !(md.startsWith('{') || md.startsWith('['))) return md
-    return outline || md
-  }, [view.markdown, view.outline])
+    if (md.startsWith('{') || md.startsWith('[')) return md
+    return ''
+  }, [view.extract_data, view.markdown])
+  const extractText = useMemo(() => prettyExtractData(extractRaw), [extractRaw])
+  const contentSource = (view.markdown || '').trim()
   const contentPreview = contentSource
     ? truncateText(contentSource.replace(/\s+/g, ' '), 80)
     : '暂无内容'
@@ -630,12 +633,12 @@ export function SocialVideoPostPage({
                 }}
               >
                 {extractText ? (
-                  view.markdown?.trim().startsWith('{') || view.markdown?.trim().startsWith('[') ? (
+                  extractRaw.startsWith('{') || extractRaw.startsWith('[') ? (
                     <pre className="font-mono text-xs leading-5 whitespace-pre-wrap break-words">
                       {extractText}
                     </pre>
                   ) : (
-                    <MarkdownPreview value={view.markdown || ''} />
+                    <MarkdownPreview value={extractRaw} />
                   )
                 ) : (
                   <p className="text-sm" style={{ color: 'var(--era-muted)' }}>
@@ -712,13 +715,7 @@ export function SocialVideoPostPage({
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
             {contentSource ? (
-              contentSource.startsWith('{') || contentSource.startsWith('[') ? (
-                <pre className="font-mono text-xs leading-5 whitespace-pre-wrap break-words">
-                  {prettyExtractData(contentSource)}
-                </pre>
-              ) : (
-                <MarkdownPreview value={contentSource} />
-              )
+              <MarkdownPreview value={contentSource} />
             ) : (
               <p className="text-sm" style={{ color: 'var(--era-muted)' }}>
                 暂无内容
