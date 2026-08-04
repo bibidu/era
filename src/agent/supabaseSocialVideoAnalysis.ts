@@ -6,11 +6,16 @@ export const ERA_SOCIAL_VIDEO_ANALYSES_TABLE = 'era_social_video_analyses'
 export const SOCIAL_VIDEO_EXTRACT_STATUSES = ['未开始', '提取中', '提取成功', '提取失败'] as const
 export type SocialVideoExtractStatus = (typeof SOCIAL_VIDEO_EXTRACT_STATUSES)[number]
 
+/** 临时数据治理状态（存库中文枚举；功能用完后删除字段） */
+export const SOCIAL_VIDEO_TEMP_GOVERN_STATUSES = ['未治理', '正在治理', '治理成功', '治理失败'] as const
+export type SocialVideoTempGovernStatus = (typeof SOCIAL_VIDEO_TEMP_GOVERN_STATUSES)[number]
+
 /** 作品类型（存库中文枚举） */
 export const SOCIAL_VIDEO_WORK_TYPES = ['图文', '风水', '健身'] as const
 export type SocialVideoWorkType = (typeof SOCIAL_VIDEO_WORK_TYPES)[number]
 
 export const DEFAULT_SOCIAL_VIDEO_EXTRACT_STATUS: SocialVideoExtractStatus = '未开始'
+export const DEFAULT_SOCIAL_VIDEO_TEMP_GOVERN_STATUS: SocialVideoTempGovernStatus = '未治理'
 export const DEFAULT_SOCIAL_VIDEO_WORK_TYPE: SocialVideoWorkType = '图文'
 
 export interface SocialVideoAnalysisRecord {
@@ -29,6 +34,11 @@ export interface SocialVideoAnalysisRecord {
   /** 智能提取结果（JSON/文本），与 markdown 分离 */
   extract_data?: string
   extract_status: SocialVideoExtractStatus
+  /**
+   * 临时数据治理状态（未治理 / 正在治理 / 治理成功 / 治理失败）
+   * 临时字段：功能下线时随迁移删除
+   */
+  temp_govern_status: SocialVideoTempGovernStatus
   work_type: SocialVideoWorkType
 }
 
@@ -42,6 +52,7 @@ export interface CreateSocialVideoAnalysisInput {
   extractImages?: string[]
   extractData?: string
   extractStatus?: SocialVideoExtractStatus
+  tempGovernStatus?: SocialVideoTempGovernStatus
   workType?: SocialVideoWorkType
 }
 
@@ -56,7 +67,7 @@ export interface ListSocialVideoAnalysesOptions {
 
 /** 列表轻量字段：不含 outline / image_previews / markdown / extract_data */
 const LIST_SELECT_BASE =
-  'id,created_at,title,published_at,cover_url,extract_status,work_type'
+  'id,created_at,title,published_at,cover_url,extract_status,temp_govern_status,work_type'
 /** 复盘等需要正文与提取结果时再拉大字段 */
 const LIST_SELECT_WITH_MARKDOWN =
   `${LIST_SELECT_BASE},outline,image_previews,extract_images,extract_data,markdown`
@@ -153,6 +164,16 @@ function normalizeExtractStatus(value: unknown): SocialVideoExtractStatus {
   return DEFAULT_SOCIAL_VIDEO_EXTRACT_STATUS
 }
 
+function normalizeTempGovernStatus(value: unknown): SocialVideoTempGovernStatus {
+  if (
+    typeof value === 'string' &&
+    (SOCIAL_VIDEO_TEMP_GOVERN_STATUSES as readonly string[]).includes(value)
+  ) {
+    return value as SocialVideoTempGovernStatus
+  }
+  return DEFAULT_SOCIAL_VIDEO_TEMP_GOVERN_STATUS
+}
+
 function normalizeWorkType(value: unknown): SocialVideoWorkType {
   if (typeof value === 'string' && (SOCIAL_VIDEO_WORK_TYPES as readonly string[]).includes(value)) {
     return value as SocialVideoWorkType
@@ -174,6 +195,7 @@ function normalizeRecord(row: SocialVideoAnalysisRecord): SocialVideoAnalysisRec
     extract_images: normalizeImagePreviews(row.extract_images),
     extract_data: typeof row.extract_data === 'string' ? row.extract_data : '',
     extract_status: normalizeExtractStatus(row.extract_status),
+    temp_govern_status: normalizeTempGovernStatus(row.temp_govern_status),
     work_type: normalizeWorkType(row.work_type),
   }
 }
@@ -239,6 +261,7 @@ export async function createSocialVideoAnalysis(
         extract_images: input.extractImages ?? [],
         extract_data: input.extractData ?? '',
         extract_status: input.extractStatus ?? DEFAULT_SOCIAL_VIDEO_EXTRACT_STATUS,
+        temp_govern_status: input.tempGovernStatus ?? DEFAULT_SOCIAL_VIDEO_TEMP_GOVERN_STATUS,
         work_type: input.workType ?? DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
       }),
     },
@@ -271,6 +294,7 @@ export async function updateSocialVideoAnalysis(
         extract_images: input.extractImages ?? [],
         extract_data: input.extractData ?? '',
         extract_status: input.extractStatus ?? DEFAULT_SOCIAL_VIDEO_EXTRACT_STATUS,
+        temp_govern_status: input.tempGovernStatus ?? DEFAULT_SOCIAL_VIDEO_TEMP_GOVERN_STATUS,
         work_type: input.workType ?? DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
       }),
     },
@@ -294,6 +318,7 @@ export async function patchSocialVideoAnalysis(
     extractImages: string[]
     extractData: string
     extractStatus: SocialVideoExtractStatus
+    tempGovernStatus: SocialVideoTempGovernStatus
     publishedAt: string
     coverUrl: string | null
   }>,
@@ -308,6 +333,7 @@ export async function patchSocialVideoAnalysis(
   if (patch.extractImages !== undefined) body.extract_images = patch.extractImages
   if (patch.extractData !== undefined) body.extract_data = patch.extractData
   if (patch.extractStatus !== undefined) body.extract_status = patch.extractStatus
+  if (patch.tempGovernStatus !== undefined) body.temp_govern_status = patch.tempGovernStatus
   if (patch.publishedAt !== undefined) body.published_at = patch.publishedAt
   if (patch.coverUrl !== undefined) body.cover_url = patch.coverUrl
 

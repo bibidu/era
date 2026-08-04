@@ -1,15 +1,21 @@
 #!/usr/bin/env node
 /**
- * 智能提取任务服务（SWAS 本机）
+ * 智能提取 + 临时数据治理任务服务（SWAS 本机）
+ *
  * POST /functions/v1/create-extract-task
  * body: { items: [{ postId, images: string[] }] }  images 为 data URL 或 http(s) URL
- *
  * 1) 上传/归一化图片链接 → 写入 extract_images，状态改为「提取中」，立即返回成功
  * 2) 后台调用 dashscope-video-extract，写回 extract_data（不覆盖 markdown），状态改为成功/失败
+ *
+ * POST /functions/v1/create-govern-task  （临时功能，用完删除）
+ * body: { postId, images: string[] }  images 为 data URL 或 http(s) URL，有序
+ * 1) 上传图片 → 完全替换 image_previews（并同步 cover_url），temp_govern_status=正在治理，立即返回成功
+ * 2) 后台纵向拼接长图 → Qwen OCR 提取文字 → 替换 markdown（不碰 extract_data），更新治理状态
  */
 import crypto from 'node:crypto'
 import http from 'node:http'
 import { URL } from 'node:url'
+import { stitchImagesVerticalBuffers } from './stitch-images-vertical.mjs'
 
 const PORT = Number(process.env.EXTRACT_TASK_PORT || 8791)
 const HOST = process.env.EXTRACT_TASK_HOST || '0.0.0.0'
@@ -32,6 +38,10 @@ const OSS_PREFIX = (process.env.OSS_PREFIX || 'era/assets').replace(/\/$/, '')
 const MAX_MEDIA_ITEMS = 12
 const CONCURRENCY = 7
 const MODEL = 'qwen3.7-flash'
+/** 拼接长图过大时缩到该宽度再送 OCR，避免代理体积极限 */
+const GOVERN_STITCH_MAX_WIDTH = 1080
+const GOVERN_OCR_PROMPT =
+  '请识别这张长图中的全部文字内容。按从上到下的阅读顺序，完整提取可见文字，保留原有换行与段落结构。直接输出提取的文字内容，不要添加解释、标题或前后缀。'
 
 const EMPTY_EXTRACT_SCHEMA = {
   话题: '',
@@ -167,11 +177,13 @@ async function uploadToOss(buffer, contentType, objectKey) {
   return url
 }
 
-async function normalizeImages(postId, images) {
+async function normalizeImages(postId, images, options = {}) {
   const list = (Array.isArray(images) ? images : []).filter((item) => typeof item === 'string' && item.trim())
   const limited = list.slice(0, MAX_MEDIA_ITEMS)
   const urls = []
   const stamp = Date.now()
+  const folder = options.folder || 'extract'
+  const keepMark = options.keepMark || '__extract_keep__'
   for (let index = 0; index < limited.length; index += 1) {
     const item = limited[index].trim()
     if (/^https?:\/\//i.test(item)) {
@@ -187,13 +199,22 @@ async function normalizeImages(postId, images) {
       : parsed.contentType.includes('webp')
         ? 'webp'
         : 'jpg'
-    const key = `${OSS_PREFIX}/extract/${postId}/${stamp}-${index}__extract_keep__.${ext}`
+    const key = `${OSS_PREFIX}/${folder}/${postId}/${stamp}-${index}${keepMark}.${ext}`
     urls.push(await uploadToOss(parsed.buffer, parsed.contentType, key))
   }
   if (urls.length === 0) {
     throw new Error('缺少图片')
   }
   return urls
+}
+
+async function downloadImageBuffer(url) {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`下载图片失败 HTTP ${response.status}`)
+  }
+  const arrayBuffer = await response.arrayBuffer()
+  return Buffer.from(arrayBuffer)
 }
 
 function parseModelJson(text) {
@@ -220,7 +241,7 @@ function parseModelJson(text) {
   throw new Error('模型未返回合法 JSON')
 }
 
-async function runDashScopeExtract(imageUrls) {
+async function runDashScope(imageUrls, prompt, { parseJson = false } = {}) {
   const media = imageUrls.map((url) => ({ type: 'image', url }))
   const response = await fetch(DASHSCOPE_PROXY, {
     method: 'POST',
@@ -233,7 +254,7 @@ async function runDashScopeExtract(imageUrls) {
       model: MODEL,
       media,
       fps: 1,
-      prompt: EXTRACT_PROMPT,
+      prompt,
     }),
   })
   const text = await response.text()
@@ -246,7 +267,12 @@ async function runDashScopeExtract(imageUrls) {
   if (!response.ok) {
     throw new Error(data.error || data.message || `DashScope proxy HTTP ${response.status}`)
   }
-  return parseModelJson(data.markdown || JSON.stringify(data))
+  const markdown = typeof data.markdown === 'string' ? data.markdown : JSON.stringify(data)
+  return parseJson ? parseModelJson(markdown) : markdown.trim()
+}
+
+async function runDashScopeExtract(imageUrls) {
+  return runDashScope(imageUrls, EXTRACT_PROMPT, { parseJson: true })
 }
 
 async function patchPost(postId, patch) {
@@ -315,6 +341,62 @@ async function createTasks(items) {
   return { ok: true, count: accepted.length }
 }
 
+async function processGovernBackground(job) {
+  const { postId, imageUrls } = job
+  try {
+    console.log(`[govern-task] start OCR ${postId} images=${imageUrls.length}`)
+    const buffers = []
+    for (const url of imageUrls) {
+      buffers.push(await downloadImageBuffer(url))
+    }
+    const stitched = await stitchImagesVerticalBuffers(buffers, {
+      targetWidth: GOVERN_STITCH_MAX_WIDTH,
+      format: 'jpeg',
+      quality: 82,
+    })
+    const stamp = Date.now()
+    const stitchKey = `${OSS_PREFIX}/govern/${postId}/${stamp}-stitched__cover_keep__.jpg`
+    const stitchUrl = await uploadToOss(stitched.buffer, stitched.contentType, stitchKey)
+    const text = await runDashScope([stitchUrl], GOVERN_OCR_PROMPT, { parseJson: false })
+    if (!text) throw new Error('模型未返回文字内容')
+    await patchPost(postId, {
+      markdown: text,
+      temp_govern_status: '治理成功',
+    })
+    console.log(`[govern-task] success ${postId} chars=${text.length}`)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`[govern-task] fail ${postId}: ${message}`)
+    try {
+      await patchPost(postId, { temp_govern_status: '治理失败' })
+    } catch (patchError) {
+      console.error(`[govern-task] status patch fail ${postId}`, patchError)
+    }
+  }
+}
+
+async function createGovernTask(body) {
+  const postId = String(body?.postId || '').trim()
+  if (!postId) throw new Error('缺少 postId')
+  const imageUrls = await normalizeImages(postId, body.images, {
+    folder: 'govern',
+    keepMark: '__cover_keep__',
+  })
+
+  // 1) 入库替换预览图后即可返回「提交成功」；OCR 异步
+  await patchPost(postId, {
+    image_previews: imageUrls,
+    cover_url: imageUrls[0] || null,
+    temp_govern_status: '正在治理',
+  })
+
+  setImmediate(() => {
+    void processGovernBackground({ postId, imageUrls })
+  })
+
+  return { ok: true, postId, imageCount: imageUrls.length, temp_govern_status: '正在治理' }
+}
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = []
@@ -333,16 +415,25 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
-  if (req.method === 'GET' && (path === '/healthz' || path === '/functions/v1/create-extract-task/health')) {
+  if (
+    req.method === 'GET' &&
+    (path === '/healthz' ||
+      path === '/functions/v1/create-extract-task/health' ||
+      path === '/functions/v1/create-govern-task/health')
+  ) {
     json(res, 200, { ok: true })
     return
   }
 
-  const isCreate =
+  const isGovernCreate =
+    req.method === 'POST' &&
+    (path === '/functions/v1/create-govern-task' || path === '/create-govern-task')
+
+  const isExtractCreate =
     req.method === 'POST' &&
     (path === '/functions/v1/create-extract-task' || path === '/create-extract-task' || path === '/')
 
-  if (!isCreate) {
+  if (!isGovernCreate && !isExtractCreate) {
     json(res, 404, { error: 'Not found' })
     return
   }
@@ -350,6 +441,11 @@ const server = http.createServer(async (req, res) => {
   try {
     const raw = await readBody(req)
     const body = raw ? JSON.parse(raw) : {}
+    if (isGovernCreate) {
+      const result = await createGovernTask(body)
+      json(res, 200, result)
+      return
+    }
     const items = Array.isArray(body.items)
       ? body.items
       : body.postId
@@ -359,7 +455,7 @@ const server = http.createServer(async (req, res) => {
     json(res, 200, result)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[extract-task] create failed', message)
+    console.error(`[${isGovernCreate ? 'govern-task' : 'extract-task'}] create failed`, message)
     json(res, 400, { error: message })
   }
 })

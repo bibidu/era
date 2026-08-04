@@ -115,7 +115,8 @@ echo "    apply social video migrations"
 # 注意：SSH 远端脚本走 bash -s（stdin=heredoc），docker exec 不能挂 -i 抢 stdin（除重定向文件外）
 for migration in \
   supabase/migrations/20260804120000_era_social_video_extract_status.sql \
-  supabase/migrations/20260804140000_era_social_video_extract_data.sql
+  supabase/migrations/20260804140000_era_social_video_extract_data.sql \
+  supabase/migrations/20260804222000_era_social_video_temp_govern_status.sql
 do
   if [[ -f "$migration" ]]; then
     echo "    apply $(basename "$migration")"
