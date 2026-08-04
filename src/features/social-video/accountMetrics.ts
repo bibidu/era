@@ -107,22 +107,65 @@ export interface AccountReview {
 }
 
 const TAG_FIELD_NAMES = [
+  '话题',
   '作品话题/标签(以 # 开头）',
   '作品话题/标签(以 # 开头)',
   '作品话题/标签',
 ]
 
+function tryParseMetricsJson(content: string): Record<string, unknown> | null {
+  const trimmed = content.trim()
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null
+  try {
+    const parsed = JSON.parse(trimmed) as unknown
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
+function valueToText(value: unknown): string {
+  if (value == null) return ''
+  if (typeof value === 'string') return value.trim()
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => valueToText(item))
+      .filter(Boolean)
+      .join(' ')
+  }
+  return ''
+}
+
+function readMetricText(content: string, ...names: string[]) {
+  const json = tryParseMetricsJson(content)
+  if (json) {
+    for (const name of names) {
+      const text = valueToText(json[name])
+      if (text && text !== '未知') return text
+    }
+  }
+  for (const name of names) {
+    const text = extractMarkdownField(content, name).trim()
+    if (text && text !== '未知') return text
+  }
+  return ''
+}
+
 function toNumber(raw: string): number {
   const cleaned = raw.replace(/,/g, '').trim()
-  if (!cleaned) return 0
+  if (!cleaned || cleaned === '未知') return 0
   const match = cleaned.match(/-?\d+(?:\.\d+)?/)
   if (!match) return 0
   const value = Number(match[0])
   return Number.isFinite(value) ? value : 0
 }
 
-function field(markdown: string, name: string) {
-  return toNumber(extractMarkdownField(markdown, name))
+function field(content: string, ...names: string[]) {
+  return toNumber(readMetricText(content, ...names))
 }
 
 function parseHour(publishedAt: string): number | null {
@@ -142,8 +185,25 @@ function formatDateLabel(publishedAt: string, fallbackTime: number) {
   return `${date.getMonth() + 1}/${date.getDate()}`
 }
 
-function parseTags(markdown: string): string[] {
-  const raw = TAG_FIELD_NAMES.map((name) => extractMarkdownField(markdown, name)).find(Boolean) || ''
+function parseTags(content: string): string[] {
+  const json = tryParseMetricsJson(content)
+  if (json) {
+    const topic = valueToText(json['话题'])
+    const likedTopics = Array.isArray(json['观众喜欢的话题'])
+      ? json['观众喜欢的话题'].map((item) => valueToText(item)).filter(Boolean)
+      : []
+    const hashTags = (topic.match(/#[^\s#]+/g) || []).map((tag) => tag.replace(/^#/, '').trim())
+    const plainTopics = topic
+      ? topic
+          .split(/[,，、\s]+/)
+          .map((part) => part.replace(/^#/, '').trim())
+          .filter((part) => part && part !== '未知')
+      : []
+    const merged = [...hashTags, ...plainTopics, ...likedTopics]
+    return [...new Set(merged.filter((tag) => tag && !/[.。…]{2,}$/.test(tag) && tag !== '…'))]
+  }
+
+  const raw = TAG_FIELD_NAMES.map((name) => extractMarkdownField(content, name)).find(Boolean) || ''
   const matches = raw.match(/#[^\s#]+/g) || []
   return matches
     .map((tag) => tag.replace(/^#/, '').trim())
@@ -164,21 +224,21 @@ function safeRate(numerator: number, denominator: number, scale = 100) {
 }
 
 export function parsePostMetrics(record: SocialVideoAnalysisRecord): PostMetrics {
-  const markdown = record.markdown || ''
-  const publishedAt = record.published_at || ''
+  const content = record.markdown || ''
+  const publishedAt = record.published_at || readMetricText(content, '发布日期') || ''
   const publishedTime = parsePublishedAtSortKey(publishedAt, record.created_at)
 
-  const play = field(markdown, '播放量')
-  const like = field(markdown, '点赞量')
-  const comment = field(markdown, '评论量')
-  const share = field(markdown, '分享量')
-  const favorite = field(markdown, '收藏量')
-  const fanGain = field(markdown, '涨粉量')
-  const fanLoss = field(markdown, '脱粉量')
+  const play = field(content, '播放量')
+  const like = field(content, '点赞量')
+  const comment = field(content, '评论量')
+  const share = field(content, '分享量')
+  const favorite = field(content, '收藏量')
+  const fanGain = field(content, '涨粉量', '吸粉量')
+  const fanLoss = field(content, '脱粉量')
 
   return {
     id: record.id,
-    title: resolveTitle(extractMarkdownField(markdown, '作品名称'), record.title),
+    title: resolveTitle(readMetricText(content, '作品名称', '话题'), record.title),
     publishedAt,
     publishedTime,
     hour: parseHour(publishedAt),
@@ -188,15 +248,15 @@ export function parsePostMetrics(record: SocialVideoAnalysisRecord): PostMetrics
     comment,
     share,
     favorite,
-    swipeRate: field(markdown, '划走率'),
-    imageViews: field(markdown, '平均浏览图片数'),
-    expandRate: field(markdown, '文案展开率'),
+    swipeRate: field(content, '划走率'),
+    imageViews: field(content, '平均浏览图片数', '评论浏览图片数'),
+    expandRate: field(content, '文案展开率'),
     fanGain,
     fanLoss,
-    fanPlayShare: field(markdown, '粉丝播放占比'),
-    recommendShare: field(markdown, '推荐页'),
-    boostPlay: field(markdown, '平台扶持流量'),
-    tags: parseTags(markdown),
+    fanPlayShare: field(content, '粉丝播放占比'),
+    recommendShare: field(content, '流量来源_推荐页', '推荐页'),
+    boostPlay: field(content, '平台扶持流量'),
+    tags: parseTags(content),
     interactionRate: safeRate(like + comment + favorite + share, play),
     commentRate: safeRate(comment, play),
     favoriteRate: safeRate(favorite, play),

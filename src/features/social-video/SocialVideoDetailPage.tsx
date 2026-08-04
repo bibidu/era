@@ -62,6 +62,15 @@ export function SocialVideoDetailPage({
 
   const view = detail ?? record
   const markdown = view?.markdown || ''
+  const jsonPreview = (() => {
+    const trimmed = markdown.trim()
+    if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null
+    try {
+      return JSON.stringify(JSON.parse(trimmed), null, 2)
+    } catch {
+      return null
+    }
+  })()
 
   async function copyMarkdown() {
     if (!markdown) {
@@ -153,7 +162,13 @@ export function SocialVideoDetailPage({
             className="rounded-2xl border p-4"
             style={{ borderColor: 'var(--era-border)', background: 'var(--era-input)' }}
           >
-            <MarkdownPreview value={markdown} />
+            {jsonPreview ? (
+              <pre className="overflow-x-auto font-mono text-xs leading-5 whitespace-pre-wrap break-words">
+                {jsonPreview}
+              </pre>
+            ) : (
+              <MarkdownPreview value={markdown} />
+            )}
           </div>
         )}
         {status ? (
