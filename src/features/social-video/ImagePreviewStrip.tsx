@@ -81,7 +81,7 @@ export function ImagePreviewStrip({
           暂无图片（图片预览字段或内容中的 Markdown 图片会出现在这里）
         </p>
       ) : (
-        <div className="flex w-full flex-col gap-3">
+        <div className="grid w-full grid-cols-2 gap-3">
           {images.map((image, index) => (
             <button
               key={`${image.src}-${index}`}
