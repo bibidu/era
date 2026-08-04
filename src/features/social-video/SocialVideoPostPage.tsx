@@ -453,57 +453,65 @@ export function SocialVideoPostPage({
       </header>
 
       <div
-        className="flex shrink-0 items-center gap-2 border-b px-4 py-2.5"
+        className="flex shrink-0 items-center border-b px-4 py-2.5"
         style={{ borderColor: 'var(--era-border)', background: 'var(--era-bg)' }}
-        role="tablist"
-        aria-label="帖子详情切换"
       >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'detail'}
-          className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition"
-          style={
-            tab === 'detail'
-              ? { background: 'var(--era-button)', color: 'var(--era-button-fg)' }
-              : {
-                  background: 'var(--era-panel)',
-                  color: 'var(--era-muted)',
-                  border: '1px solid var(--era-border)',
-                }
-          }
-          onClick={() => setTab('detail')}
-        >
-          详情
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'data'}
-          aria-disabled={dataTabDisabled}
-          disabled={dataTabDisabled}
-          className="relative inline-flex items-center rounded-full px-3.5 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-45"
-          style={
-            tab === 'data'
-              ? { background: 'var(--era-button)', color: 'var(--era-button-fg)' }
-              : {
-                  background: 'var(--era-panel)',
-                  color: 'var(--era-muted)',
-                  border: '1px solid var(--era-border)',
-                }
-          }
-          onClick={() => {
-            if (!dataTabDisabled) setTab('data')
+        <div
+          className="inline-flex items-center rounded-full border p-1"
+          style={{
+            borderColor: 'var(--era-border)',
+            background: 'var(--era-input)',
           }}
+          role="tablist"
+          aria-label="帖子详情切换"
         >
-          数据
-          <span
-            className="pointer-events-none absolute -right-1.5 -top-1.5 z-10 max-w-[5.5rem] truncate rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none tracking-wide shadow-sm"
-            style={extractStatusTagStyle(view.extract_status)}
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'detail'}
+            className="rounded-full px-4 py-1.5 text-sm font-medium transition"
+            style={
+              tab === 'detail'
+                ? {
+                    background: 'var(--era-panel)',
+                    color: 'var(--era-fg)',
+                    boxShadow: '0 1px 2px rgb(0 0 0 / 0.12)',
+                  }
+                : { background: 'transparent', color: 'var(--era-muted)' }
+            }
+            onClick={() => setTab('detail')}
           >
-            {view.extract_status}
-          </span>
-        </button>
+            详情
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'data'}
+            aria-disabled={dataTabDisabled}
+            disabled={dataTabDisabled}
+            className="relative rounded-full px-4 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-45"
+            style={
+              tab === 'data'
+                ? {
+                    background: 'var(--era-panel)',
+                    color: 'var(--era-fg)',
+                    boxShadow: '0 1px 2px rgb(0 0 0 / 0.12)',
+                  }
+                : { background: 'transparent', color: 'var(--era-muted)' }
+            }
+            onClick={() => {
+              if (!dataTabDisabled) setTab('data')
+            }}
+          >
+            数据
+            <span
+              className="pointer-events-none absolute -right-1.5 -top-1.5 z-10 max-w-[5.5rem] truncate rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none tracking-wide shadow-sm"
+              style={extractStatusTagStyle(view.extract_status)}
+            >
+              {view.extract_status}
+            </span>
+          </button>
+        </div>
       </div>
 
       <div
