@@ -361,10 +361,9 @@ export function SocialVideoPostPage({
     setViewerIndex(index)
   }
 
-  function renderExtractForm(title: string) {
+  function renderExtractForm() {
     return (
       <div className="flex flex-col gap-3 rounded-3xl border p-4" style={panelStyle}>
-        <h3 className="text-sm font-semibold">{title}</h3>
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium">上传图片（可多选）</span>
           <input
@@ -399,11 +398,7 @@ export function SocialVideoPostPage({
               </div>
             ))}
           </div>
-        ) : (
-          <p className="text-xs" style={{ color: 'var(--era-muted)' }}>
-            上传后台数据截图，一行三个展示
-          </p>
-        )}
+        ) : null}
       </div>
     )
   }
