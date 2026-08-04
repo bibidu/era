@@ -89,7 +89,7 @@ Agent（严格执行图文 skill / tuwen）
 1. `POST /v1/projects/:id/highlight-setup-share`（或 MCP `era_create_highlight_setup_share`）把正文/标题写入自建库，返回 `shareId` + `url`
 2. 用户打开（自动切到「高亮」Tab）：
    ```
-   http://39.106.179.17/?tab=highlight&shareId=<SHARE_ID>
+   https://39.106.179.17.sslip.io/?tab=highlight&shareId=<SHARE_ID>
    ```
 3. 用户点选/滑动后点「复制并应用」：写回 `result_ranges`，并复制 `ERA_HIGHLIGHT_SETUP_V1` JSON 给 Agent
 

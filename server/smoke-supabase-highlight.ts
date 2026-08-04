@@ -30,7 +30,7 @@ const created = await createHighlightSetupShare(
 assert.ok(created.shareId)
 assert.equal(
   created.url,
-  `http://39.106.179.17/?tab=highlight&shareId=${created.shareId}`,
+  `https://39.106.179.17.sslip.io/?tab=highlight&shareId=${created.shareId}`,
 )
 assert.equal(highlightSetupPagesUrl(created.shareId), created.url)
 

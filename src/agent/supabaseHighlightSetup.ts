@@ -1,7 +1,8 @@
 /** Supabase 存放高亮设置草稿（公开 anon key + RLS；勿提交 service_role） */
 
 /** 自建站（阿里云轻量 39.106）；业务 REST 与前端同机。Edge Functions 仍走下方旧 Supabase */
-export const DEFAULT_SUPABASE_URL = 'http://39.106.179.17'
+/** REST 默认同机；浏览器同 origin 时走 location.origin。Agent/脚本无 window 时用 HTTPS 入口 */
+export const DEFAULT_SUPABASE_URL = 'https://39.106.179.17.sslip.io'
 export const DEFAULT_SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6ImVyYS1zZWxmaG9zdCIsImlhdCI6MTc4NTY3OTQ2NCwiZXhwIjoyMTAxMDM5NDY0fQ.EZAtzZ4yHkA8eB49KBQClsQqVdX9W4KF7FPeHsXhzjU'
 /** 旧 Supabase 项目（Edge Functions / 回退） */
@@ -10,8 +11,8 @@ export const LEGACY_SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6b3h5ZXh0eGp3c2NycGpvd3VkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxMDM4MjYsImV4cCI6MjEwMDY3OTgyNn0.FZuvFtxaMOUUGg3y7kNDxv_p4Etz2KrVpkCHpPKbmDU'
 
 export const ERA_HIGHLIGHT_SETUP_TABLE = 'era_highlight_setups'
-/** 固定公网页（阿里云轻量自建站） */
-export const ERA_PUBLIC_BASE = 'http://39.106.179.17/'
+/** 固定公网页：HTTPS sslip（Safari 可保存到相册）；裸 IP HTTP 勿作默认交付 */
+export const ERA_PUBLIC_BASE = 'https://39.106.179.17.sslip.io/'
 
 export interface HighlightSetupShareRecord {
   id: string

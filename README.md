@@ -2,7 +2,7 @@
 
 移动端优先的编辑器：支持图文分页排版、高亮与导出图片。
 
-在线预览（自建站）：[http://39.106.179.17/](http://39.106.179.17/)，见 [docs/cloud-hosting.md](./docs/cloud-hosting.md)。
+在线预览（自建站 HTTPS）：[https://39.106.179.17.sslip.io/](https://39.106.179.17.sslip.io/)，见 [docs/cloud-hosting.md](./docs/cloud-hosting.md)。
 
 顶栏 Tab（可用 `?tab=` 深链自动切换；**默认社媒** `?tab=data`）：
 

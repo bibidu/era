@@ -133,7 +133,7 @@ description: >-
 2. **按 §改写方向 + §2 写 Markdown**（含 `#`、适量 `##`，每 `##` 前 `<!-- era:page-break -->`）→ **展示给用户前去掉 page-break** → 询问是否继续；改完再展示。
 3. 若需分篇：按 **§2 F** 把各篇文案**一次齐发**请用户看连贯，确认后再出图入库。
 4. 确认后 `era_create_project` / `era_set_markdown`（写入 §1 固定 config；工程内保留 page-break）。
-5. **社媒标题**：给 5 个候选；分篇时每个候选都必须在标题末带 `（上篇）` 等（见 §2 C）；选定后 `era_set_title`（含括号篇名）。精细排版可发 `http://39.106.179.17/?tab=title&text=<标题>`（禁止裸 `?tab=title`）。
+5. **社媒标题**：给 5 个候选；分篇时每个候选都必须在标题末带 `（上篇）` 等（见 §2 C）；选定后 `era_set_title`（含括号篇名）。精细排版可发 `https://39.106.179.17.sslip.io/?tab=title&text=<标题>`（禁止裸 `?tab=title`）。
 6. **高亮**：见 §高亮——**不发高亮设置页**；除下一篇预告黄色刷子外不加其它高亮。
 7. **校验**：`era_preview_layout`；修告警；核对 §2 与 §输出前检查。
 8. **诗意页背景**：见 §诗意页背景 → 先为本篇选定统一纸色（§2 H）再逐页生成 → 按页导出。
@@ -199,14 +199,15 @@ node scripts/export-pages-with-bgs.mjs \
 遵守 `.cursor/rules/image-preview-delivery.mdc`：
 
 1. **禁止**对话框直发任意图片 OSS URL（含签名、永久封面链）
-2. **默认（社媒）**：各页 `bash scripts/oss-upload.sh --cover` 上传后，**按序写入** `era_social_video_analyses.image_previews`（[0]=首页/封面 `__cover_keep__`，同步 `cover_url`），`work_type: 风水`；对话框**只发** `http://39.106.179.17/?tab=data`
-3. **OSS 临时 HTML**：仅当用户**强烈要求**「不要入库 / 只要临时 HTML」时才用 `make-oss-preview-html.mjs`；只发 HTML URL，并询问用完是否删除
-4. 禁止用 HTML 预览代替默认入库交付
+2. **默认（社媒）**：各页 `bash scripts/oss-upload.sh --cover` 上传后，**按序写入** `era_social_video_analyses.image_previews`（[0]=首页/封面 `__cover_keep__`，同步 `cover_url`），`work_type: 风水`；对话框**只发 HTTPS** `https://39.106.179.17.sslip.io/?tab=data`
+3. **禁止**把 HTTP 裸 IP `http://39.106.179.17/` 当默认预览链发给用户——Safari「保存到相册」仅 HTTPS 可用（见 `image-preview-delivery.mdc`）
+4. **OSS 临时 HTML**：仅当用户**强烈要求**「不要入库 / 只要临时 HTML」时才用 `make-oss-preview-html.mjs`；只发 HTML URL，并询问用完是否删除
+5. 禁止用 HTML 预览代替默认入库交付
 
 ```bash
 bash scripts/oss-upload.sh --cover <page.png>
 # 写入业务库 image_previews 后：
-# 只发 http://39.106.179.17/?tab=data
+# 只发 https://39.106.179.17.sslip.io/?tab=data
 ```
 
 ---

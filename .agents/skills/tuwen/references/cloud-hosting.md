@@ -34,9 +34,10 @@
 
 ## 前端 → 阿里云轻量自建站
 
-- 固定 URL：`http://39.106.179.17/`
+- **默认交付 HTTPS**：`https://39.106.179.17.sslip.io/`（Safari 可保存到相册）
+- 裸 IP HTTP `http://39.106.179.17/` 可浏览，勿作社媒默认预览链
 - 发布：`npm run deploy:swas`（push `main` 后服务器 git pull + build → `/opt/era-web`；见 skill **swas-deploy**）
 - 配置：`deploy/swas/`
-- 图文最终交付只发该预览链接（可带 `?tab=data`），不要逐张发各页图。
+- 图文最终交付只发 HTTPS 预览链接（可带 `?tab=data`），不要逐张发各页图。
 
 更多说明：`docs/cloud-hosting.md`。全局规则：`.cursor/rules/oss-image-delivery.mdc`。

@@ -8,7 +8,7 @@ description: >-
 
 # OSS 上传 Skill（Cloud Agent 必读）
 
-本仓库图片一律经 `bash scripts/oss-upload.sh` 上传。图文 / 风水社媒对用户只发自建站预览链（`http://39.106.179.17/?tab=data`），须先写入 `image_previews`；OSS 临时 HTML 仅用户强烈要求时。约定见 `docs/cloud-hosting.md`、`.cursor/rules/image-preview-delivery.mdc`。
+本仓库图片一律经 `bash scripts/oss-upload.sh` 上传。图文 / 风水社媒对用户只发自建站 **HTTPS** 预览链（`https://39.106.179.17.sslip.io/?tab=data`；勿发 HTTP 裸 IP，Safari 才能保存到相册），须先写入 `image_previews`；OSS 临时 HTML 仅用户强烈要求时。约定见 `docs/cloud-hosting.md`、`.cursor/rules/image-preview-delivery.mdc`。
 
 ## 0. 基本用法
 

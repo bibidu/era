@@ -42,7 +42,7 @@ assert.equal(fromBroken.searchParams.get('tab'), 'data')
 assert.equal(fromBroken.searchParams.get('shareId'), '1dac7255-16f2-413f-a84d-df3c2cadb87d')
 
 const bare = new URL(highlightSetupPagesUrl('abc-share'))
-assert.equal(bare.origin, 'http://39.106.179.17')
+assert.equal(bare.origin, 'https://39.106.179.17.sslip.io')
 assert.equal(bare.searchParams.get('tab'), 'highlight')
 assert.equal(bare.searchParams.get('shareId'), 'abc-share')
 

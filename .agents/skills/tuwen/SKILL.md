@@ -56,12 +56,12 @@ description: >-
 
 ### 3. 确认标题 + 封面信息
 
-1. **标题**：给 **5 个**社媒标题；技术名词首字母大写；选定后可发标题设置页 `http://39.106.179.17/?tab=title&text=<选定标题>`（禁止裸 `?tab=title`）。
+1. **标题**：给 **5 个**社媒标题；技术名词首字母大写；选定后可发标题设置页 `https://39.106.179.17.sslip.io/?tab=title&text=<选定标题>`（禁止裸 `?tab=title`）。
 2. **封面字段**：从内容提取并确认——见 §封面字段表（大标题、小标题、描述、标签、二级标题、主题色等）。
 
 ### 4. 生成封面图
 
-按 **§封面** 出图。上传 OSS（`__cover_keep__`）后**默认写入** `image_previews` / `cover_url`，确认与预览一律走自建站 `http://39.106.179.17/?tab=data`；**禁止**对话框直发 OSS 图链。仅当用户**强烈要求**临时 HTML 时才用 `make-oss-preview-html.mjs`。
+按 **§封面** 出图。上传 OSS（`__cover_keep__`）后**默认写入** `image_previews` / `cover_url`，确认与预览一律走自建站 **HTTPS** `https://39.106.179.17.sslip.io/?tab=data`（勿发 HTTP 裸 IP，否则 Safari 无法保存到相册）；**禁止**对话框直发 OSS 图链。仅当用户**强烈要求**临时 HTML 时才用 `make-oss-preview-html.mjs`。
 
 ### 5. 内容图校验与导出（默认跳过高亮）
 
@@ -79,7 +79,7 @@ description: >-
 
 ### 7. 入库交付（默认）
 
-各页上传 OSS，**按序写入** `image_previews`（[0]=封面），对话框**只发** `http://39.106.179.17/?tab=data`。OSS 临时 HTML 仅为强烈要求时的例外。
+各页上传 OSS，**按序写入** `image_previews`（[0]=封面），对话框**只发** `https://39.106.179.17.sslip.io/?tab=data`。OSS 临时 HTML 仅为强烈要求时的例外。
 
 ### 内容图构建要点（Era）
 
@@ -184,7 +184,7 @@ bash scripts/oss-upload.sh --cover <path>
 ### 设置页
 
 1. 已有 `projectId`
-2. `era_create_highlight_setup_share` → `http://39.106.179.17/?tab=highlight&shareId=…`
+2. `era_create_highlight_setup_share` → `https://39.106.179.17.sslip.io/?tab=highlight&shareId=…`
 3. **禁止**对整段 query 二次 `encodeURIComponent`
 4. 引导用户点选后复制配置发回 → `era_apply_highlights`（`replace: true`）
 
@@ -209,17 +209,18 @@ bash scripts/oss-upload.sh --cover <path>
 ## §发图
 
 1. 上传并**必须写入** `image_previews`（[0]=封面永久链，同步 `cover_url`）
-2. 对话框**只发** `http://39.106.179.17/?tab=data`，让用户在社媒 Tab 查看
-3. **禁止**对话框直发 OSS 图链；**禁止**默认用 OSS 临时 HTML 代替入库
-4. 仅当用户**强烈要求**「不要入库 / 只要临时 HTML」时才用 `make-oss-preview-html.mjs`，并询问用完是否删除
-5. 禁止只发本地路径
+2. 对话框**只发 HTTPS** `https://39.106.179.17.sslip.io/?tab=data`，让用户在社媒 Tab 查看并可保存到相册
+3. **禁止**发 HTTP 裸 IP 作默认预览链（Safari Web Share 仅 HTTPS 可用）
+4. **禁止**对话框直发 OSS 图链；**禁止**默认用 OSS 临时 HTML 代替入库
+5. 仅当用户**强烈要求**「不要入库 / 只要临时 HTML」时才用 `make-oss-preview-html.mjs`，并询问用完是否删除
+6. 禁止只发本地路径
 
 ```bash
 bash scripts/oss-upload.sh --cover <本地png>
-# 写入业务库后只发 http://39.106.179.17/?tab=data
+# 写入业务库后只发 https://39.106.179.17.sslip.io/?tab=data
 ```
 
-合入 `main` 后如需前端：`npm run deploy:swas`，回传 `http://39.106.179.17/`。
+合入 `main` 后如需前端：`npm run deploy:swas`，回传 `https://39.106.179.17.sslip.io/`。
 
 ---
 

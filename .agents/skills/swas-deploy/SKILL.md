@@ -8,7 +8,7 @@ description: >-
 
 # 自建站部署 Skill（SWAS）
 
-交付站：`http://39.106.179.17/`（可带 `?tab=data` / `highlight` / `title` / `stitch`）。
+交付站：优先 **HTTPS** `https://39.106.179.17.sslip.io/`（可带 `?tab=data` / `highlight` / `title` / `stitch`）。裸 IP `http://39.106.179.17/` 仅 HTTP，Safari 无法「保存到相册」。
 
 ## 何时执行
 
@@ -37,7 +37,7 @@ npm run deploy:swas
 6. reload / restart `era-gateway`
 7. curl 验收首页
 
-4. 对话框直接发：`http://39.106.179.17/`（按需带 `?tab=`）
+4. 对话框直接发：`https://39.106.179.17.sslip.io/`（按需带 `?tab=`；社媒预览必须 HTTPS）
 
 ## 配置文件
 
@@ -63,7 +63,8 @@ cp deploy/swas/server.secrets.env.example deploy/swas/server.secrets.env
 
 ## 验收
 
-- `curl -I http://39.106.179.17/` → 200
+- `curl -I https://39.106.179.17.sslip.io/` → 200（社媒交付验收优先）
+- `curl -I http://39.106.179.17/` → 200（裸 IP HTTP 仍可用，但不作默认交付）
 - 新功能深链可开（如 `?tab=stitch`）
 - **禁止**只发 GitHub Actions 链接代替站点 URL
 

@@ -2,7 +2,7 @@
 
 ## Git / PR（强制）
 
-完成功能改动并创建 PR 后，**直接合入 `main`**，不要询问用户是否合并。合入后执行 `npm run deploy:swas`（SSH 到服务器 `git pull` + 构建，见 skill **swas-deploy**），并把**固定站点 URL**发给用户：`http://39.106.179.17/`（可带 `?tab=`）。仅当用户明确要求先别合并 / 保持 draft 审阅时例外。约定见 `.cursor/rules/auto-merge-pr.mdc`。
+完成功能改动并创建 PR 后，**直接合入 `main`**，不要询问用户是否合并。合入后执行 `npm run deploy:swas`（SSH 到服务器 `git pull` + 构建，见 skill **swas-deploy**），并把**固定站点 URL**发给用户：优先 **HTTPS** `https://39.106.179.17.sslip.io/`（可带 `?tab=`）。仅当用户明确要求先别合并 / 保持 draft 审阅时例外。约定见 `.cursor/rules/auto-merge-pr.mdc`。
 
 ## 图文 skill（多页长图 + 内联封面）
 
@@ -17,7 +17,7 @@
 
 仅用户明确要求高亮时：`era_create_highlight_setup_share` → `highlightSetupPagesUrl(shareId)`；禁止对整段 query 再 `encodeURIComponent`。
 
-出图：上传并写入 `image_previews`（[0]=封面永久链）；对话框只发 `http://39.106.179.17/`（可带 `?tab=data`）。
+出图：上传并写入 `image_previews`（[0]=封面永久链）；对话框只发 **HTTPS** `https://39.106.179.17.sslip.io/`（可带 `?tab=data`；勿发 HTTP 裸 IP）。
 
 **风水 / 阳宅主题改走「风水 skill」，不要用本 skill。**
 
@@ -32,7 +32,8 @@
 
 对话框**绝对禁止**直接发送 OSS 图片链接。见 `.cursor/rules/image-preview-delivery.mdc`。
 
-- **图文 / 风水 / 社媒帖子（默认）**：写入 `image_previews` + 只发自建站 `http://39.106.179.17/`（建议 `?tab=data`），确认阶段也走入库
+- **图文 / 风水 / 社媒帖子（默认）**：写入 `image_previews` + 只发自建站 **HTTPS** `https://39.106.179.17.sslip.io/`（建议 `?tab=data`），确认阶段也走入库
+- **为何 HTTPS**：Safari「保存到相册」依赖 Web Share，仅安全上下文可用；裸 IP `http://39.106.179.17/` 为 HTTP，无法调起系统分享
 - **OSS 临时 HTML**：仅用户**强烈要求**时用 `make-oss-preview-html.mjs`；只发 HTML URL；用完后询问是否删除
 
 ## 云托管（强制）
@@ -42,17 +43,17 @@
 - **预览 HTML**：`--public`；`scripts/make-oss-preview-html.mjs`。
 - **过期清理**：存图前清理 `era/assets/` 下超过 **14 小时**旧对象；跳过 `__cover_keep__`。
 - **Cloud Agent 上传**：美西→北京约 2–3 分钟/3MB；见 skill **oss-upload**。
-- **前端 + 业务 REST**：`39.106.179.17`；发布 `npm run deploy:swas`（skill **swas-deploy**）。
+- **前端 + 业务 REST**：`39.106.179.17`；**用户交付默认 HTTPS** `https://39.106.179.17.sslip.io/`；发布 `npm run deploy:swas`（skill **swas-deploy**）。
 - **Edge Functions** 仍在旧 Supabase。
 - 说明：`docs/cloud-hosting.md`、skill `references/cloud-hosting.md`。
 
 ## 标题排版设置页
 
-精细控制标题时主动发 `http://39.106.179.17/?tab=title&text=当前帖子标题`。**禁止**只发裸 `?tab=title`。可用 `titleComposerPagesUrl(标题)`。复制配置后用 `generate-title-composer.mjs` 出图，按 image-preview-delivery 交付。见 `.cursor/rules/title-composer.mdc`。
+精细控制标题时主动发 `https://39.106.179.17.sslip.io/?tab=title&text=当前帖子标题`。**禁止**只发裸 `?tab=title`。可用 `titleComposerPagesUrl(标题)`。复制配置后用 `generate-title-composer.mjs` 出图，按 image-preview-delivery 交付。见 `.cursor/rules/title-composer.mdc`。
 
 ## 前端 Tab（URL 可深链）
 
-无参数时**默认社媒**：
+基址：`https://39.106.179.17.sslip.io/`（无参数时**默认社媒**）：
 
 | Tab | URL |
 | --- | --- |

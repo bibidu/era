@@ -82,7 +82,8 @@ bash scripts/oss-upload.sh --sign <object-key>
 ## 阿里云轻量自建站（前端 + 业务 REST）
 
 - 公网 IP: `39.106.179.17`（北京轻量）
-- 交付: **`http://39.106.179.17/`**（可带 `?tab=data` / `highlight` / `title` / `stitch`）
+- **用户交付（默认 HTTPS）**: **`https://39.106.179.17.sslip.io/`**（可带 `?tab=data` / `highlight` / `title` / `stitch`）
+- 裸 IP HTTP `http://39.106.179.17/` 仍可浏览，但 **Safari 无法「保存到相册」**（Web Share 需安全上下文）；社媒预览勿发 HTTP
 - 栈: Caddy（静态 `/opt/era-web` + `/rest/v1`）+ PostgREST + Postgres（仅本机 5432）
 - 配置: `deploy/swas/server.env` + `id_rsa`；AccessKey 见 `server.secrets.env`（gitignore）
 - 源码目录: `/opt/era`

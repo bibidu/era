@@ -13,7 +13,7 @@ alwaysApply: true
 2. 随即把该改动分支 **merge 进 `main` 并 push**（或等价合入），无需二次确认
 3. 合入后可关闭对应 PR（若 GitHub 未自动关闭）
 4. **执行** `npm run deploy:swas`（先确保 `origin/main` 已含改动；脚本 SSH 到服务器 `git pull` + 构建并同步 `/opt/era-web`）。详见 skill **swas-deploy** / `deploy/swas/server.env`
-5. 在对话里**直接发给用户**固定站点 URL：`http://39.106.179.17/`（可按需带 `?tab=data` / `highlight` / `title` / `stitch`）
+5. 在对话里**直接发给用户**固定站点 URL：优先 **HTTPS** `https://39.106.179.17.sslip.io/`（可按需带 `?tab=data` / `highlight` / `title` / `stitch`）；社媒预览必须用 HTTPS，便于 Safari 保存到相册
 6. 禁止只发 Actions 页面链接代替预览 URL
 
 ## 例外

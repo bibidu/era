@@ -4,7 +4,7 @@
 - **源码目录**：`/opt/era`
 - **业务 REST**：PostgREST，路径 `/rest/v1/*`
 - **Postgres**：仅监听 `127.0.0.1:5432`
-- **交付 URL**：`http://39.106.179.17/`（可带 `?tab=data` / `highlight` / `title` / `stitch`）
+- **交付 URL（默认 HTTPS）**：`https://39.106.179.17.sslip.io/`（可带 `?tab=data` / `highlight` / `title` / `stitch`）；裸 IP HTTP 勿作社媒默认链
 
 ## 配置
 

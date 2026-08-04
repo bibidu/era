@@ -12,9 +12,16 @@ alwaysApply: true
 **图文 skill / 风水 skill / 社媒多页长图**（含确认与最终交付）：
 
 1. 图片上传后**按序写入** `era_social_video_analyses.image_previews`（[0]=封面/首页 `__cover_keep__`，同步 `cover_url`）
-2. 对话框**只发**自建站预览：`http://39.106.179.17/`（建议 `?tab=data`），让用户在社媒里查看
+2. 对话框**只发**自建站 **HTTPS** 预览：`https://39.106.179.17.sslip.io/`（建议 `?tab=data`），让用户在社媒里查看并可「保存到相册」
 3. 不要逐张发图，不要为确认来回贴 OSS 图链
 4. **禁止**用 OSS 临时 HTML 代替入库，除非用户**强烈要求**「不要入库 / 只要临时 HTML」
+
+### 为何必须发 HTTPS（硬性）
+
+- Safari「保存到相册」依赖 Web Share，**仅在 HTTPS 安全上下文**可用
+- 裸 IP `http://39.106.179.17/` 是 HTTP，即使用 iPhone Safari 打开也无法调起系统分享
+- Caddy 已为 `39.106.179.17.sslip.io` 签发证书；**默认交付链用** `https://39.106.179.17.sslip.io/?tab=data`
+- 禁止再把 HTTP 裸 IP 当作社媒默认预览链发给用户（除非用户只要浏览、明确不要存相册）
 
 ## 例外：OSS 临时 HTML
 
