@@ -13,9 +13,9 @@
 
 执行「图文skill / 小红书·抖音出图 / 生成封面 / 封面skill」时遵循该 skill；先 `scripts/ensure-era-ready.sh`（仅封面单张时可只跑 `generate-cover.mjs`）。
 
-默认：二级标题数黑体（`headingFontId`: `shuheiti`）；高亮色板不含灰色；**默认导出抖音 9:16**。封面步骤已内联（`scripts/generate-cover.mjs`），不再使用独立 fengmian 目录。
+默认：二级标题数黑体（`headingFontId`: `shuheiti`）；**默认导出抖音 9:16**；**默认不做高亮**（封面确认后直接校验导出入库）。封面步骤已内联（`scripts/generate-cover.mjs`），不再使用独立 fengmian 目录。
 
-高亮：`era_create_highlight_setup_share` → `highlightSetupPagesUrl(shareId)`；禁止对整段 query 再 `encodeURIComponent`。
+仅用户明确要求高亮时：`era_create_highlight_setup_share` → `highlightSetupPagesUrl(shareId)`；禁止对整段 query 再 `encodeURIComponent`。
 
 出图：上传并写入 `image_previews`（[0]=封面永久链）；对话框只发 `http://39.106.179.17/`（可带 `?tab=data`）。
 
