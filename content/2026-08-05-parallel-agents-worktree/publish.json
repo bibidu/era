@@ -1,0 +1,20 @@
+{
+  "title": "我同时开3个Agent，代码居然没打架",
+  "issue": 16,
+  "outline": "三个 Agent 并行改代码不互相覆盖：worktree 各拿一份、按目录分活、按顺序合回",
+  "topics": "#cursor #agent #git #程序员",
+  "plannedFor": "2026-08-05 07:40",
+  "cover": "output/shedashi/ep16/cover.png",
+  "pages": [
+    "output/shedashi/ep16/pages/graphic-page-01.png",
+    "output/shedashi/ep16/pages/graphic-page-02.png",
+    "output/shedashi/ep16/pages/graphic-page-03.png",
+    "output/shedashi/ep16/pages/graphic-page-04.png"
+  ],
+  "highlights": [
+    "档期：周三早 07:40（早发中位播放 3379 vs 下午 340，23 个新粉里 22 个来自早发）",
+    "选题：接住第15期篇末预告「同时开3个Agent怎么避免互相覆盖」",
+    "标题：第一人称 + 具体数字 + 反预期，避开「秘诀/教你」与未解释生词",
+    "版面：5 页封顶，期数与下期预告移到末页（对照实验 图数 2.7 vs 1.9、吸粉率 0.32% vs 0.15%）"
+  ]
+}

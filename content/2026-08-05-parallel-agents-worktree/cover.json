@@ -1,0 +1,20 @@
+{
+  "bigTitle": [
+    { "text": "我同时开3个Agent", "color": "#111111" },
+    {
+      "segments": [
+        { "text": "代码", "color": "#111111" },
+        { "text": "居然没打架", "color": "#E85D04" }
+      ]
+    }
+  ],
+  "bigTitleFont": "shuheiti",
+  "smallTitle": "三个 Agent 同时改代码，互不覆盖",
+  "description": "一条命令，各给一份代码",
+  "tags": ["独立副本", "分活规则", "按序合并"],
+  "secondaryTitles": ["一条命令", "怎么分活", "怎么合回"],
+  "themeColor": "#E85D04",
+  "blobCorner": "bottom-right",
+  "badge": "skill",
+  "out": "output/shedashi/ep16/cover.png"
+}
