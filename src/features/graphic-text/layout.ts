@@ -111,9 +111,11 @@ export function getGraphicLayout(
   const topBarY = Math.round(84 * heightScale)
   const topBarHeight = Math.round(44 * heightScale)
   const defaultPaddingBelowTop = Math.round(40 * heightScale)
+  const exportScale = pageWidth / GRAPHIC_DISPLAY_BASE_WIDTH
   // 系列期数页：顶栏红线到下方二级标题约三行正文间距
+  // bodyFontSize 与正文一致，按 exportScale（宽基准）换算到页像素，勿用 heightScale
   const seriesPaddingBelowTop = Math.round(
-    bodyFontSize * bodyLineHeight * SERIES_LABEL_GAP_LINES * heightScale,
+    bodyFontSize * exportScale * bodyLineHeight * SERIES_LABEL_GAP_LINES,
   )
   const contentPaddingBelowTop = isSeriesLabelPage({ seriesLabel }, pageIndex)
     ? Math.max(defaultPaddingBelowTop, seriesPaddingBelowTop)
@@ -127,7 +129,7 @@ export function getGraphicLayout(
   return {
     pageWidth,
     pageHeight,
-    exportScale: pageWidth / GRAPHIC_DISPLAY_BASE_WIDTH,
+    exportScale,
     safeX,
     safeTop,
     safeBottom,
