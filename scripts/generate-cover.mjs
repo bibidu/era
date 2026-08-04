@@ -177,6 +177,31 @@ function escapeHtml(s) {
     .replaceAll('"', '&quot;')
 }
 
+/** 页脚二级标题：单行禁换行；每项建议 ≤4 字（按 Unicode 码点计） */
+const SECONDARY_TITLE_MAX_CHARS = 4
+
+function validateSecondaryTitles(titles) {
+  if (!Array.isArray(titles) || titles.length === 0) return []
+  const issues = []
+  for (const raw of titles.slice(0, 4)) {
+    const text = String(raw ?? '').trim()
+    if (!text) continue
+    if (/\r|\n/.test(text)) {
+      issues.push({ text, reason: 'contains_newline' })
+    }
+    const len = [...text].length
+    if (len > SECONDARY_TITLE_MAX_CHARS) {
+      issues.push({
+        text,
+        reason: 'too_long',
+        len,
+        max: SECONDARY_TITLE_MAX_CHARS,
+      })
+    }
+  }
+  return issues
+}
+
 function normalizeHex(color, fallback = '#111111') {
   if (!color || typeof color !== 'string') return fallback
   const c = color.trim()
@@ -593,19 +618,27 @@ ${shuheitiFace}
     display: flex;
     align-items: center;
     justify-content: flex-start;
+    flex-wrap: nowrap;
     gap: 0;
     padding-top: 24px;
     border-top: 1.5px solid color-mix(in srgb, ${theme.hex} 30%, transparent);
-    max-width: 640px;
+    max-width: 100%;
+    overflow: hidden;
   }
   .foot-item {
     display: flex;
     align-items: center;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
     gap: 10px;
     color: #1a1a1a;
     font-size: 20px;
     font-weight: 600;
     padding: 0 4px;
+    white-space: nowrap;
+  }
+  .foot-item span {
+    white-space: nowrap;
   }
   .foot-item svg {
     width: 22px;
@@ -616,8 +649,9 @@ ${shuheitiFace}
   .vdiv {
     width: 1px;
     height: 28px;
+    flex-shrink: 0;
     background: color-mix(in srgb, #111 18%, transparent);
-    margin: 0 18px;
+    margin: 0 12px;
   }
 </style>
 </head>
@@ -704,7 +738,7 @@ Usage:
   smallTitle        小标题
   description       描述
   tags              多个标签
-  secondaryTitles   多个二级标题（页脚）
+  secondaryTitles   页脚二级标题（2–4 个；每项 ≤4 字、禁止换行）
   themeColor        主题色 hex；省略则随机
   badge             左上角徽章文案，默认 skill
 `)
@@ -718,6 +752,15 @@ Usage:
     : Boolean(cfg.bigTitle?.toString?.().trim?.())
   if (!titleCheck) {
     console.error('缺少 bigTitle')
+    process.exit(1)
+  }
+
+  const secondaryIssues = validateSecondaryTitles(cfg.secondaryTitles)
+  if (secondaryIssues.length > 0) {
+    console.error(
+      'secondaryTitles 不合规（每项 ≤4 字且禁止换行）:',
+      JSON.stringify(secondaryIssues, null, 2),
+    )
     process.exit(1)
   }
 
@@ -839,11 +882,46 @@ Usage:
           overflowPx: Math.max(0, r.right - rightLimit),
         }
       })
-      const ok = overflows.every((o) => o.overflowPx <= 0.5)
-      return { ok, innerW, lineScales, overflows }
+      const titleOk = overflows.every((o) => o.overflowPx <= 0.5)
+
+      // 页脚二级标题：禁止换行；整行不得被裁切（scrollWidth > clientWidth）
+      const footerWrap = []
+      if (footer) {
+        if (footer.scrollWidth > footer.clientWidth + 1) {
+          footerWrap.push({
+            reason: 'footer_overflow',
+            scrollWidth: footer.scrollWidth,
+            clientWidth: footer.clientWidth,
+            overflowPx: footer.scrollWidth - footer.clientWidth,
+          })
+        }
+        for (const item of footer.querySelectorAll('.foot-item')) {
+          const span = item.querySelector('span')
+          const text = (span?.textContent || item.textContent || '').trim()
+          const spanRects = span ? span.getClientRects().length : 0
+          const lineWrapped = spanRects > 1
+          if (lineWrapped) {
+            footerWrap.push({
+              text,
+              reason: 'line_wrap',
+              rects: spanRects,
+            })
+          }
+        }
+      }
+
+      const ok = titleOk && footerWrap.length === 0
+      return { ok, innerW, lineScales, overflows, footerWrap }
     })
     if (!fitMeta?.ok) {
-      console.error('封面标题仍溢出，未写出文件:', JSON.stringify(fitMeta, null, 2))
+      if (fitMeta?.footerWrap?.length) {
+        console.error(
+          '封面页脚二级标题换行或溢出，未写出文件（请缩减 secondaryTitles 字数）:',
+          JSON.stringify(fitMeta.footerWrap, null, 2),
+        )
+      } else {
+        console.error('封面标题仍溢出，未写出文件:', JSON.stringify(fitMeta, null, 2))
+      }
       process.exit(1)
     }
     await page.waitForTimeout(300)
