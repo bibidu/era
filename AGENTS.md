@@ -26,7 +26,7 @@
 - `.agents/skills/fengshui/SKILL.md`
 - `.cursor/skills/fengshui`（符号链接）
 
-固定 `pageOverlay: fengshui`、抖音 9:16、固定顶栏文案、`headingFontSize: 22`；每 `##` 独占页；诗意泥纸背景（意象左下/右下随机）；单篇 4–6 页，超出分篇（分篇须先对话确认上篇再预览/入库）；同批主色从现有色板随机且篇内一致；用户可见文案不得含 `<!-- era:page-break -->`。按页背景导出：`scripts/export-pages-with-bgs.mjs`。
+固定 `pageOverlay: fengshui`、抖音 9:16、固定顶栏文案、`headingFontSize: 22`；每 `##` 独占页；诗意泥纸背景（意象左下/右下随机）；单篇 4–6 页，超出分篇（分篇须先对话确认上篇再预览/入库）；**同篇全部诗意背景图同色调**（从现有泥纸色随机一套，篇内所有背景共用；与高亮色无关）；用户可见文案不得含 `<!-- era:page-break -->`。按页背景导出：`scripts/export-pages-with-bgs.mjs`。
 
 ## 发图硬性规则（全局）
 
