@@ -45,8 +45,8 @@ const DEFAULTS = {
   bigTitle: 'COVER SKILL',
   bigTitleColor: '#111111',
   bigTitleLineColors: null,
-  /** 大标题字体：默认 anton；`shuheiti` / `数黑体` 用阿里妈妈数黑体（中英同行） */
-  bigTitleFont: 'anton',
+  /** 大标题字体：默认 shuheiti（一级标题数黑体）；`anton` 仅英文全大写海报 */
+  bigTitleFont: 'shuheiti',
   blobCorner: null,
   smallTitle: '',
   description: '',
@@ -58,18 +58,28 @@ const DEFAULTS = {
 }
 
 function normalizeBigTitleFont(raw) {
-  const v = String(raw || 'anton').trim().toLowerCase()
+  const v = String(raw || 'shuheiti').trim().toLowerCase()
+  if (
+    v === 'anton' ||
+    v === 'impact' ||
+    v === 'display' ||
+    v === 'en' ||
+    v === 'english'
+  ) {
+    return 'anton'
+  }
   if (
     v === 'shuheiti' ||
     v === 'shuhei' ||
     v === '数黑体' ||
     v === 'alimama' ||
     v === 'alimama-shuheiti' ||
-    v.includes('数黑')
+    v.includes('数黑') ||
+    !v
   ) {
     return 'shuheiti'
   }
-  return 'anton'
+  return 'shuheiti'
 }
 
 function shuheitiFontFaceCss() {
@@ -734,7 +744,7 @@ Usage:
 字段:
   bigTitle          大标题（可多行，用 \\n 分隔），默认黑色
   bigTitleColor     大标题颜色，默认 #111111
-  bigTitleFont      大标题字体：anton（默认）或 shuheiti / 数黑体
+  bigTitleFont      大标题字体：shuheiti / 数黑体（默认）；anton 仅英文全大写
   smallTitle        小标题
   description       描述
   tags              多个标签
