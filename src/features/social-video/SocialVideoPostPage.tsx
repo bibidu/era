@@ -448,7 +448,7 @@ export function SocialVideoPostPage({
       </header>
 
       <div
-        className="flex shrink-0 items-center border-b px-4 py-2.5"
+        className="flex shrink-0 items-center justify-center border-b px-4 py-2.5"
         style={{ borderColor: 'var(--era-border)', background: 'var(--era-bg)' }}
       >
         <div
@@ -594,7 +594,7 @@ export function SocialVideoPostPage({
               </button>
             </div>
 
-            {showExtractForm ? renderExtractForm('配置 1') : null}
+            {showExtractForm ? renderExtractForm() : null}
 
             {statusMessage ? (
               <p className="text-sm" style={{ color: 'var(--era-muted)' }}>
@@ -605,7 +605,7 @@ export function SocialVideoPostPage({
         ) : (
           <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col gap-3">
             {showExtractForm ? (
-              <div className="shrink-0">{renderExtractForm('配置 1')}</div>
+              <div className="shrink-0">{renderExtractForm()}</div>
             ) : null}
 
             <div className="flex shrink-0 flex-col gap-2">
