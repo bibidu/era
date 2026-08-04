@@ -75,9 +75,16 @@ if [[ "$DO_PUSH_CHECK" == "1" ]]; then
   echo "    origin/${GIT_BRANCH} = ${LOCAL:0:12}"
 fi
 
+# 把本机/Cursor Secrets 的 OSS 密钥传到远端启动提取服务（不落盘进 git）
+OSS_ID_FOR_REMOTE="${OSS_ACCESS_KEY_ID:-${ALIYUN_ACCESS_KEY_ID:-}}"
+OSS_SECRET_FOR_REMOTE="${OSS_ACCESS_KEY_SECRET:-${ALIYUN_ACCESS_KEY_SECRET:-}}"
+
 echo "==> SSH ${USER}@${HOST}: git pull + build → ${REMOTE_WEB}"
 ssh "${SSH_OPTS[@]}" "${USER}@${HOST}" \
   env REMOTE_REPO="$REMOTE_REPO" REMOTE_WEB="$REMOTE_WEB" GIT_URL="$GIT_URL" GIT_BRANCH="$GIT_BRANCH" \
+  OSS_ACCESS_KEY_ID="$OSS_ID_FOR_REMOTE" OSS_ACCESS_KEY_SECRET="$OSS_SECRET_FOR_REMOTE" \
+  OSS_BUCKET="${OSS_BUCKET:-agent-17718139319}" OSS_ENDPOINT="${OSS_ENDPOINT:-oss-cn-beijing.aliyuncs.com}" \
+  OSS_PREFIX="${OSS_PREFIX:-era/assets}" \
   bash -s <<'REMOTE'
 set -euo pipefail
 
@@ -104,6 +111,12 @@ if [[ -x scripts/ensure-noto-serif-sc.sh ]]; then
   bash scripts/ensure-noto-serif-sc.sh || true
 fi
 
+echo "    apply extract_status migration"
+if [[ -f supabase/migrations/20260804120000_era_social_video_extract_status.sql ]]; then
+  docker exec -i era-db psql -U era -d era < supabase/migrations/20260804120000_era_social_video_extract_status.sql \
+    || echo "    warn: migration apply failed (may already be applied)"
+fi
+
 echo "    build (ERA_BASE=/)"
 ERA_BASE=/ npm run build
 
@@ -116,10 +129,48 @@ else
   cp -a dist/. "$REMOTE_WEB/"
 fi
 
-echo "    sync Caddyfile → /opt/era-db (Edge Functions 同机反代)"
+echo "    sync Caddyfile / compose → /opt/era-db"
 if [[ -f "$REMOTE_REPO/deploy/swas/Caddyfile" ]]; then
   cp "$REMOTE_REPO/deploy/swas/Caddyfile" /opt/era-db/Caddyfile
 fi
+if [[ -f "$REMOTE_REPO/deploy/swas/docker-compose.yml" ]]; then
+  cp "$REMOTE_REPO/deploy/swas/docker-compose.yml" /opt/era-db/docker-compose.yml
+  (cd /opt/era-db && docker compose up -d gateway) || true
+fi
+
+echo "    start extract-task-server"
+mkdir -p /var/log/era
+cat >/etc/era-extract-task.env <<EOF
+OSS_ACCESS_KEY_ID=${OSS_ACCESS_KEY_ID:-}
+OSS_ACCESS_KEY_SECRET=${OSS_ACCESS_KEY_SECRET:-}
+OSS_BUCKET=${OSS_BUCKET:-agent-17718139319}
+OSS_ENDPOINT=${OSS_ENDPOINT:-oss-cn-beijing.aliyuncs.com}
+OSS_PREFIX=${OSS_PREFIX:-era/assets}
+EXTRACT_TASK_PORT=8791
+EXTRACT_TASK_HOST=0.0.0.0
+ERA_REST_URL=http://127.0.0.1/rest/v1
+DASHSCOPE_PROXY_URL=http://127.0.0.1/functions/v1/dashscope-video-extract
+EOF
+chmod 600 /etc/era-extract-task.env
+cat >/etc/systemd/system/era-extract-task.service <<'UNIT'
+[Unit]
+Description=Era social extract task server
+After=network.target docker.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/era
+EnvironmentFile=/etc/era-extract-task.env
+ExecStart=/usr/bin/node /opt/era/scripts/extract-task-server.mjs
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl daemon-reload
+systemctl enable era-extract-task.service >/dev/null 2>&1 || true
+systemctl restart era-extract-task.service
 
 echo "    reload caddy"
 docker exec era-gateway caddy reload --config /etc/caddy/Caddyfile 2>/dev/null \

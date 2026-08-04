@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { MarkdownPreview } from './MarkdownPreview'
 
@@ -55,10 +55,10 @@ export function MarkdownContentDrawer({ isOpen, value, onClose, onSave }: Markdo
           type="button"
           className="flex size-9 items-center justify-center rounded-full"
           style={{ background: 'var(--era-panel)' }}
-          aria-label="关闭"
+          aria-label="返回"
           onClick={onClose}
         >
-          <X size={18} />
+          <ChevronLeft size={18} />
         </button>
 
         <div

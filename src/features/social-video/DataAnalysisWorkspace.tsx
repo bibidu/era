@@ -13,23 +13,19 @@ import {
 } from '../../app/tabRouting'
 import {
   SocialVideoListPage,
-  type SocialListStatusFilter,
   type SocialListWorkTypeFilter,
 } from './SocialVideoListPage'
 
-export type { SocialListStatusFilter, SocialListWorkTypeFilter }
+export type { SocialListWorkTypeFilter }
 
 const AccountReviewPage = lazy(() =>
   import('./AccountReviewPage').then((m) => ({ default: m.AccountReviewPage })),
 )
-const SocialVideoCreatePage = lazy(() =>
-  import('./SocialVideoCreatePage').then((m) => ({ default: m.SocialVideoCreatePage })),
-)
 const SocialVideoDataPage = lazy(() =>
   import('./SocialVideoDataPage').then((m) => ({ default: m.SocialVideoDataPage })),
 )
-const SocialVideoDetailPage = lazy(() =>
-  import('./SocialVideoDetailPage').then((m) => ({ default: m.SocialVideoDetailPage })),
+const SocialVideoPostPage = lazy(() =>
+  import('./SocialVideoPostPage').then((m) => ({ default: m.SocialVideoPostPage })),
 )
 
 function SecondaryLoadingFallback() {
@@ -43,20 +39,17 @@ function SecondaryLoadingFallback() {
   )
 }
 
-type LocalView = 'list' | 'extract' | 'review' | 'create'
+type LocalView = 'list' | 'extract' | 'review'
 
 export function DataAnalysisWorkspace() {
   const [localView, setLocalView] = useState<LocalView>('list')
   const [listReloadToken, setListReloadToken] = useState(0)
-  const [editingRecord, setEditingRecord] = useState<SocialVideoAnalysisRecord | null>(null)
   const [postId, setPostId] = useState<string | null>(() => readSocialPostIdFromSearch())
   const [postRecord, setPostRecord] = useState<SocialVideoAnalysisRecord | null>(null)
-  const [postMode, setPostMode] = useState<'edit' | 'detail' | null>(null)
   const [postLoading, setPostLoading] = useState(false)
   const [postError, setPostError] = useState('')
-  const [statusFilter, setStatusFilter] = useState<SocialListStatusFilter>('')
   const [workTypeFilter, setWorkTypeFilter] = useState<SocialListWorkTypeFilter>('')
-  const [extractBatchApi, setExtractBatchApi] = useState<{
+  const [extractTaskApi, setExtractTaskApi] = useState<{
     run: () => void
     busy: boolean
   } | null>(null)
@@ -79,7 +72,6 @@ export function DataAnalysisWorkspace() {
   useEffect(() => {
     if (!postId) {
       setPostRecord(null)
-      setPostMode(null)
       setPostLoading(false)
       setPostError('')
       return
@@ -95,12 +87,10 @@ export function DataAnalysisWorkspace() {
         const full = await getSocialVideoAnalysis(postId)
         if (cancelled) return
         setPostRecord(full)
-        setPostMode(full.publish_status === '已发布' ? 'detail' : 'edit')
         setPostError('')
       } catch (err) {
         if (cancelled) return
         setPostRecord(null)
-        setPostMode(null)
         setPostError(err instanceof Error ? err.message : '加载帖子失败')
       } finally {
         if (!cancelled) setPostLoading(false)
@@ -114,14 +104,12 @@ export function DataAnalysisWorkspace() {
 
   function openPost(record: SocialVideoAnalysisRecord) {
     setPostRecord(record)
-    setPostMode(record.publish_status === '已发布' ? 'detail' : 'edit')
     setPostId(record.id)
     pushSocialPostInUrl(record.id)
   }
 
   function closePost() {
     navigateBackFromSocialPost()
-    // history.back 等 popstate；replaceState 已由 ERA_URL_CHANGE_EVENT 同步
     if (!readSocialPostIdFromSearch()) {
       setPostId(null)
     }
@@ -129,7 +117,6 @@ export function DataAnalysisWorkspace() {
 
   const showPostRoute = Boolean(postId)
 
-  // 列表保持挂载：从二级页返回不重挂载、不重新请求；删除/保存等再 bump reloadToken
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div
@@ -137,23 +124,12 @@ export function DataAnalysisWorkspace() {
         aria-hidden={localView !== 'list' || showPostRoute}
       >
         <SocialVideoListPage
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
           workTypeFilter={workTypeFilter}
           onWorkTypeFilterChange={setWorkTypeFilter}
           reloadToken={listReloadToken}
           onSmartExtract={() => setLocalView('extract')}
           onOpenReview={() => setLocalView('review')}
-          onCreate={() => {
-            setEditingRecord(null)
-            setLocalView('create')
-          }}
-          onEdit={(record) => {
-            openPost(record)
-          }}
-          onOpenDetail={(record) => {
-            openPost(record)
-          }}
+          onOpenPost={openPost}
         />
       </div>
 
@@ -184,17 +160,17 @@ export function DataAnalysisWorkspace() {
                 background: 'var(--era-button)',
                 color: 'var(--era-button-fg)',
               }}
-              disabled={!extractBatchApi || extractBatchApi.busy}
-              onClick={() => extractBatchApi?.run()}
+              disabled={!extractTaskApi || extractTaskApi.busy}
+              onClick={() => extractTaskApi?.run()}
             >
-              {extractBatchApi?.busy ? '提取中...' : '批量提取'}
+              {extractTaskApi?.busy ? '创建中...' : '创建任务'}
             </button>
           </header>
           <Suspense fallback={<SecondaryLoadingFallback />}>
             <SocialVideoDataPage
               embedded
-              onBatchExtractReady={setExtractBatchApi}
-              onSaved={() => {
+              onCreateTaskReady={setExtractTaskApi}
+              onTaskCreated={() => {
                 bumpListReload()
                 setLocalView('list')
               }}
@@ -206,20 +182,6 @@ export function DataAnalysisWorkspace() {
       {localView === 'review' && !showPostRoute ? (
         <Suspense fallback={<SecondaryLoadingFallback />}>
           <AccountReviewPage onBack={() => setLocalView('list')} />
-        </Suspense>
-      ) : null}
-
-      {localView === 'create' && !showPostRoute ? (
-        <Suspense fallback={<SecondaryLoadingFallback />}>
-          <SocialVideoCreatePage
-            editingRecord={editingRecord}
-            onBack={() => {
-              setEditingRecord(null)
-              setLocalView('list')
-            }}
-            onCreated={bumpListReload}
-            onDeleted={bumpListReload}
-          />
         </Suspense>
       ) : null}
 
@@ -258,20 +220,13 @@ export function DataAnalysisWorkspace() {
                 {postError}
               </div>
             </div>
-          ) : postMode === 'detail' && postRecord ? (
-            <SocialVideoDetailPage
+          ) : postRecord ? (
+            <SocialVideoPostPage
               record={postRecord}
               flushTop
               onBack={closePost}
               onDeleted={bumpListReload}
-            />
-          ) : postRecord ? (
-            <SocialVideoCreatePage
-              editingRecord={postRecord}
-              flushTop
-              onBack={closePost}
-              onCreated={bumpListReload}
-              onDeleted={bumpListReload}
+              onUpdated={bumpListReload}
             />
           ) : (
             <SecondaryLoadingFallback />

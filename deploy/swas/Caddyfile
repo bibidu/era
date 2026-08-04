@@ -46,6 +46,17 @@
 			header_down -Access-Control-Max-Age
 		}
 	}
+	# 本机提取任务服务（优先于旧 Supabase Functions 反代）
+	handle /functions/v1/create-extract-task* {
+		reverse_proxy host.docker.internal:8791 {
+			transport http {
+				dial_timeout 30s
+				response_header_timeout 5m
+				read_timeout 5m
+				write_timeout 5m
+			}
+		}
+	}
 	# 旧 Supabase Edge Functions 同机反代：浏览器不直连美东，避免国内 Failed to fetch
 	# /functions/v1/<name> → https://…functions.supabase.co/<name>
 	handle_path /functions/v1/* {

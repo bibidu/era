@@ -24,6 +24,7 @@ DRY_RUN="${OSS_CLEANUP_DRY_RUN:-0}"
 ENDPOINT="${OSS_ENDPOINT:-oss-cn-beijing.aliyuncs.com}"
 CONFIG_PATH="${HOME}/.ossutilconfig"
 COVER_KEEP_MARK="__cover_keep__"
+EXTRACT_KEEP_MARK="__extract_keep__"
 
 ensure_ossutil_config() {
   if [[ -f "$CONFIG_PATH" ]]; then
@@ -109,7 +110,7 @@ for line in "${LINES[@]}"; do
   [[ "$key_uri" == */ ]] && continue
 
   # 封面永久标记：永不删除
-  if [[ "$key_uri" == *"${COVER_KEEP_MARK}"* ]]; then
+  if [[ "$key_uri" == *"${COVER_KEEP_MARK}"* || "$key_uri" == *"${EXTRACT_KEEP_MARK}"* ]]; then
     echo "oss-cleanup: 保留封面 $key_uri" >&2
     kept_cover=$((kept_cover + 1))
     continue

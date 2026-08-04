@@ -472,12 +472,12 @@ function computeGapDays(posts: PostMetrics[]) {
 }
 
 /**
- * 汇总已发布作品，产出账号级复盘。
+ * 汇总提取成功作品，产出账号级复盘。
  * 调用方应按账号类型（图文 / 风水 / 健身）先过滤 records，避免混算不同账号。
  */
 export function buildAccountReview(records: SocialVideoAnalysisRecord[]): AccountReview {
   const posts = records
-    .filter((record) => record.publish_status === '已发布')
+    .filter((record) => record.extract_status === '提取成功')
     .map(parsePostMetrics)
     .filter((post) => post.play > 0)
     .sort((left, right) => left.publishedTime - right.publishedTime)

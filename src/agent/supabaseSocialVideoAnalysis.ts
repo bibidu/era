@@ -2,15 +2,15 @@ import { browserSupabaseConfig, resolveSupabaseConfig } from './supabaseHighligh
 
 export const ERA_SOCIAL_VIDEO_ANALYSES_TABLE = 'era_social_video_analyses'
 
-/** 发布状态（存库中文枚举） */
-export const SOCIAL_VIDEO_PUBLISH_STATUSES = ['已发布', '待AI修改'] as const
-export type SocialVideoPublishStatus = (typeof SOCIAL_VIDEO_PUBLISH_STATUSES)[number]
+/** 数据提取状态（存库中文枚举） */
+export const SOCIAL_VIDEO_EXTRACT_STATUSES = ['未开始', '提取中', '提取成功', '提取失败'] as const
+export type SocialVideoExtractStatus = (typeof SOCIAL_VIDEO_EXTRACT_STATUSES)[number]
 
 /** 作品类型（存库中文枚举） */
 export const SOCIAL_VIDEO_WORK_TYPES = ['图文', '风水', '健身'] as const
 export type SocialVideoWorkType = (typeof SOCIAL_VIDEO_WORK_TYPES)[number]
 
-export const DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS: SocialVideoPublishStatus = '待AI修改'
+export const DEFAULT_SOCIAL_VIDEO_EXTRACT_STATUS: SocialVideoExtractStatus = '未开始'
 export const DEFAULT_SOCIAL_VIDEO_WORK_TYPE: SocialVideoWorkType = '图文'
 
 export interface SocialVideoAnalysisRecord {
@@ -23,7 +23,9 @@ export interface SocialVideoAnalysisRecord {
   outline?: string
   /** 图片预览 URL 列表（封面/内容图等） */
   image_previews?: string[]
-  publish_status: SocialVideoPublishStatus
+  /** 后台数据截图（智能提取上传） */
+  extract_images?: string[]
+  extract_status: SocialVideoExtractStatus
   work_type: SocialVideoWorkType
 }
 
@@ -34,25 +36,26 @@ export interface CreateSocialVideoAnalysisInput {
   markdown: string
   outline?: string
   imagePreviews?: string[]
-  publishStatus?: SocialVideoPublishStatus
+  extractImages?: string[]
+  extractStatus?: SocialVideoExtractStatus
   workType?: SocialVideoWorkType
 }
 
 export interface ListSocialVideoAnalysesOptions {
   /** 不传或空 = 全部；后端 eq 筛选 */
-  publishStatus?: SocialVideoPublishStatus | '' | null
+  extractStatus?: SocialVideoExtractStatus | '' | null
   /** 不传或空 = 全部；后端 eq 筛选 */
   workType?: SocialVideoWorkType | '' | null
   /** 复盘等需要全文时拉 markdown */
   includeMarkdown?: boolean
 }
 
-/** 列表轻量字段：不含 outline / image_previews，避免数百 KB～MB 级 JSON */
+/** 列表轻量字段：不含 outline / image_previews / markdown */
 const LIST_SELECT_BASE =
-  'id,created_at,title,published_at,cover_url,publish_status,work_type'
-/** 复盘等需要正文时再拉 markdown（及大纲/预览链） */
+  'id,created_at,title,published_at,cover_url,extract_status,work_type'
+/** 复盘等需要正文时再拉 markdown（及大纲/预览链/提取图） */
 const LIST_SELECT_WITH_MARKDOWN =
-  `${LIST_SELECT_BASE},outline,image_previews,markdown`
+  `${LIST_SELECT_BASE},outline,image_previews,extract_images,markdown`
 
 const NETWORK_ERROR_MARKERS = ['failed to fetch', 'networkerror', 'load failed', 'network request failed']
 
@@ -139,13 +142,11 @@ async function supabaseRest<T>(
   return JSON.parse(text) as T
 }
 
-function normalizePublishStatus(value: unknown): SocialVideoPublishStatus {
-  if (typeof value === 'string' && (SOCIAL_VIDEO_PUBLISH_STATUSES as readonly string[]).includes(value)) {
-    return value as SocialVideoPublishStatus
+function normalizeExtractStatus(value: unknown): SocialVideoExtractStatus {
+  if (typeof value === 'string' && (SOCIAL_VIDEO_EXTRACT_STATUSES as readonly string[]).includes(value)) {
+    return value as SocialVideoExtractStatus
   }
-  // 历史「待审核」统一视为待 AI 修改
-  if (value === '待审核') return '待AI修改'
-  return DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS
+  return DEFAULT_SOCIAL_VIDEO_EXTRACT_STATUS
 }
 
 function normalizeWorkType(value: unknown): SocialVideoWorkType {
@@ -165,7 +166,8 @@ function normalizeRecord(row: SocialVideoAnalysisRecord): SocialVideoAnalysisRec
     ...row,
     outline: typeof row.outline === 'string' ? row.outline : '',
     image_previews: normalizeImagePreviews(row.image_previews),
-    publish_status: normalizePublishStatus(row.publish_status),
+    extract_images: normalizeImagePreviews(row.extract_images),
+    extract_status: normalizeExtractStatus(row.extract_status),
     work_type: normalizeWorkType(row.work_type),
   }
 }
@@ -178,9 +180,9 @@ export async function listSocialVideoAnalyses(
   // 列表默认不拉 markdown，避免大字段导致 Safari 偶发 Load failed
   params.set('select', options.includeMarkdown ? LIST_SELECT_WITH_MARKDOWN : LIST_SELECT_BASE)
   params.set('order', 'created_at.desc')
-  const status = options.publishStatus?.trim()
+  const status = options.extractStatus?.trim()
   if (status) {
-    params.set('publish_status', `eq.${status}`)
+    params.set('extract_status', `eq.${status}`)
   }
   const workType = options.workType?.trim()
   if (workType) {
@@ -228,7 +230,8 @@ export async function createSocialVideoAnalysis(
         markdown: input.markdown,
         outline: input.outline ?? '',
         image_previews: input.imagePreviews ?? [],
-        publish_status: input.publishStatus ?? DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS,
+        extract_images: input.extractImages ?? [],
+        extract_status: input.extractStatus ?? DEFAULT_SOCIAL_VIDEO_EXTRACT_STATUS,
         work_type: input.workType ?? DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
       }),
     },
@@ -258,7 +261,8 @@ export async function updateSocialVideoAnalysis(
         markdown: input.markdown,
         outline: input.outline ?? '',
         image_previews: input.imagePreviews ?? [],
-        publish_status: input.publishStatus ?? DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS,
+        extract_images: input.extractImages ?? [],
+        extract_status: input.extractStatus ?? DEFAULT_SOCIAL_VIDEO_EXTRACT_STATUS,
         work_type: input.workType ?? DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
       }),
     },
@@ -266,6 +270,49 @@ export async function updateSocialVideoAnalysis(
   const record = rows[0]
   if (!record?.id) {
     throw new Error('保存失败：Supabase 未返回记录 id')
+  }
+  return normalizeRecord(record)
+}
+
+/** 仅更新类型等轻量字段 */
+export async function patchSocialVideoAnalysis(
+  id: string,
+  patch: Partial<{
+    workType: SocialVideoWorkType
+    title: string
+    markdown: string
+    outline: string
+    imagePreviews: string[]
+    extractImages: string[]
+    extractStatus: SocialVideoExtractStatus
+    publishedAt: string
+    coverUrl: string | null
+  }>,
+  config = browserSupabaseConfig(),
+): Promise<SocialVideoAnalysisRecord> {
+  const body: Record<string, unknown> = {}
+  if (patch.workType !== undefined) body.work_type = patch.workType
+  if (patch.title !== undefined) body.title = patch.title
+  if (patch.markdown !== undefined) body.markdown = patch.markdown
+  if (patch.outline !== undefined) body.outline = patch.outline
+  if (patch.imagePreviews !== undefined) body.image_previews = patch.imagePreviews
+  if (patch.extractImages !== undefined) body.extract_images = patch.extractImages
+  if (patch.extractStatus !== undefined) body.extract_status = patch.extractStatus
+  if (patch.publishedAt !== undefined) body.published_at = patch.publishedAt
+  if (patch.coverUrl !== undefined) body.cover_url = patch.coverUrl
+
+  const rows = await supabaseRest<SocialVideoAnalysisRecord[]>(
+    config,
+    `${ERA_SOCIAL_VIDEO_ANALYSES_TABLE}?id=eq.${encodeURIComponent(id)}`,
+    {
+      method: 'PATCH',
+      prefer: 'return=representation',
+      body: JSON.stringify(body),
+    },
+  )
+  const record = rows[0]
+  if (!record?.id) {
+    throw new Error('更新失败：Supabase 未返回记录 id')
   }
   return normalizeRecord(record)
 }

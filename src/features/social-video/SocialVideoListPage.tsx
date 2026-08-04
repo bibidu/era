@@ -1,57 +1,49 @@
-import { Plus, RefreshCw, Sparkles, TrendingUp } from 'lucide-react'
+import { Pipette, RefreshCw, TrendingUp } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
-  SOCIAL_VIDEO_PUBLISH_STATUSES,
   SOCIAL_VIDEO_WORK_TYPES,
   formatSocialVideoLoadError,
   listSocialVideoAnalyses,
   sortSocialVideoAnalyses,
   type SocialVideoAnalysisRecord,
-  type SocialVideoPublishStatus,
+  type SocialVideoExtractStatus,
   type SocialVideoWorkType,
 } from '../../agent/supabaseSocialVideoAnalysis'
 import { useInViewport } from '../../hooks/useInViewport'
 import { listThumbWidthForViewport, ossListThumbUrl } from '../../utils/ossListThumbUrl'
 
-export type SocialListStatusFilter = '' | SocialVideoPublishStatus
 export type SocialListWorkTypeFilter = '' | SocialVideoWorkType
 
 interface SocialVideoListPageProps {
-  statusFilter: SocialListStatusFilter
-  onStatusFilterChange: (value: SocialListStatusFilter) => void
   workTypeFilter: SocialListWorkTypeFilter
   onWorkTypeFilterChange: (value: SocialListWorkTypeFilter) => void
   reloadToken?: number
   onSmartExtract: () => void
   onOpenReview: () => void
-  onCreate: () => void
-  onEdit: (record: SocialVideoAnalysisRecord) => void
-  /** 已发布作品：进入查看数据二级页 */
-  onOpenDetail: (record: SocialVideoAnalysisRecord) => void
+  onOpenPost: (record: SocialVideoAnalysisRecord) => void
 }
-
-const STATUS_FILTERS: { value: SocialListStatusFilter; label: string }[] = [
-  { value: '', label: '全部' },
-  ...SOCIAL_VIDEO_PUBLISH_STATUSES.map((status) => ({ value: status, label: status })),
-]
 
 const WORK_TYPE_FILTERS: { value: SocialListWorkTypeFilter; label: string }[] = [
   { value: '', label: '全部' },
   ...SOCIAL_VIDEO_WORK_TYPES.map((type) => ({ value: type, label: type })),
 ]
 
-function statusBadgeStyle(status: SocialVideoPublishStatus): { background: string; color: string } {
+function extractStatusBadgeStyle(status: SocialVideoExtractStatus): {
+  background: string
+  color: string
+} {
   switch (status) {
-    case '已发布':
+    case '提取成功':
       return { background: 'rgb(22 163 74 / 0.92)', color: '#ffffff' }
-    case '待AI修改':
+    case '提取中':
       return { background: 'rgb(59 130 246 / 0.95)', color: '#ffffff' }
+    case '提取失败':
+      return { background: 'rgb(220 38 38 / 0.9)', color: '#ffffff' }
     default:
       return { background: 'rgb(0 0 0 / 0.65)', color: '#ffffff' }
   }
 }
 
-/** 封面缺失/裂图时：用标题；单行由 CSS truncate（列表不再拉 outline） */
 function coverFallbackText(record: SocialVideoAnalysisRecord): string {
   return (record.title || '').replace(/\s+/g, ' ').trim()
 }
@@ -76,7 +68,6 @@ function CoverFallbackLabel({ text }: { text: string }) {
 function coverImageCandidates(record: SocialVideoAnalysisRecord): string[] {
   const urls: string[] = []
   const cover = (record.cover_url || '').trim()
-  // 优先 https CDN；残留 data: 仅作回退（应由 migrate-base64-covers-to-oss 清掉）
   if (cover.startsWith('http://') || cover.startsWith('https://')) urls.push(cover)
   else if (cover.startsWith('data:image/')) urls.push(cover)
   const firstPreview = (record.image_previews?.[0] || '').trim()
@@ -92,7 +83,6 @@ function coverImageCandidates(record: SocialVideoAnalysisRecord): string[] {
   return urls
 }
 
-/** 仅在滚动可见时挂 src；OSS 图按 PC/移动选缩略宽度 */
 function CoverThumb({
   record,
   scrollRoot,
@@ -101,7 +91,6 @@ function CoverThumb({
   scrollRoot: Element | null
 }) {
   const hostRef = useRef<HTMLDivElement>(null)
-  // 露出三分之一以上才挂 src，避免刚擦边就请求封面
   const inView = useInViewport(hostRef, {
     root: scrollRoot,
     once: true,
@@ -167,74 +156,13 @@ function CoverThumb({
   )
 }
 
-function SegmentedFilter<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string
-  options: { value: T; label: string }[]
-  value: T
-  onChange: (value: T) => void
-}) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <span className="w-8 shrink-0 text-xs leading-none" style={{ color: 'var(--era-muted)' }}>
-        {label}
-      </span>
-      <div
-        className="flex min-w-0 flex-1 overflow-x-auto rounded-full p-0.5"
-        style={{ background: 'var(--era-input)', border: '1px solid var(--era-border)' }}
-        role="tablist"
-        aria-label={label}
-      >
-        {options.map((item) => {
-          const active = value === item.value
-          return (
-            <button
-              key={item.label}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              className="min-w-0 flex-1 shrink-0 truncate rounded-full px-2.5 py-1.5 text-xs font-medium transition"
-              style={
-                active
-                  ? { background: 'var(--era-button)', color: 'var(--era-button-fg)' }
-                  : { background: 'transparent', color: 'var(--era-muted)' }
-              }
-              onClick={() => onChange(item.value)}
-            >
-              {item.label}
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-function emptyFilterHint(statusFilter: SocialListStatusFilter, workTypeFilter: SocialListWorkTypeFilter) {
-  const parts: string[] = []
-  if (workTypeFilter) parts.push(`类型「${workTypeFilter}」`)
-  if (statusFilter) parts.push(`状态「${statusFilter}」`)
-  if (parts.length === 0) {
-    return '点击右上角智能提取图标，完成后保存，作品会出现在这里。'
-  }
-  return `当前筛选（${parts.join(' · ')}）下没有作品。`
-}
-
 export function SocialVideoListPage({
-  statusFilter,
-  onStatusFilterChange,
   workTypeFilter,
   onWorkTypeFilterChange,
   reloadToken = 0,
   onSmartExtract,
   onOpenReview,
-  onCreate,
-  onEdit,
-  onOpenDetail,
+  onOpenPost,
 }: SocialVideoListPageProps) {
   const [records, setRecords] = useState<SocialVideoAnalysisRecord[]>([])
   const [loading, setLoading] = useState(true)
@@ -254,7 +182,6 @@ export function SocialVideoListPage({
       setLoading(true)
       try {
         const rows = await listSocialVideoAnalyses({
-          publishStatus: statusFilter || null,
           workType: workTypeFilter || null,
         })
         if (cancelled) return
@@ -274,14 +201,13 @@ export function SocialVideoListPage({
     return () => {
       cancelled = true
     }
-  }, [statusFilter, workTypeFilter, reloadToken])
+  }, [workTypeFilter, reloadToken])
 
   async function handleRefresh() {
     if (refreshing || loading) return
     setRefreshing(true)
     try {
       const rows = await listSocialVideoAnalyses({
-        publishStatus: statusFilter || null,
         workType: workTypeFilter || null,
       })
       setRecords(sortSocialVideoAnalyses(rows))
@@ -295,7 +221,7 @@ export function SocialVideoListPage({
   }
 
   const actionBtnClass =
-    'flex size-9 items-center justify-center transition hover:opacity-90 active:opacity-80 disabled:opacity-40'
+    'inline-flex h-9 items-center gap-1 px-2.5 text-xs font-semibold transition hover:opacity-90 active:opacity-80 disabled:opacity-40'
   const actionBtnStyle = {
     color: 'var(--era-fg)',
   } as const
@@ -306,7 +232,24 @@ export function SocialVideoListPage({
         className="flex shrink-0 items-center justify-between gap-2 border-b px-4 py-3"
         style={{ borderColor: 'var(--era-border)' }}
       >
-        <h1 className="shrink-0 text-base font-semibold">分析列表</h1>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <h1 className="shrink-0 text-base font-semibold">分析列表</h1>
+          <button
+            type="button"
+            className="inline-flex size-8 items-center justify-center rounded-full transition hover:opacity-90 disabled:opacity-40"
+            style={{ color: 'var(--era-fg)' }}
+            aria-label="刷新"
+            title="刷新"
+            disabled={refreshing || loading}
+            onClick={() => void handleRefresh()}
+          >
+            <RefreshCw
+              size={16}
+              strokeWidth={2}
+              className={refreshing ? 'animate-spin' : undefined}
+            />
+          </button>
+        </div>
         <div
           className="inline-flex shrink-0 items-center overflow-hidden rounded-xl border"
           style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
@@ -317,69 +260,47 @@ export function SocialVideoListPage({
             type="button"
             className={actionBtnClass}
             style={actionBtnStyle}
-            aria-label="创建"
-            title="创建"
-            onClick={onCreate}
-          >
-            <Plus size={18} strokeWidth={2} />
-          </button>
-          <span className="h-5 w-px shrink-0" style={{ background: 'var(--era-border)' }} aria-hidden />
-          <button
-            type="button"
-            className={actionBtnClass}
-            style={actionBtnStyle}
-            aria-label="复盘"
-            title="复盘"
             onClick={onOpenReview}
           >
-            <TrendingUp size={18} strokeWidth={2} />
+            <TrendingUp size={15} strokeWidth={2} />
+            复盘
           </button>
           <span className="h-5 w-px shrink-0" style={{ background: 'var(--era-border)' }} aria-hidden />
           <button
             type="button"
             className={actionBtnClass}
             style={actionBtnStyle}
-            aria-label="智能提取"
-            title="智能提取"
             onClick={onSmartExtract}
           >
-            <Sparkles size={18} strokeWidth={2} />
-          </button>
-          <span className="h-5 w-px shrink-0" style={{ background: 'var(--era-border)' }} aria-hidden />
-          <button
-            type="button"
-            className={actionBtnClass}
-            style={actionBtnStyle}
-            aria-label="刷新"
-            title="刷新"
-            disabled={refreshing || loading}
-            onClick={() => void handleRefresh()}
-          >
-            <RefreshCw
-              size={18}
-              strokeWidth={2}
-              className={refreshing ? 'animate-spin' : undefined}
-            />
+            <Pipette size={15} strokeWidth={2} />
+            智能提取
           </button>
         </div>
       </div>
 
       <div
-        className="flex shrink-0 flex-col gap-2 border-b px-4 py-3"
+        className="flex shrink-0 items-center gap-2.5 border-b px-4 py-3"
         style={{ borderColor: 'var(--era-border)', background: 'var(--era-bg)' }}
       >
-        <SegmentedFilter
-          label="类型"
-          options={WORK_TYPE_FILTERS}
+        <span className="w-8 shrink-0 text-xs" style={{ color: 'var(--era-muted)' }}>
+          类型
+        </span>
+        <select
+          className="min-w-0 flex-1 rounded-2xl border px-3 py-2 text-sm outline-none"
+          style={{
+            borderColor: 'var(--era-border)',
+            background: 'var(--era-input)',
+            color: 'var(--era-fg)',
+          }}
           value={workTypeFilter}
-          onChange={onWorkTypeFilterChange}
-        />
-        <SegmentedFilter
-          label="状态"
-          options={STATUS_FILTERS}
-          value={statusFilter}
-          onChange={onStatusFilterChange}
-        />
+          onChange={(event) => onWorkTypeFilterChange(event.target.value as SocialListWorkTypeFilter)}
+        >
+          {WORK_TYPE_FILTERS.map((item) => (
+            <option key={item.label} value={item.value}>
+              {item.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
@@ -398,26 +319,20 @@ export function SocialVideoListPage({
           >
             <p className="text-base font-semibold">暂无分析作品</p>
             <p className="mt-2 text-sm leading-6" style={{ color: 'var(--era-muted)' }}>
-              {emptyFilterHint(statusFilter, workTypeFilter)}
+              {workTypeFilter ? `当前类型「${workTypeFilter}」下没有作品。` : '暂无作品。'}
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {records.map((record) => {
-              const badge = statusBadgeStyle(record.publish_status)
+              const badge = extractStatusBadgeStyle(record.extract_status)
               return (
                 <button
                   key={record.id}
                   type="button"
                   className="group relative overflow-hidden rounded-2xl border text-left shadow-sm transition hover:opacity-95"
                   style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
-                  onClick={() => {
-                    if (record.publish_status === '已发布') {
-                      onOpenDetail(record)
-                      return
-                    }
-                    onEdit(record)
-                  }}
+                  onClick={() => onOpenPost(record)}
                 >
                   <div className="aspect-[3/4] w-full">
                     <CoverThumb record={record} scrollRoot={scrollRoot} />
@@ -431,7 +346,7 @@ export function SocialVideoListPage({
                       className="absolute right-1.5 top-1.5 max-w-[calc(50%-0.5rem)] truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide shadow-sm"
                       style={badge}
                     >
-                      {record.publish_status}
+                      {record.extract_status}
                     </span>
                   </div>
                 </button>

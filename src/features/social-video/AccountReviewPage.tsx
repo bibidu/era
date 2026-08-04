@@ -101,7 +101,7 @@ export function AccountReviewPage({ onBack }: AccountReviewPageProps) {
           <p className="truncate text-xs" style={{ color: 'var(--era-muted)' }}>
             {loading
               ? '加载中...'
-              : `${workType}账号 · 已发布 ${review.totals.postCount} 篇 · 跨作品汇总`}
+              : `${workType}账号 · 提取成功 ${review.totals.postCount} 篇 · 跨作品汇总`}
           </p>
         </div>
       </header>
@@ -147,9 +147,9 @@ export function AccountReviewPage({ onBack }: AccountReviewPageProps) {
             className="flex h-64 flex-col items-center justify-center rounded-3xl border border-dashed px-6 text-center"
             style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
           >
-            <p className="text-base font-semibold">暂无已发布的{workType}作品</p>
+            <p className="text-base font-semibold">暂无提取成功的{workType}作品</p>
             <p className="mt-2 text-sm leading-6" style={{ color: 'var(--era-muted)' }}>
-              在「智能提取」里录入后台数据、选择类型「{workType}」并标记为已发布，这里会自动算出该账号复盘。
+              在「智能提取」里为「{workType}」帖子创建任务并提取成功后，这里会自动算出该账号复盘。
             </p>
           </div>
         ) : (
@@ -215,7 +215,7 @@ function OverviewGrid({ review, workType }: { review: AccountReview; workType: S
   return (
     <SectionCard
       title="账号总览"
-      subtitle={`仅统计「${workType}」已发布作品累计，与抖音图文健康基准线对照`}
+      subtitle={`仅统计「${workType}」提取成功作品累计，与抖音图文健康基准线对照`}
     >
       <div className="grid grid-cols-2 gap-2">
         <StatCard label="累计播放" value={formatCount(totals.play)} hint={`中位 ${formatCount(totals.medianPlay)}/篇`} />

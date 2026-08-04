@@ -1,7 +1,7 @@
 import { ChevronLeft } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
-  DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS,
+  DEFAULT_SOCIAL_VIDEO_EXTRACT_STATUS,
   DEFAULT_SOCIAL_VIDEO_WORK_TYPE,
   ERA_SOCIAL_VIDEO_ANALYSES_TABLE,
   SOCIAL_VIDEO_WORK_TYPES,
@@ -55,7 +55,7 @@ interface AiRevisionPromptInput {
   title: string
   content: string
   imagePreviews: string[]
-  publishStatus: string
+  extractStatus: string
 }
 
 function buildAiRevisionPrompt(input: AiRevisionPromptInput) {
@@ -85,9 +85,9 @@ function buildAiRevisionPrompt(input: AiRevisionPromptInput) {
         .join('\n')}`,
     )
   }
-  const publishStatus = input.publishStatus.trim()
-  if (publishStatus) {
-    formBlocks.push(`### 发布状态\n${publishStatus}`)
+  const extractStatus = input.extractStatus.trim()
+  if (extractStatus) {
+    formBlocks.push(`### 提取状态\n${extractStatus}`)
   }
 
   const formSection =
@@ -212,7 +212,7 @@ export function SocialVideoCreatePage({
       title,
       content,
       imagePreviews,
-      publishStatus: DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS,
+      extractStatus: DEFAULT_SOCIAL_VIDEO_EXTRACT_STATUS,
     })
     try {
       await navigator.clipboard.writeText(prompt)
@@ -236,7 +236,7 @@ export function SocialVideoCreatePage({
         markdown: content,
         outline: outline.trim(),
         imagePreviews,
-        publishStatus: DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS,
+        extractStatus: DEFAULT_SOCIAL_VIDEO_EXTRACT_STATUS,
         workType,
       }
       if (isEdit && editingRecord?.id) {
@@ -325,18 +325,6 @@ export function SocialVideoCreatePage({
           </button>
         ) : null}
       </header>
-
-      <div
-        className="sticky top-0 z-10 flex shrink-0 gap-2 overflow-x-auto border-b px-4 py-2.5"
-        style={{ borderColor: 'var(--era-border)', background: 'var(--era-bg)' }}
-      >
-        <span
-          className="shrink-0 rounded-full px-3 py-1 text-xs font-medium"
-          style={{ background: 'var(--era-button)', color: 'var(--era-button-fg)' }}
-        >
-          {DEFAULT_SOCIAL_VIDEO_PUBLISH_STATUS}
-        </span>
-      </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {loading ? (
