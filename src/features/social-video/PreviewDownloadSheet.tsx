@@ -1,11 +1,16 @@
 import { Check, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { BottomSheet } from '../../components/BottomSheet'
 import {
   preparePreviewImagesForShare,
   sharePreparedImagesToPhotos,
   type PreviewImageItem,
 } from './downloadImagesAsZip'
+import {
+  describePhotosShareBlocker,
+  getPhotosShareHttpsUpgradeUrl,
+  isPhotosShareAvailable,
+} from './photosShareEnv'
 
 interface PreviewDownloadSheetProps {
   isOpen: boolean
@@ -33,6 +38,10 @@ export function PreviewDownloadSheet({
   const preparedRef = useRef<(File | null)[]>([])
   const prepareTokenRef = useRef(0)
 
+  const shareAvailable = useMemo(() => isPhotosShareAvailable(), [isOpen])
+  const httpsUpgradeUrl = useMemo(() => getPhotosShareHttpsUpgradeUrl(), [isOpen])
+  const needsHttpsUpgrade = Boolean(httpsUpgradeUrl) && !shareAvailable
+
   const imagesKey = images.map((image) => image.src).join('\n')
 
   useEffect(() => {
@@ -40,8 +49,13 @@ export function PreviewDownloadSheet({
     setSelectedIndexes(new Set(images.map((_, index) => index)))
     setSaving(false)
     setPreparedCount(0)
-    setStatus('')
     preparedRef.current = images.map(() => null)
+
+    if (needsHttpsUpgrade) {
+      setPreparing(false)
+      setStatus(describePhotosShareBlocker())
+      return
+    }
 
     const token = prepareTokenRef.current + 1
     prepareTokenRef.current = token
@@ -65,13 +79,18 @@ export function PreviewDownloadSheet({
       }
     })()
     // imagesKey 稳定表示同一组 URL，避免父组件重渲染导致反复预拉取
-  }, [isOpen, imagesKey])
+  }, [isOpen, imagesKey, needsHttpsUpgrade])
 
   const allSelected = images.length > 0 && selectedIndexes.size === images.length
   const hasSelection = selectedIndexes.size > 0
   const selectedReadyCount = [...selectedIndexes].filter((index) => preparedRef.current[index]).length
   const canSave =
-    hasSelection && !preparing && !saving && preparedCount > 0 && selectedReadyCount > 0
+    !needsHttpsUpgrade &&
+    hasSelection &&
+    !preparing &&
+    !saving &&
+    preparedCount > 0 &&
+    selectedReadyCount > 0
 
   function toggleIndex(index: number) {
     setSelectedIndexes((current) => {
@@ -90,7 +109,18 @@ export function PreviewDownloadSheet({
     setSelectedIndexes(new Set(images.map((_, index) => index)))
   }
 
+  function handleOpenHttps() {
+    if (!httpsUpgradeUrl) return
+    onStatus?.('正在打开 HTTPS 页面…')
+    window.location.assign(httpsUpgradeUrl)
+  }
+
   function handleSaveToPhotos() {
+    if (needsHttpsUpgrade) {
+      handleOpenHttps()
+      return
+    }
+
     if (!canSave) {
       if (preparing) {
         setStatus('图片还在准备，请稍候再点')
@@ -147,6 +177,19 @@ export function PreviewDownloadSheet({
         </button>
       </div>
 
+      {needsHttpsUpgrade ? (
+        <div
+          className="mx-4 mb-3 rounded-2xl px-3 py-3 text-sm leading-6"
+          style={{ background: 'var(--era-panel)', color: 'var(--era-fg)' }}
+        >
+          <p className="font-medium">需要 HTTPS 才能存到相册</p>
+          <p className="mt-1 text-xs leading-5" style={{ color: 'var(--era-muted)' }}>
+            你现在打开的是 HTTP 地址。即使用的是 Safari，系统分享（存储到照片）也只在 HTTPS
+            下可用。点下方按钮跳转到安全地址后再保存即可。
+          </p>
+        </div>
+      ) : null}
+
       <div className="min-h-0 flex-1 overflow-x-auto px-4 pb-4">
         <div className="flex items-start gap-3">
           {images.map((image, index) => {
@@ -202,39 +245,52 @@ export function PreviewDownloadSheet({
           paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
         }}
       >
-        <button
-          type="button"
-          className="flex items-center gap-2 text-sm font-medium"
-          style={{ color: 'var(--era-fg)' }}
-          onClick={toggleAll}
-        >
-          <span
-            className="flex size-5 items-center justify-center rounded-full border-2"
-            style={{
-              borderColor: allSelected ? 'var(--era-fg)' : 'var(--era-border)',
-              background: allSelected ? 'var(--era-fg)' : 'transparent',
-              color: 'var(--era-bg)',
-            }}
-            aria-hidden
+        {needsHttpsUpgrade ? (
+          <button
+            type="button"
+            className="h-11 w-full rounded-full px-8 text-sm font-semibold transition hover:opacity-90"
+            style={{ background: 'var(--era-button)', color: 'var(--era-button-fg)' }}
+            onClick={handleOpenHttps}
           >
-            {allSelected ? <Check size={12} strokeWidth={2.5} /> : null}
-          </span>
-          全部
-        </button>
+            打开 HTTPS 再保存到相册
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="flex items-center gap-2 text-sm font-medium"
+              style={{ color: 'var(--era-fg)' }}
+              onClick={toggleAll}
+            >
+              <span
+                className="flex size-5 items-center justify-center rounded-full border-2"
+                style={{
+                  borderColor: allSelected ? 'var(--era-fg)' : 'var(--era-border)',
+                  background: allSelected ? 'var(--era-fg)' : 'transparent',
+                  color: 'var(--era-bg)',
+                }}
+                aria-hidden
+              >
+                {allSelected ? <Check size={12} strokeWidth={2.5} /> : null}
+              </span>
+              全部
+            </button>
 
-        <button
-          type="button"
-          disabled={!canSave}
-          className="h-11 min-w-[7.5rem] rounded-full px-8 text-sm font-semibold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-          style={{ background: 'var(--era-button)', color: 'var(--era-button-fg)' }}
-          onClick={handleSaveToPhotos}
-        >
-          {preparing
-            ? '准备中…'
-            : saving
-              ? '唤起分享…'
-              : `保存到相册${hasSelection ? ` ${selectedIndexes.size}` : ''}`}
-        </button>
+            <button
+              type="button"
+              disabled={!canSave}
+              className="h-11 min-w-[7.5rem] rounded-full px-8 text-sm font-semibold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+              style={{ background: 'var(--era-button)', color: 'var(--era-button-fg)' }}
+              onClick={handleSaveToPhotos}
+            >
+              {preparing
+                ? '准备中…'
+                : saving
+                  ? '唤起分享…'
+                  : `保存到相册${hasSelection ? ` ${selectedIndexes.size}` : ''}`}
+            </button>
+          </>
+        )}
       </div>
     </BottomSheet>
   )

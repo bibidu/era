@@ -2,6 +2,11 @@ import {
   LEGACY_SUPABASE_ANON_KEY,
   LEGACY_SUPABASE_URL,
 } from '../../agent/supabaseHighlightSetup'
+import {
+  describePhotosShareBlocker,
+  getPhotosShareHttpsUpgradeUrl,
+  isPhotosShareAvailable,
+} from './photosShareEnv'
 
 export interface PreviewImageItem {
   src: string
@@ -231,8 +236,12 @@ export async function sharePreparedImagesToPhotos(files: File[]): Promise<void> 
   if (files.length === 0) {
     throw new Error('暂无图片可保存')
   }
-  if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
-    throw new Error('当前环境无法调起系统分享，请用 iPhone Safari 打开')
+  if (!isPhotosShareAvailable()) {
+    const httpsUrl = getPhotosShareHttpsUpgradeUrl()
+    if (httpsUrl) {
+      throw new Error(`${describePhotosShareBlocker()}（将跳转 HTTPS）`)
+    }
+    throw new Error(describePhotosShareBlocker())
   }
 
   if (!canShareFiles(files)) {
@@ -240,7 +249,7 @@ export async function sharePreparedImagesToPhotos(files: File[]): Promise<void> 
     if (files.length > 1 && canShareFiles([files[0]])) {
       throw new Error('一次选太多张无法分享，请少选几张后再试')
     }
-    throw new Error('当前浏览器无法分享图片到相册，请用 iPhone Safari 打开本站')
+    throw new Error(describePhotosShareBlocker())
   }
 
   try {
