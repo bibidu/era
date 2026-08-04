@@ -16,6 +16,8 @@ const DEFAULT_FPS = 1
 const BATCH_CONCURRENCY = 7
 /** 过多/过大的 base64 帧会打爆 Supabase Edge Function（WORKER_RESOURCE_LIMIT） */
 const MAX_FRAME_COUNT = 10
+/** 与 Edge Function MAX_MEDIA_ITEMS 对齐 */
+const MAX_MEDIA_ITEMS = 12
 const FRAME_MAX_WIDTH = 512
 const FRAME_JPEG_QUALITY = 0.58
 /** data URL 合计字符上限（约 2.2MB），超出则降质/减帧 */
@@ -97,6 +99,7 @@ interface ExtractJob {
   id: string
   relatedPostId: string
   videoFile: File | null
+  imageFiles: File[]
   resultText: string
   resultData: unknown | null
   status: string
@@ -116,12 +119,93 @@ function createJob(): ExtractJob {
     id: crypto.randomUUID(),
     relatedPostId: '',
     videoFile: null,
+    imageFiles: [],
     resultText: '',
     resultData: null,
     status: '',
     isLoading: false,
     resultExpanded: false,
   }
+}
+
+function jobHasMedia(job: ExtractJob) {
+  return Boolean(job.videoFile) || job.imageFiles.length > 0
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') resolve(reader.result)
+      else reject(new Error('图片读取失败。'))
+    }
+    reader.onerror = () => reject(new Error('图片读取失败。'))
+    reader.readAsDataURL(file)
+  })
+}
+
+async function compressImageFile(file: File, maxWidth = FRAME_MAX_WIDTH, quality = FRAME_JPEG_QUALITY) {
+  const rawUrl = await readFileAsDataUrl(file)
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error(`无法解析图片：${file.name}`))
+    img.src = rawUrl
+  })
+
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('当前浏览器无法压缩图片。')
+
+  const scale = Math.min(1, maxWidth / Math.max(image.naturalWidth || image.width, 1))
+  canvas.width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale))
+  canvas.height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale))
+  context.drawImage(image, 0, 0, canvas.width, canvas.height)
+  return canvas.toDataURL('image/jpeg', quality)
+}
+
+async function shrinkMediaUrls(urls: string[]) {
+  let mediaUrls = urls.slice(0, MAX_MEDIA_ITEMS)
+  let quality = FRAME_JPEG_QUALITY
+  let maxWidth = FRAME_MAX_WIDTH
+
+  for (let attempt = 0; attempt < 4 && framePayloadChars(mediaUrls) > MAX_FRAMES_PAYLOAD_CHARS; attempt++) {
+    if (quality > 0.42) {
+      quality = Math.max(0.4, quality - 0.1)
+    } else if (maxWidth > 360) {
+      maxWidth = 360
+    } else if (mediaUrls.length > 4) {
+      mediaUrls = mediaUrls.slice(0, Math.max(4, Math.ceil(mediaUrls.length * 0.7)))
+    } else {
+      break
+    }
+
+    // 已是 data URL：再经 canvas 降质
+    const recompressed: string[] = []
+    for (const url of mediaUrls) {
+      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => resolve(img)
+        img.onerror = () => reject(new Error('媒体降质失败'))
+        img.src = url
+      })
+      const canvas = document.createElement('canvas')
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('当前浏览器无法压缩媒体。')
+      const scale = Math.min(1, maxWidth / Math.max(image.naturalWidth || image.width, 1))
+      canvas.width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale))
+      canvas.height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale))
+      context.drawImage(image, 0, 0, canvas.width, canvas.height)
+      recompressed.push(canvas.toDataURL('image/jpeg', quality))
+    }
+    mediaUrls = recompressed
+  }
+
+  if (framePayloadChars(mediaUrls) > MAX_FRAMES_PAYLOAD_CHARS) {
+    throw new Error('媒体体积过大，无法通过代理调用。请减少图片数量或缩短视频后重试。')
+  }
+
+  return mediaUrls
 }
 
 function waitForVideoEvent(
@@ -315,9 +399,30 @@ async function mapPool<T>(
   await Promise.all(runners)
 }
 
-async function requestExtract(videoFile: File, prompt: string) {
-  const frames = await extractVideoFrames(videoFile, DEFAULT_FPS)
-  const media: MediaInput[] = frames.map((url) => ({ type: 'image', url }))
+async function buildExtractMedia(videoFile: File | null, imageFiles: File[]) {
+  const urls: string[] = []
+
+  // 用户显式上传的图片优先，再补视频抽帧
+  for (const file of imageFiles.slice(0, MAX_MEDIA_ITEMS)) {
+    urls.push(await compressImageFile(file))
+  }
+
+  if (videoFile && urls.length < MAX_MEDIA_ITEMS) {
+    const frames = await extractVideoFrames(videoFile, DEFAULT_FPS)
+    const remain = MAX_MEDIA_ITEMS - urls.length
+    urls.push(...frames.slice(0, remain))
+  }
+
+  if (urls.length === 0) {
+    throw new Error('请先上传视频或图片。')
+  }
+
+  const shrunk = await shrinkMediaUrls(urls)
+  return shrunk.map((url) => ({ type: 'image' as const, url }))
+}
+
+async function requestExtract(job: Pick<ExtractJob, 'videoFile' | 'imageFiles'>, prompt: string) {
+  const media: MediaInput[] = await buildExtractMedia(job.videoFile, job.imageFiles)
 
   const response = await fetch(legacyEdgeFunctionUrl('dashscope-video-extract'), {
     method: 'POST',
@@ -353,10 +458,11 @@ async function requestExtract(videoFile: File, prompt: string) {
     }
     if (
       data.code === 'WORKER_RESOURCE_LIMIT' ||
+      data.code === 'PAYLOAD_TOO_LARGE' ||
       message.includes('WORKER_RESOURCE_LIMIT') ||
       message.includes('not having enough compute resources')
     ) {
-      throw new Error('视频帧过大导致代理函数资源不足。请缩短视频后重试。')
+      throw new Error('媒体过大导致代理函数资源不足。请减少图片数量或缩短视频后重试。')
     }
     throw new Error(message)
   }
@@ -454,9 +560,9 @@ export function SocialVideoDataPage({
   async function runBatchExtract() {
     if (isBatchExtracting) return
 
-    const targets = jobs.filter((job) => job.videoFile)
+    const targets = jobs.filter((job) => jobHasMedia(job))
     if (targets.length === 0) {
-      setBatchStatus('请先为至少一组配置上传视频。')
+      setBatchStatus('请先为至少一组配置上传视频或图片。')
       return
     }
     if (!prompt.trim()) {
@@ -482,9 +588,9 @@ export function SocialVideoDataPage({
     let failCount = 0
 
     await mapPool(targets, BATCH_CONCURRENCY, async (job) => {
-      updateJob(job.id, { status: '正在抽取视频帧...' })
+      updateJob(job.id, { status: '正在准备媒体...' })
       try {
-        const { raw, parsed, requestId } = await requestExtract(job.videoFile!, prompt)
+        const { raw, parsed, requestId } = await requestExtract(job, prompt)
         successCount += 1
         updateJob(job.id, {
           resultText: raw,
@@ -500,7 +606,7 @@ export function SocialVideoDataPage({
           resultText: '',
           resultData: null,
           status: isLikelyNetworkOrCorsError(message)
-            ? '调用失败：无法连接提取服务，请缩短视频后重试。'
+            ? '调用失败：无法连接提取服务，请减少图片或缩短视频后重试。'
             : `调用失败：${message}`,
           isLoading: false,
           resultExpanded: false,
@@ -563,6 +669,7 @@ export function SocialVideoDataPage({
                 ...job,
                 relatedPostId: '',
                 videoFile: null,
+                imageFiles: [],
                 resultText: '',
                 resultData: null,
                 status: '已保存',
@@ -736,6 +843,48 @@ export function SocialVideoDataPage({
                     <span className="truncate text-xs" style={{ color: 'var(--era-muted)' }}>
                       {job.videoFile.name}
                     </span>
+                  ) : null}
+                </label>
+
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">上传图片（可多选）</span>
+                  <input
+                    className={`${fieldClass} border-dashed file:mr-3 file:rounded-full file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-semibold file:text-neutral-950`}
+                    style={fieldStyle}
+                    accept="image/*"
+                    type="file"
+                    multiple
+                    disabled={isBatchExtracting}
+                    onChange={(event) => {
+                      const files = Array.from(event.target.files || []).filter((file) =>
+                        file.type.startsWith('image/'),
+                      )
+                      updateJob(job.id, { imageFiles: files.slice(0, MAX_MEDIA_ITEMS) })
+                    }}
+                  />
+                  {job.imageFiles.length > 0 ? (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs" style={{ color: 'var(--era-muted)' }}>
+                        已选 {job.imageFiles.length} 张
+                        {job.imageFiles.length >= MAX_MEDIA_ITEMS ? `（最多 ${MAX_MEDIA_ITEMS} 张）` : ''}
+                      </span>
+                      <ul className="max-h-20 overflow-y-auto text-xs leading-5" style={{ color: 'var(--era-muted)' }}>
+                        {job.imageFiles.map((file) => (
+                          <li key={`${file.name}-${file.size}-${file.lastModified}`} className="truncate">
+                            {file.name}
+                          </li>
+                        ))}
+                      </ul>
+                      <button
+                        type="button"
+                        className="self-start text-xs font-semibold underline-offset-2 hover:underline disabled:opacity-40"
+                        style={{ color: 'var(--era-muted)' }}
+                        disabled={isBatchExtracting}
+                        onClick={() => updateJob(job.id, { imageFiles: [] })}
+                      >
+                        清空图片
+                      </button>
+                    </div>
                   ) : null}
                 </label>
 
