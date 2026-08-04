@@ -11,7 +11,8 @@ alwaysApply: true
 
 1. 用 `bash scripts/oss-upload.sh <本地图片>` 上传到阿里云 OSS
 2. **对用户预览**：
-   - **社媒帖子**：写入 `image_previews` 后只发 `http://39.106.179.17/`（见 preview-link-only / 图文 skill）
+   - **社媒帖子**：写入 `image_previews` 后只发 `http://39.106.179.17/`（见 preview-link-only / 图文或风水 skill）
+
    - **非社媒**：`node scripts/make-oss-preview-html.mjs` 生成 HTML 嵌入图链并上传，对话框只发 HTML URL；用完后询问是否删除
 3. 上传脚本会在存图前自动清理 Bucket 内超过 **14 小时**的旧对象（省存储费）；**含 `__cover_keep__` 的封面永不删**；不要绕过 `oss-upload.sh` 直接 `ossutil cp`
 

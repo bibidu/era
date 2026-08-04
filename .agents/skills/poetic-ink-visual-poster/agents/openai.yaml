@@ -1,4 +1,0 @@
-interface:
-  display_name: "写意意象图（无文字）"
-  short_description: "根据主题或大纲生成泥纸写意抽象意象图，画面不含任何文字"
-  default_prompt: "使用 $poetic-ink-visual-poster，根据主题或大纲提炼一个核心隐喻，生成一张无文字的写意泥纸意象图。"

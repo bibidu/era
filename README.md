@@ -38,25 +38,24 @@ npm run deploy:swas
 
 图片资源统一上传 **阿里云 OSS 私有桶**（bucket `agent-17718139319`），交付 **12 小时签名 URL**（防盗刷）；存图前会自动清理超过 14 小时的旧对象。见 [docs/cloud-hosting.md](./docs/cloud-hosting.md)。
 
-## 图文 Skill（图文对话出图）
+## 图文 Skill（非风水多页 + 内联封面）
 
-云端 / 本机 Agent 生成图文时，统一走 skill **图文skill**（`.cursor/skills/tuwen/SKILL.md`）：
+云端 / 本机 Agent 生成非风水图文时，走 skill **图文skill**（`.agents/skills/tuwen/SKILL.md`）：
 
-- 对话里说 **「图文skill」** 即可触发
+- 对话里说 **「图文skill」** 或 **「封面skill」** 即可触发（封面已内联）
 - 也可输入 `/tuwen`，或提到「用标题生成图文 / 小红书·抖音出图」
-- 流程分支：
-  - **风水**：确认服务 → 正文确认 → 5 个标题 → 高亮 → 校验 → 发图（封面标题与内容同图）
-  - **非风水（默认）**：问大纲 → 生成并确认内容 → 确认标题＋封面信息 → 按封面 skill 出封面图 → 用户自设高亮 → 封面＋内容高亮页拼横版确认 → 逐张发图（内容图不含一级标题，需要配图时预览环节混排展示）
+- 流程：问大纲 → 确认内容 → 确认标题＋封面字段 → `generate-cover.mjs` 出封面 → 高亮 → 拼合确认 → 入库只发自建站预览（内容图不含一级标题）
 
 技术方案：[docs/agent-mcp-design.md](./docs/agent-mcp-design.md)
 
-## 封面 Skill（单张社媒封面）
+## 风水 Skill（阳宅图文 + 诗意页背景）
 
-瑞士/技术编辑风的 **9:16** 封面，走 skill **封面skill**（`.agents/skills/fengmian/SKILL.md`）：
+风水 / 阳宅主题走 skill **风水skill**（`.agents/skills/fengshui/SKILL.md`）：
 
-- 对话里说 **「封面skill」** 即可触发（也可用 `/fengmian`）
-- 字段：大标题（可多行、可指定颜色）、小标题、描述、多个标签、多个二级标题、主题色（可省略随机）
-- 本地渲染：
+- 对话里说 **「风水skill」** / 风水风格 / 阳宅即可触发（也可用 `/fengshui`）
+- 固定风水模板 + 诗意泥纸页背景（左下/右下角意象）+ 每二级标题独占页 + 4–6 页分篇
+
+封面单张仍可用：
 
 ```bash
 node scripts/generate-cover.mjs \

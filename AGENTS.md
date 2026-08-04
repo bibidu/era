@@ -4,64 +4,55 @@
 
 完成功能改动并创建 PR 后，**直接合入 `main`**，不要询问用户是否合并。合入后执行 `npm run deploy:swas`（SSH 到服务器 `git pull` + 构建，见 skill **swas-deploy**），并把**固定站点 URL**发给用户：`http://39.106.179.17/`（可带 `?tab=`）。仅当用户明确要求先别合并 / 保持 draft 审阅时例外。约定见 `.cursor/rules/auto-merge-pr.mdc`。
 
-## 图文skill（多页长图）
+## 图文 skill（多页长图 + 内联封面）
 
-本仓库图文出图流程由 skill **图文skill**（目录 `tuwen`）定义：
+非风水社媒图文由 skill **图文skill**（目录 `tuwen`）定义：
 
 - `.agents/skills/tuwen/SKILL.md`
-- `.cursor/skills/tuwen`（指向上述目录的符号链接）
+- `.cursor/skills/tuwen`（符号链接）
 
-云端 Agent 与本机 Agent 在执行「图文skill / 用标题生成图文 / 小红书·抖音出图」类任务时，必须遵循该 skill 的逐步确认流程，并先通过 `scripts/ensure-era-ready.sh` 确认服务就绪。
+执行「图文skill / 小红书·抖音出图 / 生成封面 / 封面skill」时遵循该 skill；先 `scripts/ensure-era-ready.sh`（仅封面单张时可只跑 `generate-cover.mjs`）。
 
-非风水默认：二级标题（`##`）用阿里妈妈数黑体（`headingFontId`: `shuheiti`）；高亮色板不含灰色；**默认直接导出抖音 9:16**，无需询问平台（用户明确要求小红书时再用 3:4）。
+默认：二级标题数黑体（`headingFontId`: `shuheiti`）；高亮色板不含灰色；**默认导出抖音 9:16**。封面步骤已内联（`scripts/generate-cover.mjs`），不再使用独立 fengmian 目录。
 
-高亮步骤：先用 `era_create_highlight_setup_share` 上传正文到自建库，再发 `highlightSetupPagesUrl(shareId)`（默认 `http://39.106.179.17/?tab=highlight&shareId=…`）。**禁止**对整段 query 再 `encodeURIComponent`。打开后自动进入「高亮」Tab；用户复制配置发回后 `era_apply_highlights(replace: true)`。
+高亮：`era_create_highlight_setup_share` → `highlightSetupPagesUrl(shareId)`；禁止对整段 query 再 `encodeURIComponent`。
 
-出图步骤：导出后图片须上传（OSS / 约定存储）并**按序写入**业务库（如 `era_social_video_analyses.image_previews`，[0]=封面永久链）；**对话框里只发线上预览链接**（`http://39.106.179.17/`，可带 `?tab=data`），**不要**再逐张发送各页图片、也不要为确认来回贴图。不要再发 Gallery / `/gallery/` 链接。
+出图：上传并写入 `image_previews`（[0]=封面永久链）；对话框只发 `http://39.106.179.17/`（可带 `?tab=data`）。
 
-**发图硬性规则（全局）**：对话框**绝对禁止**直接发送 OSS 图片链接。见 `.cursor/rules/image-preview-delivery.mdc`。
+**风水 / 阳宅主题改走「风水 skill」，不要用本 skill。**
+
+## 风水 skill（阳宅图文 + 诗意页背景）
+
+- `.agents/skills/fengshui/SKILL.md`
+- `.cursor/skills/fengshui`（符号链接）
+
+固定 `pageOverlay: fengshui`、抖音 9:16、固定顶栏文案、`headingFontSize: 22`；每 `##` 独占页；诗意泥纸背景（意象左下/右下随机）；单篇 4–6 页，超出分篇；用户可见文案不得含 `<!-- era:page-break -->`。按页背景导出：`scripts/export-pages-with-bgs.mjs`。
+
+## 发图硬性规则（全局）
+
+对话框**绝对禁止**直接发送 OSS 图片链接。见 `.cursor/rules/image-preview-delivery.mdc`。
 
 - **社媒帖子**：写入 `image_previews` + 只发自建站 `http://39.106.179.17/`（建议 `?tab=data`）
-- **非社媒**：`node scripts/make-oss-preview-html.mjs` 生成 HTML（页内嵌入图链）并上传 OSS，只发 HTML URL；用完后询问是否删除该预览文件
-
-## 写意意象图 skill（无文字泥纸图）
-
-根据主题 / 大纲生成**画面无任何文字**的中文写意泥纸意象图，风格继承 [poetic-ink-quote-poster](https://github.com/Yuuhann1999/poetic-ink-quote-poster)：
-
-- `.agents/skills/poetic-ink-visual-poster/SKILL.md`
-- `.cursor/skills/poetic-ink-visual-poster`（符号链接）
-
-用户只给主题、大纲或版面描述时：提炼每章一个核心隐喻，调用内置出图；竖版泥纸留白 + 角落抽象水墨意象群；**禁止**题名/正文/署名/水印。非社媒交付走 HTML 预览页（禁止直发 OSS 图链）。
-
-## 封面skill（单张 9:16 封面）
-
-社媒封面由 skill **封面skill**（目录 `fengmian`）定义：
-
-- `.agents/skills/fengmian/SKILL.md`
-- `.cursor/skills/fengmian`（指向上述目录的符号链接）
-
-用户说「封面skill / 生成封面 / 社媒封面」或传入大标题、小标题、描述、标签、二级标题、主题色并要求出封面时：读取该 skill，运行 `node scripts/generate-cover.mjs` 生成 `1080×1920` PNG；上传 OSS（封面自动带 `__cover_keep__`）。**社媒帖子**写入 `cover_url` / `image_previews` 后只发自建站预览；**仅看封面**则发 HTML 预览页。主题色未指定则随机。不要与图文skill 的多页导出流程混淆。
+- **非社媒 / 临时确认**：`node scripts/make-oss-preview-html.mjs`，只发 HTML URL；用完后询问是否删除
 
 ## 云托管（强制）
 
-- **图片存储**：阿里云 OSS（`scripts/oss-upload.sh`）。对用户预览规则见 `.cursor/rules/image-preview-delivery.mdc` / `oss-image-delivery.mdc`。
-- **封面永久**：对象 key 含 `__cover_keep__`（`cover.png` 等会自动加标，或 `--cover`）；清理脚本跳过；公共读、查看无过期。写入社媒 `cover_url` / 预览首图必须用此 URL。
-- **预览 HTML**：`--public` 上传；`scripts/make-oss-preview-html.mjs` 生成并回传 HTML URL。
-- **过期清理**：每次存图前自动删除 `era/assets/` 下超过 **14 小时**的旧对象（`scripts/oss-cleanup-expired.sh`），避免签名过期后仍占存储计费；跳过 `__cover_keep__` 封面。
-- **Cloud Agent 上传**：Agent 常在美西、Bucket 在北京，约 3MB 需 2–3 分钟；`oss-upload.sh` 已加长读超时并在 `i/o timeout` 后 `stat` 兜底。排障见 skill **oss-upload**（`.agents/skills/oss-upload/SKILL.md`）。
-- **前端 + 业务 REST**：阿里云轻量 `39.106.179.17`（Caddy 托管 `/opt/era-web` + PostgREST）。发布：`npm run deploy:swas`（先 push `main`，再服务器 git pull + build；配置在 `deploy/swas/server.env`）。Skill：`.agents/skills/swas-deploy/SKILL.md`。交付 `http://39.106.179.17/`。
-- **Edge Functions**（余额 / 视频抽取 / image-proxy）仍在旧 Supabase。
+- **图片存储**：阿里云 OSS（`scripts/oss-upload.sh`）。预览规则见 `image-preview-delivery.mdc` / `oss-image-delivery.mdc`。
+- **封面永久**：key 含 `__cover_keep__`（或 `--cover`）；清理跳过；公共读。写入社媒 `cover_url` / 预览首图必须用此 URL。
+- **预览 HTML**：`--public`；`scripts/make-oss-preview-html.mjs`。
+- **过期清理**：存图前清理 `era/assets/` 下超过 **14 小时**旧对象；跳过 `__cover_keep__`。
+- **Cloud Agent 上传**：美西→北京约 2–3 分钟/3MB；见 skill **oss-upload**。
+- **前端 + 业务 REST**：`39.106.179.17`；发布 `npm run deploy:swas`（skill **swas-deploy**）。
+- **Edge Functions** 仍在旧 Supabase。
 - 说明：`docs/cloud-hosting.md`、skill `references/cloud-hosting.md`。
 
 ## 标题排版设置页
 
-用户需要精细控制标题换行 / 拉伸 / 字号 / 间距 / 字体 / 行内色时，**主动提供标题设置页**（顶栏「标题」或 `?tab=title&text=…`），发 `http://39.106.179.17/?tab=title&text=当前帖子标题`。**禁止**只发裸 `?tab=title`（会显示固定 demo「西北绝不能…」）。可用 `titleComposerPagesUrl(标题)` 拼链接。
-
-用户复制配置发回后，用 `node scripts/generate-title-composer.mjs --full --input <json>` 出完整 9:16 图；按 image-preview-delivery 交付（禁止直发 OSS 图链）。约定见 `.cursor/rules/title-composer.mdc`。
+精细控制标题时主动发 `http://39.106.179.17/?tab=title&text=当前帖子标题`。**禁止**只发裸 `?tab=title`。可用 `titleComposerPagesUrl(标题)`。复制配置后用 `generate-title-composer.mjs` 出图，按 image-preview-delivery 交付。见 `.cursor/rules/title-composer.mdc`。
 
 ## 前端 Tab（URL 可深链）
 
-顶栏 Tab，用 `?tab=` 打开并自动切换（无参数时**默认社媒**）：
+无参数时**默认社媒**：
 
 | Tab | URL |
 | --- | --- |

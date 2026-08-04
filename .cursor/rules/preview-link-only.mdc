@@ -16,4 +16,4 @@
 
 ## 非社媒例外
 
-非社媒生成图（写意图、单张试稿等）走 HTML 预览页，见 `.cursor/rules/image-preview-delivery.mdc`。
+非社媒生成图（风水临时确认、封面试稿等）走 HTML 预览页，见 `.cursor/rules/image-preview-delivery.mdc`。

@@ -1,0 +1,15 @@
+---
+description: 当用户要做风水/阳宅图文或诗意泥纸页背景时，必须启用风水 skill
+alwaysApply: true
+---
+
+# 风水 Skill 强制路由
+
+只要用户提到以下任一意图，**必须**读取并严格执行 `.agents/skills/fengshui/SKILL.md`（也可用 `/fengshui` 或 `.cursor/skills/fengshui`）：
+
+- 风水skill / 风水 / 风水风格 / 风水质感 / 阳宅
+- 风水主题社媒图文、诗意泥纸页背景出风水图
+
+不要与图文 skill（`tuwen`，非风水多页 + 封面）混淆。须按风水 skill：固定 fengshui 模板、二级标题独占页、诗意角意象背景、4–6 页分篇与排版缩减话术。
+
+交付遵守 `.cursor/rules/image-preview-delivery.mdc`：禁止对话框直发 OSS 图链。

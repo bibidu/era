@@ -1,6 +1,6 @@
 # 云托管与发图回链（OSS 私有读签名 + 自建站）
 
-本仓库所有 skill（图文 `tuwen` / 封面 `fengmian`）以及**任何**需要把图片发给用户的场景，统一走下列托管。
+本仓库内容 skill（图文 `tuwen` / 风水 `fengshui`）以及**任何**需要把图片发给用户的场景，统一走下列托管。预览交付见 `.cursor/rules/image-preview-delivery.mdc`（禁止对话框直发 OSS 图链）。
 
 ## 图片 → 阿里云 OSS（私有读 + 12 小时签名 URL）
 
@@ -18,9 +18,9 @@
 
 ### Skill 发图硬性要求
 
-1. 导出/渲染后必须上传 OSS，再把返回的 URL 直接发在对话框（不要发本地路径 / 用 HTML 嵌入代替）。
+1. 导出/渲染后必须上传 OSS；对用户预览走入库自建站或 HTML 预览页，**禁止**对话框直发 OSS 图链。
 2. **封面图**必须带 `__cover_keep__`（脚本对 `cover.png` / `cover-*.png` 自动处理），公共读、查看无过期；写入社媒库封面字段时用此永久 URL。
-3. HTML 多图交付：只替换 `src` / `url(...)`；确认与发图仍以对话框直发为准。
+3. 临时多图确认：`make-oss-preview-html.mjs`，只发 HTML URL。
 4. 普通图签名过期后可用 `--sign` 重新生成；不要把非封面对象改成 public-read。
 5. 不要绕过 `oss-upload.sh` 直接 `ossutil cp`，否则会漏掉 14 小时过期清理与封面标记。
 

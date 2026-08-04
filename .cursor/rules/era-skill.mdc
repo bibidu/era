@@ -1,5 +1,5 @@
 ---
-description: 当用户要用 Era / 图文做小红书/抖音出图时，必须启用图文 skill（tuwen）
+description: 当用户要用 Era / 图文 / 封面做小红书/抖音出图时，必须启用图文 skill（tuwen）
 alwaysApply: true
 ---
 
@@ -10,13 +10,14 @@ alwaysApply: true
 - 用 era / 图文skill 生成图文
 - 根据标题/大纲出小红书或抖音图
 - 图文高亮、分页导出、发图
+- 封面skill / 生成封面 / 社媒封面 / cover skill（封面已内联进图文 skill）
+
+**风水 / 阳宅 / 风水风格** → 改走 `.agents/skills/fengshui/SKILL.md`（见 `fengshui-skill.mdc`），不要用本路由。
 
 不要跳过确认步骤；不要在未启动 Era 服务时假装已出图。
 
-流程分支（见 skill）：
-- **风水**：封面标题与内容同在一套 Era 图里（原流程）。
-- **非风水（默认）**：先问大纲 → 生成内容并确认 → 确认标题＋封面所需信息（字段见「封面 skill」）→ 按封面 skill 出封面图 → 用户自设高亮 → 封面＋内容高亮页拼成横版总览确认。内容图**不含一级标题**，只含二级标题/正文/图片/代码块等；需要配图时在预览环节混排展示。默认直接导出**抖音 9:16**，无需询问平台。
+默认流程：先问大纲 → 生成内容并确认 → 确认标题＋封面字段 → 内联封面步骤出封面 → 用户自设高亮 → 封面＋内容高亮页拼合确认。内容图**不含一级标题**；默认导出**抖音 9:16**。
 
-高亮步骤：创建 share 后，用 `highlightSetupPagesUrl(shareId)` 发给用户（默认 `http://39.106.179.17/?tab=highlight&shareId=…`）；禁止对整段 query 二次 `encodeURIComponent`；打开后自动进入高亮 Tab，引导用户复制配置发回。
-确认可用 HTML 预览页；**最终对用户只发线上预览链接**（`http://39.106.179.17/`，建议 `?tab=data`），**禁止**对话框直发 OSS 图链。约定见 `.cursor/rules/preview-link-only.mdc`、`image-preview-delivery.mdc`。
-不要再发 Gallery 图文库链接。高亮色板不含灰色。
+高亮：`highlightSetupPagesUrl(shareId)`（`http://39.106.179.17/?tab=highlight&shareId=…`）；禁止对整段 query 二次 `encodeURIComponent`。
+确认可用 HTML 预览页；最终只发线上预览链接（建议 `?tab=data`）；禁止对话框直发 OSS 图链。见 `preview-link-only.mdc`、`image-preview-delivery.mdc`。
+高亮色板不含灰色。

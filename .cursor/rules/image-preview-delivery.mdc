@@ -1,5 +1,5 @@
 ---
-description: 图片预览交付：禁止直发 OSS 图链；社媒走图文入库，非社媒走 HTML 预览页
+description: 图片预览交付：禁止直发 OSS 图链；社媒走入库，非社媒走 HTML 预览页
 alwaysApply: true
 ---
 
@@ -9,20 +9,20 @@ alwaysApply: true
 
 ## 分支
 
-### A. 社媒帖子（图文 / 封面入库 / 多页长图）
+### A. 社媒帖子（图文 / 风水入库 / 多页长图）
 
-按 **图文 skill**（`.agents/skills/tuwen/SKILL.md`）：
+按 **图文 skill** 或 **风水 skill** 写入业务库：
 
-1. 图片上传存储后**按序写入**业务库 `era_social_video_analyses.image_previews`（[0]=封面 `__cover_keep__`，同步 `cover_url`）
+1. 图片上传后**按序写入** `era_social_video_analyses.image_previews`（[0]=封面/首页 `__cover_keep__`，同步 `cover_url`）
 2. 对话框**只发**自建站预览：`http://39.106.179.17/`（建议 `?tab=data`）
 3. 不要逐张发图，不要为确认来回贴 OSS 图链
 
-### B. 非社媒（写意图、单张封面试稿、拼图确认、标题排版成品、其它生成图）
+### B. 非社媒（封面试稿、风水临时确认、拼图确认、标题排版成品、其它生成图）
 
 1. 图片仍须先上传 OSS（嵌入用；可 `--public` 或 `--cover`）
-2. 用 `node scripts/make-oss-preview-html.mjs --title … --image …`（或等价）生成 HTML，**在页面内 `<img src>` 嵌入图链**
-3. HTML 以 `--public` 上传 OSS；对话框**只发 HTML 预览 URL**
-4. **必须询问**：用完后是否要删除该预览文件（及同批图）？用户确认后执行  
+2. 用 `node scripts/make-oss-preview-html.mjs --title … --image …` 生成 HTML，页内 `<img src>` 嵌入图链
+3. HTML 以 `--public` 上传；对话框**只发 HTML 预览 URL**
+4. **必须询问**：用完后是否删除该预览文件（及同批图）？确认后：  
    `node scripts/make-oss-preview-html.mjs --delete-manifest <manifest.json>`
 
 ## 禁止
@@ -37,3 +37,4 @@ alwaysApply: true
 - 上传：`scripts/oss-upload.sh`（`--public` / `--cover`）
 - HTML 预览：`scripts/make-oss-preview-html.mjs`
 - 社媒最终交付：`.cursor/rules/preview-link-only.mdc`
+- 图文：`.agents/skills/tuwen/SKILL.md`；风水：`.agents/skills/fengshui/SKILL.md`

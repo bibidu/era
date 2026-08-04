@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 /**
- * 按页切换 reference 背景并导出 Era 图文页。
+ * 风水 skill：按页切换诗意 reference 背景并导出 Era 图文页。
+ * 见 .agents/skills/fengshui/SKILL.md
+ *
  * 用法:
  *   node scripts/export-pages-with-bgs.mjs \
  *     --project <id> \
- *     --bg-dir output/caishen-fengshui/bg \
- *     --bg-glob 'caishen-bg-*.png' \
- *     --out output/caishen-fengshui/pages
+ *     --bg-dir <背景目录> \
+ *     --plan <可选 plan.json> \
+ *     --out <导出目录>
  */
 import { spawnSync } from 'node:child_process'
 import { readFileSync, readdirSync, mkdirSync, writeFileSync, copyFileSync, existsSync } from 'node:fs'

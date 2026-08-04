@@ -24,7 +24,8 @@
 ## 源文件
 
 - `content.md`：正文，`<!-- era:page-break -->` 为分页符
-- `cover.json`：封面参数，重出用 `node scripts/generate-cover.mjs`（入参见 `.agents/skills/fengmian/SKILL.md`）
+- `cover.json`：封面参数，重出用 `node scripts/generate-cover.mjs`（入参见 `.agents/skills/tuwen/SKILL.md` §封面）
+
 
 正文改动后需重新导出：Era 项目 id `f70f7829-8432-4bec-b528-a1045aa71720`（本地 Era 服务状态，跨机器需重建项目）。
 

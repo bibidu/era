@@ -1,6 +1,6 @@
 # 封面渲染脚本
 
-供 **封面skill** 调用：用 HTML 瑞士/技术编辑风模板 + Playwright 截出 `1080×1920`（9:16）PNG。
+供图文 skill §封面调用：用 HTML 瑞士/技术编辑风模板 + Playwright 截出 `1080×1920`（9:16）PNG。
 
 ```bash
 node scripts/generate-cover.mjs --help
