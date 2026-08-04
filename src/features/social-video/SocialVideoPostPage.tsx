@@ -9,6 +9,7 @@ import {
   patchSocialVideoAnalysis,
   type SocialVideoAnalysisRecord,
   type SocialVideoExtractStatus,
+  type SocialVideoTempGovernStatus,
   type SocialVideoWorkType,
 } from '../../agent/supabaseSocialVideoAnalysis'
 import { BottomSheet } from '../../components/BottomSheet'
@@ -32,7 +33,7 @@ interface SocialVideoPostPageProps {
   flushTop?: boolean
 }
 
-type DetailTab = 'detail' | 'data'
+type DetailTab = 'detail' | 'data' | 'govern'
 
 const MAX_MEDIA_ITEMS = 12
 const FRAME_MAX_WIDTH = 720
@@ -60,6 +61,22 @@ function extractStatusTagStyle(status: SocialVideoExtractStatus): {
     case '提取中':
       return { background: 'rgb(59 130 246 / 0.95)', color: '#ffffff' }
     case '提取失败':
+      return { background: 'rgb(220 38 38 / 0.9)', color: '#ffffff' }
+    default:
+      return { background: 'rgb(0 0 0 / 0.55)', color: '#ffffff' }
+  }
+}
+
+function tempGovernStatusTagStyle(status: SocialVideoTempGovernStatus): {
+  background: string
+  color: string
+} {
+  switch (status) {
+    case '治理成功':
+      return { background: 'rgb(22 163 74 / 0.92)', color: '#ffffff' }
+    case '正在治理':
+      return { background: 'rgb(59 130 246 / 0.95)', color: '#ffffff' }
+    case '治理失败':
       return { background: 'rgb(220 38 38 / 0.9)', color: '#ffffff' }
     default:
       return { background: 'rgb(0 0 0 / 0.55)', color: '#ffffff' }
@@ -124,10 +141,11 @@ function mergeRecord(
     extract_images: next.extract_images ?? prev.extract_images,
     extract_data: next.extract_data ?? prev.extract_data,
     cover_url: next.cover_url ?? prev.cover_url,
+    temp_govern_status: next.temp_govern_status ?? prev.temp_govern_status,
   }
 }
 
-/** 帖子详情：详情 / 数据 Tab */
+/** 帖子详情：详情 / 数据 / 临时数据治理 Tab */
 export function SocialVideoPostPage({
   record,
   onBack,
@@ -146,8 +164,11 @@ export function SocialVideoPostPage({
   const [contentSheetOpen, setContentSheetOpen] = useState(false)
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([])
+  const [governImageFiles, setGovernImageFiles] = useState<File[]>([])
+  const [governImagePreviewUrls, setGovernImagePreviewUrls] = useState<string[]>([])
   const [isCreating, setIsCreating] = useState(false)
-  const [successToast, setSuccessToast] = useState(false)
+  const [isGoverning, setIsGoverning] = useState(false)
+  const [successToast, setSuccessToast] = useState<string | null>(null)
   const [downloadStatus, setDownloadStatus] = useState('')
   const [preparedContentFiles, setPreparedContentFiles] = useState<(File | null)[]>([])
 
@@ -163,9 +184,11 @@ export function SocialVideoPostPage({
   const onUpdatedRef = useRef(onUpdated)
   onUpdatedRef.current = onUpdated
 
-  // 仅在提取中时静默轮询，避免进页反复闪
+  // 提取中 / 临时治理中时静默轮询，避免进页反复闪
   useEffect(() => {
-    if (view.extract_status !== '提取中') return
+    const polling =
+      view.extract_status === '提取中' || view.temp_govern_status === '正在治理'
+    if (!polling) return
     let cancelled = false
     const tick = async () => {
       try {
@@ -184,7 +207,7 @@ export function SocialVideoPostPage({
       cancelled = true
       window.clearInterval(timer)
     }
-  }, [view.extract_status, view.id])
+  }, [view.extract_status, view.temp_govern_status, view.id])
 
   const contentPreviews = useMemo(() => {
     const fromField = (view.image_previews || []).filter(Boolean)
@@ -242,6 +265,14 @@ export function SocialVideoPostPage({
       for (const url of urls) URL.revokeObjectURL(url)
     }
   }, [imageFiles])
+
+  useEffect(() => {
+    const urls = governImageFiles.map((file) => URL.createObjectURL(file))
+    setGovernImagePreviewUrls(urls)
+    return () => {
+      for (const url of urls) URL.revokeObjectURL(url)
+    }
+  }, [governImageFiles])
 
   /**
    * 未开始：数据 Tab 不可点。
@@ -341,18 +372,71 @@ export function SocialVideoPostPage({
 
       setImageFiles([])
       setStatusMessage('')
-      setSuccessToast(true)
+      setSuccessToast('创建任务成功')
       const full = await getSocialVideoAnalysis(view.id)
       setView(full)
       onUpdated?.(full)
       window.setTimeout(() => {
-        setSuccessToast(false)
+        setSuccessToast(null)
         setTab('data')
       }, 1000)
     } catch (error) {
       setStatusMessage(error instanceof Error ? `创建失败：${error.message}` : '创建失败')
     } finally {
       setIsCreating(false)
+    }
+  }
+
+  async function handleGovernSubmit() {
+    if (isGoverning) return
+    if (view.temp_govern_status === '正在治理') {
+      setStatusMessage('正在治理中，请稍候')
+      return
+    }
+    if (governImageFiles.length === 0) {
+      setStatusMessage('请先上传图片')
+      return
+    }
+    setIsGoverning(true)
+    setStatusMessage('正在提交治理任务...')
+    try {
+      const images = []
+      for (const file of governImageFiles.slice(0, MAX_MEDIA_ITEMS)) {
+        images.push(await compressImageFile(file))
+      }
+      const response = await fetch(legacyEdgeFunctionUrl('create-govern-task'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: LEGACY_SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${LEGACY_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ postId: view.id, images }),
+      })
+      const text = await response.text()
+      let data: { ok?: boolean; error?: string } = {}
+      if (text) {
+        try {
+          data = JSON.parse(text) as typeof data
+        } catch {
+          throw new Error(text.slice(0, 240) || `HTTP ${response.status}`)
+        }
+      }
+      if (!response.ok || data.error) {
+        throw new Error(data.error || `HTTP ${response.status}`)
+      }
+
+      setGovernImageFiles([])
+      setStatusMessage('')
+      setSuccessToast('提交成功')
+      const full = await getSocialVideoAnalysis(view.id)
+      setView(full)
+      onUpdated?.(full)
+      window.setTimeout(() => setSuccessToast(null), 1200)
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? `提交失败：${error.message}` : '提交失败')
+    } finally {
+      setIsGoverning(false)
     }
   }
 
@@ -419,7 +503,7 @@ export function SocialVideoPostPage({
             className="rounded-3xl border px-6 py-5 text-center text-base font-semibold shadow-lg"
             style={{ ...panelStyle, color: 'var(--era-fg)' }}
           >
-            创建任务成功
+            {successToast}
           </div>
         </div>
       ) : null}
@@ -452,7 +536,7 @@ export function SocialVideoPostPage({
         style={{ borderColor: 'var(--era-border)', background: 'var(--era-bg)' }}
       >
         <div
-          className="inline-flex items-center rounded-full border p-1"
+          className="inline-flex max-w-full items-center overflow-x-auto rounded-full border p-1"
           style={{
             borderColor: 'var(--era-border)',
             background: 'var(--era-input)',
@@ -506,12 +590,37 @@ export function SocialVideoPostPage({
               {view.extract_status}
             </span>
           </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'govern'}
+            className="relative rounded-full px-4 py-1.5 text-sm font-medium transition"
+            style={
+              tab === 'govern'
+                ? {
+                    background: 'var(--era-panel)',
+                    color: 'var(--era-fg)',
+                    boxShadow: '0 1px 2px rgb(0 0 0 / 0.12)',
+                  }
+                : { background: 'transparent', color: 'var(--era-muted)' }
+            }
+            onClick={() => setTab('govern')}
+          >
+            数据治理
+            <span
+              className="pointer-events-none absolute -right-1.5 -top-1.5 z-10 max-w-[6.5rem] truncate rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none tracking-wide shadow-sm"
+              style={tempGovernStatusTagStyle(view.temp_govern_status)}
+              title="临时字段 temp_govern_status"
+            >
+              临时·{view.temp_govern_status}
+            </span>
+          </button>
         </div>
       </div>
 
       <div
         className={`min-h-0 flex-1 px-4 py-4 ${
-          tab === 'data' ? 'overflow-hidden' : 'overflow-y-auto'
+          tab === 'data' || tab === 'govern' ? 'overflow-hidden' : 'overflow-y-auto'
         }`}
       >
         {tab === 'detail' ? (
@@ -602,7 +711,7 @@ export function SocialVideoPostPage({
               </p>
             ) : null}
           </div>
-        ) : (
+        ) : tab === 'data' ? (
           <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col gap-3">
             {showExtractForm ? (
               <div className="shrink-0">{renderExtractForm()}</div>
@@ -659,6 +768,105 @@ export function SocialVideoPostPage({
               </p>
             ) : null}
           </div>
+        ) : (
+          <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col gap-3">
+            <div className="flex shrink-0 flex-col gap-2 rounded-3xl border p-4" style={panelStyle}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium">图片上传（有序，可多选）</span>
+                <span
+                  className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                  style={{ background: 'rgb(245 158 11 / 0.2)', color: 'rgb(217 119 6)' }}
+                >
+                  临时功能
+                </span>
+              </div>
+              <input
+                className={`${fieldClass} border-dashed file:mr-3 file:rounded-full file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-semibold file:text-neutral-950`}
+                style={fieldStyle}
+                accept="image/*"
+                type="file"
+                multiple
+                disabled={isGoverning || view.temp_govern_status === '正在治理'}
+                onChange={(event) => {
+                  const files = Array.from(event.target.files || []).filter((file) =>
+                    file.type.startsWith('image/'),
+                  )
+                  setGovernImageFiles(files.slice(0, MAX_MEDIA_ITEMS))
+                }}
+              />
+              <p className="text-xs" style={{ color: 'var(--era-muted)' }}>
+                提交后将按当前顺序完整替换预览图；服务端再纵向拼接长图 OCR，写回内容字段（markdown）。
+              </p>
+              {governImageFiles.length > 0 ? (
+                <span className="text-xs" style={{ color: 'var(--era-muted)' }}>
+                  已选 {governImageFiles.length} 张（顺序即入库顺序）
+                </span>
+              ) : null}
+            </div>
+
+            <div className="flex min-h-0 flex-1 flex-col gap-2">
+              <span className="shrink-0 text-sm font-medium">
+                图片展示（{governImagePreviewUrls.length || contentPreviews.length}）
+              </span>
+              {governImagePreviewUrls.length > 0 ? (
+                <div className="-mx-1 flex min-h-0 flex-1 gap-3 overflow-x-auto px-1 pb-1">
+                  {governImagePreviewUrls.map((src, index) => (
+                    <div
+                      key={`${src}-${index}`}
+                      className="relative aspect-[9/16] w-[42%] max-w-[11rem] shrink-0 overflow-hidden rounded-2xl border"
+                      style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
+                    >
+                      <img
+                        src={src}
+                        alt={`治理待传 ${index + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                      <span
+                        className="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[10px] font-semibold text-white"
+                        style={{ background: 'rgb(0 0 0 / 0.55)' }}
+                      >
+                        {index + 1}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : contentPreviews.length > 0 ? (
+                <div className="-mx-1 flex min-h-0 flex-1 gap-3 overflow-x-auto px-1 pb-1">
+                  {contentPreviewItems.map((image, index) => (
+                    <button
+                      key={`${image.src}-${index}`}
+                      type="button"
+                      className="relative aspect-[9/16] w-[42%] max-w-[11rem] shrink-0 overflow-hidden rounded-2xl border"
+                      style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
+                      onClick={() => openViewer(contentPreviewItems, index)}
+                    >
+                      <img src={image.src} alt={image.alt} className="h-full w-full object-cover" />
+                      <span
+                        className="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[10px] font-semibold text-white"
+                        style={{ background: 'rgb(0 0 0 / 0.55)' }}
+                      >
+                        {index + 1}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs" style={{ color: 'var(--era-muted)' }}>
+                  暂无图片，请先上传
+                </p>
+              )}
+            </div>
+
+            {statusMessage ? (
+              <p className="shrink-0 text-sm" style={{ color: 'var(--era-muted)' }}>
+                {statusMessage}
+              </p>
+            ) : view.temp_govern_status === '正在治理' ? (
+              <p className="shrink-0 text-sm" style={{ color: 'var(--era-muted)' }}>
+                预览图已替换，正在异步识别长图并写回内容…
+              </p>
+            ) : null}
+          </div>
         )}
       </div>
 
@@ -670,7 +878,21 @@ export function SocialVideoPostPage({
           background: 'var(--era-bg)',
         }}
       >
-        {showExtractForm ? (
+        {tab === 'govern' ? (
+          <button
+            type="button"
+            className="h-12 w-full rounded-2xl text-sm font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ background: 'var(--era-button)', color: 'var(--era-button-fg)' }}
+            disabled={
+              isGoverning ||
+              governImageFiles.length === 0 ||
+              view.temp_govern_status === '正在治理'
+            }
+            onClick={() => void handleGovernSubmit()}
+          >
+            {isGoverning || view.temp_govern_status === '正在治理' ? '治理中...' : '开始治理'}
+          </button>
+        ) : showExtractForm ? (
           <button
             type="button"
             className="h-12 w-full rounded-2xl text-sm font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
