@@ -53,7 +53,7 @@ export interface GraphicTextConfig {
   showWordCount: boolean
   /**
    * 系列期数顶栏（仅内容首页 / 整套第 2 页含封面）：如「每天一个提效实操·第14期」。
-   * 有值时该页顶栏改为此文案、底边朱红线，并与下方正文留出约三行间距。
+   * 有值时该页顶栏改为此文案、底边朱红线（线宽随文字，不拉满整行），并与下方正文留出约三行间距。
    */
   seriesLabel: string
   backgroundUrl: string | null

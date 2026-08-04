@@ -36,7 +36,7 @@ import {
   shouldDrawPageOverlay,
   shouldDrawReferenceBackground,
 } from './pageLayering'
-import { resolveTopBarBorderColor, resolveTopBarParts } from './topBar'
+import { isSeriesLabelPage, resolveTopBarBorderColor, resolveTopBarParts } from './topBar'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -326,16 +326,10 @@ async function drawPage(
   const underlineY = topBarY + topBarHeight - 6
 
   const isFengshui = config.pageOverlay === 'fengshui'
+  const seriesTopBar = isSeriesLabelPage(config, page.index)
   const topBarLineColor = resolveTopBarBorderColor(config, page.index)
   const topBarTextColor = isFengshui ? FENGSHUI_TOP_BAR_TEXT_COLOR : GRAPHIC_TOP_BAR_TEXT_COLOR
   const topBarDividerColor = GRAPHIC_TOP_BAR_DIVIDER_COLOR
-
-  ctx.strokeStyle = topBarLineColor
-  ctx.lineWidth = 2
-  ctx.beginPath()
-  ctx.moveTo(edgeX, underlineY)
-  ctx.lineTo(edgeX + edgeWidth, underlineY)
-  ctx.stroke()
 
   ctx.fillStyle = topBarTextColor
   const topBarFontSize = Math.round(TOP_BAR_FONT_SIZE_PX * exportScale)
@@ -347,6 +341,18 @@ async function drawPage(
   const topBarAscent = topBarMetrics.actualBoundingBoxAscent ?? topBarFontSize * 0.85
   const topBarDescent = topBarMetrics.actualBoundingBoxDescent ?? topBarFontSize * 0.15
   const topBarMidY = topBarTextY - (topBarAscent + topBarDescent) / 2
+
+  // 系列期数顶栏：朱红线只划到文字结束；其余顶栏仍整行底边
+  let topBarLineWidth = edgeWidth
+  if (seriesTopBar && topBar.custom) {
+    topBarLineWidth = Math.min(edgeWidth, ctx.measureText(topBar.custom).width)
+  }
+  ctx.strokeStyle = topBarLineColor
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(edgeX, underlineY)
+  ctx.lineTo(edgeX + topBarLineWidth, underlineY)
+  ctx.stroke()
 
   if (topBar.custom && topBar.countText) {
     const gap = Math.max(6, Math.round(8 * exportScale))

@@ -42,7 +42,7 @@ import { PageFengshuiOverlay } from './PageFengshuiOverlay'
 import { PagePixelOverlay } from './PagePixelOverlay'
 import { PageWiremeshOverlay } from './PageWiremeshOverlay'
 import { shouldDrawPageOverlay, shouldDrawReferenceBackground } from './pageLayering'
-import { resolveTopBarBorderColor, resolveTopBarParts } from './topBar'
+import { isSeriesLabelPage, resolveTopBarBorderColor, resolveTopBarParts } from './topBar'
 import { FENGSHUI_TOP_BAR_TEXT_COLOR } from './pageFengshuiTokens'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 
@@ -571,6 +571,7 @@ export function GraphicPage({
   const textColors = config.colorHighlightColors ?? {}
   const accentColor = config.highlightPickerColor
   const isFengshui = config.pageOverlay === 'fengshui'
+  const seriesTopBar = isSeriesLabelPage(config, page.index)
   const topBarBorderColor = resolveTopBarBorderColor(config, page.index)
   const topBarTextColor = isFengshui ? FENGSHUI_TOP_BAR_TEXT_COLOR : GRAPHIC_TOP_BAR_TEXT_COLOR
   const topBarDividerColor = GRAPHIC_TOP_BAR_DIVIDER_COLOR
@@ -611,10 +612,12 @@ export function GraphicPage({
         config.overlayStacked && <PageGradientOverlay variant={config.gradientVariant} />}
 
       <div
-        className="absolute z-10 flex min-w-0 items-center gap-2 border-b"
+        className={`absolute z-10 flex min-w-0 items-center gap-2 border-b ${
+          seriesTopBar ? 'w-max max-w-full' : ''
+        }`}
         style={{
           left: `${percent.safeX}%`,
-          right: `${percent.safeX}%`,
+          ...(seriesTopBar ? {} : { right: `${percent.safeX}%` }),
           top: `${percent.topBarTop}%`,
           height: `${percent.topBarHeight}%`,
           paddingBottom: '6px',
