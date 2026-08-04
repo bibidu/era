@@ -1,7 +1,7 @@
 ---
 name: tuwen
 description: >-
-  【图文skill】用 Era 根据标题/大纲生成社媒图文（小红书 3:4 / 抖音 9:16），含正文确认、5 个标题候选、内联瑞士风封面、高亮设置页、布局校验与导出发图。
+  【图文skill】用 Era 根据标题/大纲生成社媒图文（小红书 3:4 / 抖音 9:16），含正文确认、5 个标题候选、内联瑞士风封面、布局校验与导出发图。
   当用户说「图文skill」、图文、小红书/抖音出图、用标题生成图文、导出海报长图，或「封面skill」、生成封面、社媒封面、cover skill、做一张封面时必须使用本 skill。
   风水/阳宅主题改走「风水skill」（fengshui），不要用本 skill。
 ---
@@ -27,6 +27,8 @@ description: >-
 **字体**：二级标题（`##`）默认阿里妈妈数黑体（`headingFontId`: `shuheiti`，`headingFontFamily`: `"Alimama ShuHeiTi", sans-serif`）。一级标题与正文保持宋体，除非用户另指定。
 
 **顶部文案**：固定 `点赞关注不迷路～`；`showWordCount: false`。
+
+**高亮**：默认**不做高亮**。封面确认后直接布局校验 → 导出 → 入库；不要发高亮设置页，不要 `era_apply_highlights`。仅当用户明确要求「加高亮 / 打开高亮设置页」时才走 §高亮。
 
 ---
 
@@ -57,13 +59,19 @@ description: >-
 
 按 **§封面** 出图。上传 OSS（`__cover_keep__`）后**默认写入** `image_previews` / `cover_url`，确认与预览一律走自建站 `http://39.106.179.17/?tab=data`；**禁止**对话框直发 OSS 图链。仅当用户**强烈要求**临时 HTML 时才用 `make-oss-preview-html.mjs`。
 
-### 5. 高亮（内容图）
+### 5. 内容图校验与导出（默认跳过高亮）
 
-按 **§高亮**（优先设置页）。
+封面确认后**直接**：
+
+1. 建工程 / 写正文 / `era_update_config`（见下方要点）
+2. `era_preview_layout`，修非标题类告警
+3. `era_export_images`（含拼图 `sheetPath`）
+
+**不要**主动发高亮设置页；用户未点名高亮时整条链路无高亮。
 
 ### 6. 拼合横版总览并确认
 
-封面 + 各内容高亮页拼成横版总览；**默认入库后**用自建站链接确认；**禁止**直发 OSS 图链。勿用 HTML 代替入库，除非用户强烈要求。
+封面 + 各内容页拼成横版总览；**默认入库后**用自建站链接确认；**禁止**直发 OSS 图链。勿用 HTML 代替入库，除非用户强烈要求。
 
 ### 7. 入库交付（默认）
 
@@ -163,19 +171,16 @@ bash scripts/oss-upload.sh --cover <path>
 
 ---
 
-## §高亮
+## §高亮（仅用户明确要求时）
 
-### 何时
-
-- 必须主动发高亮设置页；仅当用户说「你来自动高亮 / 按默认方案」才可跳过。
-- 设置页回传后仍 `era_apply_highlights`（`replace: true`）。
+默认跳过本节。仅当用户说「加高亮 / 要高亮设置页 / 帮我标高亮」等时才执行。
 
 ### 设置页
 
 1. 已有 `projectId`
 2. `era_create_highlight_setup_share` → `http://39.106.179.17/?tab=highlight&shareId=…`
 3. **禁止**对整段 query 二次 `encodeURIComponent`
-4. 引导用户点选后复制配置发回 → `era_apply_highlights`
+4. 引导用户点选后复制配置发回 → `era_apply_highlights`（`replace: true`）
 
 ### 配色与密度
 
@@ -190,7 +195,7 @@ bash scripts/oss-upload.sh --cover <path>
 
 1. `era_update_config`：`aspectRatio`（默认 `9:16`）、`pageOverlay: 'pixel'`、二级标题 `shuheiti`、`titleLineHeight` 不过松
 2. `era_preview_layout`
-3. 修告警（内容图忽略标题类告警）：单行溢出、孤行、独行标点、画圈跨行、高亮超限、行高过松、字号过小等
+3. 修告警（内容图忽略标题类告警）：单行溢出、孤行、独行标点、画圈跨行、行高过松、字号过小等
 4. `era_export_images`（含拼图 `sheetPath`）
 
 ---
@@ -218,7 +223,7 @@ bash scripts/oss-upload.sh --cover <本地png>
 | --- | --- |
 | 建工程 / 正文 | `era_create_project` · `era_set_markdown`（内容去掉 H1） |
 | 配置 | `era_update_config`（`9:16` + `pixel` + `shuheiti` + 固定 topText） |
-| 高亮 / 分享 | `era_apply_highlights` · `era_create_highlight_setup_share` |
+| 高亮（可选） | `era_apply_highlights` · `era_create_highlight_setup_share`（仅用户点名时） |
 | 标题页 | `?tab=title&text=<标题>` |
 | 校验 / 导出 | `era_preview_layout` · `era_export_images` |
 | 封面 | `node scripts/generate-cover.mjs` |
