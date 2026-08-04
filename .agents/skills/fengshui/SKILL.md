@@ -90,7 +90,7 @@ description: >-
 
 1. 文案阶段：把**上 / 中 / 下各篇正文一次全部发出**（均去掉 page-break），方便用户检查分篇是否连贯、衔接与篇末预告是否对得上。禁止只丢上篇、藏着中下篇。
 2. 用户确认整套文案（或改完再齐发一版）之前：禁止任一篇出图、上传 OSS、写入 `image_previews`、发预览链接。
-3. 整套确认后：再按篇依次（或用户要求时同批）高亮 → 诗意背景 → 导出 → **入库** → 发自建站链接。
+3. 整套确认后：再按篇依次（或用户要求时同批）仅预告黄刷（若有）→ 诗意背景 → 导出 → **入库** → 发自建站链接。
 4. 各篇诗意背景可各自随机一套色调（见 §2 H），但**单篇内全部背景图必须同色调**。
 
 ### G. 缩减原则
@@ -121,7 +121,7 @@ description: >-
 1. 写 `bg-plan.json`（或等价）时：全篇所有页的 `paper` 字段填**同一字符串**；辅色描述也全文统一。
 2. 生成每张背景的 prompt 必须带上该统一纸色 + 统一辅色；意象/角位可按页变化，**色调不可变**。
 3. 导出前目测：若某页明显跳色，只重生该页并强制沿用本篇纸色。
-4. 高亮色板仍按 §高亮独立选择，**不必**与诗意纸色绑定。
+4. 预告黄刷色与诗意纸色**不必**绑定。
 
 ---
 
@@ -132,7 +132,7 @@ description: >-
 3. 若需分篇：按 **§2 F** 把各篇文案**一次齐发**请用户看连贯，确认后再出图入库。
 4. 确认后 `era_create_project` / `era_set_markdown`（写入 §1 固定 config；工程内保留 page-break）。
 5. **社媒标题**：给 5 个候选；分篇时每个候选都必须在标题末带 `（上篇）` 等（见 §2 C）；选定后 `era_set_title`（含括号篇名）。精细排版可发 `http://39.106.179.17/?tab=title&text=<标题>`（禁止裸 `?tab=title`）。
-6. **高亮**：见 §高亮（一级标题默认至少一处画圈，或 `titlePrimaryColor` / 文字色）。
+6. **高亮**：见 §高亮——**不发高亮设置页**；除下一篇预告黄色刷子外不加其它高亮。
 7. **校验**：`era_preview_layout`；修告警；核对 §2 与 §输出前检查。
 8. **诗意页背景**：见 §诗意页背景 → 先为本篇选定统一纸色（§2 H）再逐页生成 → 按页导出。
 9. **交付**：见 §发图（默认入库）。
@@ -174,12 +174,10 @@ node scripts/export-pages-with-bgs.mjs \
 
 ## 5. 高亮
 
-- 优先发高亮设置页：`era_create_highlight_setup_share` → `http://39.106.179.17/?tab=highlight&shareId=…`（禁止对整段 query 二次 `encodeURIComponent`）。
-- 用户回传后 `era_apply_highlights`（`replace: true`）。
-- 色种类 ≤ 3；色板无灰；笔刷与下划线同色；二级标题不要高亮。
-- **一级标题**：默认至少一处画圈；用户禁止画圈时用 `titlePrimaryColor` 或文字色。
-- **下一篇预告段**：固定黄色刷子 `#FACC15`（见 §2 F）；与用户其它高亮合并时保留该段 brush，勿覆盖漏掉。
-- 一页计入密度的高亮 ≤ 3 处（li 子标题整组除外；预告刷子整段计入 1 处）。
+- **默认不加用户高亮，也不发高亮设置页**（勿调用 `era_create_highlight_setup_share`，勿把 `?tab=highlight` 链接发给用户）。
+- **唯一例外——下一篇预告段**：若本篇末有预告下篇的单独段落，出图前用 `era_apply_highlights`（`replace: true`）对该段全文写入黄色刷子：`style: brush`，颜色 `#FACC15`（明黄）。勿改成下划线/画圈/其它颜色。
+- 无下一篇预告（末篇）时：不写任何高亮。
+- 一级标题不强制画圈；二级标题不要高亮。
 - 高亮色与诗意背景纸色**无强制绑定**。
 
 ---
@@ -188,7 +186,7 @@ node scripts/export-pages-with-bgs.mjs \
 
 1. 确认 config 含 §1 固定项且 `headingFontSize: 22`
 2. `era_preview_layout`
-3. 修告警：单行溢出、孤行、独行标点、画圈跨行、高亮超限、行高过松、字号过小、标题缺画圈等
+3. 修告警：单行溢出、孤行、独行标点、行高过松、字号过小等（无用户高亮时忽略画圈/高亮密度类告警）
 4. 目测第 2 页起是否超约 2/3 版面；页数是否 4–6 或已分篇并完成上篇确认
 5. 诗意背景：本篇纸色已统一写入 plan；挂载后导出各页 PNG
 
@@ -231,7 +229,7 @@ bash scripts/oss-upload.sh --cover <page.png>
 | --- | --- |
 | 就绪 | `bash scripts/ensure-era-ready.sh` |
 | 建工程 / 正文 / 标题 / 配置 | `era_create_project` / `era_set_markdown` / `era_set_title` / `era_update_config` |
-| 高亮 | `era_apply_highlights`、`era_create_highlight_setup_share` |
+| 高亮（仅预告黄刷） | `era_apply_highlights`（勿发高亮设置页） |
 | 校验 / 导出 | `era_preview_layout`、`era_export_images` |
 | 按页背景导出 | `node scripts/export-pages-with-bgs.mjs` |
 | OSS（入库用） | `bash scripts/oss-upload.sh --cover …` |
