@@ -24,7 +24,7 @@ const VIDEO_EVENT_TIMEOUT_MS = 10000
 
 const NETWORK_ERROR_MARKERS = ['failed to fetch', 'networkerror', 'load failed', 'type error']
 
-const DEFAULT_PROMPT = `你只需要提取以下信息，并最终按照同样的格式补充数据，如果没有发现该数据则空着不填。
+const DEFAULT_PROMPT = `你只需要提取以下信息，并最终按照同样的格式补充数据，如果没有发现该数据则填写未知。
 
 #总览
 作品名称
