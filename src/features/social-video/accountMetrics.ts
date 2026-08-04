@@ -249,7 +249,7 @@ export function parsePostMetrics(record: SocialVideoAnalysisRecord): PostMetrics
     share,
     favorite,
     swipeRate: field(content, '划走率'),
-    imageViews: field(content, '平均浏览图片数', '评论浏览图片数'),
+    imageViews: field(content, '平均浏览图片数'),
     expandRate: field(content, '文案展开率'),
     fanGain,
     fanLoss,
