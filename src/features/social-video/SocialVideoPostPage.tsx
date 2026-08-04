@@ -240,10 +240,19 @@ export function SocialVideoPostPage({
     }
   }, [imageFiles])
 
-  /** 提取入口在数据 Tab（配置卡片）；未开始/失败可创建，提取中与成功看结果 */
+  /**
+   * 未开始：数据 Tab 不可点。
+   * 提取创建入口挂详情（配置卡片）；创建成功后解锁数据 Tab。
+   * 失败重试 / 结果查看在数据 Tab。
+   */
+  const dataTabDisabled = view.extract_status === '未开始'
   const showExtractForm =
-    tab === 'data' &&
-    (view.extract_status === '未开始' || view.extract_status === '提取失败')
+    (tab === 'detail' && view.extract_status === '未开始') ||
+    (tab === 'data' && view.extract_status === '提取失败')
+
+  useEffect(() => {
+    if (dataTabDisabled && tab === 'data') setTab('detail')
+  }, [dataTabDisabled, tab])
 
   async function handleWorkTypeChange(next: SocialVideoWorkType) {
     if (savingType || next === view.work_type) return
@@ -468,7 +477,9 @@ export function SocialVideoPostPage({
           type="button"
           role="tab"
           aria-selected={tab === 'data'}
-          className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition"
+          aria-disabled={dataTabDisabled}
+          disabled={dataTabDisabled}
+          className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-45"
           style={
             tab === 'data'
               ? { background: 'var(--era-button)', color: 'var(--era-button-fg)' }
@@ -478,7 +489,9 @@ export function SocialVideoPostPage({
                   border: '1px solid var(--era-border)',
                 }
           }
-          onClick={() => setTab('data')}
+          onClick={() => {
+            if (!dataTabDisabled) setTab('data')
+          }}
         >
           数据
           <span
@@ -571,6 +584,8 @@ export function SocialVideoPostPage({
               </button>
             </div>
 
+            {showExtractForm ? renderExtractForm('配置 1') : null}
+
             {statusMessage ? (
               <p className="text-sm" style={{ color: 'var(--era-muted)' }}>
                 {statusMessage}
@@ -581,65 +596,54 @@ export function SocialVideoPostPage({
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
             {showExtractForm ? renderExtractForm('配置 1') : null}
 
-            {view.extract_status !== '未开始' ? (
-              <>
-                <div className="flex flex-col gap-2">
-                  <span className="text-sm font-medium">上传图片（{extractImages.length}）</span>
-                  {extractImages.length === 0 ? (
-                    <p className="text-xs" style={{ color: 'var(--era-muted)' }}>
-                      暂无提取图片
-                    </p>
-                  ) : (
-                    <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
-                      {extractPreviewItems.map((image, index) => (
-                        <button
-                          key={`${image.src}-${index}`}
-                          type="button"
-                          className="aspect-[9/16] w-[calc(50%-0.4rem)] max-w-[14rem] shrink-0 overflow-hidden rounded-2xl border"
-                          style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
-                          onClick={() => openViewer(extractPreviewItems, index)}
-                        >
-                          <img
-                            src={image.src}
-                            alt={image.alt}
-                            className="h-full w-full object-cover"
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  )}
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium">上传图片（{extractImages.length}）</span>
+              {extractImages.length === 0 ? (
+                <p className="text-xs" style={{ color: 'var(--era-muted)' }}>
+                  暂无提取图片
+                </p>
+              ) : (
+                <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+                  {extractPreviewItems.map((image, index) => (
+                    <button
+                      key={`${image.src}-${index}`}
+                      type="button"
+                      className="aspect-[9/16] w-[calc(50%-0.4rem)] max-w-[14rem] shrink-0 overflow-hidden rounded-2xl border"
+                      style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
+                      onClick={() => openViewer(extractPreviewItems, index)}
+                    >
+                      <img src={image.src} alt={image.alt} className="h-full w-full object-cover" />
+                    </button>
+                  ))}
                 </div>
+              )}
+            </div>
 
-                <div className="flex flex-col gap-2">
-                  <span className="text-sm font-medium">提取数据</span>
-                  <div
-                    className="overflow-y-auto rounded-2xl border p-4"
-                    style={{
-                      ...fieldStyle,
-                      height: '80vh',
-                      maxHeight: '80vh',
-                    }}
-                  >
-                    {extractText ? (
-                      view.markdown?.trim().startsWith('{') ||
-                      view.markdown?.trim().startsWith('[') ? (
-                        <pre className="font-mono text-xs leading-5 whitespace-pre-wrap break-words">
-                          {extractText}
-                        </pre>
-                      ) : (
-                        <MarkdownPreview value={view.markdown || ''} />
-                      )
-                    ) : (
-                      <p className="text-sm" style={{ color: 'var(--era-muted)' }}>
-                        {view.extract_status === '提取中'
-                          ? '提取中，请稍后查看…'
-                          : '暂无提取结果'}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </>
-            ) : null}
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium">提取数据</span>
+              <div
+                className="overflow-y-auto rounded-2xl border p-4"
+                style={{
+                  ...fieldStyle,
+                  height: '80vh',
+                  maxHeight: '80vh',
+                }}
+              >
+                {extractText ? (
+                  view.markdown?.trim().startsWith('{') || view.markdown?.trim().startsWith('[') ? (
+                    <pre className="font-mono text-xs leading-5 whitespace-pre-wrap break-words">
+                      {extractText}
+                    </pre>
+                  ) : (
+                    <MarkdownPreview value={view.markdown || ''} />
+                  )
+                ) : (
+                  <p className="text-sm" style={{ color: 'var(--era-muted)' }}>
+                    {view.extract_status === '提取中' ? '提取中，请稍后查看…' : '暂无提取结果'}
+                  </p>
+                )}
+              </div>
+            </div>
 
             {statusMessage ? (
               <p className="text-sm" style={{ color: 'var(--era-muted)' }}>
