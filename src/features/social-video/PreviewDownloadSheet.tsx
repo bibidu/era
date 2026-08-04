@@ -1,11 +1,12 @@
 import { Check, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { BottomSheet } from '../../components/BottomSheet'
-import { downloadImagesAsZip, type PreviewImageItem } from './downloadImagesAsZip'
+import { savePreviewImagesToPhotos, type PreviewImageItem } from './downloadImagesAsZip'
 
 interface PreviewDownloadSheetProps {
   isOpen: boolean
   images: PreviewImageItem[]
+  /** @deprecated 已忽略：不再打包 zip */
   zipName?: string
   onOpenChange: (open: boolean) => void
   onStatus?: (message: string) => void
@@ -14,18 +15,19 @@ interface PreviewDownloadSheetProps {
 export function PreviewDownloadSheet({
   isOpen,
   images,
-  zipName = 'preview-images.zip',
+  zipName: _zipName,
   onOpenChange,
   onStatus,
 }: PreviewDownloadSheetProps) {
+  void _zipName
   const [selectedIndexes, setSelectedIndexes] = useState<Set<number>>(() => new Set())
-  const [downloading, setDownloading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [progress, setProgress] = useState('')
 
   useEffect(() => {
     if (!isOpen) return
     setSelectedIndexes(new Set(images.map((_, index) => index)))
-    setDownloading(false)
+    setSaving(false)
     setProgress('')
   }, [isOpen, images])
 
@@ -49,30 +51,27 @@ export function PreviewDownloadSheet({
     setSelectedIndexes(new Set(images.map((_, index) => index)))
   }
 
-  async function handleDownload() {
-    if (!hasSelection || downloading) return
+  async function handleSaveToPhotos() {
+    if (!hasSelection || saving) return
     const ordered = [...selectedIndexes].sort((a, b) => a - b)
     const selected = ordered.map((index) => images[index]).filter(Boolean)
     if (selected.length === 0) return
 
-    setDownloading(true)
-    setProgress('正在准备下载...')
-    onStatus?.('正在准备下载...')
+    setSaving(true)
+    setProgress('正在准备图片...')
+    onStatus?.('正在准备图片...')
     try {
-      const result = await downloadImagesAsZip(selected, zipName)
-      const message =
-        result.mode === 'ios-share'
-          ? '请在分享菜单选择「存储到照片」'
-          : '已开始下载压缩包'
+      await savePreviewImagesToPhotos(selected)
+      const message = '请在分享菜单选择「存储到照片」'
       setProgress(message)
       onStatus?.(message)
       onOpenChange(false)
     } catch (error) {
-      const message = error instanceof Error ? error.message : '下载失败'
+      const message = error instanceof Error ? error.message : '保存失败'
       setProgress(message)
       onStatus?.(message)
     } finally {
-      setDownloading(false)
+      setSaving(false)
     }
   }
 
@@ -80,7 +79,7 @@ export function PreviewDownloadSheet({
     <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
       <div className="flex shrink-0 items-center justify-between px-4 py-3">
         <div className="size-9" aria-hidden />
-        <p className="text-base font-semibold">选择图片下载</p>
+        <p className="text-base font-semibold">选择图片保存到相册</p>
         <button
           type="button"
           aria-label="关闭"
@@ -163,12 +162,14 @@ export function PreviewDownloadSheet({
 
         <button
           type="button"
-          disabled={!hasSelection || downloading}
+          disabled={!hasSelection || saving}
           className="h-11 min-w-[7.5rem] rounded-full px-8 text-sm font-semibold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           style={{ background: 'var(--era-button)', color: 'var(--era-button-fg)' }}
-          onClick={() => void handleDownload()}
+          onClick={() => void handleSaveToPhotos()}
         >
-          {downloading ? progress || '下载中...' : `下载${hasSelection ? ` ${selectedIndexes.size}` : ''}`}
+          {saving
+            ? progress || '保存中...'
+            : `保存到相册${hasSelection ? ` ${selectedIndexes.size}` : ''}`}
         </button>
       </div>
     </BottomSheet>

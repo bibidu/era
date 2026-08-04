@@ -1,4 +1,3 @@
-import { zipSync } from 'fflate'
 import {
   LEGACY_SUPABASE_ANON_KEY,
   LEGACY_SUPABASE_URL,
@@ -9,9 +8,11 @@ export interface PreviewImageItem {
   alt?: string
 }
 
-export type DownloadPreviewResult =
-  | { mode: 'zip'; savedCount: number; failedCount: number }
-  | { mode: 'ios-share'; savedCount: number; failedCount: number }
+export type DownloadPreviewResult = {
+  mode: 'ios-share'
+  savedCount: number
+  failedCount: number
+}
 
 function extensionFromUrlOrType(url: string, contentType: string | null): string {
   const type = (contentType || '').toLowerCase()
@@ -47,14 +48,6 @@ function mimeFromExt(ext: string): string {
     default:
       return 'image/jpeg'
   }
-}
-
-function isLikelyIos(): boolean {
-  if (typeof navigator === 'undefined') return false
-  const ua = navigator.userAgent || ''
-  if (/iPad|iPhone|iPod/i.test(ua)) return true
-  // iPadOS 13+ 可能伪装成 Mac
-  return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1
 }
 
 function buildImageProxyUrl(imageUrl: string): string {
@@ -127,10 +120,8 @@ async function fetchImageBytes(url: string): Promise<{ bytes: Uint8Array; ext: s
 
 async function collectImageFiles(images: PreviewImageItem[]): Promise<{
   files: File[]
-  zipEntries: Record<string, Uint8Array>
   errors: string[]
 }> {
-  const zipEntries: Record<string, Uint8Array> = {}
   const files: File[] = []
   const errors: string[] = []
   const usedNames = new Set<string>()
@@ -144,8 +135,6 @@ async function collectImageFiles(images: PreviewImageItem[]): Promise<{
           name = `image-${String(index + 1).padStart(2, '0')}-${usedNames.size}.${ext}`
         }
         usedNames.add(name)
-        zipEntries[name] = bytes
-        // 复制一份给 File，避免与 zip 共享同一 buffer 视图时的潜在问题
         files.push(new File([bytes.slice()], name, { type: mimeFromExt(ext) }))
       } catch (error) {
         errors.push(`第 ${index + 1} 张：${error instanceof Error ? error.message : '下载失败'}`)
@@ -153,87 +142,129 @@ async function collectImageFiles(images: PreviewImageItem[]): Promise<{
     }),
   )
 
-  // 按文件名排序，保证分享/压缩顺序稳定
   files.sort((left, right) => left.name.localeCompare(right.name))
-
-  return { files, zipEntries, errors }
+  return { files, errors }
 }
 
-function triggerZipDownload(zipEntries: Record<string, Uint8Array>, zipName: string) {
-  const zipped = zipSync(zipEntries, { level: 0 })
-  const blob = new Blob([zipped], { type: 'application/zip' })
-  const objectUrl = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-  anchor.href = objectUrl
-  anchor.download = zipName.endsWith('.zip') ? zipName : `${zipName}.zip`
-  document.body.appendChild(anchor)
-  anchor.click()
-  anchor.remove()
-  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 2000)
-}
-
-async function shareFilesToIosAlbum(files: File[]): Promise<boolean> {
+function canShareFiles(files: File[]): boolean {
   if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
     return false
   }
-  if (typeof navigator.canShare === 'function' && !navigator.canShare({ files })) {
-    return false
+  if (typeof navigator.canShare === 'function') {
+    try {
+      return navigator.canShare({ files })
+    } catch {
+      return false
+    }
   }
-  await navigator.share({
-    files,
-    title: '图片预览',
-  })
+  // 无 canShare 时仍尝试 share（旧 WebKit）
   return true
 }
 
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'AbortError'
+}
+
 /**
- * 下载预览图：
- * - iOS：系统分享图片，用户可选「存储到照片」（相册无法直接存 zip）
- * - 其他：下载包含全部单图的 zip
+ * 通过系统分享把图片交给用户存入苹果相册（分享菜单选「存储到照片」）。
+ * 不打包 zip、不下载到「文件」。
+ */
+async function shareFilesToPhotos(files: File[]): Promise<void> {
+  if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
+    throw new Error('当前环境无法调起系统分享，请用 iPhone Safari 打开后保存到相册')
+  }
+
+  // 优先一次分享全部，便于出现「存储 X 张照片」
+  if (canShareFiles(files)) {
+    try {
+      await navigator.share({
+        files,
+        title: '保存到照片',
+      })
+      return
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw new Error('已取消保存')
+      }
+      // 批量分享失败时再逐张分享（仍不走 zip）
+    }
+  }
+
+  if (files.length <= 1) {
+    if (!canShareFiles(files)) {
+      throw new Error('当前环境无法分享图片到相册，请用 iPhone Safari 打开')
+    }
+    try {
+      await navigator.share({
+        files,
+        title: '保存到照片',
+      })
+      return
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw new Error('已取消保存')
+      }
+      throw new Error(error instanceof Error ? error.message : '分享失败，请重试')
+    }
+  }
+
+  // 逐张分享：每张都进系统分享，用户选「存储到照片」
+  for (let index = 0; index < files.length; index += 1) {
+    const single = [files[index]]
+    if (!canShareFiles(single)) {
+      throw new Error('当前环境无法分享图片到相册，请用 iPhone Safari 打开')
+    }
+    try {
+      await navigator.share({
+        files: single,
+        title: `保存到照片（${index + 1}/${files.length}）`,
+      })
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw new Error(
+          index === 0
+            ? '已取消保存'
+            : `已取消；前 ${index} 张可能已保存，其余未分享`,
+        )
+      }
+      throw new Error(
+        `第 ${index + 1} 张分享失败：${error instanceof Error ? error.message : '请重试'}`,
+      )
+    }
+  }
+}
+
+/**
+ * 社媒预览图保存到苹果相册：只走系统分享，禁止 zip / 文件 App 兜底。
+ * @deprecated 参数 zipName 已忽略，保留仅为调用方兼容
  */
 export async function downloadImagesAsZip(
   images: PreviewImageItem[],
-  zipName = 'preview-images.zip',
+  _zipName = 'preview-images.zip',
 ): Promise<DownloadPreviewResult> {
+  void _zipName
   if (images.length === 0) {
-    throw new Error('暂无图片可下载')
+    throw new Error('暂无图片可保存')
   }
 
-  const { files, zipEntries, errors } = await collectImageFiles(images)
+  const { files, errors } = await collectImageFiles(images)
   if (files.length === 0) {
-    throw new Error(errors[0] || '图片下载失败')
+    throw new Error(errors[0] || '图片准备失败')
   }
 
   const failedCount = errors.length
   const savedCount = files.length
 
-  if (isLikelyIos()) {
-    try {
-      const shared = await shareFilesToIosAlbum(files)
-      if (shared) {
-        if (failedCount > 0) {
-          throw new Error(
-            `请选择「存储到照片」；已准备 ${savedCount} 张，部分失败：${errors.join('；')}`,
-          )
-        }
-        return { mode: 'ios-share', savedCount, failedCount }
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new Error('已取消保存')
-      }
-      if (error instanceof Error && error.message.includes('存储到照片')) {
-        throw error
-      }
-      // 分享不可用则回退 zip（通常进「文件」App，无法进相册）
-    }
-  }
-
-  triggerZipDownload(zipEntries, zipName)
+  await shareFilesToPhotos(files)
 
   if (failedCount > 0) {
-    throw new Error(`已打包 ${savedCount} 张；部分失败：${errors.join('；')}`)
+    throw new Error(
+      `请选择「存储到照片」；已准备 ${savedCount} 张，部分失败：${errors.join('；')}`,
+    )
   }
 
-  return { mode: 'zip', savedCount, failedCount }
+  return { mode: 'ios-share', savedCount, failedCount }
 }
+
+/** 语义更清晰的别名 */
+export const savePreviewImagesToPhotos = downloadImagesAsZip

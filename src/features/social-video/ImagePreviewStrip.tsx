@@ -12,6 +12,7 @@ import { PreviewDownloadSheet } from './PreviewDownloadSheet'
 
 interface ImagePreviewStripProps {
   images: PreviewImageItem[]
+  /** @deprecated 已忽略：不再打包 zip */
   zipName?: string
   /** 清空图片预览字段（仅本地状态，需用户点保存才持久化） */
   onClearImages?: () => void
@@ -19,9 +20,10 @@ interface ImagePreviewStripProps {
 
 export function ImagePreviewStrip({
   images,
-  zipName = 'preview-images.zip',
+  zipName: _zipName,
   onClearImages,
 }: ImagePreviewStripProps) {
+  void _zipName
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
   const [downloadSheetOpen, setDownloadSheetOpen] = useState(false)
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
@@ -65,7 +67,7 @@ export function ImagePreviewStrip({
               type="button"
               className="flex size-8 items-center justify-center rounded-full transition hover:opacity-80"
               style={{ color: 'var(--era-fg)' }}
-              aria-label="下载预览图（iOS 可存到相册）"
+              aria-label="保存预览图到相册"
               onClick={() => setDownloadSheetOpen(true)}
             >
               <Download size={18} strokeWidth={2.25} />
@@ -120,7 +122,6 @@ export function ImagePreviewStrip({
       <PreviewDownloadSheet
         isOpen={downloadSheetOpen}
         images={images}
-        zipName={zipName}
         onOpenChange={setDownloadSheetOpen}
         onStatus={handleStatus}
       />
