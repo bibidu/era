@@ -1,4 +1,4 @@
-import { Pipette, RefreshCw, TrendingUp } from 'lucide-react'
+import { RefreshCw, TrendingUp } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
   SOCIAL_VIDEO_WORK_TYPES,
@@ -18,7 +18,6 @@ interface SocialVideoListPageProps {
   workTypeFilter: SocialListWorkTypeFilter
   onWorkTypeFilterChange: (value: SocialListWorkTypeFilter) => void
   reloadToken?: number
-  onSmartExtract: () => void
   onOpenReview: () => void
   onOpenPost: (record: SocialVideoAnalysisRecord) => void
 }
@@ -160,7 +159,6 @@ export function SocialVideoListPage({
   workTypeFilter,
   onWorkTypeFilterChange,
   reloadToken = 0,
-  onSmartExtract,
   onOpenReview,
   onOpenPost,
 }: SocialVideoListPageProps) {
@@ -264,16 +262,6 @@ export function SocialVideoListPage({
           >
             <TrendingUp size={15} strokeWidth={2} />
             复盘
-          </button>
-          <span className="h-5 w-px shrink-0" style={{ background: 'var(--era-border)' }} aria-hidden />
-          <button
-            type="button"
-            className={actionBtnClass}
-            style={actionBtnStyle}
-            onClick={onSmartExtract}
-          >
-            <Pipette size={15} strokeWidth={2} />
-            智能提取
           </button>
         </div>
       </div>

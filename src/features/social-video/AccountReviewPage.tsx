@@ -149,7 +149,7 @@ export function AccountReviewPage({ onBack }: AccountReviewPageProps) {
           >
             <p className="text-base font-semibold">暂无提取成功的{workType}作品</p>
             <p className="mt-2 text-sm leading-6" style={{ color: 'var(--era-muted)' }}>
-              在「智能提取」里为「{workType}」帖子创建任务并提取成功后，这里会自动算出该账号复盘。
+              在帖子详情里为「{workType}」帖子创建提取任务并提取成功后，这里会自动算出该账号复盘。
             </p>
           </div>
         ) : (
