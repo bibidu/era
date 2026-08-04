@@ -39,11 +39,13 @@ description: >-
   "headingFontId": "song",
   "headingFontFamily": "\"Noto Serif SC\", serif",
   "headingFontSize": 22,
-  "titleLineHeight": 1.1
+  "titleLineHeight": 1.1,
+  "titlePrimaryColor": "#C41E3A"
 }
 ```
 
 - **不要**写 `shuheiti`；二级标题宋体，字号 **22**（相对默认 20 大两号）。
+- **一级标题全文朱红**：必须写 `titlePrimaryColor: "#C41E3A"`；多行标题（含 `（上篇）` 等）每一行都用该色，禁止只给首行着色或黑字标题。
 - 标题随内容图一起出，**不另做封面 skill**。
 - 有诗意 reference 底图时：`overlayStacked: true`、`backgroundType: "reference"`、`backgroundUrl`；有 reference 时**不叠**风水村舍纹理（只保留风水顶栏气质）。
 
@@ -184,7 +186,7 @@ node scripts/export-pages-with-bgs.mjs \
 
 ## 6. 校验与导出
 
-1. 确认 config 含 §1 固定项且 `headingFontSize: 22`
+1. 确认 config 含 §1 固定项且 `headingFontSize: 22`、`titlePrimaryColor: "#C41E3A"`
 2. `era_preview_layout`
 3. 修告警：单行溢出、孤行、独行标点、行高过松、字号过小等（无用户高亮时忽略画圈/高亮密度类告警）
 4. 目测第 2 页起是否超约 2/3 版面；页数是否 4–6 或已分篇并完成上篇确认
@@ -212,8 +214,8 @@ bash scripts/oss-upload.sh --cover <page.png>
 ## 8. 输出前检查清单
 
 1. 用户可见文本不含 `<!-- era:page-break -->` / `era:page-break`
-2. 一级标题 ≤ 3 行；导语 30–60 字；词语尽量不拆行
-3. `headingFontSize === 22`；内容页「`##` + 正文」距顶一致
+2. 一级标题 ≤ 3 行；导语 30–60 字；词语尽量不拆行；一级标题全文朱红 `#C41E3A`（含多行）
+3. `headingFontSize === 22`、`titlePrimaryColor === "#C41E3A"`；内容页「`##` + 正文」距顶一致
 4. 第 2 页起内容未超约 2/3 版面
 5. 本篇页数 4–6；若分篇：各篇文案已一次齐发并获确认后才预览/入库
 6. 分篇时 `#` / 社媒标题已带 `（上篇）` 等；非末篇篇末已预告下一篇，且预告段为黄色刷子 `#FACC15`

@@ -136,10 +136,10 @@ function blockStyle(block: MarkdownBlock, config: GraphicTextConfig): CSSPropert
   const marginBottom = blockEndMargin(block, config)
 
   if (styleType === 'title') {
-    const primaryColor =
-      (block.titleSentenceIndex ?? 0) === 0 && config.titlePrimaryColor
-        ? config.titlePrimaryColor
-        : undefined
+    // 有 titlePrimaryColor 时整段一级标题（含换行后的次行，如「（上篇）」）同色
+    const primaryColor = config.titlePrimaryColor?.trim()
+      ? config.titlePrimaryColor
+      : undefined
     return {
       fontFamily,
       fontSize: titleSize,

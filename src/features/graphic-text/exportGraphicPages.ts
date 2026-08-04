@@ -496,10 +496,9 @@ async function drawPage(
       ctx.fillRect(safeX, y, barWidth, lineHeight)
     }
 
+    // 有 titlePrimaryColor 时整段一级标题（含换行次行）同色，供风水 skill 朱红标题等
     const titlePrimary =
-      styleType === 'title' &&
-      (block.titleSentenceIndex ?? 0) === 0 &&
-      config.titlePrimaryColor
+      styleType === 'title' && config.titlePrimaryColor?.trim()
         ? config.titlePrimaryColor
         : null
     drawStyledLine(

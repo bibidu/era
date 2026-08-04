@@ -105,6 +105,9 @@ for (let i = 0; i < pageCount; i++) {
       backgroundUrl: dataUrl,
       headingFontId: 'song',
       headingFontFamily: '"Noto Serif SC", serif',
+      headingFontSize: 22,
+      titleLineHeight: 1.1,
+      titlePrimaryColor: '#C41E3A',
     },
   })
   const result = await api('POST', `/v1/projects/${projectId}/export`, {
