@@ -392,7 +392,7 @@ export function SocialVideoPostPage({
             {imagePreviewUrls.map((src, index) => (
               <div
                 key={`${src}-${index}`}
-                className="aspect-[9/16] overflow-hidden rounded-xl border"
+                className="aspect-[27/32] overflow-hidden rounded-xl border"
                 style={{ borderColor: 'var(--era-border)', background: 'var(--era-input)' }}
               >
                 <img src={src} alt={`待提取 ${index + 1}`} className="h-full w-full object-cover" />
@@ -506,7 +506,11 @@ export function SocialVideoPostPage({
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+      <div
+        className={`min-h-0 flex-1 px-4 py-4 ${
+          tab === 'data' ? 'overflow-hidden' : 'overflow-y-auto'
+        }`}
+      >
         {tab === 'detail' ? (
           <div className="mx-auto flex w-full max-w-lg flex-col gap-4">
             <label className="flex flex-col gap-2">
@@ -596,10 +600,12 @@ export function SocialVideoPostPage({
             ) : null}
           </div>
         ) : (
-          <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
-            {showExtractForm ? renderExtractForm('配置 1') : null}
+          <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col gap-3">
+            {showExtractForm ? (
+              <div className="shrink-0">{renderExtractForm('配置 1')}</div>
+            ) : null}
 
-            <div className="flex flex-col gap-2">
+            <div className="flex shrink-0 flex-col gap-2">
               <span className="text-sm font-medium">上传图片（{extractImages.length}）</span>
               {extractImages.length === 0 ? (
                 <p className="text-xs" style={{ color: 'var(--era-muted)' }}>
@@ -611,7 +617,7 @@ export function SocialVideoPostPage({
                     <button
                       key={`${image.src}-${index}`}
                       type="button"
-                      className="aspect-[9/16] w-[calc(50%-0.4rem)] max-w-[14rem] shrink-0 overflow-hidden rounded-2xl border"
+                      className="aspect-[27/32] w-[calc(50%-0.4rem)] max-w-[14rem] shrink-0 overflow-hidden rounded-2xl border"
                       style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
                       onClick={() => openViewer(extractPreviewItems, index)}
                     >
@@ -622,15 +628,11 @@ export function SocialVideoPostPage({
               )}
             </div>
 
-            <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium">提取数据</span>
+            <div className="flex min-h-0 flex-1 flex-col gap-2">
+              <span className="shrink-0 text-sm font-medium">提取数据</span>
               <div
-                className="overflow-y-auto rounded-2xl border p-4"
-                style={{
-                  ...fieldStyle,
-                  height: '80vh',
-                  maxHeight: '80vh',
-                }}
+                className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border p-4"
+                style={fieldStyle}
               >
                 {extractText ? (
                   extractRaw.startsWith('{') || extractRaw.startsWith('[') ? (
@@ -649,7 +651,7 @@ export function SocialVideoPostPage({
             </div>
 
             {statusMessage ? (
-              <p className="text-sm" style={{ color: 'var(--era-muted)' }}>
+              <p className="shrink-0 text-sm" style={{ color: 'var(--era-muted)' }}>
                 {statusMessage}
               </p>
             ) : null}
