@@ -26,14 +26,14 @@
 - `.agents/skills/fengshui/SKILL.md`
 - `.cursor/skills/fengshui`（符号链接）
 
-固定 `pageOverlay: fengshui`、抖音 9:16、固定顶栏文案、`headingFontSize: 22`；每 `##` 独占页；诗意泥纸背景（意象左下/右下随机）；单篇 4–6 页，超出分篇；用户可见文案不得含 `<!-- era:page-break -->`。按页背景导出：`scripts/export-pages-with-bgs.mjs`。
+固定 `pageOverlay: fengshui`、抖音 9:16、固定顶栏文案、`headingFontSize: 22`；每 `##` 独占页；诗意泥纸背景（意象左下/右下随机）；单篇 4–6 页，超出分篇（分篇须先对话确认上篇再预览/入库）；同批主色从现有色板随机且篇内一致；用户可见文案不得含 `<!-- era:page-break -->`。按页背景导出：`scripts/export-pages-with-bgs.mjs`。
 
 ## 发图硬性规则（全局）
 
 对话框**绝对禁止**直接发送 OSS 图片链接。见 `.cursor/rules/image-preview-delivery.mdc`。
 
-- **社媒帖子**：写入 `image_previews` + 只发自建站 `http://39.106.179.17/`（建议 `?tab=data`）
-- **非社媒 / 临时确认**：`node scripts/make-oss-preview-html.mjs`，只发 HTML URL；用完后询问是否删除
+- **图文 / 风水 / 社媒帖子（默认）**：写入 `image_previews` + 只发自建站 `http://39.106.179.17/`（建议 `?tab=data`），确认阶段也走入库
+- **OSS 临时 HTML**：仅用户**强烈要求**时用 `make-oss-preview-html.mjs`；只发 HTML URL；用完后询问是否删除
 
 ## 云托管（强制）
 
