@@ -479,7 +479,7 @@ export function SocialVideoPostPage({
           aria-selected={tab === 'data'}
           aria-disabled={dataTabDisabled}
           disabled={dataTabDisabled}
-          className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-45"
+          className="relative inline-flex items-center rounded-full px-3.5 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-45"
           style={
             tab === 'data'
               ? { background: 'var(--era-button)', color: 'var(--era-button-fg)' }
@@ -495,7 +495,7 @@ export function SocialVideoPostPage({
         >
           数据
           <span
-            className="rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none"
+            className="pointer-events-none absolute -right-1.5 -top-1.5 z-10 max-w-[5.5rem] truncate rounded px-1.5 py-0.5 text-[10px] font-semibold leading-none tracking-wide shadow-sm"
             style={extractStatusTagStyle(view.extract_status)}
           >
             {view.extract_status}
