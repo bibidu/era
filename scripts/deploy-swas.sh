@@ -116,6 +116,11 @@ else
   cp -a dist/. "$REMOTE_WEB/"
 fi
 
+echo "    sync Caddyfile → /opt/era-db (Edge Functions 同机反代)"
+if [[ -f "$REMOTE_REPO/deploy/swas/Caddyfile" ]]; then
+  cp "$REMOTE_REPO/deploy/swas/Caddyfile" /opt/era-db/Caddyfile
+fi
+
 echo "    reload caddy"
 docker exec era-gateway caddy reload --config /etc/caddy/Caddyfile 2>/dev/null \
   || docker restart era-gateway

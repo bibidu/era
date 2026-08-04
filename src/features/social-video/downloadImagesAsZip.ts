@@ -1,7 +1,5 @@
-import {
-  LEGACY_SUPABASE_ANON_KEY,
-  LEGACY_SUPABASE_URL,
-} from '../../agent/supabaseHighlightSetup'
+import { legacyEdgeFunctionUrl } from '../../agent/legacyEdgeFunctionUrl'
+import { LEGACY_SUPABASE_ANON_KEY } from '../../agent/supabaseHighlightSetup'
 import {
   describePhotosShareBlocker,
   getPhotosShareHttpsUpgradeUrl,
@@ -73,7 +71,7 @@ function normalizeShareExt(ext: string): { ext: string; mime: string } {
 }
 
 function buildImageProxyUrl(imageUrl: string): string {
-  const endpoint = new URL(`${LEGACY_SUPABASE_URL}/functions/v1/image-proxy`)
+  const endpoint = new URL(legacyEdgeFunctionUrl('image-proxy'))
   endpoint.searchParams.set('url', imageUrl)
   return endpoint.toString()
 }

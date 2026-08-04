@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { legacyEdgeFunctionUrl } from '../../agent/legacyEdgeFunctionUrl'
 import { LEGACY_SUPABASE_ANON_KEY } from '../../agent/supabaseHighlightSetup'
 import {
   getSocialVideoAnalysis,
@@ -8,9 +9,6 @@ import {
 } from '../../agent/supabaseSocialVideoAnalysis'
 import { extractMarkdownField } from './parseMarkdownFields'
 import { truncateText } from './parseMarkdownMetrics'
-
-const SUPABASE_PROXY_ENDPOINT =
-  'https://kzoxyextxjwscrpjowud.functions.supabase.co/dashscope-video-extract'
 
 const DEFAULT_MODEL = 'qwen3.7-flash'
 const DEFAULT_FPS = '1'
@@ -402,7 +400,7 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
         media = [{ type: 'video', url: videoUrl.trim(), fps: normalizedFps }]
       }
 
-      const response = await fetch(SUPABASE_PROXY_ENDPOINT, {
+      const response = await fetch(legacyEdgeFunctionUrl('dashscope-video-extract'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -418,7 +416,14 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
       })
 
       const text = await response.text()
-      const data = text ? (JSON.parse(text) as SocialVideoProxyResponse) : {}
+      let data: SocialVideoProxyResponse = {}
+      if (text) {
+        try {
+          data = JSON.parse(text) as SocialVideoProxyResponse
+        } catch {
+          throw new Error(text.slice(0, 240) || `HTTP ${response.status}`)
+        }
+      }
 
       if (!response.ok) {
         const message = data.error || data.message || text || `HTTP ${response.status}`
@@ -448,7 +453,7 @@ export function SocialVideoDataPage({ embedded = false, onSaved }: SocialVideoDa
       const message = error instanceof Error ? error.message : '未知错误'
       setStatus(
         isLikelyNetworkOrCorsError(message)
-          ? '调用失败：浏览器无法访问 Supabase 代理函数，通常是网络或代理部署状态问题。请稍后重试。'
+          ? '调用失败：无法连接提取服务（网络中断或网关超时）。请缩短视频 / 降低 FPS 后重试；若持续失败请刷新页面。'
           : `调用失败：${message}`,
       )
     } finally {

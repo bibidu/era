@@ -22,6 +22,16 @@ export default defineConfig({
   ],
   // 本地默认 /era/；自建站生产构建用 ERA_BASE=/
   base: process.env.ERA_BASE ?? '/era/',
+  server: {
+    proxy: {
+      // 与生产 Caddy 一致：/functions/v1/<name> → 旧 Supabase Functions
+      '/functions/v1': {
+        target: 'https://kzoxyextxjwscrpjowud.functions.supabase.co',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/functions\/v1/, ''),
+      },
+    },
+  },
   build: {
     target: 'es2020',
     cssCodeSplit: true,

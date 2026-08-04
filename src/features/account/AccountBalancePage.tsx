@@ -1,9 +1,7 @@
 import { ChevronLeft, RefreshCw, Wallet } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { legacyEdgeFunctionUrl } from '../../agent/legacyEdgeFunctionUrl'
 import { LEGACY_SUPABASE_ANON_KEY } from '../../agent/supabaseHighlightSetup'
-
-const BALANCE_ENDPOINT =
-  'https://kzoxyextxjwscrpjowud.functions.supabase.co/aliyun-account-balance'
 
 interface BalancePayload {
   availableAmount?: string | null
@@ -38,7 +36,7 @@ export function AccountBalancePage({ onBack }: AccountBalancePageProps) {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(BALANCE_ENDPOINT, {
+      const res = await fetch(legacyEdgeFunctionUrl('aliyun-account-balance'), {
         method: 'GET',
         headers: {
           apikey: LEGACY_SUPABASE_ANON_KEY,

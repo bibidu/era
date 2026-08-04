@@ -91,4 +91,5 @@ bash scripts/oss-upload.sh --sign <object-key>
 
 同机部署时浏览器用 `location.origin` 调 REST，无需跨域。追加 `tab` / `shareId` / `text` 时用 `highlightSetupPagesUrl` / `titleComposerPagesUrl` / `buildAppPagesUrl`；**禁止**对整段 query 再 `encodeURIComponent`。
 
-Edge Functions（余额 / 视频抽取 / image-proxy）仍在旧 Supabase。
+Edge Functions（余额 / 视频抽取 / image-proxy）实现仍在旧 Supabase；浏览器经自建站同机反代  
+`/functions/v1/<name>` 访问（见 `deploy/swas/Caddyfile`），避免直连美东 `functions.supabase.co` 失败。

@@ -34,6 +34,7 @@ npm run deploy:swas
 ## 更新网关配置
 
 ```bash
+# Caddyfile 也可由 npm run deploy:swas 自动同步到 /opt/era-db/
 scp -i deploy/swas/id_rsa deploy/swas/Caddyfile root@39.106.179.17:/opt/era-db/Caddyfile
 ssh -i deploy/swas/id_rsa root@39.106.179.17 'docker restart era-gateway'
 ```

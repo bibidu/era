@@ -46,6 +46,22 @@
 			header_down -Access-Control-Max-Age
 		}
 	}
+	# 旧 Supabase Edge Functions 同机反代：浏览器不直连美东，避免国内 Failed to fetch
+	# /functions/v1/<name> → https://…functions.supabase.co/<name>
+	handle_path /functions/v1/* {
+		reverse_proxy https://kzoxyextxjwscrpjowud.functions.supabase.co {
+			header_up Host kzoxyextxjwscrpjowud.functions.supabase.co
+			header_up Authorization {http.request.header.Authorization}
+			header_up apikey {http.request.header.apikey}
+			transport http {
+				versions 1.1
+				dial_timeout 30s
+				response_header_timeout 5m
+				read_timeout 5m
+				write_timeout 5m
+			}
+		}
+	}
 	handle /healthz {
 		respond "ok" 200
 	}
