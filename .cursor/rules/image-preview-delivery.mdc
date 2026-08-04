@@ -1,5 +1,5 @@
 ---
-description: 图片预览交付：禁止直发 OSS 图链；社媒走入库，非社媒走 HTML 预览页
+description: 图片预览交付：禁止直发 OSS 图链；图文/风水默认入库自建站，HTML 仅强烈要求时
 alwaysApply: true
 ---
 
@@ -7,21 +7,27 @@ alwaysApply: true
 
 凡需要让用户**预览图片**的场景，**绝对禁止**在对话框直接发送 OSS 图片链接（含签名 URL、`__cover_keep__` 永久图链、裸对象 URL）。
 
-## 分支
+## 默认：入库 + 社媒前端
 
-### A. 社媒帖子（图文 / 风水入库 / 多页长图）
-
-按 **图文 skill** 或 **风水 skill** 写入业务库：
+**图文 skill / 风水 skill / 社媒多页长图**（含确认与最终交付）：
 
 1. 图片上传后**按序写入** `era_social_video_analyses.image_previews`（[0]=封面/首页 `__cover_keep__`，同步 `cover_url`）
-2. 对话框**只发**自建站预览：`http://39.106.179.17/`（建议 `?tab=data`）
+2. 对话框**只发**自建站预览：`http://39.106.179.17/`（建议 `?tab=data`），让用户在社媒里查看
 3. 不要逐张发图，不要为确认来回贴 OSS 图链
+4. **禁止**用 OSS 临时 HTML 代替入库，除非用户**强烈要求**「不要入库 / 只要临时 HTML」
 
-### B. 非社媒（封面试稿、风水临时确认、拼图确认、标题排版成品、其它生成图）
+## 例外：OSS 临时 HTML
+
+仅适用于：
+
+- 用户**强烈要求**临时 HTML；或
+- 明确非社媒、且无法/不宜写入 `era_social_video_analyses` 的生成图（如纯工具试稿）
+
+流程：
 
 1. 图片仍须先上传 OSS（嵌入用；可 `--public` 或 `--cover`）
-2. 用 `node scripts/make-oss-preview-html.mjs --title … --image …` 生成 HTML，页内 `<img src>` 嵌入图链
-3. HTML 以 `--public` 上传；对话框**只发 HTML 预览 URL**
+2. 用 `node scripts/make-oss-preview-html.mjs --title … --image …` 生成 HTML
+3. 对话框**只发 HTML 预览 URL**
 4. **必须询问**：用完后是否删除该预览文件（及同批图）？确认后：  
    `node scripts/make-oss-preview-html.mjs --delete-manifest <manifest.json>`
 
@@ -29,8 +35,8 @@ alwaysApply: true
 
 - 对话框直发任意图片 OSS URL
 - 用本地路径 / `file://` 代替预览
-- 社媒任务用 HTML 页代替入库 + 自建站预览链接
-- 非社媒任务只口头描述「已上传」却不给 HTML URL
+- 图文 / 风水默认任务用 HTML 页代替入库 + 自建站
+- 只口头描述「已上传」却不给自建站或（例外下的）HTML URL
 
 ## 相关
 

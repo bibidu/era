@@ -10,6 +10,6 @@ alwaysApply: true
 - 风水skill / 风水 / 风水风格 / 风水质感 / 阳宅
 - 风水主题社媒图文、诗意泥纸页背景出风水图
 
-不要与图文 skill（`tuwen`，非风水多页 + 封面）混淆。须按风水 skill：固定 fengshui 模板、二级标题独占页、诗意角意象背景、4–6 页分篇与排版缩减话术。
+不要与图文 skill（`tuwen`，非风水多页 + 封面）混淆。须按风水 skill：固定 fengshui 模板、二级标题独占页、诗意角意象背景、4–6 页分篇（分篇须先对话确认上篇再预览/入库）、同批主色一致、排版缩减话术。
 
-交付遵守 `.cursor/rules/image-preview-delivery.mdc`：禁止对话框直发 OSS 图链。
+交付遵守 `.cursor/rules/image-preview-delivery.mdc`：禁止对话框直发 OSS 图链；默认入库后只发 `http://39.106.179.17/?tab=data`。

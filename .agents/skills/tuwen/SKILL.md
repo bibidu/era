@@ -55,7 +55,7 @@ description: >-
 
 ### 4. 生成封面图
 
-按 **§封面** 出图并请用户确认；要改则重跑。上传 OSS（`__cover_keep__`）后：未入库用 `make-oss-preview-html.mjs` 发 HTML 预览；**禁止**对话框直发 OSS 图链。也可先写入 `image_previews` 再发自建站。
+按 **§封面** 出图。上传 OSS（`__cover_keep__`）后**默认写入** `image_previews` / `cover_url`，确认与预览一律走自建站 `http://39.106.179.17/?tab=data`；**禁止**对话框直发 OSS 图链。仅当用户**强烈要求**临时 HTML 时才用 `make-oss-preview-html.mjs`。
 
 ### 5. 高亮（内容图）
 
@@ -63,11 +63,11 @@ description: >-
 
 ### 6. 拼合横版总览并确认
 
-封面 + 各内容高亮页拼成横版总览；确认用 HTML 预览或入库后自建站链接；**禁止**直发 OSS 图链。
+封面 + 各内容高亮页拼成横版总览；**默认入库后**用自建站链接确认；**禁止**直发 OSS 图链。勿用 HTML 代替入库，除非用户强烈要求。
 
-### 7. 入库交付
+### 7. 入库交付（默认）
 
-各页上传 OSS，**按序写入** `image_previews`（[0]=封面），对话框**只发** `http://39.106.179.17/?tab=data`。
+各页上传 OSS，**按序写入** `image_previews`（[0]=封面），对话框**只发** `http://39.106.179.17/?tab=data`。OSS 临时 HTML 仅为强烈要求时的例外。
 
 ### 内容图构建要点（Era）
 
@@ -137,11 +137,12 @@ stdout JSON：`ok`、`path`、`themeColor`、`themeName`、`size`。需 Playwrig
 
 ```bash
 bash scripts/oss-upload.sh --cover <path>
-# 仅预览：
-node scripts/make-oss-preview-html.mjs --title "封面预览" --image <path>
+# 默认：写入 cover_url / image_previews 后只发自建站
+# 仅用户强烈要求临时 HTML 时：
+# node scripts/make-oss-preview-html.mjs --title "封面预览" --image <path>
 ```
 
-社媒写入 `cover_url` / `image_previews[0]` 后只发自建站；临时预览只发 HTML URL 并询问是否删除。**禁止**对话框直发 OSS 图链。
+社媒**必须**写入 `cover_url` / `image_previews[0]` 后只发自建站。**禁止**对话框直发 OSS 图链；禁止默认走 HTML 预览。
 
 ---
 
@@ -187,14 +188,15 @@ node scripts/make-oss-preview-html.mjs --title "封面预览" --image <path>
 
 ## §发图
 
-1. 上传并写入 `image_previews`（[0]=封面永久链，同步 `cover_url`）
-2. 最终只发 `http://39.106.179.17/?tab=data`
-3. **禁止**对话框直发 OSS 图链；确认阶段可用 HTML 预览
-4. 禁止只发本地路径
+1. 上传并**必须写入** `image_previews`（[0]=封面永久链，同步 `cover_url`）
+2. 对话框**只发** `http://39.106.179.17/?tab=data`，让用户在社媒 Tab 查看
+3. **禁止**对话框直发 OSS 图链；**禁止**默认用 OSS 临时 HTML 代替入库
+4. 仅当用户**强烈要求**「不要入库 / 只要临时 HTML」时才用 `make-oss-preview-html.mjs`，并询问用完是否删除
+5. 禁止只发本地路径
 
 ```bash
 bash scripts/oss-upload.sh --cover <本地png>
-node scripts/make-oss-preview-html.mjs --title "…" --image <png>
+# 写入业务库后只发 http://39.106.179.17/?tab=data
 ```
 
 合入 `main` 后如需前端：`npm run deploy:swas`，回传 `http://39.106.179.17/`。
