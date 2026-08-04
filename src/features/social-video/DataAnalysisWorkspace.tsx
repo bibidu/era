@@ -1,6 +1,16 @@
 import { ChevronLeft } from 'lucide-react'
-import { Suspense, lazy, useState } from 'react'
-import { type SocialVideoAnalysisRecord } from '../../agent/supabaseSocialVideoAnalysis'
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
+import {
+  getSocialVideoAnalysis,
+  type SocialVideoAnalysisRecord,
+} from '../../agent/supabaseSocialVideoAnalysis'
+import {
+  ERA_URL_CHANGE_EVENT,
+  navigateBackFromSocialPost,
+  pushSocialPostInUrl,
+  readSocialPostIdFromSearch,
+  replaceSocialPostInUrl,
+} from '../../app/tabRouting'
 import {
   SocialVideoListPage,
   type SocialListStatusFilter,
@@ -33,22 +43,94 @@ function SecondaryLoadingFallback() {
   )
 }
 
+type LocalView = 'list' | 'extract' | 'review' | 'create'
+
 export function DataAnalysisWorkspace() {
-  const [view, setView] = useState<'list' | 'extract' | 'review' | 'create' | 'detail'>('list')
+  const [localView, setLocalView] = useState<LocalView>('list')
   const [listReloadToken, setListReloadToken] = useState(0)
   const [editingRecord, setEditingRecord] = useState<SocialVideoAnalysisRecord | null>(null)
-  const [detailRecord, setDetailRecord] = useState<SocialVideoAnalysisRecord | null>(null)
+  const [postId, setPostId] = useState<string | null>(() => readSocialPostIdFromSearch())
+  const [postRecord, setPostRecord] = useState<SocialVideoAnalysisRecord | null>(null)
+  const [postMode, setPostMode] = useState<'edit' | 'detail' | null>(null)
+  const [postLoading, setPostLoading] = useState(false)
+  const [postError, setPostError] = useState('')
   const [statusFilter, setStatusFilter] = useState<SocialListStatusFilter>('')
   const [workTypeFilter, setWorkTypeFilter] = useState<SocialListWorkTypeFilter>('')
 
   const bumpListReload = () => setListReloadToken((token) => token + 1)
 
+  const syncPostFromUrl = useCallback(() => {
+    setPostId(readSocialPostIdFromSearch())
+  }, [])
+
+  useEffect(() => {
+    window.addEventListener('popstate', syncPostFromUrl)
+    window.addEventListener(ERA_URL_CHANGE_EVENT, syncPostFromUrl)
+    return () => {
+      window.removeEventListener('popstate', syncPostFromUrl)
+      window.removeEventListener(ERA_URL_CHANGE_EVENT, syncPostFromUrl)
+    }
+  }, [syncPostFromUrl])
+
+  useEffect(() => {
+    if (!postId) {
+      setPostRecord(null)
+      setPostMode(null)
+      setPostLoading(false)
+      setPostError('')
+      return
+    }
+
+    let cancelled = false
+    setPostLoading(true)
+    setPostError('')
+    setLocalView('list')
+
+    void (async () => {
+      try {
+        const full = await getSocialVideoAnalysis(postId)
+        if (cancelled) return
+        setPostRecord(full)
+        setPostMode(full.publish_status === '已发布' ? 'detail' : 'edit')
+        setPostError('')
+      } catch (err) {
+        if (cancelled) return
+        setPostRecord(null)
+        setPostMode(null)
+        setPostError(err instanceof Error ? err.message : '加载帖子失败')
+      } finally {
+        if (!cancelled) setPostLoading(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [postId])
+
+  function openPost(record: SocialVideoAnalysisRecord) {
+    setPostRecord(record)
+    setPostMode(record.publish_status === '已发布' ? 'detail' : 'edit')
+    setPostId(record.id)
+    pushSocialPostInUrl(record.id)
+  }
+
+  function closePost() {
+    navigateBackFromSocialPost()
+    // history.back 等 popstate；replaceState 已由 ERA_URL_CHANGE_EVENT 同步
+    if (!readSocialPostIdFromSearch()) {
+      setPostId(null)
+    }
+  }
+
+  const showPostRoute = Boolean(postId)
+
   // 列表保持挂载：从二级页返回不重挂载、不重新请求；删除/保存等再 bump reloadToken
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div
-        className={view === 'list' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}
-        aria-hidden={view !== 'list'}
+        className={localView === 'list' && !showPostRoute ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}
+        aria-hidden={localView !== 'list' || showPostRoute}
       >
         <SocialVideoListPage
           statusFilter={statusFilter}
@@ -56,24 +138,22 @@ export function DataAnalysisWorkspace() {
           workTypeFilter={workTypeFilter}
           onWorkTypeFilterChange={setWorkTypeFilter}
           reloadToken={listReloadToken}
-          onSmartExtract={() => setView('extract')}
-          onOpenReview={() => setView('review')}
+          onSmartExtract={() => setLocalView('extract')}
+          onOpenReview={() => setLocalView('review')}
           onCreate={() => {
             setEditingRecord(null)
-            setView('create')
+            setLocalView('create')
           }}
           onEdit={(record) => {
-            setEditingRecord(record)
-            setView('create')
+            openPost(record)
           }}
           onOpenDetail={(record) => {
-            setDetailRecord(record)
-            setView('detail')
+            openPost(record)
           }}
         />
       </div>
 
-      {view === 'extract' ? (
+      {localView === 'extract' && !showPostRoute ? (
         <div
           className="flex min-h-0 flex-1 flex-col"
           style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}
@@ -87,7 +167,7 @@ export function DataAnalysisWorkspace() {
               className="flex size-9 items-center justify-center rounded-full"
               style={{ background: 'var(--era-panel)' }}
               aria-label="返回"
-              onClick={() => setView('list')}
+              onClick={() => setLocalView('list')}
             >
               <ChevronLeft size={18} />
             </button>
@@ -98,43 +178,86 @@ export function DataAnalysisWorkspace() {
               embedded
               onSaved={() => {
                 bumpListReload()
-                setView('list')
+                setLocalView('list')
               }}
             />
           </Suspense>
         </div>
       ) : null}
 
-      {view === 'review' ? (
+      {localView === 'review' && !showPostRoute ? (
         <Suspense fallback={<SecondaryLoadingFallback />}>
-          <AccountReviewPage onBack={() => setView('list')} />
+          <AccountReviewPage onBack={() => setLocalView('list')} />
         </Suspense>
       ) : null}
 
-      {view === 'detail' && detailRecord ? (
-        <Suspense fallback={<SecondaryLoadingFallback />}>
-          <SocialVideoDetailPage
-            record={detailRecord}
-            onBack={() => {
-              setDetailRecord(null)
-              setView('list')
-            }}
-            onDeleted={bumpListReload}
-          />
-        </Suspense>
-      ) : null}
-
-      {view === 'create' ? (
+      {localView === 'create' && !showPostRoute ? (
         <Suspense fallback={<SecondaryLoadingFallback />}>
           <SocialVideoCreatePage
             editingRecord={editingRecord}
             onBack={() => {
               setEditingRecord(null)
-              setView('list')
+              setLocalView('list')
             }}
             onCreated={bumpListReload}
             onDeleted={bumpListReload}
           />
+        </Suspense>
+      ) : null}
+
+      {showPostRoute ? (
+        <Suspense fallback={<SecondaryLoadingFallback />}>
+          {postLoading && !postRecord ? (
+            <SecondaryLoadingFallback />
+          ) : postError && !postRecord ? (
+            <div
+              className="flex min-h-0 flex-1 flex-col"
+              style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}
+            >
+              <header
+                className="flex shrink-0 items-center gap-2 border-b px-3"
+                style={{
+                  borderColor: 'var(--era-border)',
+                  paddingTop: 'calc(0.75rem + env(safe-area-inset-top, 0px))',
+                  paddingBottom: '0.75rem',
+                }}
+              >
+                <button
+                  type="button"
+                  className="flex size-9 items-center justify-center rounded-full"
+                  style={{ background: 'var(--era-panel)' }}
+                  aria-label="返回"
+                  onClick={() => {
+                    replaceSocialPostInUrl(null)
+                    setPostId(null)
+                  }}
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <h1 className="text-base font-semibold">帖子详情</h1>
+              </header>
+              <div className="px-4 py-6 text-sm" style={{ color: 'var(--era-muted)' }}>
+                {postError}
+              </div>
+            </div>
+          ) : postMode === 'detail' && postRecord ? (
+            <SocialVideoDetailPage
+              record={postRecord}
+              flushTop
+              onBack={closePost}
+              onDeleted={bumpListReload}
+            />
+          ) : postRecord ? (
+            <SocialVideoCreatePage
+              editingRecord={postRecord}
+              flushTop
+              onBack={closePost}
+              onCreated={bumpListReload}
+              onDeleted={bumpListReload}
+            />
+          ) : (
+            <SecondaryLoadingFallback />
+          )}
         </Suspense>
       ) : null}
     </div>

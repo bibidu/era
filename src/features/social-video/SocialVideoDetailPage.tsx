@@ -6,21 +6,30 @@ import {
   type SocialVideoAnalysisRecord,
 } from '../../agent/supabaseSocialVideoAnalysis'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { useEdgeSwipeBack } from '../../hooks/useEdgeSwipeBack'
 import { MarkdownPreview } from './MarkdownPreview'
 
 interface SocialVideoDetailPageProps {
   record: SocialVideoAnalysisRecord
   onBack: () => void
   onDeleted?: () => void
+  /** 作为路由二级页顶栏时：顶到安全区，隐藏全局 Tab */
+  flushTop?: boolean
 }
 
 /** 已发布作品：二级页查看分析数据 */
-export function SocialVideoDetailPage({ record, onBack, onDeleted }: SocialVideoDetailPageProps) {
+export function SocialVideoDetailPage({
+  record,
+  onBack,
+  onDeleted,
+  flushTop = false,
+}: SocialVideoDetailPageProps) {
   const [status, setStatus] = useState('')
   const [detail, setDetail] = useState<SocialVideoAnalysisRecord | null>(null)
   const [loadingDetail, setLoadingDetail] = useState(true)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const swipe = useEdgeSwipeBack(onBack, { enabled: flushTop && !confirmOpen })
 
   useEffect(() => {
     let cancelled = false
@@ -84,10 +93,25 @@ export function SocialVideoDetailPage({ record, onBack, onDeleted }: SocialVideo
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col" style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}>
+    <div
+      ref={swipe.ref}
+      className="flex min-h-0 flex-1 flex-col"
+      style={{ background: 'var(--era-bg)', color: 'var(--era-fg)', ...swipe.style }}
+      onPointerDown={swipe.onPointerDown}
+      onPointerMove={swipe.onPointerMove}
+      onPointerUp={swipe.onPointerUp}
+      onPointerCancel={swipe.onPointerCancel}
+    >
       <header
-        className="flex shrink-0 items-center gap-2 border-b px-3 py-3"
-        style={{ borderColor: 'var(--era-border)' }}
+        className="flex shrink-0 items-center gap-2 border-b px-3"
+        style={{
+          borderColor: 'var(--era-border)',
+          paddingTop: flushTop
+            ? 'calc(0.75rem + env(safe-area-inset-top, 0px))'
+            : '0.75rem',
+          paddingBottom: '0.75rem',
+          background: 'var(--era-header)',
+        }}
       >
         <button
           type="button"

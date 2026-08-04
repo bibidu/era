@@ -64,7 +64,7 @@ OSS_SKIP_CLEANUP=1 bash scripts/oss-upload.sh --cover <file>
 
 ## 2. 与图文交付相关的易混坑
 
-- **「第二张下半截没了」**：先查社媒预览条是否 `aspect-[3/4]` + `object-cover` 裁了 9:16；应 `9:16` + `object-contain`（见 `ImagePreviewStrip`）。不要先假定导出缺页。
+- **「第二张下半截没了」**：先查社媒预览条容器比例。预览条为通栏 `aspect-[9/16]` + `object-cover`（宽撑满、高度超出裁切）；若误用 `aspect-[3/4]` 会裁掉 9:16 下半截。不要先假定导出缺页。
 - **封面正文像黑体**：Cloud Agent 环境常无系统宋体；用本地 `NotoSerifSC-*.ttf` + `ensure-noto-serif-sc.sh`，导出失败勿静默回退。
 - **改 markdown 后高亮全丢**：blockId 会变；需按正文 remap 或重新 `era_apply_highlights(replace: true)`。
 

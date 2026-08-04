@@ -81,12 +81,12 @@ export function ImagePreviewStrip({
           暂无图片（图片预览字段或内容中的 Markdown 图片会出现在这里）
         </p>
       ) : (
-        <div className="flex w-full flex-nowrap gap-3 overflow-x-auto pb-1">
+        <div className="flex w-full flex-col gap-3">
           {images.map((image, index) => (
             <button
               key={`${image.src}-${index}`}
               type="button"
-              className="aspect-[9/16] h-36 w-auto min-w-[6.5rem] shrink-0 overflow-hidden rounded-2xl border transition hover:opacity-90"
+              className="aspect-[9/16] w-full overflow-hidden rounded-2xl border transition hover:opacity-90"
               style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
               aria-label={`查看第 ${index + 1} 张预览图`}
               onClick={() => setViewerIndex(index)}
@@ -96,7 +96,7 @@ export function ImagePreviewStrip({
                 alt={image.alt || `预览图 ${index + 1}`}
                 loading="lazy"
                 decoding="async"
-                className="h-full w-full object-contain"
+                className="h-full w-full object-cover"
                 draggable={false}
               />
             </button>

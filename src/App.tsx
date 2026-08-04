@@ -1,8 +1,10 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 import { TopModeTabs, type AppMode } from './components/TopModeTabs'
 import {
+  ERA_URL_CHANGE_EVENT,
   readAppTabFromSearch,
   readHighlightIdsFromSearch,
+  readSocialPostIdFromSearch,
   readTitleTextFromSearch,
   replaceAppTabInUrl,
 } from './app/tabRouting'
@@ -69,6 +71,7 @@ function App() {
   const [mode, setMode] = useState<AppMode>(() => readAppTabFromSearch())
   const [highlightIds, setHighlightIds] = useState(() => readHighlightIdsFromSearch())
   const [titleText, setTitleText] = useState(() => readTitleTextFromSearch())
+  const [socialPostId, setSocialPostId] = useState(() => readSocialPostIdFromSearch())
   const [balanceOpen, setBalanceOpen] = useState(false)
   const { theme, toggle } = useEraTheme()
 
@@ -76,15 +79,23 @@ function App() {
     setMode(readAppTabFromSearch())
     setHighlightIds(readHighlightIdsFromSearch())
     setTitleText(readTitleTextFromSearch())
+    setSocialPostId(readSocialPostIdFromSearch())
   }, [])
 
   useEffect(() => {
     replaceAppTabInUrl(readAppTabFromSearch(), {
       ...readHighlightIdsFromSearch(),
       titleText: readTitleTextFromSearch(),
+      keepSocialPost: Boolean(readSocialPostIdFromSearch()),
     })
+    // 启动时若已有 ?post=，保持详情二级路由
+    setSocialPostId(readSocialPostIdFromSearch())
     window.addEventListener('popstate', syncFromUrl)
-    return () => window.removeEventListener('popstate', syncFromUrl)
+    window.addEventListener(ERA_URL_CHANGE_EVENT, syncFromUrl)
+    return () => {
+      window.removeEventListener('popstate', syncFromUrl)
+      window.removeEventListener(ERA_URL_CHANGE_EVENT, syncFromUrl)
+    }
   }, [syncFromUrl])
 
   useEffect(() => {
@@ -96,17 +107,20 @@ function App() {
   const handleModeChange = useCallback(
     (next: AppMode) => {
       setBalanceOpen(false)
+      setSocialPostId(null)
       setMode(next)
       replaceAppTabInUrl(next, {
         shareId: highlightIds.shareId,
         projectId: highlightIds.projectId,
         titleText,
+        keepSocialPost: false,
       })
     },
     [highlightIds.projectId, highlightIds.shareId, titleText],
   )
 
-  const wideLayout = mode === 'data' && !balanceOpen
+  const hideTopTabs = balanceOpen || Boolean(socialPostId)
+  const wideLayout = mode === 'data' && !hideTopTabs
 
   return (
     <div
@@ -124,7 +138,7 @@ function App() {
           backgroundColor: 'var(--era-shell-bg, var(--era-header))',
         }}
       />
-      {!balanceOpen ? (
+      {!hideTopTabs ? (
         <header
           className="sticky top-0 z-40 flex w-full shrink-0 items-center justify-center border-b px-4 py-2"
           style={{

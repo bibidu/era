@@ -14,6 +14,7 @@ import {
 } from '../../agent/supabaseSocialVideoAnalysis'
 import { LEGACY_SUPABASE_URL } from '../../agent/supabaseHighlightSetup'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { useEdgeSwipeBack } from '../../hooks/useEdgeSwipeBack'
 import { MarkdownContentDrawer } from './MarkdownContentDrawer'
 import { ImagePreviewStrip } from './ImagePreviewStrip'
 import { extractMarkdownImages, truncateText } from './parseMarkdownMetrics'
@@ -24,6 +25,8 @@ interface SocialVideoCreatePageProps {
   onDeleted?: () => void
   /** 传入则为编辑模式 */
   editingRecord?: SocialVideoAnalysisRecord | null
+  /** 作为路由二级页顶栏时：顶到安全区，隐藏全局 Tab */
+  flushTop?: boolean
 }
 
 const fieldClass =
@@ -115,6 +118,7 @@ export function SocialVideoCreatePage({
   onCreated,
   onDeleted,
   editingRecord = null,
+  flushTop = false,
 }: SocialVideoCreatePageProps) {
   const isEdit = Boolean(editingRecord?.id)
   const [outline, setOutline] = useState('')
@@ -133,6 +137,9 @@ export function SocialVideoCreatePage({
   const [copyHint, setCopyHint] = useState('')
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const swipe = useEdgeSwipeBack(onBack, {
+    enabled: flushTop && !contentDrawerOpen && !confirmOpen,
+  })
 
   useEffect(() => {
     if (!editingRecord?.id) {
@@ -272,10 +279,25 @@ export function SocialVideoCreatePage({
     : '点击编辑 Markdown 内容'
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col" style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}>
+    <div
+      ref={swipe.ref}
+      className="flex min-h-0 flex-1 flex-col"
+      style={{ background: 'var(--era-bg)', color: 'var(--era-fg)', ...swipe.style }}
+      onPointerDown={swipe.onPointerDown}
+      onPointerMove={swipe.onPointerMove}
+      onPointerUp={swipe.onPointerUp}
+      onPointerCancel={swipe.onPointerCancel}
+    >
       <header
-        className="flex shrink-0 items-center gap-2 border-b px-3 py-3"
-        style={{ borderColor: 'var(--era-border)' }}
+        className="flex shrink-0 items-center gap-2 border-b px-3"
+        style={{
+          borderColor: 'var(--era-border)',
+          paddingTop: flushTop
+            ? 'calc(0.75rem + env(safe-area-inset-top, 0px))'
+            : '0.75rem',
+          paddingBottom: '0.75rem',
+          background: flushTop ? 'var(--era-header)' : undefined,
+        }}
       >
         <button
           type="button"
