@@ -34,6 +34,12 @@ OSS_SKIP_CLEANUP=1 bash scripts/oss-upload.sh --cover <file>
 
 禁止绕过脚本直接 `ossutil cp`（会漏清理、封面标记、超时/stat 兜底）。
 
+## 0. 全新 VM：ossutil 自动安装
+
+新的 Cloud Agent VM 不带 `ossutil`。`oss-upload.sh` 发现缺失时会自己下载安装到 `~/.local/bin/ossutil`（可用 `OSSUTIL_VERSION` 指定版本、`OSSUTIL` 指定路径），无需手工准备。
+
+**注意**：`oss-upload.sh` 正在跑时**不要编辑它**。bash 按字节偏移增量读脚本，改动会让后续调用跳到错误分支（实测报 `local_dir: unbound variable`，且 URL 已打印、退出码却非 0，容易误判上传失败并留下孤儿对象）。要改脚本先等批量上传结束。
+
 ## 1. Cloud Agent 上传慢：根因（已实测）
 
 | 项 | 事实 |
