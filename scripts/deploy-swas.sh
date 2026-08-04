@@ -115,6 +115,11 @@ echo "    apply extract_status migration"
 if [[ -f supabase/migrations/20260804120000_era_social_video_extract_status.sql ]]; then
   docker exec -i era-db psql -U era -d era < supabase/migrations/20260804120000_era_social_video_extract_status.sql \
     || echo "    warn: migration apply failed (may already be applied)"
+  # 迁移后必须刷新 PostgREST schema cache，否则 PATCH extract_* 会 PGRST204
+  echo "    reload PostgREST schema cache"
+  docker exec -i era-db psql -U era -d era -c "NOTIFY pgrst, 'reload schema';" \
+    || docker restart era-rest \
+    || echo "    warn: schema reload failed"
 fi
 
 echo "    build (ERA_BASE=/)"
