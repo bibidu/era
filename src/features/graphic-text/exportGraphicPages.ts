@@ -7,7 +7,6 @@ import {
 import {
   GRAPHIC_LIST_BULLET_COLOR,
   GRAPHIC_PAGE_TEXT_COLOR,
-  GRAPHIC_TOP_BAR_BORDER_COLOR,
   GRAPHIC_TOP_BAR_DIVIDER_COLOR,
   GRAPHIC_TOP_BAR_TEXT_COLOR,
 } from './graphicContentColors'
@@ -27,7 +26,6 @@ import {
 } from './pageBackground'
 import {
   drawPageFengshuiOverlay,
-  FENGSHUI_TOP_BAR_LINE_COLOR,
   FENGSHUI_TOP_BAR_TEXT_COLOR,
 } from './pageFengshuiTokens'
 import { drawPageGradientBackground } from './pageGradientTokens'
@@ -38,7 +36,7 @@ import {
   shouldDrawPageOverlay,
   shouldDrawReferenceBackground,
 } from './pageLayering'
-import { resolveTopBarParts } from './topBar'
+import { resolveTopBarBorderColor, resolveTopBarParts } from './topBar'
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -247,7 +245,7 @@ async function drawPage(
   config: GraphicTextConfig,
   markdown: string,
 ): Promise<Blob> {
-  const layout = getGraphicLayout(config)
+  const layout = getGraphicLayout(config, { pageIndex: page.index })
   const {
     pageWidth: width,
     pageHeight: height,
@@ -264,7 +262,7 @@ async function drawPage(
   const circleColors = config.circleHighlightColors
   const textColors = config.colorHighlightColors ?? {}
   const accentColor = config.highlightPickerColor
-  const topBar = resolveTopBarParts(config, markdown)
+  const topBar = resolveTopBarParts(config, markdown, page.index)
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
@@ -328,9 +326,9 @@ async function drawPage(
   const underlineY = topBarY + topBarHeight - 6
 
   const isFengshui = config.pageOverlay === 'fengshui'
-  const topBarLineColor = isFengshui ? FENGSHUI_TOP_BAR_LINE_COLOR : GRAPHIC_TOP_BAR_BORDER_COLOR
+  const topBarLineColor = resolveTopBarBorderColor(config, page.index)
   const topBarTextColor = isFengshui ? FENGSHUI_TOP_BAR_TEXT_COLOR : GRAPHIC_TOP_BAR_TEXT_COLOR
-  const topBarDividerColor = isFengshui ? FENGSHUI_TOP_BAR_LINE_COLOR : GRAPHIC_TOP_BAR_DIVIDER_COLOR
+  const topBarDividerColor = GRAPHIC_TOP_BAR_DIVIDER_COLOR
 
   ctx.strokeStyle = topBarLineColor
   ctx.lineWidth = 2

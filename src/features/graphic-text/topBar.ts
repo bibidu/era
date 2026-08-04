@@ -2,8 +2,16 @@ import { SHEET_MIN_HEIGHT_PX } from './graphicPreviewLayout'
 import { stripHighlightMarkers } from './inlineHighlight'
 import { parseMarkdown } from './layout'
 import type { GraphicTextConfig } from './types'
+import {
+  GRAPHIC_SERIES_TOP_BAR_BORDER_COLOR,
+  GRAPHIC_TOP_BAR_BORDER_COLOR,
+} from './graphicContentColors'
+import { FENGSHUI_TOP_BAR_LINE_COLOR } from './pageFengshuiTokens'
 
 export const NON_FENGSHUI_TOP_BAR_TEXT = '点赞关注不迷路～'
+
+/** 系列期数顶栏与下方二级标题之间的空行数（约等于正文行高） */
+export const SERIES_LABEL_GAP_LINES = 3
 
 export interface TopBarParts {
   custom: string | null
@@ -18,10 +26,26 @@ export function countMarkdownChars(markdown: string): number {
   )
 }
 
+export function hasSeriesLabel(config: Pick<GraphicTextConfig, 'seriesLabel'>): boolean {
+  return Boolean(config.seriesLabel?.trim())
+}
+
+/** 内容首页（pageIndex=0，整套含封面时为第 2 页）是否展示系列期数顶栏 */
+export function isSeriesLabelPage(
+  config: Pick<GraphicTextConfig, 'seriesLabel'>,
+  pageIndex: number,
+): boolean {
+  return pageIndex === 0 && hasSeriesLabel(config)
+}
+
 export function resolveTopBarParts(
-  config: Pick<GraphicTextConfig, 'topText' | 'showWordCount' | 'pageOverlay'>,
+  config: Pick<GraphicTextConfig, 'topText' | 'showWordCount' | 'pageOverlay' | 'seriesLabel'>,
   markdown: string,
+  pageIndex = 0,
 ): TopBarParts {
+  if (isSeriesLabelPage(config, pageIndex)) {
+    return { custom: config.seriesLabel.trim(), countText: '' }
+  }
   if (config.pageOverlay !== 'fengshui') {
     return { custom: NON_FENGSHUI_TOP_BAR_TEXT, countText: '' }
   }
@@ -31,11 +55,21 @@ export function resolveTopBarParts(
   return { custom: custom || null, countText }
 }
 
+export function resolveTopBarBorderColor(
+  config: Pick<GraphicTextConfig, 'pageOverlay' | 'seriesLabel'>,
+  pageIndex = 0,
+): string {
+  if (isSeriesLabelPage(config, pageIndex)) return GRAPHIC_SERIES_TOP_BAR_BORDER_COLOR
+  if (config.pageOverlay === 'fengshui') return FENGSHUI_TOP_BAR_LINE_COLOR
+  return GRAPHIC_TOP_BAR_BORDER_COLOR
+}
+
 export function resolveTopBarText(
-  config: Pick<GraphicTextConfig, 'topText' | 'showWordCount' | 'pageOverlay'>,
+  config: Pick<GraphicTextConfig, 'topText' | 'showWordCount' | 'pageOverlay' | 'seriesLabel'>,
   markdown: string,
+  pageIndex = 0,
 ) {
-  const { custom, countText } = resolveTopBarParts(config, markdown)
+  const { custom, countText } = resolveTopBarParts(config, markdown, pageIndex)
   if (custom && countText) return `${custom} | ${countText}`
   if (custom) return custom
   return countText

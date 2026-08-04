@@ -9,7 +9,6 @@ import {
   GRAPHIC_EMPTY_HINT_COLOR,
   GRAPHIC_LIST_BULLET_COLOR,
   GRAPHIC_PAGE_TEXT_COLOR,
-  GRAPHIC_TOP_BAR_BORDER_COLOR,
   GRAPHIC_TOP_BAR_DIVIDER_COLOR,
   GRAPHIC_TOP_BAR_TEXT_COLOR,
 } from './graphicContentColors'
@@ -43,8 +42,8 @@ import { PageFengshuiOverlay } from './PageFengshuiOverlay'
 import { PagePixelOverlay } from './PagePixelOverlay'
 import { PageWiremeshOverlay } from './PageWiremeshOverlay'
 import { shouldDrawPageOverlay, shouldDrawReferenceBackground } from './pageLayering'
-import { resolveTopBarParts } from './topBar'
-import { FENGSHUI_TOP_BAR_LINE_COLOR, FENGSHUI_TOP_BAR_TEXT_COLOR } from './pageFengshuiTokens'
+import { resolveTopBarBorderColor, resolveTopBarParts } from './topBar'
+import { FENGSHUI_TOP_BAR_TEXT_COLOR } from './pageFengshuiTokens'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 
 interface GraphicPageProps {
@@ -561,9 +560,9 @@ export function GraphicPage({
   onCopyContent,
   highlightInteraction,
 }: GraphicPageProps) {
-  const layout = getGraphicLayout(config)
+  const layout = getGraphicLayout(config, { pageIndex: page.index })
   const { percent, aspectRatio } = layout
-  const topBar = resolveTopBarParts(config, markdown)
+  const topBar = resolveTopBarParts(config, markdown, page.index)
   const brushColors = config.brushHighlightColors ?? {}
   const underlineColors = config.underlineHighlightColors
   const handUnderlineColors = config.handUnderlineHighlightColors ?? {}
@@ -572,9 +571,9 @@ export function GraphicPage({
   const textColors = config.colorHighlightColors ?? {}
   const accentColor = config.highlightPickerColor
   const isFengshui = config.pageOverlay === 'fengshui'
-  const topBarBorderColor = isFengshui ? FENGSHUI_TOP_BAR_LINE_COLOR : GRAPHIC_TOP_BAR_BORDER_COLOR
+  const topBarBorderColor = resolveTopBarBorderColor(config, page.index)
   const topBarTextColor = isFengshui ? FENGSHUI_TOP_BAR_TEXT_COLOR : GRAPHIC_TOP_BAR_TEXT_COLOR
-  const topBarDividerColor = isFengshui ? FENGSHUI_TOP_BAR_LINE_COLOR : GRAPHIC_TOP_BAR_DIVIDER_COLOR
+  const topBarDividerColor = GRAPHIC_TOP_BAR_DIVIDER_COLOR
 
   const backgroundStyle: CSSProperties = resolvePageBackgroundStyle(config)
 

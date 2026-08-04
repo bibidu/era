@@ -16,6 +16,7 @@ import {
 } from './codeBlock'
 import { wrapPlainTextLinesByWidth } from './textWrap'
 import { ERA_PAGE_BREAK_MARKER, isPageBreakMarker } from './pageBreak'
+import { isSeriesLabelPage, SERIES_LABEL_GAP_LINES } from './topBar'
 import type {
   GraphicAspectRatio,
   GraphicTextConfig,
@@ -93,17 +94,30 @@ function resolveStyleType(block: Pick<MarkdownBlock, 'type' | 'styleType'>): Mar
 }
 
 export function getGraphicLayout(
-  config: Pick<GraphicTextConfig, 'aspectRatio'>,
+  config: Pick<GraphicTextConfig, 'aspectRatio'> &
+    Partial<Pick<GraphicTextConfig, 'seriesLabel' | 'bodyFontSize' | 'bodyLineHeight'>>,
+  options: { pageIndex?: number } = {},
 ): GraphicLayout {
   const aspect = parseAspectRatio(config.aspectRatio)
   const pageWidth = REFERENCE_WIDTH
   const pageHeight = Math.round((pageWidth * aspect.height) / aspect.width)
   const heightScale = pageHeight / REFERENCE_HEIGHT
+  const pageIndex = options.pageIndex ?? 0
+  const bodyFontSize = config.bodyFontSize ?? 13
+  const bodyLineHeight = config.bodyLineHeight ?? 1.64
+  const seriesLabel = config.seriesLabel ?? ''
 
   const safeX = 96
   const topBarY = Math.round(84 * heightScale)
   const topBarHeight = Math.round(44 * heightScale)
-  const contentPaddingBelowTop = Math.round(40 * heightScale)
+  const defaultPaddingBelowTop = Math.round(40 * heightScale)
+  // 系列期数页：顶栏红线到下方二级标题约三行正文间距
+  const seriesPaddingBelowTop = Math.round(
+    bodyFontSize * bodyLineHeight * SERIES_LABEL_GAP_LINES * heightScale,
+  )
+  const contentPaddingBelowTop = isSeriesLabelPage({ seriesLabel }, pageIndex)
+    ? Math.max(defaultPaddingBelowTop, seriesPaddingBelowTop)
+    : defaultPaddingBelowTop
   const bottomPadding = Math.round(56 * heightScale)
 
   const safeTop = topBarY + topBarHeight + contentPaddingBelowTop
@@ -581,8 +595,10 @@ function documentBlockToLayoutLines(
 }
 
 export function paginateDocument(document: GraphicDocument, config: GraphicTextConfig): GraphicTextPage[] {
-  const layout = getGraphicLayout(config)
-  const availableHeight = layout.contentBottom - layout.safeTop
+  const baseLayout = getGraphicLayout(config, { pageIndex: 1 })
+  const firstLayout = getGraphicLayout(config, { pageIndex: 0 })
+  const availableHeightDefault = baseLayout.contentBottom - baseLayout.safeTop
+  const availableHeightFirst = firstLayout.contentBottom - firstLayout.safeTop
   const allLines: LayoutLine[] = []
   let forcePageBreakBeforeNext = false
 
@@ -595,7 +611,7 @@ export function paginateDocument(document: GraphicDocument, config: GraphicTextC
       forcePageBreakBeforeNext = true
     }
 
-    const blockLines = documentBlockToLayoutLines(block, document, config, layout)
+    const blockLines = documentBlockToLayoutLines(block, document, config, baseLayout)
     if (forcePageBreakBeforeNext && blockLines[0]) {
       blockLines[0].pageBreakBefore = true
       forcePageBreakBeforeNext = false
@@ -611,6 +627,9 @@ export function paginateDocument(document: GraphicDocument, config: GraphicTextC
   let currentLines: LayoutLine[] = []
   let usedHeight = 0
 
+  const pageCapacity = () =>
+    pages.length === 0 ? availableHeightFirst : availableHeightDefault
+
   for (const line of allLines) {
     const lineTotal = line.spacingBefore + line.lineHeight + line.spacingAfter
 
@@ -620,7 +639,7 @@ export function paginateDocument(document: GraphicDocument, config: GraphicTextC
       usedHeight = 0
     }
 
-    if (currentLines.length > 0 && usedHeight + lineTotal > availableHeight) {
+    if (currentLines.length > 0 && usedHeight + lineTotal > pageCapacity()) {
       pages.push({ index: pages.length, blocks: layoutLinesToBlocks(currentLines) })
       currentLines = []
       usedHeight = 0

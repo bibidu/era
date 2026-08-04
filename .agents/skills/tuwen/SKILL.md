@@ -26,7 +26,11 @@ description: >-
 
 **字体**：二级标题（`##`）默认阿里妈妈数黑体（`headingFontId`: `shuheiti`，`headingFontFamily`: `"Alimama ShuHeiTi", sans-serif`）。一级标题与正文保持宋体，除非用户另指定。
 
-**顶部文案**：固定 `点赞关注不迷路～`；`showWordCount: false`。
+**顶部文案**：内容页默认 `点赞关注不迷路～`；`showWordCount: false`。
+
+**分页**：每个二级标题（`##`）**必须独占一页**。工程 Markdown 在每个 `##`（首个除外）前加 `<!-- era:page-break -->`；**发给用户确认的正文禁止出现该标记**。
+
+**系列期数顶栏（整套第 2 页）**：算上封面时的第 2 页＝内容首页。必须设置 `seriesLabel`（如 `每天一个提效实操·第14期`）：该页顶栏显示此文案、**底边朱红线** `#C41E3A`，与下方二级标题间距约 **三行**正文。期数按连载递增；用户未指定时先问当期期号。其余内容页顶栏仍为 `点赞关注不迷路～`。
 
 **高亮**：默认**不做高亮**。封面确认后直接布局校验 → 导出 → 入库；不要发高亮设置页，不要 `era_apply_highlights`。仅当用户明确要求「加高亮 / 打开高亮设置页」时才走 §高亮。
 
@@ -80,7 +84,9 @@ description: >-
 ### 内容图构建要点（Era）
 
 - Markdown **不要写 `#`**，从 `##` / 正文开始。
-- 建工程：`pageOverlay: 'pixel'`、`9:16`（或用户指定 `3:4`）、`headingFontId: shuheiti`、`topText: '点赞关注不迷路～'`、`showWordCount: false`。
+- **每个 `##` 独占页**：除首个 `##` 外，前插 `<!-- era:page-break -->`（用户可见文案须去掉）。
+- 建工程：`pageOverlay: 'pixel'`、`9:16`（或用户指定 `3:4`）、`headingFontId: shuheiti`、`topText: '点赞关注不迷路～'`、`showWordCount: false`、`seriesLabel: '每天一个提效实操·第N期'`（N 为当期期号）。
+- 导出前确认：内容首页顶栏＝`seriesLabel`＋红线；后续页顶栏＝点赞关注；每页以一个 `##` 起头。
 - 内容图无 H1，标题类校验（`title_missing_circle` 等）不适用；其余布局告警须修。
 
 ---
@@ -222,7 +228,7 @@ bash scripts/oss-upload.sh --cover <本地png>
 | 动作 | 工具 |
 | --- | --- |
 | 建工程 / 正文 | `era_create_project` · `era_set_markdown`（内容去掉 H1） |
-| 配置 | `era_update_config`（`9:16` + `pixel` + `shuheiti` + 固定 topText） |
+| 配置 | `era_update_config`（`9:16` + `pixel` + `shuheiti` + topText + `seriesLabel`） |
 | 高亮（可选） | `era_apply_highlights` · `era_create_highlight_setup_share`（仅用户点名时） |
 | 标题页 | `?tab=title&text=<标题>` |
 | 校验 / 导出 | `era_preview_layout` · `era_export_images` |

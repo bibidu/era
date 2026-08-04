@@ -51,6 +51,11 @@ export interface GraphicTextConfig {
   topText: string
   /** 是否显示左上角「全文 xxx 字」；自定义 topText 仍可单独显示 */
   showWordCount: boolean
+  /**
+   * 系列期数顶栏（仅内容首页 / 整套第 2 页含封面）：如「每天一个提效实操·第14期」。
+   * 有值时该页顶栏改为此文案、底边朱红线，并与下方正文留出约三行间距。
+   */
+  seriesLabel: string
   backgroundUrl: string | null
   underlineHighlightColors: Record<string, string>
   handUnderlineHighlightColors: Record<string, string>
@@ -126,6 +131,7 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   gradientVariant: DEFAULT_GRADIENT_VARIANT,
   topText: '点赞关注不迷路～',
   showWordCount: false,
+  seriesLabel: '',
   backgroundUrl: null,
   underlineHighlightColors: {},
   handUnderlineHighlightColors: {},
