@@ -409,14 +409,14 @@ export function SocialVideoDataPage({
     void (async () => {
       setPendingPostsLoading(true)
       try {
-        const rows = await listSocialVideoAnalyses({ publishStatus: '待AI修改' })
+        const rows = await listSocialVideoAnalyses()
         if (cancelled) return
         setPendingPosts(rows)
         setPendingPostsError('')
       } catch (error) {
         if (cancelled) return
         setPendingPosts([])
-        setPendingPostsError(error instanceof Error ? error.message : '加载待 AI 修改帖子失败')
+        setPendingPostsError(error instanceof Error ? error.message : '加载帖子失败')
       } finally {
         if (!cancelled) setPendingPostsLoading(false)
       }
@@ -551,13 +551,12 @@ export function SocialVideoDataPage({
           markdown: JSON.stringify(job.resultData),
           outline: existing.outline || '',
           imagePreviews: existing.image_previews || [],
-          publishStatus: '已发布',
+          publishStatus: existing.publish_status,
           workType: existing.work_type,
         })
         savedIds.push(job.relatedPostId)
       }
 
-      setPendingPosts((posts) => posts.filter((post) => !savedIds.includes(post.id)))
       setJobs((prev) =>
         prev.map((job) =>
           savedIds.includes(job.relatedPostId)
@@ -711,7 +710,7 @@ export function SocialVideoDataPage({
                       {pendingPostsLoading
                         ? '加载中...'
                         : posts.length === 0
-                          ? `暂无待 AI 修改的${workTypeFilter}帖子`
+                          ? `暂无${workTypeFilter}帖子`
                           : '请选择帖子'}
                     </option>
                     {posts.map((post) => (
