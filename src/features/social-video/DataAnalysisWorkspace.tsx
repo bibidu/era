@@ -172,7 +172,6 @@ export function DataAnalysisWorkspace() {
             record={postRecord}
             flushTop
             onBack={closePost}
-            onDeleted={bumpListReload}
             onUpdated={(next) => {
               if (next) setPostRecord(next)
               bumpListReload()

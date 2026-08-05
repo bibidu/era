@@ -4,7 +4,6 @@ import { legacyEdgeFunctionUrl } from '../../agent/legacyEdgeFunctionUrl'
 import { LEGACY_SUPABASE_ANON_KEY } from '../../agent/supabaseHighlightSetup'
 import {
   SOCIAL_VIDEO_WORK_TYPES,
-  deleteSocialVideoAnalysis,
   getSocialVideoAnalysis,
   patchSocialVideoAnalysis,
   type SocialVideoAnalysisRecord,
@@ -12,7 +11,6 @@ import {
   type SocialVideoWorkType,
 } from '../../agent/supabaseSocialVideoAnalysis'
 import { BottomSheet } from '../../components/BottomSheet'
-import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { useEdgeSwipeBack } from '../../hooks/useEdgeSwipeBack'
 import { FullscreenImageViewer } from './FullscreenImageViewer'
 import { MarkdownPreview } from './MarkdownPreview'
@@ -27,7 +25,6 @@ import { truncateText } from './parseMarkdownMetrics'
 interface SocialVideoPostPageProps {
   record: SocialVideoAnalysisRecord
   onBack: () => void
-  onDeleted?: () => void
   onUpdated?: (next?: SocialVideoAnalysisRecord) => void
   flushTop?: boolean
 }
@@ -130,15 +127,12 @@ function mergeRecord(
 export function SocialVideoPostPage({
   record,
   onBack,
-  onDeleted,
   onUpdated,
   flushTop = false,
 }: SocialVideoPostPageProps) {
   const [tab, setTab] = useState<DetailTab>('detail')
   const [view, setView] = useState<SocialVideoAnalysisRecord>(record)
   const [statusMessage, setStatusMessage] = useState('')
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const [deleting, setDeleting] = useState(false)
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
   const [viewerImages, setViewerImages] = useState<PreviewImageItem[]>([])
   const [savingType, setSavingType] = useState(false)
@@ -153,7 +147,7 @@ export function SocialVideoPostPage({
   const uploadInputId = useId()
 
   const swipe = useEdgeSwipeBack(onBack, {
-    enabled: !confirmOpen && viewerIndex == null && !contentSheetOpen,
+    enabled: viewerIndex == null && !contentSheetOpen,
   })
 
   useEffect(() => {
@@ -256,20 +250,6 @@ export function SocialVideoPostPage({
       setStatusMessage(error instanceof Error ? error.message : '更新类型失败')
     } finally {
       setSavingType(false)
-    }
-  }
-
-  async function handleDelete() {
-    if (deleting) return
-    setDeleting(true)
-    try {
-      await deleteSocialVideoAnalysis(view.id)
-      setConfirmOpen(false)
-      onDeleted?.()
-      onBack()
-    } catch (error) {
-      setStatusMessage(error instanceof Error ? `删除失败：${error.message}` : '删除失败')
-      setDeleting(false)
     }
   }
 
@@ -647,15 +627,15 @@ export function SocialVideoPostPage({
         )}
       </div>
 
-      <div
-        className="shrink-0 border-t px-4 py-3"
-        style={{
-          borderColor: 'var(--era-border)',
-          paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
-          background: 'var(--era-bg)',
-        }}
-      >
-        {tab === 'data' && showCreateTask ? (
+      {tab === 'data' && showCreateTask ? (
+        <div
+          className="shrink-0 border-t px-4 py-3"
+          style={{
+            borderColor: 'var(--era-border)',
+            paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+            background: 'var(--era-bg)',
+          }}
+        >
           <button
             type="button"
             className="h-12 w-full rounded-2xl text-sm font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
@@ -665,22 +645,8 @@ export function SocialVideoPostPage({
           >
             {isCreating ? '创建中...' : '创建分析任务'}
           </button>
-        ) : (
-          <button
-            type="button"
-            className="h-12 w-full rounded-2xl text-sm font-bold transition hover:opacity-90 disabled:opacity-40"
-            style={{
-              background: 'rgb(220 38 38 / 0.14)',
-              color: 'rgb(252 165 165)',
-              border: '1px solid rgb(239 68 68 / 0.35)',
-            }}
-            disabled={deleting}
-            onClick={() => setConfirmOpen(true)}
-          >
-            删除
-          </button>
-        )}
-      </div>
+        </div>
+      ) : null}
 
       <BottomSheet
         isOpen={contentSheetOpen}
@@ -724,20 +690,6 @@ export function SocialVideoPostPage({
           enableDownload
         />
       ) : null}
-
-      <ConfirmDialog
-        open={confirmOpen}
-        title="确认删除这条帖子？"
-        description="删除后无法恢复，分析数据将从库中移除。"
-        confirmLabel="确认删除"
-        cancelLabel="取消"
-        destructive
-        confirming={deleting}
-        onCancel={() => {
-          if (!deleting) setConfirmOpen(false)
-        }}
-        onConfirm={() => void handleDelete()}
-      />
     </div>
   )
 }
