@@ -70,10 +70,10 @@
 
 基址：`https://39.106.179.17.sslip.io/`（无参数时**默认社媒**）：
 
-| Tab | URL |
+| 页面 | URL |
 | --- | --- |
-| 图文 | `?tab=graphic` |
-| 社媒 | `?tab=data` |
-| 高亮 | `?tab=highlight&shareId=<id>` |
-| 标题 | `?tab=title&text=<当前帖子标题>` |
-| 拼图 | `?tab=stitch` |
+| 社媒（默认） | `?tab=data` |
+| 图文（二级页） | `?tab=graphic` |
+| 帖子详情（二级页） | `?tab=data&post=<id>` |
+
+顶栏仅「图文 / 社媒」；点「图文」进入路由二级页（可边缘右滑返回）。高亮 / 标题 / 拼图 Tab 与复盘页已移除。

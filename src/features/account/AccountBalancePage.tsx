@@ -2,6 +2,7 @@ import { ChevronLeft, RefreshCw, Wallet } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { legacyEdgeFunctionUrl } from '../../agent/legacyEdgeFunctionUrl'
 import { LEGACY_SUPABASE_ANON_KEY } from '../../agent/supabaseHighlightSetup'
+import { useEdgeSwipeBack } from '../../hooks/useEdgeSwipeBack'
 
 interface BalancePayload {
   availableAmount?: string | null
@@ -31,6 +32,7 @@ export function AccountBalancePage({ onBack }: AccountBalancePageProps) {
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<BalancePayload | null>(null)
   const [error, setError] = useState('')
+  const swipe = useEdgeSwipeBack(onBack)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -65,10 +67,23 @@ export function AccountBalancePage({ onBack }: AccountBalancePageProps) {
   const currency = data?.currency || 'CNY'
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col" style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}>
+    <div
+      ref={swipe.ref}
+      className="flex min-h-0 flex-1 flex-col"
+      style={{ background: 'var(--era-bg)', color: 'var(--era-fg)', ...swipe.style }}
+      onPointerDown={swipe.onPointerDown}
+      onPointerMove={swipe.onPointerMove}
+      onPointerUp={swipe.onPointerUp}
+      onPointerCancel={swipe.onPointerCancel}
+    >
       <header
-        className="flex shrink-0 items-center gap-2 border-b px-3 py-3"
-        style={{ borderColor: 'var(--era-border)' }}
+        className="flex shrink-0 items-center gap-2 border-b px-3"
+        style={{
+          borderColor: 'var(--era-border)',
+          paddingTop: 'calc(0.75rem + env(safe-area-inset-top, 0px))',
+          paddingBottom: '0.75rem',
+          background: 'var(--era-header)',
+        }}
       >
         <button
           type="button"

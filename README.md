@@ -4,22 +4,18 @@
 
 在线预览（自建站 HTTPS）：[https://39.106.179.17.sslip.io/](https://39.106.179.17.sslip.io/)，见 [docs/cloud-hosting.md](./docs/cloud-hosting.md)。
 
-顶栏 Tab（可用 `?tab=` 深链自动切换；**默认社媒** `?tab=data`）：
+顶栏仅「图文 / 社媒」（可用 `?tab=` 深链；**默认社媒** `?tab=data`）：
 
-- 图文：`?tab=graphic`
-- 社媒：`?tab=data`
-- 高亮：`?tab=highlight&shareId=...`
-- 标题：`?tab=title&text=当前帖子标题`（必须带 `text=`，否则落回 demo）
-- 拼图：`?tab=stitch`（多图上传、拖拽排序、纵向拼成长图）
+- 社媒：`?tab=data`（默认）
+- 图文：`?tab=graphic`（路由二级页，可边缘右滑返回）
+- 帖子详情：`?tab=data&post=<id>`（二级页）
 
 ## 功能
 
-- 图文模式：Markdown 分页、字体/纸色/高亮、多页导出
-- 社媒：「社媒」Tab 展示分析列表；右上角「智能提取」进入视频数据提取页（上传抽帧或填写视频 URL，经 Supabase 代理调用 DashScope 返回 Markdown）
-- 高亮设置：「高亮」Tab；`?tab=highlight&shareId=...` 自动打开并加载分享内容
-- 拼图：「拼图」Tab；多图上传、拖拽调序后纵向拼接为长图并下载
+- 社媒：分析列表与帖子详情（详情 / 数据 Tab）
+- 图文：Markdown 分页、字体/纸色、多页导出（二级页）
 - 画幅：`3:4` 小红书风格；`9:16` 抖音风格
-- 发图：阿里云 OSS 私有桶 + 对话框直发 **12 小时签名 URL**（无 Gallery 页）
+- 发图：阿里云 OSS；社媒入库后走自建站 HTTPS 预览
 
 ## 开发（前端）
 

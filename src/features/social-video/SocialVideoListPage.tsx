@@ -1,4 +1,4 @@
-import { RefreshCw, TrendingUp } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
   SOCIAL_VIDEO_WORK_TYPES,
@@ -18,7 +18,6 @@ interface SocialVideoListPageProps {
   workTypeFilter: SocialListWorkTypeFilter
   onWorkTypeFilterChange: (value: SocialListWorkTypeFilter) => void
   reloadToken?: number
-  onOpenReview: () => void
   onOpenPost: (record: SocialVideoAnalysisRecord) => void
 }
 
@@ -159,7 +158,6 @@ export function SocialVideoListPage({
   workTypeFilter,
   onWorkTypeFilterChange,
   reloadToken = 0,
-  onOpenReview,
   onOpenPost,
 }: SocialVideoListPageProps) {
   const [records, setRecords] = useState<SocialVideoAnalysisRecord[]>([])
@@ -218,12 +216,6 @@ export function SocialVideoListPage({
     }
   }
 
-  const actionBtnClass =
-    'inline-flex h-9 items-center gap-1 px-2.5 text-xs font-semibold transition hover:opacity-90 active:opacity-80 disabled:opacity-40'
-  const actionBtnStyle = {
-    color: 'var(--era-fg)',
-  } as const
-
   return (
     <div className="flex min-h-0 flex-1 flex-col" style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}>
       <div
@@ -246,22 +238,6 @@ export function SocialVideoListPage({
               strokeWidth={2}
               className={refreshing ? 'animate-spin' : undefined}
             />
-          </button>
-        </div>
-        <div
-          className="inline-flex shrink-0 items-center overflow-hidden rounded-xl border"
-          style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
-          role="group"
-          aria-label="快捷操作"
-        >
-          <button
-            type="button"
-            className={actionBtnClass}
-            style={actionBtnStyle}
-            onClick={onOpenReview}
-          >
-            <TrendingUp size={15} strokeWidth={2} />
-            复盘
           </button>
         </div>
       </div>
