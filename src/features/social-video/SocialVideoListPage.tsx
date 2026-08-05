@@ -1,5 +1,5 @@
 import { RefreshCw } from 'lucide-react'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   SOCIAL_VIDEO_WORK_TYPES,
   formatSocialVideoLoadError,
@@ -18,8 +18,6 @@ interface SocialVideoListPageProps {
   workTypeFilter: SocialListWorkTypeFilter
   onWorkTypeFilterChange: (value: SocialListWorkTypeFilter) => void
   reloadToken?: number
-  /** 列表是否在前台展示（二级页返回后据此恢复滚动） */
-  active?: boolean
   onOpenPost: (record: SocialVideoAnalysisRecord) => void
 }
 
@@ -204,7 +202,6 @@ export function SocialVideoListPage({
   workTypeFilter,
   onWorkTypeFilterChange,
   reloadToken = 0,
-  active = true,
   onOpenPost,
 }: SocialVideoListPageProps) {
   const [records, setRecords] = useState<SocialVideoAnalysisRecord[]>([])
@@ -213,11 +210,9 @@ export function SocialVideoListPage({
   const [error, setError] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
   const sectionRefs = useRef<Partial<Record<SocialVideoWorkType, HTMLElement | null>>>({})
-  const savedScrollTopRef = useRef(0)
   const recordsRef = useRef(records)
   const prevFilterRef = useRef(workTypeFilter)
   const [scrollRoot, setScrollRoot] = useState<Element | null>(null)
-  const wasActiveRef = useRef(active)
   recordsRef.current = records
 
   useEffect(() => {
@@ -230,10 +225,6 @@ export function SocialVideoListPage({
     prevFilterRef.current = workTypeFilter
     // 仅 reloadToken 刷新且已有数据时静默更新，避免二级页返回闪白并丢滚动
     const silent = !filterChanged && recordsRef.current.length > 0
-
-    if (filterChanged) {
-      savedScrollTopRef.current = 0
-    }
 
     void (async () => {
       if (!silent) setLoading(true)
@@ -257,21 +248,6 @@ export function SocialVideoListPage({
       cancelled = true
     }
   }, [workTypeFilter, reloadToken])
-
-  useLayoutEffect(() => {
-    if (!wasActiveRef.current && active) {
-      const top = savedScrollTopRef.current
-      const restore = () => {
-        if (scrollRef.current) scrollRef.current.scrollTop = top
-      }
-      restore()
-      requestAnimationFrame(() => {
-        restore()
-        requestAnimationFrame(restore)
-      })
-    }
-    wasActiveRef.current = active
-  }, [active])
 
   const sections = useMemo(() => {
     if (workTypeFilter) {
@@ -308,16 +284,6 @@ export function SocialVideoListPage({
     }
   }
 
-  function captureScroll() {
-    const node = scrollRef.current
-    if (node) savedScrollTopRef.current = node.scrollTop
-  }
-
-  function handleOpenPost(record: SocialVideoAnalysisRecord) {
-    captureScroll()
-    onOpenPost(record)
-  }
-
   function scrollToType(type: SocialVideoWorkType) {
     const section = sectionRefs.current[type]
     const scroller = scrollRef.current
@@ -325,7 +291,6 @@ export function SocialVideoListPage({
     const sectionTop = section.getBoundingClientRect().top
     const scrollerTop = scroller.getBoundingClientRect().top
     const nextTop = scroller.scrollTop + (sectionTop - scrollerTop)
-    savedScrollTopRef.current = nextTop
     scroller.scrollTo({ top: nextTop, behavior: 'smooth' })
   }
 
@@ -337,7 +302,7 @@ export function SocialVideoListPage({
             key={record.id}
             record={record}
             scrollRoot={scrollRoot}
-            onOpen={handleOpenPost}
+            onOpen={onOpenPost}
           />
         ))}
       </div>
@@ -395,13 +360,7 @@ export function SocialVideoListPage({
         </select>
       </div>
 
-      <div
-        ref={scrollRef}
-        className="relative min-h-0 flex-1 overflow-y-auto px-4 py-4"
-        onScroll={(event) => {
-          savedScrollTopRef.current = event.currentTarget.scrollTop
-        }}
-      >
+      <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {loading && records.length === 0 ? (
           <div className="flex h-48 items-center justify-center text-sm" style={{ color: 'var(--era-muted)' }}>
             加载中...
