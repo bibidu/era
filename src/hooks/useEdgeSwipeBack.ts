@@ -28,8 +28,7 @@ export type EdgeSwipeBackBind = {
 
 /**
  * 二级页左缘右滑返回（iOS 侧滑风格）。
- * 手指从左缘滑入并向右拖，超过阈值松手后调用 onBack。
- * 确认返回时不会先把页面弹回原位，避免与卸载叠层抢动画导致抖动。
+ * 确认返回时保持当前位移并立刻 onBack，不做回弹/滑出动画，避免与叠层卸载抢帧抖动。
  */
 export function useEdgeSwipeBack(
   onBack: () => void,
@@ -60,6 +59,25 @@ export function useEdgeSwipeBack(
   useEffect(() => {
     if (!enabled) reset()
   }, [enabled, reset])
+
+  // 阻止 iOS Safari 原生边缘返回与自定义手势叠在一起抖
+  useEffect(() => {
+    const node = ref.current
+    if (!node || !enabled) return
+
+    const onTouchStart = (event: TouchEvent) => {
+      if (committingRef.current) return
+      const touch = event.touches[0]
+      if (!touch) return
+      const localX = touch.clientX - node.getBoundingClientRect().left
+      if (localX <= edgeWidth) {
+        event.preventDefault()
+      }
+    }
+
+    node.addEventListener('touchstart', onTouchStart, { passive: false })
+    return () => node.removeEventListener('touchstart', onTouchStart)
+  }, [enabled, edgeWidth])
 
   function onPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
     if (!enabled || committingRef.current) return
@@ -106,11 +124,8 @@ export function useEdgeSwipeBack(
     pointerIdRef.current = null
 
     if (dx >= threshold) {
-      // 确认返回：停在当前位移（或滑出屏外），不要 setOffset(0) 弹回，否则会与卸载叠层打架抖动
+      // 保持 dragging=true → transition:none，停在当前位移直接返回，避免弹回/滑出动画
       committingRef.current = true
-      setDragging(false)
-      const width = ref.current?.getBoundingClientRect().width ?? window.innerWidth
-      setOffset(Math.max(dx, width))
       onBackRef.current()
       return
     }
@@ -138,9 +153,12 @@ export function useEdgeSwipeBack(
     ref,
     style: {
       transform: offset > 0 ? `translate3d(${offset}px, 0, 0)` : undefined,
-      transition: dragging ? 'none' : 'transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
-      touchAction: 'pan-y',
+      transition: dragging || committingRef.current
+        ? 'none'
+        : 'transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
+      touchAction: dragging ? 'none' : 'pan-y',
       willChange: dragging || offset > 0 ? 'transform' : undefined,
+      overscrollBehaviorX: 'none',
     },
     onPointerDown,
     onPointerMove,

@@ -98,13 +98,11 @@ function GraphicSecondaryPage({ onBack }: { onBack: () => void }) {
 
 function App() {
   const [mode, setMode] = useState<AppMode>(() => readAppTabFromSearch())
-  const [socialPostId, setSocialPostId] = useState(() => readSocialPostIdFromSearch())
   const [balanceOpen, setBalanceOpen] = useState(false)
   const { theme, toggle } = useEraTheme()
 
   const syncFromUrl = useCallback(() => {
     setMode(readAppTabFromSearch())
-    setSocialPostId(readSocialPostIdFromSearch())
   }, [])
 
   useEffect(() => {
@@ -113,7 +111,6 @@ function App() {
       keepSocialPost: Boolean(readSocialPostIdFromSearch()) && initial === 'data',
       graphicEntry: initial === 'graphic' ? 'replace' : null,
     })
-    setSocialPostId(readSocialPostIdFromSearch())
     window.addEventListener('popstate', syncFromUrl)
     window.addEventListener(ERA_URL_CHANGE_EVENT, syncFromUrl)
     return () => {
@@ -137,7 +134,6 @@ function App() {
     (next: AppMode) => {
       setBalanceOpen(false)
       if (next === 'graphic') {
-        setSocialPostId(null)
         setMode('graphic')
         pushGraphicInUrl()
         return
@@ -147,14 +143,14 @@ function App() {
         setMode('data')
         return
       }
-      setSocialPostId(null)
       setMode('data')
       replaceAppTabInUrl('data', { keepSocialPost: false })
     },
     [mode],
   )
 
-  const hideTopTabs = balanceOpen || Boolean(socialPostId) || mode === 'graphic'
+  // 帖子详情不藏顶栏：否则手势返回时顶栏突然出现会改变列表高度，造成抖动
+  const hideTopTabs = balanceOpen || mode === 'graphic'
   const wideLayout = mode === 'data' && !hideTopTabs
 
   return (

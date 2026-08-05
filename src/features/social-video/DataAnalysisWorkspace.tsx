@@ -6,7 +6,6 @@ import {
 } from '../../agent/supabaseSocialVideoAnalysis'
 import {
   ERA_URL_CHANGE_EVENT,
-  navigateBackFromSocialPost,
   pushSocialPostInUrl,
   readSocialPostIdFromSearch,
   replaceSocialPostInUrl,
@@ -135,9 +134,10 @@ export function DataAnalysisWorkspace() {
   }
 
   function closePost() {
-    // 先清本地态立刻卸叠层，避免手势返回时等 popstate 期间页面先弹回再消失
+    // 立刻卸叠层，并用 replace 清 URL。
+    // 不用 history.back()：Safari 会恢复滚动/整页过渡，和手势叠层卸载叠在一起必抖。
     setPostId(null)
-    navigateBackFromSocialPost()
+    replaceSocialPostInUrl(null)
   }
 
   const showPostRoute = Boolean(postId)
@@ -174,7 +174,6 @@ export function DataAnalysisWorkspace() {
             <SocialVideoPostPage
               key={postRecord.id}
               record={postRecord}
-              flushTop
               onBack={closePost}
               onUpdated={(next) => {
                 if (next) setPostRecord(next)
