@@ -29,6 +29,7 @@ export type EdgeSwipeBackBind = {
 /**
  * 二级页左缘右滑返回（iOS 侧滑风格）。
  * 手指从左缘滑入并向右拖，超过阈值松手后调用 onBack。
+ * 确认返回时不会先把页面弹回原位，避免与卸载叠层抢动画导致抖动。
  */
 export function useEdgeSwipeBack(
   onBack: () => void,
@@ -43,6 +44,7 @@ export function useEdgeSwipeBack(
   const trackingRef = useRef(false)
   const axisLockedRef = useRef<'x' | 'y' | null>(null)
   const pointerIdRef = useRef<number | null>(null)
+  const committingRef = useRef(false)
   const onBackRef = useRef(onBack)
   onBackRef.current = onBack
 
@@ -50,6 +52,7 @@ export function useEdgeSwipeBack(
     trackingRef.current = false
     axisLockedRef.current = null
     pointerIdRef.current = null
+    committingRef.current = false
     setDragging(false)
     setOffset(0)
   }, [])
@@ -59,7 +62,7 @@ export function useEdgeSwipeBack(
   }, [enabled, reset])
 
   function onPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
-    if (!enabled) return
+    if (!enabled || committingRef.current) return
     if (event.pointerType === 'mouse' && event.button !== 0) return
     const target = event.target
     if (
@@ -97,9 +100,23 @@ export function useEdgeSwipeBack(
   }
 
   function finish(dx: number) {
-    const shouldBack = dx >= threshold
-    reset()
-    if (shouldBack) onBackRef.current()
+    if (!trackingRef.current) return
+    trackingRef.current = false
+    axisLockedRef.current = null
+    pointerIdRef.current = null
+
+    if (dx >= threshold) {
+      // 确认返回：停在当前位移（或滑出屏外），不要 setOffset(0) 弹回，否则会与卸载叠层打架抖动
+      committingRef.current = true
+      setDragging(false)
+      const width = ref.current?.getBoundingClientRect().width ?? window.innerWidth
+      setOffset(Math.max(dx, width))
+      onBackRef.current()
+      return
+    }
+
+    setDragging(false)
+    setOffset(0)
   }
 
   function onPointerUp(event: ReactPointerEvent<HTMLDivElement>) {
@@ -113,6 +130,7 @@ export function useEdgeSwipeBack(
 
   function onPointerCancel(event: ReactPointerEvent<HTMLDivElement>) {
     if (pointerIdRef.current !== event.pointerId) return
+    if (committingRef.current) return
     reset()
   }
 
@@ -122,7 +140,7 @@ export function useEdgeSwipeBack(
       transform: offset > 0 ? `translate3d(${offset}px, 0, 0)` : undefined,
       transition: dragging ? 'none' : 'transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
       touchAction: 'pan-y',
-      willChange: dragging ? 'transform' : undefined,
+      willChange: dragging || offset > 0 ? 'transform' : undefined,
     },
     onPointerDown,
     onPointerMove,

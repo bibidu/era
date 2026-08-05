@@ -135,10 +135,9 @@ export function DataAnalysisWorkspace() {
   }
 
   function closePost() {
+    // 先清本地态立刻卸叠层，避免手势返回时等 popstate 期间页面先弹回再消失
+    setPostId(null)
     navigateBackFromSocialPost()
-    if (!readSocialPostIdFromSearch()) {
-      setPostId(null)
-    }
   }
 
   const showPostRoute = Boolean(postId)
@@ -161,10 +160,8 @@ export function DataAnalysisWorkspace() {
       </div>
 
       {showPostRoute ? (
-        <div
-          className="absolute inset-0 z-10 flex min-h-0 flex-col"
-          style={{ background: 'var(--era-bg)' }}
-        >
+        // 外层不铺底色：右滑时露出下方列表；底色由详情页自身承担
+        <div className="absolute inset-0 z-10 flex min-h-0 flex-col">
           {postError && !postRecord ? (
             <PostLoadErrorPage
               message={postError}
@@ -185,7 +182,12 @@ export function DataAnalysisWorkspace() {
               }}
             />
           ) : (
-            <SecondaryLoadingFallback />
+            <div
+              className="flex min-h-0 flex-1 flex-col"
+              style={{ background: 'var(--era-bg)' }}
+            >
+              <SecondaryLoadingFallback />
+            </div>
           )}
         </div>
       ) : null}
