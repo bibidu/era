@@ -145,9 +145,15 @@ export function DataAnalysisWorkspace() {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
+      {/* 不用 display:none：隐藏时仍保留列表滚动位置 */}
       <div
-        className={!showPostRoute ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}
+        className={
+          showPostRoute
+            ? 'pointer-events-none absolute inset-0 flex min-h-0 flex-col overflow-hidden opacity-0'
+            : 'relative flex min-h-0 flex-1 flex-col'
+        }
         aria-hidden={showPostRoute}
+        inert={showPostRoute || undefined}
       >
         <SocialVideoListPage
           workTypeFilter={workTypeFilter}
@@ -159,28 +165,30 @@ export function DataAnalysisWorkspace() {
       </div>
 
       {showPostRoute ? (
-        postError && !postRecord ? (
-          <PostLoadErrorPage
-            message={postError}
-            onBack={() => {
-              replaceSocialPostInUrl(null)
-              setPostId(null)
-            }}
-          />
-        ) : postRecord ? (
-          <SocialVideoPostPage
-            key={postRecord.id}
-            record={postRecord}
-            flushTop
-            onBack={closePost}
-            onUpdated={(next) => {
-              if (next) setPostRecord(next)
-              bumpListReload()
-            }}
-          />
-        ) : (
-          <SecondaryLoadingFallback />
-        )
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+          {postError && !postRecord ? (
+            <PostLoadErrorPage
+              message={postError}
+              onBack={() => {
+                replaceSocialPostInUrl(null)
+                setPostId(null)
+              }}
+            />
+          ) : postRecord ? (
+            <SocialVideoPostPage
+              key={postRecord.id}
+              record={postRecord}
+              flushTop
+              onBack={closePost}
+              onUpdated={(next) => {
+                if (next) setPostRecord(next)
+                bumpListReload()
+              }}
+            />
+          ) : (
+            <SecondaryLoadingFallback />
+          )}
+        </div>
       ) : null}
     </div>
   )

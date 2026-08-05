@@ -1,5 +1,5 @@
 import { RefreshCw } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   SOCIAL_VIDEO_WORK_TYPES,
   formatSocialVideoLoadError,
@@ -258,20 +258,17 @@ export function SocialVideoListPage({
     }
   }, [workTypeFilter, reloadToken])
 
-  useEffect(() => {
-    const node = scrollRef.current
-    if (!node) return
-
-    if (wasActiveRef.current && !active) {
-      savedScrollTopRef.current = node.scrollTop
-    }
+  useLayoutEffect(() => {
     if (!wasActiveRef.current && active) {
       const top = savedScrollTopRef.current
       const restore = () => {
         if (scrollRef.current) scrollRef.current.scrollTop = top
       }
       restore()
-      requestAnimationFrame(restore)
+      requestAnimationFrame(() => {
+        restore()
+        requestAnimationFrame(restore)
+      })
     }
     wasActiveRef.current = active
   }, [active])
@@ -311,6 +308,16 @@ export function SocialVideoListPage({
     }
   }
 
+  function captureScroll() {
+    const node = scrollRef.current
+    if (node) savedScrollTopRef.current = node.scrollTop
+  }
+
+  function handleOpenPost(record: SocialVideoAnalysisRecord) {
+    captureScroll()
+    onOpenPost(record)
+  }
+
   function scrollToType(type: SocialVideoWorkType) {
     const section = sectionRefs.current[type]
     const scroller = scrollRef.current
@@ -330,7 +337,7 @@ export function SocialVideoListPage({
             key={record.id}
             record={record}
             scrollRoot={scrollRoot}
-            onOpen={onOpenPost}
+            onOpen={handleOpenPost}
           />
         ))}
       </div>
@@ -392,9 +399,7 @@ export function SocialVideoListPage({
         ref={scrollRef}
         className="relative min-h-0 flex-1 overflow-y-auto px-4 py-4"
         onScroll={(event) => {
-          if (active) {
-            savedScrollTopRef.current = event.currentTarget.scrollTop
-          }
+          savedScrollTopRef.current = event.currentTarget.scrollTop
         }}
       >
         {loading && records.length === 0 ? (
