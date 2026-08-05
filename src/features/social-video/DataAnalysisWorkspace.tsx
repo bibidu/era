@@ -153,6 +153,7 @@ export function DataAnalysisWorkspace() {
           workTypeFilter={workTypeFilter}
           onWorkTypeFilterChange={setWorkTypeFilter}
           reloadToken={listReloadToken}
+          active={!showPostRoute}
           onOpenPost={openPost}
         />
       </div>

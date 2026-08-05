@@ -1,5 +1,5 @@
 import { RefreshCw } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   SOCIAL_VIDEO_WORK_TYPES,
   formatSocialVideoLoadError,
@@ -18,6 +18,8 @@ interface SocialVideoListPageProps {
   workTypeFilter: SocialListWorkTypeFilter
   onWorkTypeFilterChange: (value: SocialListWorkTypeFilter) => void
   reloadToken?: number
+  /** 列表是否在前台展示（二级页返回后据此恢复滚动） */
+  active?: boolean
   onOpenPost: (record: SocialVideoAnalysisRecord) => void
 }
 
@@ -154,10 +156,55 @@ function CoverThumb({
   )
 }
 
+function groupRecordsByWorkType(records: SocialVideoAnalysisRecord[]) {
+  const sorted = sortSocialVideoAnalyses(records)
+  return SOCIAL_VIDEO_WORK_TYPES.map((type) => ({
+    type,
+    records: sorted.filter((record) => record.work_type === type),
+  })).filter((section) => section.records.length > 0)
+}
+
+function RecordCard({
+  record,
+  scrollRoot,
+  onOpen,
+}: {
+  record: SocialVideoAnalysisRecord
+  scrollRoot: Element | null
+  onOpen: (record: SocialVideoAnalysisRecord) => void
+}) {
+  const badge = extractStatusBadgeStyle(record.extract_status)
+  return (
+    <button
+      type="button"
+      className="group relative overflow-hidden rounded-2xl border text-left shadow-sm transition hover:opacity-95"
+      style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
+      onClick={() => onOpen(record)}
+    >
+      <div className="aspect-[3/4] w-full">
+        <CoverThumb record={record} scrollRoot={scrollRoot} />
+        <span
+          className="absolute left-1.5 top-1.5 max-w-[calc(50%-0.5rem)] truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide shadow-sm"
+          style={{ background: 'rgb(0 0 0 / 0.55)', color: '#ffffff' }}
+        >
+          {record.work_type}
+        </span>
+        <span
+          className="absolute right-1.5 top-1.5 max-w-[calc(50%-0.5rem)] truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide shadow-sm"
+          style={badge}
+        >
+          {record.extract_status}
+        </span>
+      </div>
+    </button>
+  )
+}
+
 export function SocialVideoListPage({
   workTypeFilter,
   onWorkTypeFilterChange,
   reloadToken = 0,
+  active = true,
   onOpenPost,
 }: SocialVideoListPageProps) {
   const [records, setRecords] = useState<SocialVideoAnalysisRecord[]>([])
@@ -165,7 +212,13 @@ export function SocialVideoListPage({
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
+  const sectionRefs = useRef<Partial<Record<SocialVideoWorkType, HTMLElement | null>>>({})
+  const savedScrollTopRef = useRef(0)
+  const recordsRef = useRef(records)
+  const prevFilterRef = useRef(workTypeFilter)
   const [scrollRoot, setScrollRoot] = useState<Element | null>(null)
+  const wasActiveRef = useRef(active)
+  recordsRef.current = records
 
   useEffect(() => {
     setScrollRoot(scrollRef.current)
@@ -173,9 +226,17 @@ export function SocialVideoListPage({
 
   useEffect(() => {
     let cancelled = false
+    const filterChanged = prevFilterRef.current !== workTypeFilter
+    prevFilterRef.current = workTypeFilter
+    // 仅 reloadToken 刷新且已有数据时静默更新，避免二级页返回闪白并丢滚动
+    const silent = !filterChanged && recordsRef.current.length > 0
+
+    if (filterChanged) {
+      savedScrollTopRef.current = 0
+    }
 
     void (async () => {
-      setLoading(true)
+      if (!silent) setLoading(true)
       try {
         const rows = await listSocialVideoAnalyses({
           workType: workTypeFilter || null,
@@ -185,12 +246,10 @@ export function SocialVideoListPage({
         setError('')
       } catch (err) {
         if (cancelled) return
-        setRecords([])
+        if (!silent) setRecords([])
         setError(formatSocialVideoLoadError(err, '加载作品列表失败'))
       } finally {
-        if (!cancelled) {
-          setLoading(false)
-        }
+        if (!cancelled) setLoading(false)
       }
     })()
 
@@ -198,6 +257,42 @@ export function SocialVideoListPage({
       cancelled = true
     }
   }, [workTypeFilter, reloadToken])
+
+  useEffect(() => {
+    const node = scrollRef.current
+    if (!node) return
+
+    if (wasActiveRef.current && !active) {
+      savedScrollTopRef.current = node.scrollTop
+    }
+    if (!wasActiveRef.current && active) {
+      const top = savedScrollTopRef.current
+      const restore = () => {
+        if (scrollRef.current) scrollRef.current.scrollTop = top
+      }
+      restore()
+      requestAnimationFrame(restore)
+    }
+    wasActiveRef.current = active
+  }, [active])
+
+  const sections = useMemo(() => {
+    if (workTypeFilter) {
+      return [
+        {
+          type: workTypeFilter,
+          records: sortSocialVideoAnalyses(records),
+        },
+      ]
+    }
+    return groupRecordsByWorkType(records)
+  }, [records, workTypeFilter])
+
+  const presentTypes = useMemo(
+    () => (workTypeFilter ? [] : sections.map((section) => section.type)),
+    [sections, workTypeFilter],
+  )
+  const showTypeRail = !workTypeFilter && presentTypes.length > 1
 
   async function handleRefresh() {
     if (refreshing || loading) return
@@ -214,6 +309,32 @@ export function SocialVideoListPage({
     } finally {
       setRefreshing(false)
     }
+  }
+
+  function scrollToType(type: SocialVideoWorkType) {
+    const section = sectionRefs.current[type]
+    const scroller = scrollRef.current
+    if (!section || !scroller) return
+    const sectionTop = section.getBoundingClientRect().top
+    const scrollerTop = scroller.getBoundingClientRect().top
+    const nextTop = scroller.scrollTop + (sectionTop - scrollerTop)
+    savedScrollTopRef.current = nextTop
+    scroller.scrollTo({ top: nextTop, behavior: 'smooth' })
+  }
+
+  function renderGrid(items: SocialVideoAnalysisRecord[]) {
+    return (
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        {items.map((record) => (
+          <RecordCard
+            key={record.id}
+            record={record}
+            scrollRoot={scrollRoot}
+            onOpen={onOpenPost}
+          />
+        ))}
+      </div>
+    )
   }
 
   return (
@@ -267,12 +388,20 @@ export function SocialVideoListPage({
         </select>
       </div>
 
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-        {loading ? (
+      <div
+        ref={scrollRef}
+        className="relative min-h-0 flex-1 overflow-y-auto px-4 py-4"
+        onScroll={(event) => {
+          if (active) {
+            savedScrollTopRef.current = event.currentTarget.scrollTop
+          }
+        }}
+      >
+        {loading && records.length === 0 ? (
           <div className="flex h-48 items-center justify-center text-sm" style={{ color: 'var(--era-muted)' }}>
             加载中...
           </div>
-        ) : error ? (
+        ) : error && records.length === 0 ? (
           <div className="rounded-3xl border border-amber-300/20 bg-amber-300/10 px-4 py-6 text-sm leading-6 text-amber-100">
             {error}
           </div>
@@ -287,35 +416,53 @@ export function SocialVideoListPage({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            {records.map((record) => {
-              const badge = extractStatusBadgeStyle(record.extract_status)
-              return (
-                <button
-                  key={record.id}
-                  type="button"
-                  className="group relative overflow-hidden rounded-2xl border text-left shadow-sm transition hover:opacity-95"
-                  style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
-                  onClick={() => onOpenPost(record)}
-                >
-                  <div className="aspect-[3/4] w-full">
-                    <CoverThumb record={record} scrollRoot={scrollRoot} />
-                    <span
-                      className="absolute left-1.5 top-1.5 max-w-[calc(50%-0.5rem)] truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide shadow-sm"
-                      style={{ background: 'rgb(0 0 0 / 0.55)', color: '#ffffff' }}
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              {workTypeFilter ? (
+                renderGrid(sections[0]?.records ?? [])
+              ) : (
+                <div className="flex flex-col">
+                  {sections.map((section, index) => (
+                    <section
+                      key={section.type}
+                      ref={(node) => {
+                        sectionRefs.current[section.type] = node
+                      }}
+                      id={`list-type-${section.type}`}
+                      className={index > 0 ? 'mt-5 border-t pt-5' : undefined}
+                      style={index > 0 ? { borderColor: 'var(--era-border)' } : undefined}
                     >
-                      {record.work_type}
-                    </span>
-                    <span
-                      className="absolute right-1.5 top-1.5 max-w-[calc(50%-0.5rem)] truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide shadow-sm"
-                      style={badge}
-                    >
-                      {record.extract_status}
-                    </span>
-                  </div>
-                </button>
-              )
-            })}
+                      {renderGrid(section.records)}
+                    </section>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {showTypeRail ? (
+              <nav
+                className="sticky top-0 z-10 flex w-9 shrink-0 flex-col items-stretch gap-1.5 self-start"
+                aria-label="按类型跳转"
+              >
+                {presentTypes.map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    className="flex min-h-10 items-center justify-center rounded-lg border px-1 py-2 text-center text-[11px] font-semibold leading-tight tracking-wide transition hover:opacity-90"
+                    style={{
+                      borderColor: 'var(--era-border)',
+                      background: 'var(--era-panel)',
+                      color: 'var(--era-fg)',
+                      writingMode: 'vertical-rl',
+                      textOrientation: 'upright',
+                    }}
+                    onClick={() => scrollToType(type)}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </nav>
+            ) : null}
           </div>
         )}
       </div>
