@@ -1,7 +1,7 @@
 import { Moon, Sun, Wallet } from 'lucide-react'
 import type { EraTheme } from '../theme/theme'
 
-export type AppMode = 'graphic' | 'data' | 'highlight' | 'title' | 'stitch'
+export type AppMode = 'graphic' | 'data'
 
 interface TopModeTabsProps {
   value: AppMode
@@ -14,9 +14,6 @@ interface TopModeTabsProps {
 const TABS: { id: AppMode; label: string }[] = [
   { id: 'graphic', label: '图文' },
   { id: 'data', label: '社媒' },
-  { id: 'highlight', label: '高亮' },
-  { id: 'title', label: '标题' },
-  { id: 'stitch', label: '拼图' },
 ]
 
 export function TopModeTabs({
@@ -29,7 +26,7 @@ export function TopModeTabs({
   return (
     <div className="flex w-full max-w-lg items-center gap-2">
       <div
-        className="grid flex-1 grid-cols-5 rounded-xl p-1"
+        className="grid flex-1 grid-cols-2 rounded-xl p-1"
         style={{ background: 'var(--era-tab-track)' }}
       >
         {TABS.map((tab) => (

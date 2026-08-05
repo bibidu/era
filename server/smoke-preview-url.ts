@@ -10,20 +10,17 @@ import {
   parsePreviewSearchParams,
   titleComposerPagesUrl,
 } from '../src/agent/supabaseHighlightSetup.ts'
-import {
-  readAppTabFromSearch,
-  readHighlightIdsFromSearch,
-} from '../src/app/tabRouting.ts'
+import { readAppTabFromSearch, readSocialPostIdFromSearch } from '../src/app/tabRouting.ts'
 
 const selfBase = 'http://39.106.179.17/'
 
 const doubleEncoded =
-  'http://39.106.179.17/?tab%3Dhighlight%26shareId%3D1dac7255-16f2-413f-a84d-df3c2cadb87d'
+  'http://39.106.179.17/?tab%3Ddata%26post%3D1dac7255-16f2-413f-a84d-df3c2cadb87d'
 
 const fixed = normalizePreviewUrl(doubleEncoded)
 const fixedUrl = new URL(fixed)
-assert.equal(fixedUrl.searchParams.get('tab'), 'highlight')
-assert.equal(fixedUrl.searchParams.get('shareId'), '1dac7255-16f2-413f-a84d-df3c2cadb87d')
+assert.equal(fixedUrl.searchParams.get('tab'), 'data')
+assert.equal(fixedUrl.searchParams.get('post'), '1dac7255-16f2-413f-a84d-df3c2cadb87d')
 assert.ok(!fixed.includes('%3D'), 'normalize 后不应残留整段 query 二次编码')
 
 const merged = highlightSetupPagesUrl('1dac7255-16f2-413f-a84d-df3c2cadb87d', selfBase)
@@ -39,22 +36,23 @@ assert.equal(titleUrl.searchParams.get('text'), '厨房别放西北角')
 const fromBrokenBase = buildAppPagesUrl(doubleEncoded, { tab: 'data' })
 const fromBroken = new URL(fromBrokenBase)
 assert.equal(fromBroken.searchParams.get('tab'), 'data')
-assert.equal(fromBroken.searchParams.get('shareId'), '1dac7255-16f2-413f-a84d-df3c2cadb87d')
+assert.equal(fromBroken.searchParams.get('post'), '1dac7255-16f2-413f-a84d-df3c2cadb87d')
 
 const bare = new URL(highlightSetupPagesUrl('abc-share'))
 assert.equal(bare.origin, 'https://39.106.179.17.sslip.io')
 assert.equal(bare.searchParams.get('tab'), 'highlight')
 assert.equal(bare.searchParams.get('shareId'), 'abc-share')
 
-// 前端深链：二次编码时不得落回社媒 / 丢 shareId
-const mangledSearch = '?tab%3Dhighlight%26shareId%3D1dac7255-16f2-413f-a84d-df3c2cadb87d'
-assert.equal(readAppTabFromSearch(mangledSearch), 'highlight')
-assert.equal(
-  readHighlightIdsFromSearch(mangledSearch).shareId,
-  '1dac7255-16f2-413f-a84d-df3c2cadb87d',
-)
+// 前端深链：二次编码时不得落回丢 post；未知 tab 回落社媒
+const mangledSearch = '?tab%3Ddata%26post%3D1dac7255-16f2-413f-a84d-df3c2cadb87d'
+assert.equal(readAppTabFromSearch(mangledSearch), 'data')
+assert.equal(readSocialPostIdFromSearch(mangledSearch), '1dac7255-16f2-413f-a84d-df3c2cadb87d')
+assert.equal(readAppTabFromSearch('?tab=highlight&shareId=abc'), 'data')
+assert.equal(readAppTabFromSearch('?tab=title&text=x'), 'data')
+assert.equal(readAppTabFromSearch('?tab=stitch'), 'data')
+assert.equal(readAppTabFromSearch('?tab=graphic'), 'graphic')
 const recoveredParams = parsePreviewSearchParams(mangledSearch)
-assert.equal(recoveredParams.get('tab'), 'highlight')
-assert.equal(recoveredParams.get('shareId'), '1dac7255-16f2-413f-a84d-df3c2cadb87d')
+assert.equal(recoveredParams.get('tab'), 'data')
+assert.equal(recoveredParams.get('post'), '1dac7255-16f2-413f-a84d-df3c2cadb87d')
 
 console.log('preview url normalize/merge ok')

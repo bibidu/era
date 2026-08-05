@@ -1,16 +1,18 @@
+import { ChevronLeft } from 'lucide-react'
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 import { TopModeTabs, type AppMode } from './components/TopModeTabs'
 import {
   ERA_URL_CHANGE_EVENT,
+  navigateBackFromGraphic,
+  pushGraphicInUrl,
   readAppTabFromSearch,
-  readHighlightIdsFromSearch,
   readSocialPostIdFromSearch,
-  readTitleTextFromSearch,
   replaceAppTabInUrl,
 } from './app/tabRouting'
+import { useEdgeSwipeBack } from './hooks/useEdgeSwipeBack'
 import { useEraTheme } from './theme/useEraTheme'
 
-/** 切换到图文/标题前预取默认字体 CSS，缩短正文空白窗口 */
+/** 切换到图文前预取默认字体 CSS，缩短正文空白窗口 */
 function preloadGraphicFonts() {
   const base = import.meta.env.BASE_URL || '/'
   const hrefs = [`${base}fonts/noto-serif-sc.css`, `${base}fonts/alimama-shuheiti.css`]
@@ -30,24 +32,9 @@ const GraphicTextWorkspace = lazy(() =>
     default: m.GraphicTextWorkspace,
   })),
 )
-const HighlightSetupPage = lazy(() =>
-  import('./features/graphic-text/HighlightSetupPage').then((m) => ({
-    default: m.HighlightSetupPage,
-  })),
-)
 const DataAnalysisWorkspace = lazy(() =>
   import('./features/social-video/DataAnalysisWorkspace').then((m) => ({
     default: m.DataAnalysisWorkspace,
-  })),
-)
-const TitleComposerPrototype = lazy(() =>
-  import('./features/title-composer/TitleComposerPrototype').then((m) => ({
-    default: m.TitleComposerPrototype,
-  })),
-)
-const ImageStitchPage = lazy(() =>
-  import('./features/image-stitch/ImageStitchPage').then((m) => ({
-    default: m.ImageStitchPage,
   })),
 )
 const AccountBalancePage = lazy(() =>
@@ -67,29 +54,63 @@ function TabLoadingFallback() {
   )
 }
 
+function GraphicSecondaryPage({ onBack }: { onBack: () => void }) {
+  const swipe = useEdgeSwipeBack(onBack)
+
+  return (
+    <div
+      ref={swipe.ref}
+      className="relative flex min-h-0 flex-1 flex-col"
+      style={{ background: 'var(--era-bg)', color: 'var(--era-fg)', ...swipe.style }}
+      onPointerDown={swipe.onPointerDown}
+      onPointerMove={swipe.onPointerMove}
+      onPointerUp={swipe.onPointerUp}
+      onPointerCancel={swipe.onPointerCancel}
+    >
+      <header
+        className="flex shrink-0 items-center gap-2 border-b px-3"
+        style={{
+          borderColor: 'var(--era-border)',
+          paddingTop: 'calc(0.75rem + env(safe-area-inset-top, 0px))',
+          paddingBottom: '0.75rem',
+          background: 'var(--era-header)',
+        }}
+      >
+        <button
+          type="button"
+          className="flex size-9 items-center justify-center rounded-full"
+          style={{ background: 'var(--era-panel)' }}
+          aria-label="返回"
+          onClick={onBack}
+        >
+          <ChevronLeft size={18} />
+        </button>
+        <h1 className="min-w-0 flex-1 text-base font-semibold">图文</h1>
+      </header>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <Suspense fallback={<TabLoadingFallback />}>
+          <GraphicTextWorkspace />
+        </Suspense>
+      </div>
+    </div>
+  )
+}
+
 function App() {
   const [mode, setMode] = useState<AppMode>(() => readAppTabFromSearch())
-  const [highlightIds, setHighlightIds] = useState(() => readHighlightIdsFromSearch())
-  const [titleText, setTitleText] = useState(() => readTitleTextFromSearch())
-  const [socialPostId, setSocialPostId] = useState(() => readSocialPostIdFromSearch())
   const [balanceOpen, setBalanceOpen] = useState(false)
   const { theme, toggle } = useEraTheme()
 
   const syncFromUrl = useCallback(() => {
     setMode(readAppTabFromSearch())
-    setHighlightIds(readHighlightIdsFromSearch())
-    setTitleText(readTitleTextFromSearch())
-    setSocialPostId(readSocialPostIdFromSearch())
   }, [])
 
   useEffect(() => {
-    replaceAppTabInUrl(readAppTabFromSearch(), {
-      ...readHighlightIdsFromSearch(),
-      titleText: readTitleTextFromSearch(),
-      keepSocialPost: Boolean(readSocialPostIdFromSearch()),
+    const initial = readAppTabFromSearch()
+    replaceAppTabInUrl(initial, {
+      keepSocialPost: Boolean(readSocialPostIdFromSearch()) && initial === 'data',
+      graphicEntry: initial === 'graphic' ? 'replace' : null,
     })
-    // 启动时若已有 ?post=，保持详情二级路由
-    setSocialPostId(readSocialPostIdFromSearch())
     window.addEventListener('popstate', syncFromUrl)
     window.addEventListener(ERA_URL_CHANGE_EVENT, syncFromUrl)
     return () => {
@@ -99,27 +120,37 @@ function App() {
   }, [syncFromUrl])
 
   useEffect(() => {
-    if (mode === 'graphic' || mode === 'title' || mode === 'highlight') {
-      preloadGraphicFonts()
-    }
+    if (mode === 'graphic') preloadGraphicFonts()
   }, [mode])
+
+  const closeGraphic = useCallback(() => {
+    navigateBackFromGraphic()
+    if (readAppTabFromSearch() !== 'graphic') {
+      setMode('data')
+    }
+  }, [])
 
   const handleModeChange = useCallback(
     (next: AppMode) => {
       setBalanceOpen(false)
-      setSocialPostId(null)
-      setMode(next)
-      replaceAppTabInUrl(next, {
-        shareId: highlightIds.shareId,
-        projectId: highlightIds.projectId,
-        titleText,
-        keepSocialPost: false,
-      })
+      if (next === 'graphic') {
+        setMode('graphic')
+        pushGraphicInUrl()
+        return
+      }
+      if (mode === 'graphic') {
+        navigateBackFromGraphic()
+        setMode('data')
+        return
+      }
+      setMode('data')
+      replaceAppTabInUrl('data', { keepSocialPost: false })
     },
-    [highlightIds.projectId, highlightIds.shareId, titleText],
+    [mode],
   )
 
-  const hideTopTabs = balanceOpen || Boolean(socialPostId)
+  // 帖子详情不藏顶栏：否则手势返回时顶栏突然出现会改变列表高度，造成抖动
+  const hideTopTabs = balanceOpen || mode === 'graphic'
   const wideLayout = mode === 'data' && !hideTopTabs
 
   return (
@@ -148,7 +179,7 @@ function App() {
           }}
         >
           <TopModeTabs
-            value={mode}
+            value="data"
             onChange={handleModeChange}
             theme={theme}
             onToggleTheme={toggle}
@@ -160,36 +191,10 @@ function App() {
       <Suspense fallback={<TabLoadingFallback />}>
         {balanceOpen ? (
           <AccountBalancePage onBack={() => setBalanceOpen(false)} />
-        ) : mode === 'data' ? (
-          <DataAnalysisWorkspace />
-        ) : mode === 'highlight' ? (
-          highlightIds.shareId || highlightIds.projectId ? (
-            <HighlightSetupPage
-              key={`${highlightIds.shareId ?? ''}:${highlightIds.projectId ?? ''}`}
-              shareId={highlightIds.shareId}
-              projectId={highlightIds.projectId}
-              embedded
-            />
-          ) : (
-            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
-              <p className="text-sm font-medium">缺少 shareId 或 projectId</p>
-              <p className="text-xs leading-5" style={{ color: 'var(--era-muted)' }}>
-                请使用：
-                <span className="font-mono">
-                  ?tab=highlight&amp;shareId=&lt;id&gt;
-                </span>
-              </p>
-            </div>
-          )
-        ) : mode === 'title' ? (
-          <TitleComposerPrototype
-            key={titleText ?? ''}
-            initialText={titleText}
-          />
-        ) : mode === 'stitch' ? (
-          <ImageStitchPage />
+        ) : mode === 'graphic' ? (
+          <GraphicSecondaryPage onBack={closeGraphic} />
         ) : (
-          <GraphicTextWorkspace />
+          <DataAnalysisWorkspace />
         )}
       </Suspense>
     </div>

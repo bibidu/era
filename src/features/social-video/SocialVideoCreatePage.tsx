@@ -138,7 +138,7 @@ export function SocialVideoCreatePage({
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const swipe = useEdgeSwipeBack(onBack, {
-    enabled: flushTop && !contentDrawerOpen && !confirmOpen,
+    enabled: !contentDrawerOpen && !confirmOpen,
   })
 
   useEffect(() => {

@@ -68,11 +68,34 @@ EOF
   echo "oss-upload: 已从环境变量写入 ${CONFIG_PATH}" >&2
 }
 
+# 全新的 Cloud Agent VM 不带 ossutil；自动装一次，避免全自动流水线在这里断掉
+install_ossutil() {
+  local version="${OSSUTIL_VERSION:-2.1.2}"
+  local arch
+  case "$(uname -m)" in
+    x86_64 | amd64) arch=amd64 ;;
+    aarch64 | arm64) arch=arm64 ;;
+    *) echo "错误: 不支持自动安装 ossutil 的架构 $(uname -m)" >&2; return 1 ;;
+  esac
+  local name="ossutil-${version}-linux-${arch}"
+  local tmp
+  tmp="$(mktemp -d)"
+  echo "oss-upload: 未找到 ossutil，正在下载 ${name}" >&2
+  curl -fsSL -m 300 -o "${tmp}/ossutil.zip" \
+    "https://gosspublic.alicdn.com/ossutil/v2/${version}/${name}.zip" || return 1
+  unzip -oq "${tmp}/ossutil.zip" -d "$tmp" || return 1
+  mkdir -p "$(dirname "$OSSUTIL")"
+  install -m 755 "${tmp}/${name}/ossutil" "$OSSUTIL" || return 1
+  rm -rf "$tmp"
+}
+
 if [[ ! -x "$OSSUTIL" ]]; then
   if command -v ossutil >/dev/null 2>&1; then
     OSSUTIL="$(command -v ossutil)"
+  elif install_ossutil; then
+    echo "oss-upload: 已安装 ${OSSUTIL}" >&2
   else
-    echo "错误: 找不到 ossutil。请安装到 ~/.local/bin/ossutil 或设置 OSSUTIL。" >&2
+    echo "错误: 找不到 ossutil 且自动安装失败。请手动安装到 ~/.local/bin/ossutil 或设置 OSSUTIL。" >&2
     exit 1
   fi
 fi

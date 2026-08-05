@@ -1,10 +1,9 @@
 import { ChevronLeft, Download } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { legacyEdgeFunctionUrl } from '../../agent/legacyEdgeFunctionUrl'
 import { LEGACY_SUPABASE_ANON_KEY } from '../../agent/supabaseHighlightSetup'
 import {
   SOCIAL_VIDEO_WORK_TYPES,
-  deleteSocialVideoAnalysis,
   getSocialVideoAnalysis,
   patchSocialVideoAnalysis,
   type SocialVideoAnalysisRecord,
@@ -12,7 +11,6 @@ import {
   type SocialVideoWorkType,
 } from '../../agent/supabaseSocialVideoAnalysis'
 import { BottomSheet } from '../../components/BottomSheet'
-import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { useEdgeSwipeBack } from '../../hooks/useEdgeSwipeBack'
 import { FullscreenImageViewer } from './FullscreenImageViewer'
 import { MarkdownPreview } from './MarkdownPreview'
@@ -27,7 +25,6 @@ import { truncateText } from './parseMarkdownMetrics'
 interface SocialVideoPostPageProps {
   record: SocialVideoAnalysisRecord
   onBack: () => void
-  onDeleted?: () => void
   onUpdated?: (next?: SocialVideoAnalysisRecord) => void
   flushTop?: boolean
 }
@@ -117,7 +114,6 @@ function mergeRecord(
   return {
     ...prev,
     ...next,
-    // 列表轻量记录可能缺字段，避免用 undefined 盖掉已有值造成闪烁
     markdown: next.markdown ?? prev.markdown,
     outline: next.outline ?? prev.outline,
     image_previews: next.image_previews ?? prev.image_previews,
@@ -127,19 +123,16 @@ function mergeRecord(
   }
 }
 
-/** 帖子详情：详情 / 数据 Tab */
+/** 帖子详情：详情 / 数据 */
 export function SocialVideoPostPage({
   record,
   onBack,
-  onDeleted,
   onUpdated,
   flushTop = false,
 }: SocialVideoPostPageProps) {
   const [tab, setTab] = useState<DetailTab>('detail')
   const [view, setView] = useState<SocialVideoAnalysisRecord>(record)
   const [statusMessage, setStatusMessage] = useState('')
-  const [confirmOpen, setConfirmOpen] = useState(false)
-  const [deleting, setDeleting] = useState(false)
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
   const [viewerImages, setViewerImages] = useState<PreviewImageItem[]>([])
   const [savingType, setSavingType] = useState(false)
@@ -147,15 +140,16 @@ export function SocialVideoPostPage({
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([])
   const [isCreating, setIsCreating] = useState(false)
-  const [successToast, setSuccessToast] = useState(false)
+  const [successToast, setSuccessToast] = useState<string | null>(null)
   const [downloadStatus, setDownloadStatus] = useState('')
   const [preparedContentFiles, setPreparedContentFiles] = useState<(File | null)[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const uploadInputId = useId()
 
   const swipe = useEdgeSwipeBack(onBack, {
-    enabled: flushTop && !confirmOpen && viewerIndex == null && !contentSheetOpen,
+    enabled: viewerIndex == null && !contentSheetOpen,
   })
 
-  // 父级补全 / 刷新时合并，不整页重置
   useEffect(() => {
     setView((prev) => mergeRecord(prev, record))
   }, [record])
@@ -163,7 +157,6 @@ export function SocialVideoPostPage({
   const onUpdatedRef = useRef(onUpdated)
   onUpdatedRef.current = onUpdated
 
-  // 仅在提取中时静默轮询，避免进页反复闪
   useEffect(() => {
     if (view.extract_status !== '提取中') return
     let cancelled = false
@@ -211,7 +204,6 @@ export function SocialVideoPostPage({
   const extractRaw = useMemo(() => {
     const data = (view.extract_data || '').trim()
     if (data) return data
-    // 兼容尚未回填的历史：提取结果曾写进 markdown
     const md = (view.markdown || '').trim()
     if (md.startsWith('{') || md.startsWith('[')) return md
     return ''
@@ -221,6 +213,10 @@ export function SocialVideoPostPage({
   const contentPreview = contentSource
     ? truncateText(contentSource.replace(/\s+/g, ' '), 80)
     : '暂无内容'
+
+  const showUploadForm =
+    view.extract_status === '未开始' || view.extract_status === '提取失败'
+  const showCreateTask = view.extract_status === '未开始' || view.extract_status === '提取失败'
 
   useEffect(() => {
     let cancelled = false
@@ -243,20 +239,6 @@ export function SocialVideoPostPage({
     }
   }, [imageFiles])
 
-  /**
-   * 未开始：数据 Tab 不可点。
-   * 提取创建入口挂详情（配置卡片）；创建成功后解锁数据 Tab。
-   * 失败重试 / 结果查看在数据 Tab。
-   */
-  const dataTabDisabled = view.extract_status === '未开始'
-  const showExtractForm =
-    (tab === 'detail' && view.extract_status === '未开始') ||
-    (tab === 'data' && view.extract_status === '提取失败')
-
-  useEffect(() => {
-    if (dataTabDisabled && tab === 'data') setTab('detail')
-  }, [dataTabDisabled, tab])
-
   async function handleWorkTypeChange(next: SocialVideoWorkType) {
     if (savingType || next === view.work_type) return
     setSavingType(true)
@@ -268,20 +250,6 @@ export function SocialVideoPostPage({
       setStatusMessage(error instanceof Error ? error.message : '更新类型失败')
     } finally {
       setSavingType(false)
-    }
-  }
-
-  async function handleDelete() {
-    if (deleting) return
-    setDeleting(true)
-    try {
-      await deleteSocialVideoAnalysis(view.id)
-      setConfirmOpen(false)
-      onDeleted?.()
-      onBack()
-    } catch (error) {
-      setStatusMessage(error instanceof Error ? `删除失败：${error.message}` : '删除失败')
-      setDeleting(false)
     }
   }
 
@@ -311,7 +279,7 @@ export function SocialVideoPostPage({
       return
     }
     setIsCreating(true)
-    setStatusMessage('正在创建提取任务...')
+    setStatusMessage('正在创建分析任务...')
     try {
       const images = []
       for (const file of imageFiles.slice(0, MAX_MEDIA_ITEMS)) {
@@ -341,12 +309,12 @@ export function SocialVideoPostPage({
 
       setImageFiles([])
       setStatusMessage('')
-      setSuccessToast(true)
+      setSuccessToast('创建分析任务成功')
       const full = await getSocialVideoAnalysis(view.id)
       setView(full)
       onUpdated?.(full)
       window.setTimeout(() => {
-        setSuccessToast(false)
+        setSuccessToast(null)
         setTab('data')
       }, 1000)
     } catch (error) {
@@ -361,47 +329,64 @@ export function SocialVideoPostPage({
     setViewerIndex(index)
   }
 
-  function renderExtractForm() {
+  function handlePickFiles(fileList: FileList | null) {
+    const files = Array.from(fileList || []).filter((file) => file.type.startsWith('image/'))
+    setImageFiles(files.slice(0, MAX_MEDIA_ITEMS))
+  }
+
+  function renderUploadZone() {
     return (
-      <div className="flex flex-col gap-3 rounded-3xl border p-4" style={panelStyle}>
-        <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">上传图片（可多选）</span>
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <button
+          type="button"
+          className="relative flex min-h-[12rem] flex-1 flex-col items-center justify-center gap-2 rounded-3xl border border-dashed px-4 py-8 transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+          style={panelStyle}
+          disabled={isCreating}
+          onClick={() => fileInputRef.current?.click()}
+        >
           <input
-            className={`${fieldClass} border-dashed file:mr-3 file:rounded-full file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-semibold file:text-neutral-950`}
-            style={fieldStyle}
+            id={uploadInputId}
+            ref={fileInputRef}
+            className="sr-only"
             accept="image/*"
             type="file"
             multiple
             disabled={isCreating}
             onChange={(event) => {
-              const files = Array.from(event.target.files || []).filter((file) =>
-                file.type.startsWith('image/'),
-              )
-              setImageFiles(files.slice(0, MAX_MEDIA_ITEMS))
+              handlePickFiles(event.target.files)
+              event.target.value = ''
             }}
           />
-          {imageFiles.length > 0 ? (
-            <span className="text-xs" style={{ color: 'var(--era-muted)' }}>
-              已选 {imageFiles.length} 张
-            </span>
+          <span className="text-sm font-medium">上传图片</span>
+          <span className="text-xs" style={{ color: 'var(--era-muted)' }}>
+            {imageFiles.length > 0 ? `已选 ${imageFiles.length} 张` : '点击选择'}
+          </span>
+          {imagePreviewUrls.length > 0 ? (
+            <div className="mt-2 grid w-full max-w-sm grid-cols-3 gap-2">
+              {imagePreviewUrls.map((src, index) => (
+                <div
+                  key={`${src}-${index}`}
+                  className="aspect-[27/32] overflow-hidden rounded-xl border"
+                  style={{ borderColor: 'var(--era-border)', background: 'var(--era-input)' }}
+                >
+                  <img src={src} alt={`待分析 ${index + 1}`} className="h-full w-full object-cover" />
+                </div>
+              ))}
+            </div>
           ) : null}
-        </label>
-        {imagePreviewUrls.length > 0 ? (
-          <div className="grid grid-cols-3 gap-2">
-            {imagePreviewUrls.map((src, index) => (
-              <div
-                key={`${src}-${index}`}
-                className="aspect-[27/32] overflow-hidden rounded-xl border"
-                style={{ borderColor: 'var(--era-border)', background: 'var(--era-input)' }}
-              >
-                <img src={src} alt={`待提取 ${index + 1}`} className="h-full w-full object-cover" />
-              </div>
-            ))}
-          </div>
-        ) : null}
+        </button>
       </div>
     )
   }
+
+  const tabButtonStyle = (active: boolean) =>
+    active
+      ? {
+          background: 'var(--era-panel)',
+          color: 'var(--era-fg)',
+          boxShadow: '0 1px 2px rgb(0 0 0 / 0.12)',
+        }
+      : { background: 'transparent', color: 'var(--era-muted)' }
 
   return (
     <div
@@ -419,7 +404,7 @@ export function SocialVideoPostPage({
             className="rounded-3xl border px-6 py-5 text-center text-base font-semibold shadow-lg"
             style={{ ...panelStyle, color: 'var(--era-fg)' }}
           >
-            创建任务成功
+            {successToast}
           </div>
         </div>
       ) : null}
@@ -452,7 +437,7 @@ export function SocialVideoPostPage({
         style={{ borderColor: 'var(--era-border)', background: 'var(--era-bg)' }}
       >
         <div
-          className="inline-flex items-center rounded-full border p-1"
+          className="grid w-[60%] grid-cols-2 items-center rounded-full border p-1"
           style={{
             borderColor: 'var(--era-border)',
             background: 'var(--era-input)',
@@ -464,16 +449,8 @@ export function SocialVideoPostPage({
             type="button"
             role="tab"
             aria-selected={tab === 'detail'}
-            className="rounded-full px-4 py-1.5 text-sm font-medium transition"
-            style={
-              tab === 'detail'
-                ? {
-                    background: 'var(--era-panel)',
-                    color: 'var(--era-fg)',
-                    boxShadow: '0 1px 2px rgb(0 0 0 / 0.12)',
-                  }
-                : { background: 'transparent', color: 'var(--era-muted)' }
-            }
+            className="rounded-full px-3 py-1.5 text-sm font-medium transition"
+            style={tabButtonStyle(tab === 'detail')}
             onClick={() => setTab('detail')}
           >
             详情
@@ -482,21 +459,9 @@ export function SocialVideoPostPage({
             type="button"
             role="tab"
             aria-selected={tab === 'data'}
-            aria-disabled={dataTabDisabled}
-            disabled={dataTabDisabled}
-            className="relative rounded-full px-4 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-45"
-            style={
-              tab === 'data'
-                ? {
-                    background: 'var(--era-panel)',
-                    color: 'var(--era-fg)',
-                    boxShadow: '0 1px 2px rgb(0 0 0 / 0.12)',
-                  }
-                : { background: 'transparent', color: 'var(--era-muted)' }
-            }
-            onClick={() => {
-              if (!dataTabDisabled) setTab('data')
-            }}
+            className="relative rounded-full px-3 py-1.5 text-sm font-medium transition"
+            style={tabButtonStyle(tab === 'data')}
+            onClick={() => setTab('data')}
           >
             数据
             <span
@@ -594,9 +559,7 @@ export function SocialVideoPostPage({
               </button>
             </div>
 
-            {showExtractForm ? renderExtractForm() : null}
-
-            {statusMessage ? (
+            {statusMessage && tab === 'detail' ? (
               <p className="text-sm" style={{ color: 'var(--era-muted)' }}>
                 {statusMessage}
               </p>
@@ -604,56 +567,58 @@ export function SocialVideoPostPage({
           </div>
         ) : (
           <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col gap-3">
-            {showExtractForm ? (
-              <div className="shrink-0">{renderExtractForm()}</div>
+            {showUploadForm ? renderUploadZone() : null}
+
+            {!showUploadForm ? (
+              <>
+                <div className="flex shrink-0 flex-col gap-2">
+                  <span className="text-sm font-medium">上传图片（{extractImages.length}）</span>
+                  {extractImages.length === 0 ? (
+                    <p className="text-xs" style={{ color: 'var(--era-muted)' }}>
+                      暂无提取图片
+                    </p>
+                  ) : (
+                    <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+                      {extractPreviewItems.map((image, index) => (
+                        <button
+                          key={`${image.src}-${index}`}
+                          type="button"
+                          className="aspect-[27/32] w-[calc(50%-0.4rem)] max-w-[14rem] shrink-0 overflow-hidden rounded-2xl border"
+                          style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
+                          onClick={() => openViewer(extractPreviewItems, index)}
+                        >
+                          <img src={image.src} alt={image.alt} className="h-full w-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex min-h-0 flex-1 flex-col gap-2">
+                  <span className="shrink-0 text-sm font-medium">提取数据</span>
+                  <div
+                    className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border p-4"
+                    style={fieldStyle}
+                  >
+                    {extractText ? (
+                      extractRaw.startsWith('{') || extractRaw.startsWith('[') ? (
+                        <pre className="font-mono text-xs leading-5 whitespace-pre-wrap break-words">
+                          {extractText}
+                        </pre>
+                      ) : (
+                        <MarkdownPreview value={extractRaw} />
+                      )
+                    ) : (
+                      <p className="text-sm" style={{ color: 'var(--era-muted)' }}>
+                        {view.extract_status === '提取中' ? '提取中，请稍后查看…' : '暂无提取结果'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </>
             ) : null}
 
-            <div className="flex shrink-0 flex-col gap-2">
-              <span className="text-sm font-medium">上传图片（{extractImages.length}）</span>
-              {extractImages.length === 0 ? (
-                <p className="text-xs" style={{ color: 'var(--era-muted)' }}>
-                  暂无提取图片
-                </p>
-              ) : (
-                <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
-                  {extractPreviewItems.map((image, index) => (
-                    <button
-                      key={`${image.src}-${index}`}
-                      type="button"
-                      className="aspect-[27/32] w-[calc(50%-0.4rem)] max-w-[14rem] shrink-0 overflow-hidden rounded-2xl border"
-                      style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
-                      onClick={() => openViewer(extractPreviewItems, index)}
-                    >
-                      <img src={image.src} alt={image.alt} className="h-full w-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="flex min-h-0 flex-1 flex-col gap-2">
-              <span className="shrink-0 text-sm font-medium">提取数据</span>
-              <div
-                className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-2xl border p-4"
-                style={fieldStyle}
-              >
-                {extractText ? (
-                  extractRaw.startsWith('{') || extractRaw.startsWith('[') ? (
-                    <pre className="font-mono text-xs leading-5 whitespace-pre-wrap break-words">
-                      {extractText}
-                    </pre>
-                  ) : (
-                    <MarkdownPreview value={extractRaw} />
-                  )
-                ) : (
-                  <p className="text-sm" style={{ color: 'var(--era-muted)' }}>
-                    {view.extract_status === '提取中' ? '提取中，请稍后查看…' : '暂无提取结果'}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {statusMessage ? (
+            {statusMessage && tab === 'data' ? (
               <p className="shrink-0 text-sm" style={{ color: 'var(--era-muted)' }}>
                 {statusMessage}
               </p>
@@ -662,15 +627,15 @@ export function SocialVideoPostPage({
         )}
       </div>
 
-      <div
-        className="shrink-0 border-t px-4 py-3"
-        style={{
-          borderColor: 'var(--era-border)',
-          paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
-          background: 'var(--era-bg)',
-        }}
-      >
-        {showExtractForm ? (
+      {tab === 'data' && showCreateTask ? (
+        <div
+          className="shrink-0 border-t px-4 py-3"
+          style={{
+            borderColor: 'var(--era-border)',
+            paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+            background: 'var(--era-bg)',
+          }}
+        >
           <button
             type="button"
             className="h-12 w-full rounded-2xl text-sm font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
@@ -678,24 +643,10 @@ export function SocialVideoPostPage({
             disabled={isCreating || imageFiles.length === 0}
             onClick={() => void handleCreateTask()}
           >
-            {isCreating ? '创建中...' : '创建任务'}
+            {isCreating ? '创建中...' : '创建分析任务'}
           </button>
-        ) : (
-          <button
-            type="button"
-            className="h-12 w-full rounded-2xl text-sm font-bold transition hover:opacity-90 disabled:opacity-40"
-            style={{
-              background: 'rgb(220 38 38 / 0.14)',
-              color: 'rgb(252 165 165)',
-              border: '1px solid rgb(239 68 68 / 0.35)',
-            }}
-            disabled={deleting}
-            onClick={() => setConfirmOpen(true)}
-          >
-            删除
-          </button>
-        )}
-      </div>
+        </div>
+      ) : null}
 
       <BottomSheet
         isOpen={contentSheetOpen}
@@ -739,20 +690,6 @@ export function SocialVideoPostPage({
           enableDownload
         />
       ) : null}
-
-      <ConfirmDialog
-        open={confirmOpen}
-        title="确认删除这条帖子？"
-        description="删除后无法恢复，分析数据将从库中移除。"
-        confirmLabel="确认删除"
-        cancelLabel="取消"
-        destructive
-        confirming={deleting}
-        onCancel={() => {
-          if (!deleting) setConfirmOpen(false)
-        }}
-        onConfirm={() => void handleDelete()}
-      />
     </div>
   )
 }
