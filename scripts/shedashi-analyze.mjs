@@ -32,9 +32,13 @@ function arg(name, fallback = null) {
   return process.argv[i + 1] ?? fallback
 }
 
-/** 抖音早间推荐池明显更肥；见 SKILL.md §时段结论 */
+/**
+ * 抖音早间推荐池明显更肥；见 SKILL.md §时段结论。
+ * 凌晨单独成桶：07 点前发的作品拿不到早高峰的推荐流，混进「早」会把这个最强变量的中位数拉花。
+ */
 function slotOf(hour) {
   if (hour == null) return '未知'
+  if (hour < 7) return '凌晨 0-6'
   if (hour < 11) return '早 7-10'
   if (hour < 15) return '午 11-14'
   return '下午 15+'
