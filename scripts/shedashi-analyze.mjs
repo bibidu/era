@@ -9,7 +9,22 @@
  *   node scripts/shedashi-analyze.mjs --out report.json
  */
 import { writeFileSync } from 'node:fs'
-import { restGet, WEEKDAYS, parseIssueNo, parseMetrics, publishedDate } from './shedashi-lib.mjs'
+import {
+  ANALYSIS_EXTRACT_STATUS,
+  ANALYSIS_WORK_TYPE,
+  MAX_PUBLISH_GAP_DAYS,
+  WEEKDAYS,
+  addDays,
+  dayGap,
+  isAnalyzable,
+  isPublishedRecord,
+  parseIssueNo,
+  parseMetrics,
+  planNextSlot,
+  publishedDate,
+  restGet,
+  weekdayOf,
+} from './shedashi-lib.mjs'
 
 function arg(name, fallback = null) {
   const i = process.argv.indexOf(name)
@@ -52,19 +67,6 @@ function groupStats(posts, keyFn) {
   }))
 }
 
-/** 下一个可发的黄金档：周二/三/四；周五与周一实测最差（见 SKILL.md） */
-function nextGoldenSlot(from = new Date()) {
-  const GOLDEN = [2, 3, 4]
-  for (let offset = 1; offset <= 8; offset += 1) {
-    const day = new Date(from.getTime() + offset * 86400000)
-    if (GOLDEN.includes(day.getUTCDay())) {
-      const iso = day.toISOString().slice(0, 10)
-      return { date: iso, weekday: WEEKDAYS[(day.getUTCDay() + 6) % 7], window: '07:40–08:00（北京时间）' }
-    }
-  }
-  return null
-}
-
 /** 上一期篇末若预告了下一篇，本期必须接住，否则连载承诺断裂、吸粉率掉 */
 function trailingPromise(records) {
   for (const record of records) {
@@ -82,9 +84,44 @@ const records = await restGet(
   'select=id,title,published_at,created_at,work_type,extract_status,extract_data,outline,markdown,cover_url,image_previews&order=published_at.desc',
 )
 
-const graphic = records.filter((r) => r.work_type === '图文')
+const graphic = records.filter((r) => r.work_type === ANALYSIS_WORK_TYPE)
+
+/**
+ * 断更间隔是**账号级**的：风水 / 健身也占发布位，必须一起算。
+ * 只统计已发布记录（手填日期格式），草稿不算。
+ */
+const publishedAll = records
+  .filter(isPublishedRecord)
+  .map((r) => ({ ...r, ...publishedDate(r.published_at) }))
+  .filter((r) => r.date)
+  .sort((a, b) => a.date.localeCompare(b.date))
+
+const cadenceHistory = []
+for (const [index, record] of publishedAll.entries()) {
+  const prev = publishedAll[index - 1]
+  const gap = prev ? dayGap(prev.date, record.date) : null
+  cadenceHistory.push({
+    date: record.date,
+    weekday: weekdayOf(record.date),
+    hour: record.hour,
+    workType: record.work_type,
+    title: String(record.title || '').replace(/\n/g, ' '),
+    gapFromPrev: gap,
+    brokeStreak: gap !== null && gap > MAX_PUBLISH_GAP_DAYS,
+    play: parseMetrics(record.extract_data)?.play ?? null,
+  })
+}
+const lastPublished = publishedAll.at(-1)?.date ?? null
+
+/** 可进入复盘的必要条件：类型＝图文 且 数据回收状态＝提取成功（缺一不可） */
+const analyzable = graphic.filter(isAnalyzable)
+const skipped = {
+  wrongStatus: graphic.filter((r) => !isAnalyzable(r)).length,
+  statusOkButUnparsable: analyzable.filter((r) => !parseMetrics(r.extract_data)).length,
+}
+
 const withData = []
-for (const record of graphic) {
+for (const record of analyzable) {
   const metrics = parseMetrics(record.extract_data)
   if (!metrics) continue
   const { date, hour } = publishedDate(record.published_at, metrics.raw['发布日期'])
@@ -118,16 +155,33 @@ for (const key of ['观众年龄_最多', '观众特征总结_兴趣职业', '�
   audience[key] = Object.entries(tally).sort((a, b) => b[1] - a[1])
 }
 
+const nextSlot = planNextSlot(lastPublished)
+
 const report = {
   generatedAt: new Date().toISOString(),
+  analysisCriteria: {
+    workType: ANALYSIS_WORK_TYPE,
+    extractStatus: ANALYSIS_EXTRACT_STATUS,
+    note: '两个条件必须同时满足，才算可回收分析的数据',
+  },
   totals: {
     records: records.length,
     graphic: graphic.length,
+    analyzable: analyzable.length,
     withBackendData: withData.length,
-    drafts: graphic.filter((r) => /T\d{2}:\d{2}/.test(String(r.published_at))).length,
+    drafts: graphic.filter((r) => !isPublishedRecord(r)).length,
+    skipped,
   },
   issue: { last: lastIssue, next: lastIssue + 1 },
-  nextSlot: nextGoldenSlot(),
+  cadence: {
+    maxGapDays: MAX_PUBLISH_GAP_DAYS,
+    lastPublished,
+    nextDeadline: lastPublished ? addDays(lastPublished, MAX_PUBLISH_GAP_DAYS) : null,
+    overdue: nextSlot?.overdue ?? false,
+    brokeStreakCount: cadenceHistory.filter((c) => c.brokeStreak).length,
+    history: cadenceHistory,
+  },
+  nextSlot,
   carryOverPromise: trailingPromise(graphic),
   bySlot: groupStats(withData, (p) => p.slot).sort((a, b) => b.playMedian - a.playMedian),
   byWeekday: groupStats(withData, (p) => p.weekday).sort(
@@ -155,15 +209,32 @@ if (process.argv.includes('--json')) {
 
   console.log(`== 蛇大师复盘 ${report.generatedAt} ==`)
   console.log(
-    `记录 ${report.totals.records} 条 / 图文 ${report.totals.graphic} 条 / 有后台数据 ${report.totals.withBackendData} 条`,
+    `记录 ${report.totals.records} 条 / 图文 ${report.totals.graphic} 条 / ` +
+      `可分析（图文＋提取成功）${report.totals.analyzable} 条 / 实际取到数据 ${report.totals.withBackendData} 条`,
   )
   console.log(`期数：上一期 第${report.issue.last}期 → 本期应为 第${report.issue.next}期`)
   console.log(
-    `建议档期：${report.nextSlot.date}（${report.nextSlot.weekday}）${report.nextSlot.window}`,
+    `断更红线：上次发布 ${report.cadence.lastPublished ?? '无记录'}，` +
+      `下一篇最晚 ${report.cadence.nextDeadline ?? '-'}（间隔 ≤ ${report.cadence.maxGapDays} 天）` +
+      `${report.cadence.overdue ? '  ⚠ 已进入断更区间' : ''}`,
+  )
+  console.log(
+    `建议档期：${report.nextSlot.date}（${report.nextSlot.weekday}）${report.nextSlot.window}` +
+      `${report.nextSlot.overdue ? '  ← 已断更，今天必须发' : ''}`,
   )
   if (report.carryOverPromise) {
     console.log(`上期承诺：${report.carryOverPromise.promise}`)
   }
+
+  console.log(`\n-- 发布节奏（账号级，含风水/健身；历史断更 ${report.cadence.brokeStreakCount} 次）--`)
+  for (const c of report.cadence.history) {
+    console.log(
+      `${c.date} ${c.weekday} ${String(c.hour ?? '--').padStart(2, '0')}点 ` +
+        `间隔${String(c.gapFromPrev ?? '-').padStart(2)}天 ${c.brokeStreak ? '✗断更' : '  ok  '} ` +
+        `播放${String(c.play ?? '-').padStart(6)}  ${c.workType}  ${c.title.slice(0, 26)}`,
+    )
+  }
+
   console.log('\n-- 全部有数据作品 --')
   for (const post of withData) console.log(line(post))
   console.log('\n-- 按发布时段 --')

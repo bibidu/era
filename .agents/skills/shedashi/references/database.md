@@ -33,7 +33,20 @@ anon key 是公开的 RLS key，已内联在 `scripts/shedashi-lib.mjs`，可用
 | `extract_data` | 智能提取出的后台数据 JSON —— **复盘的唯一真实数据源** |
 | `extract_status` | `未开始` / `提取中` / `提取成功` / `提取失败` |
 | `temp_govern_status` | 临时数据治理状态（`未治理` / `正在治理` / `治理成功` / `治理失败`） |
-| `work_type` | `图文` / `风水` / `健身`；本账号图文复盘只看 `图文` |
+| `work_type` | `图文` / `风水` / `健身` |
+
+## 可回收分析的必要条件（缺一不可）
+
+| 条件 | 值 | 常量 |
+| --- | --- | --- |
+| `work_type` | `图文` | `ANALYSIS_WORK_TYPE` |
+| `extract_status` | `提取成功` | `ANALYSIS_EXTRACT_STATUS` |
+
+判定统一用 `isAnalyzable(record)`，不要在别处另写过滤条件。其余状态（`未开始` / `提取中` /
+`提取失败`）**不参与任何结论计算**，也不要拿标题去猜它的表现。
+
+例外：**断更间隔是账号级的**，`风水` / `健身` 也占发布位，必须一起算——那一步用
+`isPublishedRecord(record)` 取全部已发布记录，不受上面两个条件限制。
 
 ## extract_data 里的关键指标
 
