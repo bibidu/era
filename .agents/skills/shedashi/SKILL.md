@@ -24,9 +24,24 @@ description: >-
 - **禁止**在对话里发 5 个标题候选让用户挑
 - **禁止**发高亮设置页、标题排版设置页（全自动模式下由本 skill 直接定稿）
 - **禁止**只写完文案就停下等确认
-- 唯一例外：数据库 / OSS / Era 服务不可用且自己修不好时，报明确故障原因
 
 交付方式：**飞书机器人推送「第 N 期已就绪」**，用户到社媒库自取。对话里只发 HTTPS 自建站链接，**禁止**直发 OSS 图链（见 `.cursor/rules/image-preview-delivery.mdc`）。
+
+## 异常也必须推飞书（硬性）
+
+用户不盯着对话框。凡是**自己修不好、或需要用户拍板**的情况，除了在对话里说明，**必须**同时推一张飞书告警卡：
+
+```bash
+node scripts/shedashi-notify.mjs --alert \
+  --stage "上传 OSS（3/5）" \
+  --detail "<真实报错原文>" \
+  --action "<你需要用户具体做什么>" \
+  --issue 17
+```
+
+`scripts/shedashi-publish.mjs` 已内置：上传 / 入库 / 通知任一步抛错都会自动推告警再以非 0 退出。**手工步骤**（Era 起不来、封面出图失败、数据库读不到、期号异常、断更已经来不及补）必须自己调上面的命令。
+
+判定标准：**这一轮没能把「第 N 期已就绪」推出去，就一定要推一张告警出去**。两种卡有且只有一张会到达用户，不允许两张都没有。
 
 ## 一阶段目标：涨粉
 
@@ -84,7 +99,14 @@ node scripts/shedashi-analyze.mjs --out output/shedashi/report.json
 
 ### 3. 定档期
 
-只投 **周二 / 周三 / 周四 早 07:40–08:00（北京时间）**。理由与数字见 `references/playbook.md` §时段。周五与周一即使早发也明显掉量，非必要不排。
+直接用 `shedashi-analyze.mjs` 输出的 `nextSlot`，不要自己拍。它同时满足两个约束：
+
+1. **平台硬约束——抖音断更惩罚**：上一次发布后**最晚第 3 天**必须再发，即相邻两篇间隔 **≤ 2 天**。这个约束是**账号级**的，风水 / 健身也占发布位，一起算。
+2. **数据软优先**：固定周节律 **周一、周二、周三、周四、周六**，时间固定早 **07:40–08:00（北京时间）**。这是唯一能同时做到「间隔全部 ≤ 2 天」且「占住三个黄金档（周二三四）」的排法，只让出实测最差的周五和无样本的周日。
+
+节律被打乱时脚本会自动往回收敛。若 `nextSlot.overdue === true`，说明**已经进入断更区间**，当天就得发——此时放弃挑星期，并按 §异常 推飞书告警提醒用户尽快补发。
+
+历史上账号已经踩过 3 次断更（07-17→07-20 隔 3 天、07-23→07-28 隔 5 天、07-31→08-03 隔 3 天），这三次之后的作品播放都在 257–662。详见 `references/playbook.md` §发布节奏。
 
 ### 4. 定标题（不问用户）
 
@@ -131,14 +153,35 @@ node scripts/shedashi-publish.mjs --input output/shedashi/ep<N>/publish.json
 
 表 `era_social_video_analyses`（自建站 PostgREST）。字段与读写方式见 `references/database.md`。
 
-- 复盘只看 `work_type = '图文'` 且 `extract_status = '提取成功'` 的记录，`extract_data` 才是抖音后台真实数据
-- `风水` / `健身` 类型不参与本账号图文复盘
-- `published_at` 为 ISO 带 `T` 的记录＝尚未实际发布的草稿（入库时自动写的时间）；`2026-08-03 07:55` 这种手填格式＝已发布
+### 可回收分析的必要条件（两个都要满足，缺一不可）
+
+| 条件 | 值 |
+| --- | --- |
+| 类型 `work_type` | `图文` |
+| 数据回收状态 `extract_status` | `提取成功` |
+
+只有同时满足这两条的记录，`extract_data` 里才是抖音后台真实数据，才能进复盘。
+`未开始` / `提取中` / `提取失败` 一律**不参与任何结论计算**，也不要拿标题去猜它的表现。
+常量定义在 `scripts/shedashi-lib.mjs` 的 `ANALYSIS_WORK_TYPE` / `ANALYSIS_EXTRACT_STATUS`，
+判定用 `isAnalyzable(record)`，不要在别处另写过滤条件。
+
+`风水` / `健身` 不参与图文复盘——但它们**占发布位，要算进断更间隔**（见 §3 定档期）。
+
+### 其它
+
+- `published_at` 为 ISO 带 `T` 的记录＝尚未实际发布的草稿（入库时自动写的时间）；`2026-08-03 07:55` 这种手填格式＝已发布。判定用 `isPublishedRecord(record)`
 - **Cloud Agent 注意**：出口到 `sslip.io` 的 TLS 常被中断，脚本会自动回落裸 IP HTTP 读写；但**交付给用户的链接必须是 HTTPS**
 
 ## 飞书
 
-Webhook 固定在 `scripts/shedashi-notify.mjs`（可用 `SHEDASHI_FEISHU_WEBHOOK` 覆盖）。推送交互卡片，含期号、标题、建议档期、图片数、本期依据与自取按钮。
+Webhook 固定在 `scripts/shedashi-notify.mjs`（可用 `SHEDASHI_FEISHU_WEBHOOK` 覆盖），两种卡片：
+
+| 卡片 | 何时推 | 内容 |
+| --- | --- | --- |
+| 就绪（青色） | 本期做完入库后 | 期号、标题、建议档期、**下一篇断更红线日期**、图片数、话题、本期依据、自取按钮 |
+| 告警（红色） | 自己修不好 / 需用户拍板 | 卡在哪一步、报错原文、需要用户做什么 |
+
+就绪卡里必须带断更红线（`cadence.nextDeadline`）——发布的人是用户，红线得写给他看。
 
 ---
 
@@ -146,14 +189,16 @@ Webhook 固定在 `scripts/shedashi-notify.mjs`（可用 `SHEDASHI_FEISHU_WEBHOO
 
 1. 未向用户提任何确认性问题；未发标题候选、未发高亮/标题设置页
 2. 期号来自 `shedashi-analyze.mjs`，不是手编
-3. 档期落在周二/三/四早 07:40–08:00
-4. 标题过了禁用词自查；两行连写＝社媒标题
-5. 页数 ≤ 5（封面 + 4）；每个 `##` 独占页；每页有翻页钩子
-6. 有一页能直接抄走；术语首现有解释
-7. 末页＝连载承诺 + 关注理由 + 提问 + `第 N 期`；第 2 页顶栏是「点赞关注不迷路～」而非期数
-8. 入库正文不含 `era:page-break`
-9. `image_previews[0]` ＝封面且同步 `cover_url`；全部 `__cover_keep__`
-10. 飞书已推送成功；对话未直发 OSS 图链
+3. 档期＝脚本给的 `nextSlot`：间隔 ≤ 2 天（断更红线），且尽量落在周一/二/三/四/六早 07:40–08:00
+4. 复盘只用了「图文 + 提取成功」的记录；断更间隔算了全部已发布作品（含风水）
+5. 标题过了禁用词自查；两行连写＝社媒标题
+6. 页数 ≤ 5（封面 + 4）；每个 `##` 独占页；每页有翻页钩子
+7. 有一页能直接抄走；术语首现有解释
+8. 末页＝连载承诺 + 关注理由 + 提问 + `第 N 期`；第 2 页顶栏是「点赞关注不迷路～」而非期数
+9. 入库正文不含 `era:page-break`
+10. `image_previews[0]` ＝封面且同步 `cover_url`；全部 `__cover_keep__`
+11. 飞书**已收到一张卡**：成功推就绪卡，失败推告警卡，不允许两张都没有
+12. 对话未直发 OSS 图链
 
 ## 工具速查
 
@@ -163,5 +208,6 @@ Webhook 固定在 `scripts/shedashi-notify.mjs`（可用 `SHEDASHI_FEISHU_WEBHOO
 | Era 就绪 | `bash scripts/ensure-era-ready.sh` |
 | 封面 | `node scripts/generate-cover.mjs --input cover.json` |
 | 上传 + 入库 + 通知 | `node scripts/shedashi-publish.mjs --input publish.json` |
-| 只推飞书 | `node scripts/shedashi-notify.mjs --issue N --title "…"` |
+| 推就绪卡 | `node scripts/shedashi-notify.mjs --issue N --title "…"` |
+| 推告警卡 | `node scripts/shedashi-notify.mjs --alert --stage "…" --detail "…" --action "…"` |
 | 部署自建站 | `npm run deploy:swas` |
