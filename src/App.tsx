@@ -4,6 +4,7 @@ import { TopModeTabs, type AppMode } from './components/TopModeTabs'
 import {
   ERA_URL_CHANGE_EVENT,
   navigateBackFromGraphic,
+  navigateBackFromMotion,
   pushGraphicInUrl,
   readAppTabFromSearch,
   readSocialPostIdFromSearch,
@@ -40,6 +41,11 @@ const DataAnalysisWorkspace = lazy(() =>
 const AccountBalancePage = lazy(() =>
   import('./features/account/AccountBalancePage').then((m) => ({
     default: m.AccountBalancePage,
+  })),
+)
+const MotionLabPage = lazy(() =>
+  import('./features/motion-lab/MotionLabPage').then((m) => ({
+    default: m.MotionLabPage,
   })),
 )
 
@@ -110,6 +116,7 @@ function App() {
     replaceAppTabInUrl(initial, {
       keepSocialPost: Boolean(readSocialPostIdFromSearch()) && initial === 'data',
       graphicEntry: initial === 'graphic' ? 'replace' : null,
+      motionEntry: initial === 'motion' ? 'replace' : null,
     })
     window.addEventListener('popstate', syncFromUrl)
     window.addEventListener(ERA_URL_CHANGE_EVENT, syncFromUrl)
@@ -130,6 +137,13 @@ function App() {
     }
   }, [])
 
+  const closeMotion = useCallback(() => {
+    navigateBackFromMotion()
+    if (readAppTabFromSearch() !== 'motion') {
+      setMode('data')
+    }
+  }, [])
+
   const handleModeChange = useCallback(
     (next: AppMode) => {
       setBalanceOpen(false)
@@ -143,6 +157,11 @@ function App() {
         setMode('data')
         return
       }
+      if (mode === 'motion') {
+        navigateBackFromMotion()
+        setMode('data')
+        return
+      }
       setMode('data')
       replaceAppTabInUrl('data', { keepSocialPost: false })
     },
@@ -150,7 +169,7 @@ function App() {
   )
 
   // 帖子详情不藏顶栏：否则手势返回时顶栏突然出现会改变列表高度，造成抖动
-  const hideTopTabs = balanceOpen || mode === 'graphic'
+  const hideTopTabs = balanceOpen || mode === 'graphic' || mode === 'motion'
   const wideLayout = mode === 'data' && !hideTopTabs
 
   return (
@@ -193,6 +212,8 @@ function App() {
           <AccountBalancePage onBack={() => setBalanceOpen(false)} />
         ) : mode === 'graphic' ? (
           <GraphicSecondaryPage onBack={closeGraphic} />
+        ) : mode === 'motion' ? (
+          <MotionLabPage onBack={closeMotion} />
         ) : (
           <DataAnalysisWorkspace />
         )}

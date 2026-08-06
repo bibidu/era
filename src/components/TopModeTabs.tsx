@@ -1,7 +1,7 @@
 import { Moon, Sun, Wallet } from 'lucide-react'
 import type { EraTheme } from '../theme/theme'
 
-export type AppMode = 'graphic' | 'data'
+export type AppMode = 'graphic' | 'data' | 'motion'
 
 interface TopModeTabsProps {
   value: AppMode

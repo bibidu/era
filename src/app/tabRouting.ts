@@ -8,9 +8,10 @@ import {
 const TAB_IDS: Record<string, AppMode> = {
   graphic: 'graphic',
   data: 'data',
+  motion: 'motion',
 }
 
-/** 从 URL 解析当前 Tab：?tab=graphic|data（data = 社媒；缺省默认 data） */
+/** 从 URL 解析当前 Tab：?tab=graphic|data|motion（data = 社媒；缺省默认 data） */
 export function readAppTabFromSearch(
   search: string = typeof window !== 'undefined' ? window.location.search : '',
 ): AppMode {
@@ -41,6 +42,8 @@ export type EraHistoryState = {
   eraSocialPostEntry?: 'push' | 'replace' | null
   /** 图文二级页：push 可 history.back；replace 为深链 */
   eraGraphicEntry?: 'push' | 'replace' | null
+  /** 运动预览二级页 */
+  eraMotionEntry?: 'push' | 'replace' | null
 }
 
 function currentHistoryState(): EraHistoryState {
@@ -62,6 +65,7 @@ export function pushGraphicInUrl(): void {
     eraSocialPost: null,
     eraSocialPostEntry: null,
     eraGraphicEntry: 'push',
+    eraMotionEntry: null,
   }
   window.history.pushState(nextState, '', `${url.pathname}${url.search}${url.hash}`)
   notifyUrlChange()
@@ -73,6 +77,18 @@ export function navigateBackFromGraphic(): void {
   if (readAppTabFromSearch() !== 'graphic') return
   const state = currentHistoryState()
   if (state.eraGraphicEntry === 'push') {
+    window.history.back()
+    return
+  }
+  replaceAppTabInUrl('data')
+}
+
+/** 关闭运动预览二级页 */
+export function navigateBackFromMotion(): void {
+  if (typeof window === 'undefined') return
+  if (readAppTabFromSearch() !== 'motion') return
+  const state = currentHistoryState()
+  if (state.eraMotionEntry === 'push') {
     window.history.back()
     return
   }
@@ -93,6 +109,7 @@ export function pushSocialPostInUrl(postId: string): void {
     eraSocialPost: trimmed,
     eraSocialPostEntry: 'push',
     eraGraphicEntry: null,
+    eraMotionEntry: null,
   }
   window.history.pushState(nextState, '', `${url.pathname}${url.search}${url.hash}`)
   notifyUrlChange()
@@ -128,6 +145,7 @@ export function replaceSocialPostInUrl(postId: string | null): void {
     eraSocialPost: trimmed || null,
     eraSocialPostEntry: trimmed ? 'replace' : null,
     eraGraphicEntry: null,
+    eraMotionEntry: null,
   }
   window.history.replaceState(nextState, '', `${url.pathname}${url.search}${url.hash}`)
   notifyUrlChange()
@@ -141,6 +159,8 @@ export function replaceAppTabInUrl(
     keepSocialPost?: boolean
     /** 图文二级页入口标记（深链默认 replace） */
     graphicEntry?: 'push' | 'replace' | null
+    /** 运动预览二级页入口标记（深链默认 replace） */
+    motionEntry?: 'push' | 'replace' | null
   } = {},
 ): void {
   if (typeof window === 'undefined') return
@@ -157,11 +177,14 @@ export function replaceAppTabInUrl(
     keepSocialPost && tab === 'data' ? readSocialPostIdFromSearch(url.search) : null
   const graphicEntry =
     tab === 'graphic' ? (options.graphicEntry ?? 'replace') : null
+  const motionEntry =
+    tab === 'motion' ? (options.motionEntry ?? 'replace') : null
   const nextState: EraHistoryState = {
     ...currentHistoryState(),
     eraSocialPost: keptPost,
     eraSocialPostEntry: keptPost ? 'replace' : null,
     eraGraphicEntry: graphicEntry,
+    eraMotionEntry: motionEntry,
   }
   window.history.replaceState(nextState, '', `${url.pathname}${url.search}${url.hash}`)
   notifyUrlChange()
