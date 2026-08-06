@@ -14,7 +14,6 @@
     "start:local-agent": "bash scripts/start-local-agent.sh",
     "ensure:era": "bash scripts/ensure-era-ready.sh",
     "cover": "node scripts/generate-cover.mjs",
-    "motion:preview": "node scripts/generate-motion-preview.mjs",
     "shedashi:analyze": "node scripts/shedashi-analyze.mjs",
     "shedashi:publish": "node scripts/shedashi-publish.mjs",
     "shedashi:notify": "node scripts/shedashi-notify.mjs",
