@@ -36,7 +36,7 @@
 			header_down -Access-Control-Max-Age
 		}
 	}
-	handle_path /rest/v1/* {
+	handle /rest/v1/* {
 		reverse_proxy host.docker.internal:8793 {
 			header_down -Access-Control-Allow-Origin
 			header_down -Access-Control-Allow-Methods
@@ -79,7 +79,7 @@
 	}
 	# 旧 Supabase Edge Functions 同机反代：浏览器不直连美东，避免国内 Failed to fetch
 	# /functions/v1/<name> → https://…functions.supabase.co/<name>
-	handle_path /functions/v1/* {
+	handle /functions/v1/* {
 		reverse_proxy host.docker.internal:8793 {
 			transport http {
 				dial_timeout 30s

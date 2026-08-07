@@ -134,6 +134,12 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
+    // Caddy handle_path 曾剥前缀；兼容 /era_* 直透 PostgREST
+    if (pathname.startsWith('/era_') || pathname.startsWith('/rpc/')) {
+      await proxyRequest(req, res, REST_PROXY, '')
+      return
+    }
+
     if (pathname.startsWith('/functions/v1/create-extract-task') || pathname.startsWith('/functions/v1/create-govern-task')) {
       await proxyRequest(req, res, EXTRACT_UPSTREAM, '')
       return
