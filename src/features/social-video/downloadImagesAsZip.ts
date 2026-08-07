@@ -1,3 +1,4 @@
+import { fetchWithEraAuth } from '../../auth/eraAuth'
 import { legacyEdgeFunctionUrl } from '../../agent/legacyEdgeFunctionUrl'
 import { LEGACY_SUPABASE_ANON_KEY } from '../../agent/supabaseHighlightSetup'
 import {
@@ -77,10 +78,10 @@ function buildImageProxyUrl(imageUrl: string): string {
 }
 
 async function fetchViaProxy(imageUrl: string): Promise<Response> {
-  return fetch(buildImageProxyUrl(imageUrl), {
+  return fetchWithEraAuth(buildImageProxyUrl(imageUrl), {
     method: 'GET',
     mode: 'cors',
-    credentials: 'omit',
+    credentials: 'same-origin',
     headers: {
       apikey: LEGACY_SUPABASE_ANON_KEY,
       Authorization: `Bearer ${LEGACY_SUPABASE_ANON_KEY}`,

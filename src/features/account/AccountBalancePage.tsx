@@ -1,5 +1,6 @@
 import { ChevronLeft, RefreshCw, Wallet } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { fetchWithEraAuth } from '../../auth/eraAuth'
 import { legacyEdgeFunctionUrl } from '../../agent/legacyEdgeFunctionUrl'
 import { LEGACY_SUPABASE_ANON_KEY } from '../../agent/supabaseHighlightSetup'
 import { useEdgeSwipeBack } from '../../hooks/useEdgeSwipeBack'
@@ -38,7 +39,7 @@ export function AccountBalancePage({ onBack }: AccountBalancePageProps) {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(legacyEdgeFunctionUrl('aliyun-account-balance'), {
+      const res = await fetchWithEraAuth(legacyEdgeFunctionUrl('aliyun-account-balance'), {
         method: 'GET',
         headers: {
           apikey: LEGACY_SUPABASE_ANON_KEY,

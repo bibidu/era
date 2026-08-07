@@ -1,3 +1,4 @@
+import { eraAuthHeaders } from '../auth/eraAuth'
 import { browserSupabaseConfig, resolveSupabaseConfig } from './supabaseHighlightSetup'
 
 export const ERA_SOCIAL_VIDEO_ANALYSES_TABLE = 'era_social_video_analyses'
@@ -137,7 +138,7 @@ async function supabaseRest<T>(
   path: string,
   init: RequestInit & { prefer?: string } = {},
 ): Promise<T> {
-  const headers = new Headers(init.headers)
+  const headers = eraAuthHeaders(init.headers)
   headers.set('apikey', config.anonKey)
   headers.set('Authorization', `Bearer ${config.anonKey}`)
   if (init.body && !headers.has('Content-Type')) {
@@ -148,6 +149,7 @@ async function supabaseRest<T>(
   const res = await fetchSupabase(`${config.url}/rest/v1/${path}`, {
     ...init,
     headers,
+    credentials: 'same-origin',
   })
   const text = await res.text()
   if (!res.ok) {

@@ -4,6 +4,36 @@ import cors from 'cors'
 import { WebSocketServer } from 'ws'
 import { runtime } from './runtime.ts'
 import type { HighlightRange } from '../src/agent/protocol.ts'
+import {
+  isAuthTokenValid,
+  readAuthTokenFromRequest,
+} from '../scripts/era-auth-core.mjs'
+
+const ERA_REST_INTERNAL = (process.env.ERA_REST_INTERNAL || 'http://127.0.0.1:54321').replace(/\/$/, '')
+const ERA_ANON_KEY =
+  process.env.ERA_ANON_KEY ||
+  process.env.SUPABASE_ANON_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6ImVyYS1zZWxmaG9zdCIsImlhdCI6MTc4NTY3OTQ2NCwiZXhwIjoyMTAxMDM5NDY0fQ.EZAtzZ4yHkA8eB49KBQClsQqVdX9W4KF7FPeHsXhzjU'
+const ERA_AUTH_BYPASS = process.env.ERA_AUTH_BYPASS === '1'
+
+function eraAuthMiddleware(): express.RequestHandler {
+  return (req, res, next) => {
+    if (ERA_AUTH_BYPASS) {
+      next()
+      return
+    }
+    void (async () => {
+      const token =
+        readAuthTokenFromRequest(req) || process.env.ERA_AUTH_HASH || ''
+      const ok = await isAuthTokenValid(token, ERA_REST_INTERNAL, ERA_ANON_KEY)
+      if (!ok) {
+        res.status(401).json({ error: '未登录或登录已失效' })
+        return
+      }
+      next()
+    })().catch(next)
+  }
+}
 
 function asyncHandler(
   handler: (req: express.Request, res: express.Response) => Promise<void>,
@@ -21,6 +51,8 @@ export function createAgentApp() {
   app.get('/health', (_req, res) => {
     res.json({ ok: true, ...runtime.bridgeStatus() })
   })
+
+  app.use(eraAuthMiddleware())
 
   app.get('/v1/bridge/status', (_req, res) => {
     res.json(runtime.bridgeStatus())

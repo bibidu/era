@@ -1,5 +1,6 @@
-/** Supabase 存放高亮设置草稿（公开 anon key + RLS；勿提交 service_role） */
+import { eraAuthHeaders } from '../auth/eraAuth'
 
+/** Supabase 存放高亮设置草稿（公开 anon key + RLS；勿提交 service_role） */
 /** 自建站（阿里云轻量 39.106）；业务 REST 与前端同机。Edge Functions 仍走下方旧 Supabase */
 /** REST 默认同机；浏览器同 origin 时走 location.origin。Agent/脚本无 window 时用 HTTPS 入口 */
 export const DEFAULT_SUPABASE_URL = 'https://39.106.179.17.sslip.io'
@@ -262,7 +263,7 @@ async function supabaseRest<T>(
   path: string,
   init: RequestInit & { prefer?: string } = {},
 ): Promise<T> {
-  const headers = new Headers(init.headers)
+  const headers = eraAuthHeaders(init.headers)
   headers.set('apikey', config.anonKey)
   headers.set('Authorization', `Bearer ${config.anonKey}`)
   if (init.body && !headers.has('Content-Type')) {
@@ -282,6 +283,7 @@ async function supabaseRest<T>(
     res = await fetch(`${config.url}/rest/v1/${path}`, {
       ...init,
       headers,
+      credentials: 'same-origin',
       signal: controller.signal,
     })
   } catch (error) {

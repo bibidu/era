@@ -24,11 +24,18 @@ export default defineConfig({
   base: process.env.ERA_BASE ?? '/era/',
   server: {
     proxy: {
-      // 与生产 Caddy 一致：/functions/v1/<name> → 旧 Supabase Functions
-      '/functions/v1': {
-        target: 'https://kzoxyextxjwscrpjowud.functions.supabase.co',
+      '/auth': {
+        target: 'http://127.0.0.1:8793',
         changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/functions\/v1/, ''),
+      },
+      '/rest/v1': {
+        target: 'http://127.0.0.1:8793',
+        changeOrigin: true,
+      },
+      // 与生产 Caddy 一致：/functions/v1/<name> → 鉴权网关 → Supabase / 本机任务
+      '/functions/v1': {
+        target: 'http://127.0.0.1:8793',
+        changeOrigin: true,
       },
     },
   },
