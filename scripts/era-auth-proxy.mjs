@@ -9,11 +9,13 @@ import {
   isAuthTokenValid,
   loginWithCredentials,
   readAuthTokenFromRequest,
+  resolvePostgrestBases,
+  restProxyBase,
 } from './era-auth-core.mjs'
 
 const PORT = Number(process.env.ERA_AUTH_PROXY_PORT || 8793)
 const HOST = process.env.ERA_AUTH_PROXY_HOST || '0.0.0.0'
-const REST_INTERNAL = (process.env.ERA_REST_INTERNAL || 'http://127.0.0.1:54321').replace(/\/$/, '')
+const REST_PROXY = restProxyBase().replace(/\/$/, '')
 const ANON_KEY =
   process.env.ERA_ANON_KEY ||
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6ImVyYS1zZWxmaG9zdCIsImlhdCI6MTc4NTY3OTQ2NCwiZXhwIjoyMTAxMDM5NDY0fQ.EZAtzZ4yHkA8eB49KBQClsQqVdX9W4KF7FPeHsXhzjU'
@@ -89,7 +91,7 @@ async function handleAuthRoutes(req, res, pathname) {
     const hash = await loginWithCredentials(
       payload.username,
       payload.password,
-      REST_INTERNAL,
+      null,
       ANON_KEY,
     )
     if (!hash) {
@@ -101,7 +103,7 @@ async function handleAuthRoutes(req, res, pathname) {
   }
   if (pathname === '/auth/session' && req.method === 'GET') {
     const token = readAuthTokenFromRequest(req)
-    const ok = await isAuthTokenValid(token, REST_INTERNAL, ANON_KEY)
+    const ok = await isAuthTokenValid(token, null, ANON_KEY)
     sendJson(res, ok ? 200 : 401, { ok })
     return true
   }
@@ -121,14 +123,14 @@ const server = http.createServer(async (req, res) => {
     }
 
     const token = readAuthTokenFromRequest(req)
-    const valid = await isAuthTokenValid(token, REST_INTERNAL, ANON_KEY)
+    const valid = await isAuthTokenValid(token, null, ANON_KEY)
     if (!valid) {
       sendJson(res, 401, { error: '未登录或登录已失效' })
       return
     }
 
     if (pathname.startsWith('/rest/v1')) {
-      await proxyRequest(req, res, REST_INTERNAL, '/rest/v1')
+      await proxyRequest(req, res, REST_PROXY, '/rest/v1')
       return
     }
 
@@ -153,5 +155,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, HOST, () => {
   console.log(`[era-auth-proxy] http://${HOST}:${PORT}`)
-  console.log(`[era-auth-proxy] REST → ${REST_INTERNAL}`)
+  console.log(`[era-auth-proxy] REST proxy → ${REST_PROXY}`)
+  console.log(`[era-auth-proxy] REST candidates → ${resolvePostgrestBases().join(', ')}`)
 })

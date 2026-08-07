@@ -149,8 +149,24 @@ if [[ -f "$REMOTE_REPO/deploy/swas/Caddyfile" ]]; then
 fi
 if [[ -f "$REMOTE_REPO/deploy/swas/docker-compose.yml" ]]; then
   cp "$REMOTE_REPO/deploy/swas/docker-compose.yml" /opt/era-db/docker-compose.yml
-  (cd /opt/era-db && docker compose up -d db rest gateway) || true
+  compose_up() {
+    (cd /opt/era-db && docker compose up -d db rest gateway) \
+      || (cd /opt/era-db && docker-compose up -d db rest gateway) \
+      || echo "    warn: docker compose up failed"
+  }
+  compose_up
 fi
+
+ERA_REST_IP=""
+if docker inspect era-rest >/dev/null 2>&1; then
+  ERA_REST_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' era-rest 2>/dev/null | head -1 || true)
+fi
+if [[ -n "$ERA_REST_IP" ]]; then
+  ERA_REST_INTERNAL="http://${ERA_REST_IP}:3000"
+else
+  ERA_REST_INTERNAL="http://127.0.0.1:54321"
+fi
+echo "    ERA_REST_INTERNAL=${ERA_REST_INTERNAL}"
 
 echo "    start extract-task-server"
 mkdir -p /var/log/era
@@ -164,7 +180,7 @@ OSS_PREFIX=${OSS_PREFIX:-era/assets}
 EXTRACT_TASK_PORT=8791
 EXTRACT_TASK_HOST=0.0.0.0
 ERA_REST_URL=http://127.0.0.1/rest/v1
-ERA_REST_INTERNAL=http://127.0.0.1:54321
+ERA_REST_INTERNAL=${ERA_REST_INTERNAL}
 ERA_AUTH_HASH=${AUTH_HASH:-}
 DASHSCOPE_PROXY_URL=http://127.0.0.1/functions/v1/dashscope-video-extract
 EOF
@@ -193,7 +209,7 @@ echo "    start era-auth-proxy"
 cat >/etc/era-auth-proxy.env <<EOF
 ERA_AUTH_PROXY_PORT=8793
 ERA_AUTH_PROXY_HOST=0.0.0.0
-ERA_REST_INTERNAL=http://127.0.0.1:54321
+ERA_REST_INTERNAL=${ERA_REST_INTERNAL}
 ERA_EXTRACT_UPSTREAM=http://127.0.0.1:8791
 ERA_FUNCTIONS_UPSTREAM=https://kzoxyextxjwscrpjowud.functions.supabase.co
 EOF
