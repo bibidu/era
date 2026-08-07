@@ -30,6 +30,7 @@ HOST="${AGENT_HOST_ARG:-${ERA_AGENT_HOST:-127.0.0.1}}"
 PORT="${AGENT_PORT_ARG:-${ERA_AGENT_PORT:-3847}}"
 DEV_HOST="${DEV_HOST_ARG:-${ERA_DEV_HOST:-127.0.0.1}}"
 DEV_PORT="${DEV_PORT_ARG:-${ERA_DEV_PORT:-5173}}"
+AUTH_PROXY_PORT="${ERA_AUTH_PROXY_PORT:-8793}"
 export ERA_AGENT_HOST="$HOST"
 export ERA_AGENT_PORT="$PORT"
 STATE_DIR="${TMPDIR:-/tmp}/era-agent-run"
@@ -70,6 +71,25 @@ start_agent_if_needed() {
   done
   if ! agent_up; then
     echo "!! Agent 启动失败，见 $STATE_DIR/agent.log" >&2
+    exit 1
+  fi
+}
+
+start_auth_proxy_if_needed() {
+  # 前端 AuthGate 会先打 /auth/session（vite 代理到 8793），网关不在就只能停在登录页
+  if curl -sf "http://127.0.0.1:${AUTH_PROXY_PORT}/auth/health" >/dev/null 2>&1; then
+    echo "==> 鉴权网关已在运行"
+    return
+  fi
+  echo "==> 启动鉴权网关"
+  nohup npm run auth-proxy >"$STATE_DIR/auth-proxy.log" 2>&1 &
+  echo $! >"$STATE_DIR/auth-proxy.pid"
+  for _ in $(seq 1 40); do
+    curl -sf "http://127.0.0.1:${AUTH_PROXY_PORT}/auth/health" >/dev/null 2>&1 && break
+    sleep 0.25
+  done
+  if ! curl -sf "http://127.0.0.1:${AUTH_PROXY_PORT}/auth/health" >/dev/null 2>&1; then
+    echo "!! 鉴权网关启动失败，见 $STATE_DIR/auth-proxy.log" >&2
     exit 1
   fi
 }
@@ -120,6 +140,7 @@ open_bridge_page() {
 }
 
 start_agent_if_needed
+start_auth_proxy_if_needed
 start_dev_if_needed
 # 正文宋体（封面出图 / Era 导出）
 bash "$ROOT/scripts/ensure-noto-serif-sc.sh" || echo "警告: 宋体下载失败，导出可能回落到系统字体" >&2
