@@ -69,6 +69,16 @@ function uploadCover(file) {
   return url
 }
 
+/** 抖音断更惩罚：相邻两篇间隔 ≤ 2 天，所以红线＝本篇档期 + 2 天 */
+function withDeadlineAfter(cadence, plannedFor) {
+  const day = String(plannedFor || '').slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return cadence
+  const maxGapDays = cadence?.maxGapDays ?? 2
+  const deadline = new Date(`${day}T00:00:00Z`)
+  deadline.setUTCDate(deadline.getUTCDate() + maxGapDays)
+  return { ...cadence, nextDeadline: deadline.toISOString().slice(0, 10) }
+}
+
 async function main() {
   currentStage = '校验 publish.json'
   for (const field of ['title', 'issue', 'markdown', 'cover', 'pages']) {
@@ -114,6 +124,9 @@ async function main() {
   if (!record?.id) throw new Error('入库失败：业务库未返回记录 id')
 
   currentStage = '飞书通知'
+  // 红线是给用户看的「发完这篇之后」的期限，要从本篇档期起算，
+  // 不能直接用复盘报告里的（那条算的是本篇自己的最晚发布日）
+  const cadence = withDeadlineAfter(plan.cadence, plan.plannedFor)
   const notified = await notifyFeishu({
     issue: plan.issue,
     title: plan.title,
@@ -122,7 +135,7 @@ async function main() {
     pageCount: files.length,
     recordId: record.id,
     highlights: plan.highlights,
-    cadence: plan.cadence,
+    cadence,
   })
 
   console.log(
