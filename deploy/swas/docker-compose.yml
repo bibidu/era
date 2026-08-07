@@ -44,6 +44,8 @@ services:
       PGRST_JWT_SECRET: ${JWT_SECRET}
       PGRST_OPENAPI_SERVER_PROXY_URI: http://39.106.179.17/rest/v1
     networks: [era-net]
+    ports:
+      - "127.0.0.1:54321:3000"
     mem_limit: 128m
 
   gateway:

@@ -17,6 +17,11 @@ import http from 'node:http'
 import { URL } from 'node:url'
 import { stitchImagesVerticalBuffers } from './stitch-images-vertical.mjs'
 
+import {
+  isAuthTokenValid,
+  readAuthTokenFromRequest,
+} from './era-auth-core.mjs'
+
 const PORT = Number(process.env.EXTRACT_TASK_PORT || 8791)
 const HOST = process.env.EXTRACT_TASK_HOST || '0.0.0.0'
 const REST_URL = (process.env.ERA_REST_URL || 'http://127.0.0.1/rest/v1').replace(/\/$/, '')
@@ -28,6 +33,8 @@ const DASHSCOPE_PROXY =
 const LEGACY_ANON =
   process.env.LEGACY_SUPABASE_ANON_KEY ||
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6b3h5ZXh0eGp3c2NycGpvd3VkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxMDM4MjYsImV4cCI6MjEwMDY3OTgyNn0.FZuvFtxaMOUUGg3y7kNDxv_p4Etz2KrVpkCHpPKbmDU'
+const ERA_AUTH_HASH = process.env.ERA_AUTH_HASH || ''
+const ERA_REST_INTERNAL = (process.env.ERA_REST_INTERNAL || 'http://127.0.0.1:54321').replace(/\/$/, '')
 
 const OSS_ACCESS_KEY_ID = process.env.OSS_ACCESS_KEY_ID || process.env.ALIYUN_ACCESS_KEY_ID || ''
 const OSS_ACCESS_KEY_SECRET =
@@ -102,7 +109,7 @@ function json(res, status, body) {
     'Content-Type': 'application/json; charset=utf-8',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-    'Access-Control-Allow-Headers': 'Authorization,apikey,Content-Type,Prefer,X-Client-Info',
+    'Access-Control-Allow-Headers': 'Authorization,apikey,Content-Type,Prefer,X-Client-Info,X-Era-Auth',
   })
   res.end(payload)
 }
@@ -115,6 +122,9 @@ async function rest(path, init = {}) {
     headers.set('Content-Type', 'application/json')
   }
   if (init.prefer) headers.set('Prefer', init.prefer)
+  if (ERA_AUTH_HASH) {
+    headers.set('X-Era-Auth', ERA_AUTH_HASH)
+  }
   const response = await fetch(`${REST_URL}/${path.replace(/^\//, '')}`, {
     ...init,
     headers,
@@ -422,6 +432,13 @@ const server = http.createServer(async (req, res) => {
       path === '/functions/v1/create-govern-task/health')
   ) {
     json(res, 200, { ok: true })
+    return
+  }
+
+  const authToken = readAuthTokenFromRequest(req) || ERA_AUTH_HASH
+  const authed = await isAuthTokenValid(authToken, ERA_REST_INTERNAL, ANON_KEY)
+  if (!authed) {
+    json(res, 401, { error: '未登录或登录已失效' })
     return
   }
 

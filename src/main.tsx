@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles/base.css'
 import App from './App.tsx'
+import { AuthGate } from './features/auth/AuthGate.tsx'
 import { recoverPreviewUrlInBrowser } from './agent/supabaseHighlightSetup'
 import { applyTheme, readStoredTheme } from './theme/theme'
 import { ensureRandomUUID } from './utils/id'
@@ -16,7 +17,9 @@ function bootstrap() {
   recoverPreviewUrlInBrowser()
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      <App />
+      <AuthGate>
+        <App />
+      </AuthGate>
     </StrictMode>,
   )
   window.__ERA_APP_MOUNTED__ = true

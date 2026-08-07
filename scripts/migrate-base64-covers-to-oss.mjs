@@ -18,6 +18,7 @@ import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { computeEraAuthHash } from './era-auth-core.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -66,10 +67,14 @@ function resolveConfig(args) {
   return { url, anonKey }
 }
 
+const ERA_AUTH_HASH =
+  process.env.ERA_AUTH_HASH || computeEraAuthHash('17718139319', '521312')
+
 async function supabaseFetch(config, path, init = {}) {
   const headers = new Headers(init.headers)
   headers.set('apikey', config.anonKey)
   headers.set('Authorization', `Bearer ${config.anonKey}`)
+  if (ERA_AUTH_HASH) headers.set('X-Era-Auth', ERA_AUTH_HASH)
   if (init.body && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }

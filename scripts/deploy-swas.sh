@@ -116,7 +116,8 @@ echo "    apply social video migrations"
 for migration in \
   supabase/migrations/20260804120000_era_social_video_extract_status.sql \
   supabase/migrations/20260804140000_era_social_video_extract_data.sql \
-  supabase/migrations/20260804222000_era_social_video_temp_govern_status.sql
+  supabase/migrations/20260804222000_era_social_video_temp_govern_status.sql \
+  supabase/migrations/20260807180000_era_app_login_users.sql
 do
   if [[ -f "$migration" ]]; then
     echo "    apply $(basename "$migration")"
@@ -148,11 +149,12 @@ if [[ -f "$REMOTE_REPO/deploy/swas/Caddyfile" ]]; then
 fi
 if [[ -f "$REMOTE_REPO/deploy/swas/docker-compose.yml" ]]; then
   cp "$REMOTE_REPO/deploy/swas/docker-compose.yml" /opt/era-db/docker-compose.yml
-  (cd /opt/era-db && docker compose up -d gateway) || true
+  (cd /opt/era-db && docker compose up -d db rest gateway) || true
 fi
 
 echo "    start extract-task-server"
 mkdir -p /var/log/era
+AUTH_HASH=$(node -e "import('./scripts/era-auth-core.mjs').then(m=>console.log(m.computeEraAuthHash('17718139319','521312')))" 2>/dev/null || true)
 cat >/etc/era-extract-task.env <<EOF
 OSS_ACCESS_KEY_ID=${OSS_ACCESS_KEY_ID:-}
 OSS_ACCESS_KEY_SECRET=${OSS_ACCESS_KEY_SECRET:-}
@@ -162,6 +164,8 @@ OSS_PREFIX=${OSS_PREFIX:-era/assets}
 EXTRACT_TASK_PORT=8791
 EXTRACT_TASK_HOST=0.0.0.0
 ERA_REST_URL=http://127.0.0.1/rest/v1
+ERA_REST_INTERNAL=http://127.0.0.1:54321
+ERA_AUTH_HASH=${AUTH_HASH:-}
 DASHSCOPE_PROXY_URL=http://127.0.0.1/functions/v1/dashscope-video-extract
 EOF
 chmod 600 /etc/era-extract-task.env
@@ -184,6 +188,35 @@ UNIT
 systemctl daemon-reload
 systemctl enable era-extract-task.service >/dev/null 2>&1 || true
 systemctl restart era-extract-task.service
+
+echo "    start era-auth-proxy"
+cat >/etc/era-auth-proxy.env <<EOF
+ERA_AUTH_PROXY_PORT=8793
+ERA_AUTH_PROXY_HOST=0.0.0.0
+ERA_REST_INTERNAL=http://127.0.0.1:54321
+ERA_EXTRACT_UPSTREAM=http://127.0.0.1:8791
+ERA_FUNCTIONS_UPSTREAM=https://kzoxyextxjwscrpjowud.functions.supabase.co
+EOF
+chmod 600 /etc/era-auth-proxy.env
+cat >/etc/systemd/system/era-auth-proxy.service <<'AUTHUNIT'
+[Unit]
+Description=Era auth gateway (login + REST/Functions)
+After=network.target docker.service era-extract-task.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/era
+EnvironmentFile=/etc/era-auth-proxy.env
+ExecStart=/usr/bin/node /opt/era/scripts/era-auth-proxy.mjs
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+AUTHUNIT
+systemctl daemon-reload
+systemctl enable era-auth-proxy.service >/dev/null 2>&1 || true
+systemctl restart era-auth-proxy.service
 
 echo "    reload caddy"
 docker exec era-gateway caddy reload --config /etc/caddy/Caddyfile 2>/dev/null \

@@ -4,6 +4,11 @@
  * 见 .agents/skills/shedashi/SKILL.md
  */
 
+import { computeEraAuthHash } from './era-auth-core.mjs'
+
+const ERA_AUTH_HASH =
+  process.env.ERA_AUTH_HASH || computeEraAuthHash('17718139319', '521312')
+
 export const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
 
 /** 可进入复盘分析的必要条件（两个都要满足，缺一不可） */
@@ -151,6 +156,7 @@ async function tryBase(base, path, init) {
   const headers = new Headers(init.headers)
   headers.set('apikey', ANON_KEY)
   headers.set('Authorization', `Bearer ${ANON_KEY}`)
+  if (ERA_AUTH_HASH) headers.set('X-Era-Auth', ERA_AUTH_HASH)
   if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
   if (init.prefer) headers.set('Prefer', init.prefer)
 

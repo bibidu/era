@@ -10,7 +10,7 @@
 		header {
 			Access-Control-Allow-Origin *
 			Access-Control-Allow-Methods "GET,POST,PATCH,PUT,DELETE,OPTIONS"
-			Access-Control-Allow-Headers "Authorization,apikey,Content-Type,Prefer,X-Client-Info,Range"
+			Access-Control-Allow-Headers "Authorization,apikey,Content-Type,Prefer,X-Client-Info,Range,X-Era-Auth"
 			Access-Control-Expose-Headers "Content-Range,Preference-Applied"
 			-Access-Control-Allow-Credentials
 		}
@@ -19,15 +19,25 @@
 	header {
 		Access-Control-Allow-Origin *
 		Access-Control-Allow-Methods "GET,POST,PATCH,PUT,DELETE,OPTIONS"
-		Access-Control-Allow-Headers "Authorization,apikey,Content-Type,Prefer,X-Client-Info,Range"
+		Access-Control-Allow-Headers "Authorization,apikey,Content-Type,Prefer,X-Client-Info,Range,X-Era-Auth"
 		Access-Control-Expose-Headers "Content-Range,Preference-Applied"
 		-Access-Control-Allow-Credentials
 	}
 }
 
 (api_routes) {
+	handle /auth/* {
+		reverse_proxy host.docker.internal:8793 {
+			header_down -Access-Control-Allow-Origin
+			header_down -Access-Control-Allow-Methods
+			header_down -Access-Control-Allow-Headers
+			header_down -Access-Control-Expose-Headers
+			header_down -Access-Control-Allow-Credentials
+			header_down -Access-Control-Max-Age
+		}
+	}
 	handle_path /rest/v1/* {
-		reverse_proxy era-rest:3000 {
+		reverse_proxy host.docker.internal:8793 {
 			header_down -Access-Control-Allow-Origin
 			header_down -Access-Control-Allow-Methods
 			header_down -Access-Control-Allow-Headers
@@ -37,7 +47,7 @@
 		}
 	}
 	handle /rest/v1 {
-		reverse_proxy era-rest:3000 {
+		reverse_proxy host.docker.internal:8793 {
 			header_down -Access-Control-Allow-Origin
 			header_down -Access-Control-Allow-Methods
 			header_down -Access-Control-Allow-Headers
@@ -48,7 +58,7 @@
 	}
 	# 本机提取 / 临时治理任务服务（优先于旧 Supabase Functions 反代）
 	handle /functions/v1/create-extract-task* {
-		reverse_proxy host.docker.internal:8791 {
+		reverse_proxy host.docker.internal:8793 {
 			transport http {
 				dial_timeout 30s
 				response_header_timeout 5m
@@ -58,7 +68,7 @@
 		}
 	}
 	handle /functions/v1/create-govern-task* {
-		reverse_proxy host.docker.internal:8791 {
+		reverse_proxy host.docker.internal:8793 {
 			transport http {
 				dial_timeout 30s
 				response_header_timeout 5m
@@ -70,12 +80,8 @@
 	# 旧 Supabase Edge Functions 同机反代：浏览器不直连美东，避免国内 Failed to fetch
 	# /functions/v1/<name> → https://…functions.supabase.co/<name>
 	handle_path /functions/v1/* {
-		reverse_proxy https://kzoxyextxjwscrpjowud.functions.supabase.co {
-			header_up Host kzoxyextxjwscrpjowud.functions.supabase.co
-			header_up Authorization {http.request.header.Authorization}
-			header_up apikey {http.request.header.apikey}
+		reverse_proxy host.docker.internal:8793 {
 			transport http {
-				versions 1.1
 				dial_timeout 30s
 				response_header_timeout 5m
 				read_timeout 5m

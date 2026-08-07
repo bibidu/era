@@ -1,5 +1,6 @@
 import { ChevronLeft, Download } from 'lucide-react'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { fetchWithEraAuth } from '../../auth/eraAuth'
 import { legacyEdgeFunctionUrl } from '../../agent/legacyEdgeFunctionUrl'
 import { LEGACY_SUPABASE_ANON_KEY } from '../../agent/supabaseHighlightSetup'
 import {
@@ -285,7 +286,7 @@ export function SocialVideoPostPage({
       for (const file of imageFiles.slice(0, MAX_MEDIA_ITEMS)) {
         images.push(await compressImageFile(file))
       }
-      const response = await fetch(legacyEdgeFunctionUrl('create-extract-task'), {
+      const response = await fetchWithEraAuth(legacyEdgeFunctionUrl('create-extract-task'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
