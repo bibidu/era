@@ -251,15 +251,24 @@ function parseModelJson(text) {
   throw new Error('模型未返回合法 JSON')
 }
 
+function dashScopeProxyHeaders() {
+  const headers = {
+    'Content-Type': 'application/json',
+    apikey: LEGACY_ANON,
+    Authorization: `Bearer ${LEGACY_ANON}`,
+  }
+  // 经 Caddy → era-auth-proxy 反代时必须带登录 hash，否则 401 导致「提取失败」
+  if (ERA_AUTH_HASH) {
+    headers['X-Era-Auth'] = ERA_AUTH_HASH
+  }
+  return headers
+}
+
 async function runDashScope(imageUrls, prompt, { parseJson = false } = {}) {
   const media = imageUrls.map((url) => ({ type: 'image', url }))
   const response = await fetch(DASHSCOPE_PROXY, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: LEGACY_ANON,
-      Authorization: `Bearer ${LEGACY_ANON}`,
-    },
+    headers: dashScopeProxyHeaders(),
     body: JSON.stringify({
       model: MODEL,
       media,

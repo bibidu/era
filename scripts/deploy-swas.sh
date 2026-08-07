@@ -182,7 +182,8 @@ EXTRACT_TASK_HOST=0.0.0.0
 ERA_REST_URL=http://127.0.0.1/rest/v1
 ERA_REST_INTERNAL=${ERA_REST_INTERNAL}
 ERA_AUTH_HASH=${AUTH_HASH:-}
-DASHSCOPE_PROXY_URL=http://127.0.0.1/functions/v1/dashscope-video-extract
+# 本机直打 Supabase Functions，避免经鉴权网关二次登录；extract-task 已带 anon key
+DASHSCOPE_PROXY_URL=https://kzoxyextxjwscrpjowud.functions.supabase.co/dashscope-video-extract
 EOF
 chmod 600 /etc/era-extract-task.env
 cat >/etc/systemd/system/era-extract-task.service <<'UNIT'
