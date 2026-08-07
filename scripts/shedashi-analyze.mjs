@@ -8,7 +8,8 @@
  *   node scripts/shedashi-analyze.mjs --json          # 打印机器可读 JSON
  *   node scripts/shedashi-analyze.mjs --out report.json
  */
-import { writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 import {
   ANALYSIS_EXTRACT_STATUS,
   ANALYSIS_WORK_TYPE,
@@ -199,6 +200,8 @@ const report = {
 
 const outPath = arg('--out')
 if (outPath) {
+  // output/ 不进版本库，新克隆的仓库里目录还不存在
+  mkdirSync(dirname(outPath), { recursive: true })
   writeFileSync(outPath, JSON.stringify(report, null, 2))
 }
 
