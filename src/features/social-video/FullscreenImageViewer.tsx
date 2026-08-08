@@ -1,4 +1,4 @@
-import { ChevronLeft, Download, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, X } from 'lucide-react'
 import {
   useCallback,
   useEffect,
@@ -240,11 +240,46 @@ export function FullscreenImageViewer({
         </div>
       </div>
 
-      <div
-        className="shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 text-center text-xs"
-        style={{ color: 'rgb(255 255 255 / 0.65)' }}
-      >
-        {downloadStatus || '左右滑动切换图片'}
+      <div className="shrink-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+        {downloadStatus ? (
+          <p
+            className="mb-2 text-center text-xs"
+            style={{ color: 'rgb(255 255 255 / 0.65)' }}
+          >
+            {downloadStatus}
+          </p>
+        ) : null}
+        <div className="mx-auto flex max-w-sm items-center justify-center gap-3">
+          <button
+            type="button"
+            className="flex h-11 min-w-[5.25rem] flex-1 items-center justify-center gap-1 rounded-full bg-white/10 px-3 text-sm font-medium transition hover:bg-white/20 disabled:opacity-35"
+            aria-label="上一张"
+            disabled={safeIndex <= 0}
+            onClick={() => onIndexChange(safeIndex - 1)}
+          >
+            <ChevronLeft size={18} />
+            左边
+          </button>
+          <button
+            type="button"
+            className="flex h-11 min-w-[5.25rem] flex-1 items-center justify-center gap-1 rounded-full bg-white/10 px-3 text-sm font-medium transition hover:bg-white/20 disabled:opacity-35"
+            aria-label="下一张"
+            disabled={safeIndex >= total - 1}
+            onClick={() => onIndexChange(safeIndex + 1)}
+          >
+            右边
+            <ChevronRight size={18} />
+          </button>
+          <button
+            type="button"
+            className="flex h-11 min-w-[5.25rem] flex-1 items-center justify-center gap-1 rounded-full bg-white/15 px-3 text-sm font-medium transition hover:bg-white/25"
+            aria-label="关闭"
+            onClick={onClose}
+          >
+            <X size={18} />
+            关闭
+          </button>
+        </div>
       </div>
     </div>
   )
