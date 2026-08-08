@@ -127,7 +127,7 @@ bash scripts/ensure-era-ready.sh                      # 云端 headless Bridge�
 内容页走 Era REST（`http://127.0.0.1:${ERA_AGENT_PORT:-3847}/v1/...`，需带鉴权头 `X-Era-Auth`）或 MCP `era_*`，
 配置沿用风水 skill §1 固定 config（`pageOverlay: fengshui`、`9:16`、朱红标题、宋体 22）。
 
-- **多行一级标题用多行 `#`**（如两行 `# 床摆错了` / `# 越睡越虚`），**不要调 `era_set_title`**：`set-title` 只替换第一个 `#` 块，和第二行 H1 冲突会导致封面重复串字。社媒/入库 `title`（各行连写）在**入库时**由 `fengdashi-publish.mjs` 写，不经 Era。
+- **多行一级标题写在同一个 `#` 里，用 U+2028 分行**（如 `# 床摆错了\u2028越睡越虚`），**禁止**连续两个 `#`（会叠双倍块间距，封面空太多）。配置必须带 `titleSecondaryFontSize: 56`（与主字号同大）。**不要调 `era_set_title`**。社媒/入库 `title`（各行连写）由 `fengdashi-publish.mjs` 写。详见风水 skill §2 C。
 - 首页＝一级标题 + 导语，导语控制在**约 1 行**（两行大标题几乎占满首页高度，导语过长会溢出到第 2 页产生孤行）。
 - 诗意页背景：**同篇全部背景图同色调**（同一泥纸底/墨色冷暖/淡矿物辅色，见风水 skill §2 H），零文字、意象只占左下或右下一角；按页导出用 `node scripts/export-pages-with-bgs.mjs`（云端脚本请求需带 `X-Era-Auth`）。
 - 出图前 `era_preview_layout` 修告警（单行溢出、孤行等）。默认不加用户高亮，仅分篇预告段打黄刷。
@@ -187,9 +187,9 @@ node scripts/fengdashi-publish.mjs --input output/fengdashi/<slug>/publish.json
 3. 复盘只用了「风水 + 提取成功」的记录；断更间隔算了全部已发布风水记录
 4. 有未收尾连载就先接住；篇末预告已兑现
 5. 标题过了禁用词自查；具体物件 + 反预期后果 + 可搜词；分篇标题带 `（上篇）` 等
-6. 页数 4–6；每个 `##` 独占页；一级标题全文朱红、二级宋体 22；首页导语约 1 行不溢出
+6. 页数 4–6；每个 `##` 独占页；一级标题为**单个 `#`**（多行用 U+2028，禁止连续多个 `#`）、全文朱红、`titleSecondaryFontSize=56`、二级宋体 22；首页导语约 1 行不溢出
 7. 有一页能直接抄走；同篇诗意背景同色调、零文字、意象在一角
-8. 未调 `era_set_title`（多行 H1 会串字）；`title` 由入库脚本写
+8. 未调 `era_set_title`；`title` 由入库脚本写；封面两行标题间距不空（目测约 `titleLineHeight`，不是一整行字高）
 9. 入库正文不含 `era:page-break`；`image_previews[0]` ＝封面且同步 `cover_url`；`work_type=风水`
 10. 飞书**已收到一张卡**：成功推就绪卡，失败推告警卡，不允许两张都没有
 11. 对话未直发 OSS 图链，只发 HTTPS 自建站链

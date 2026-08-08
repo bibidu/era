@@ -33,7 +33,7 @@
 - **异常也必须推飞书**：自己修不好 / 需用户拍板时，除对话说明外必须推红色告警卡 `node scripts/fengdashi-notify.mjs --alert --stage … --detail … --action …`。这一轮没推出「已就绪」卡，就一定要推一张告警卡。
 - **档期用脚本的 `nextSlot`，禁止自己拍**：断更间隔 **≤ 2 天**（风水号只发风水，只按风水已发布记录算）；只投早 07:40–08:00；周节律暂沿用图文号假设，待样本补齐重算。
 - **可回收分析的必要条件**：`work_type === '风水'` **且** `extract_status === '提取成功'`，缺一不可；判定用 `isFengAnalyzable()`（`scripts/fengdashi-lib.mjs`）。
-- 内容侧走**风水 skill** 技术要点但跳过所有确认步；**多行一级标题用多行 `#`，禁调 `era_set_title`**（会把封面标题串字），`title` 由入库脚本写。
+- 内容侧走**风水 skill** 技术要点但跳过所有确认步；**多行一级标题写在同一个 `#` 里用 U+2028 分行，禁止连续两个 `#`**（会叠双倍块间距、封面空太多），`titleSecondaryFontSize: 56`，禁调 `era_set_title`，`title` 由入库脚本写。
 
 ## 图文 skill（多页长图 + 内联封面）
 
