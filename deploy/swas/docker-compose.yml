@@ -63,6 +63,8 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - /opt/era-web:/srv:ro
+      # 独立站：宿主机 /opt/apt-web → /srv/apt。发版前须 mkdir -p /opt/era-web/apt 作挂载点（/srv 只读）。
+      - /opt/apt-web:/srv/apt:ro
       - era-caddy-data:/data
       - era-caddy-config:/config
     networks: [era-net]

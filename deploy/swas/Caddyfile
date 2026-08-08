@@ -95,6 +95,12 @@
 }
 
 (spa_routes) {
+	# /apt/* 来自独立目录 /opt/apt-web（compose 挂到 /srv/apt），禁止回落到 Era SPA
+	handle /apt/* {
+		root * /srv
+		encode gzip
+		file_server
+	}
 	handle {
 		root * /srv
 		encode gzip
