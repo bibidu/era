@@ -98,6 +98,10 @@
 	# /apt/* 来自独立目录 /opt/apt-web（compose 挂到 /srv/apt），禁止回落到 Era SPA
 	handle /apt/* {
 		root * /srv
+		header {
+			Cache-Control "no-store, no-cache, must-revalidate"
+			Pragma "no-cache"
+		}
 		encode gzip
 		file_server
 	}
