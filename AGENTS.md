@@ -19,6 +19,22 @@
 - **档期用脚本的 `nextSlot`，禁止自己拍**：抖音断更惩罚要求相邻两篇间隔 **≤ 2 天**（账号级，风水/健身也占位）；在此之上走固定周节律 **周一/二/三/四/六 早 07:40–08:00**。
 - **可回收分析的必要条件**：`work_type === '图文'` **且** `extract_status === '提取成功'`，缺一不可；判定用 `isAnalyzable()`。断更间隔另用 `isPublishedRecord()` 取全部已发布作品。
 
+## 风大师 skill（抖音风水号负责人 · 全自动）
+
+抖音**风水号（阳宅篇）**的社媒负责人角色，由 skill **风大师**（目录 `fengdashi`）定义，是蛇大师的风水号版本——**两个账号、两套数据、两套结论，推同一个飞书群**：
+
+- `.agents/skills/fengdashi/SKILL.md`
+- `.cursor/skills/fengdashi`（符号链接）
+
+用户说「使用风大师，开启今天的任务」「风水号今天发什么」「风水下一篇」时走本 skill。**全自动、零确认**：`node scripts/fengdashi-analyze.mjs` 拉风水数据复盘 → 定选题/标题/档期 → 按**风水 skill**（`fengshui`）改写方向与排版写正文 → 出同色调诗意背景与内容页 → 上传 OSS → 入库（`work_type: 风水`）→ `fengdashi-publish.mjs` 推飞书「风水号下一篇已就绪」。数据结论见 `references/playbook.md`，档案见 `references/account.md`（名称/头像/背景/简介/定位永不改动）。
+
+三条硬规则：
+
+- **异常也必须推飞书**：自己修不好 / 需用户拍板时，除对话说明外必须推红色告警卡 `node scripts/fengdashi-notify.mjs --alert --stage … --detail … --action …`。这一轮没推出「已就绪」卡，就一定要推一张告警卡。
+- **档期用脚本的 `nextSlot`，禁止自己拍**：断更间隔 **≤ 2 天**（风水号只发风水，只按风水已发布记录算）；只投早 07:40–08:00；周节律暂沿用图文号假设，待样本补齐重算。
+- **可回收分析的必要条件**：`work_type === '风水'` **且** `extract_status === '提取成功'`，缺一不可；判定用 `isFengAnalyzable()`（`scripts/fengdashi-lib.mjs`）。
+- 内容侧走**风水 skill** 技术要点但跳过所有确认步；**多行一级标题用多行 `#`，禁调 `era_set_title`**（会把封面标题串字），`title` 由入库脚本写。
+
 ## 图文 skill（多页长图 + 内联封面）
 
 非风水社媒图文由 skill **图文skill**（目录 `tuwen`）定义：
