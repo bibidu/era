@@ -135,11 +135,13 @@ echo "    build (ERA_BASE=/)"
 ERA_BASE=/ npm run build
 
 echo "    sync dist → ${REMOTE_WEB}"
-mkdir -p "$REMOTE_WEB" /opt/apt-web
-# /opt/apt-web 经 compose 挂到 gateway 的 /srv/apt；切勿把 apt 放进 REMOTE_WEB。
-# 若历史残留 REMOTE_WEB/apt，rsync --delete 也必须排除，避免误删或盖住挂载点。
+# /opt/apt-web 经 compose 挂到 gateway 的 /srv/apt；切勿把内容放进 REMOTE_WEB。
+# 只读挂载 REMOTE_WEB→/srv 时，宿主机必须先有 apt/ 空目录作挂载点，否则嵌套挂载失败。
+mkdir -p "$REMOTE_WEB" /opt/apt-web "${REMOTE_WEB}/apt"
+# rsync --delete 必须排除 apt/，避免清掉挂载点或误删内容。
 if command -v rsync >/dev/null 2>&1; then
   rsync -a --delete --exclude apt --exclude apt/ dist/ "${REMOTE_WEB}/"
+  mkdir -p "${REMOTE_WEB}/apt"
 else
   # 无 rsync 时逐项同步，保留 apt/ 目录
   shopt -s dotglob nullglob
@@ -150,6 +152,7 @@ else
     cp -a "$entry" "$REMOTE_WEB/"
   done
   shopt -u dotglob nullglob
+  mkdir -p "${REMOTE_WEB}/apt"
 fi
 
 echo "    sync Caddyfile / compose → /opt/era-db"
@@ -165,6 +168,35 @@ if [[ -f "$REMOTE_REPO/deploy/swas/docker-compose.yml" ]]; then
   }
   compose_up
 fi
+
+# compose 插件若坏掉，兜底保证 gateway 仍挂着 /opt/apt-web → /srv/apt
+ensure_apt_mount() {
+  mkdir -p /opt/apt-web /opt/era-web/apt
+  if docker inspect era-gateway >/dev/null 2>&1; then
+    if docker inspect -f '{{range .Mounts}}{{println .Source}}{{end}}' era-gateway | grep -qx '/opt/apt-web'; then
+      echo "    apt mount ok"
+      return 0
+    fi
+    echo "    recreate era-gateway with /opt/apt-web mount"
+    docker rm -f era-gateway >/dev/null 2>&1 || true
+  else
+    echo "    start era-gateway with /opt/apt-web mount"
+  fi
+  docker run -d \
+    --name era-gateway \
+    --restart unless-stopped \
+    --network era-net \
+    -p 80:80 -p 443:443 -p 3000:3000 \
+    --add-host=host.docker.internal:host-gateway \
+    --memory=96m \
+    -v /opt/era-db/Caddyfile:/etc/caddy/Caddyfile:ro \
+    -v /opt/era-web:/srv:ro \
+    -v /opt/apt-web:/srv/apt:ro \
+    -v era-caddy-data:/data \
+    -v era-caddy-config:/config \
+    caddy:2-alpine >/dev/null
+}
+ensure_apt_mount
 
 ERA_REST_IP=""
 if docker inspect era-rest >/dev/null 2>&1; then
