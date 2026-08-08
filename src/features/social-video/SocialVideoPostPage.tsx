@@ -202,6 +202,20 @@ export function SocialVideoPostPage({
     [extractImages],
   )
 
+  /** 上传表单态：优先展示刚选中的本地图，否则展示库里已上传的待提取图 */
+  const pendingExtractItems = useMemo<PreviewImageItem[]>(() => {
+    if (imagePreviewUrls.length > 0) {
+      return imagePreviewUrls.map((src, index) => ({
+        src,
+        alt: `待提取 ${index + 1}`,
+      }))
+    }
+    return extractPreviewItems.map((item, index) => ({
+      ...item,
+      alt: `待提取 ${index + 1}`,
+    }))
+  }, [imagePreviewUrls, extractPreviewItems])
+
   const extractRaw = useMemo(() => {
     const data = (view.extract_data || '').trim()
     if (data) return data
@@ -218,6 +232,8 @@ export function SocialVideoPostPage({
   const showUploadForm =
     view.extract_status === '未开始' || view.extract_status === '提取失败'
   const showCreateTask = view.extract_status === '未开始' || view.extract_status === '提取失败'
+  const canCreateTask =
+    imageFiles.length > 0 || (showCreateTask && extractImages.length > 0)
 
   useEffect(() => {
     let cancelled = false
@@ -275,16 +291,21 @@ export function SocialVideoPostPage({
 
   async function handleCreateTask() {
     if (isCreating) return
-    if (imageFiles.length === 0) {
+    const reuseExisting = imageFiles.length === 0 && extractImages.length > 0
+    if (imageFiles.length === 0 && !reuseExisting) {
       setStatusMessage('请先上传图片')
       return
     }
     setIsCreating(true)
     setStatusMessage('正在创建分析任务...')
     try {
-      const images = []
-      for (const file of imageFiles.slice(0, MAX_MEDIA_ITEMS)) {
-        images.push(await compressImageFile(file))
+      const images: string[] = []
+      if (reuseExisting) {
+        images.push(...extractImages.slice(0, MAX_MEDIA_ITEMS))
+      } else {
+        for (const file of imageFiles.slice(0, MAX_MEDIA_ITEMS)) {
+          images.push(await compressImageFile(file))
+        }
       }
       const response = await fetchWithEraAuth(legacyEdgeFunctionUrl('create-extract-task'), {
         method: 'POST',
@@ -335,46 +356,86 @@ export function SocialVideoPostPage({
     setImageFiles(files.slice(0, MAX_MEDIA_ITEMS))
   }
 
-  function renderUploadZone() {
+  function renderPendingExtractStrip(items: PreviewImageItem[]) {
+    if (items.length === 0) {
+      return (
+        <p className="text-xs" style={{ color: 'var(--era-muted)' }}>
+          暂无待提取图片
+        </p>
+      )
+    }
     return (
-      <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+        {items.map((image, index) => (
+          <button
+            key={`${image.src}-${index}`}
+            type="button"
+            className="aspect-[27/32] w-[calc(50%-0.4rem)] max-w-[14rem] shrink-0 overflow-hidden rounded-2xl border"
+            style={{ borderColor: 'var(--era-border)', background: 'var(--era-panel)' }}
+            onClick={() => openViewer(items, index)}
+          >
+            <img src={image.src} alt={image.alt} className="h-full w-full object-cover" />
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  function renderUploadZone() {
+    const hasPending = pendingExtractItems.length > 0
+    return (
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+        <div className="flex shrink-0 flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-medium">
+              待提取图片（{pendingExtractItems.length}）
+            </span>
+            {imageFiles.length > 0 ? (
+              <span className="text-xs" style={{ color: 'var(--era-muted)' }}>
+                已选本地图
+              </span>
+            ) : extractImages.length > 0 ? (
+              <span className="text-xs" style={{ color: 'var(--era-muted)' }}>
+                上次上传
+              </span>
+            ) : null}
+          </div>
+          {renderPendingExtractStrip(pendingExtractItems)}
+        </div>
+
+        <input
+          id={uploadInputId}
+          ref={fileInputRef}
+          className="sr-only"
+          accept="image/*"
+          type="file"
+          multiple
+          disabled={isCreating}
+          onChange={(event) => {
+            handlePickFiles(event.target.files)
+            event.target.value = ''
+          }}
+        />
+
         <button
           type="button"
-          className="relative flex min-h-[12rem] flex-1 flex-col items-center justify-center gap-2 rounded-3xl border border-dashed px-4 py-8 transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
+          className={`relative flex shrink-0 flex-col items-center justify-center gap-2 rounded-3xl border border-dashed px-4 transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50 ${
+            hasPending ? 'min-h-[5.5rem] py-4' : 'min-h-[12rem] flex-1 py-8'
+          }`}
           style={panelStyle}
           disabled={isCreating}
           onClick={() => fileInputRef.current?.click()}
         >
-          <input
-            id={uploadInputId}
-            ref={fileInputRef}
-            className="sr-only"
-            accept="image/*"
-            type="file"
-            multiple
-            disabled={isCreating}
-            onChange={(event) => {
-              handlePickFiles(event.target.files)
-              event.target.value = ''
-            }}
-          />
-          <span className="text-sm font-medium">上传图片</span>
-          <span className="text-xs" style={{ color: 'var(--era-muted)' }}>
-            {imageFiles.length > 0 ? `已选 ${imageFiles.length} 张` : '点击选择'}
+          <span className="text-sm font-medium">
+            {hasPending ? '重新选择图片' : '上传图片'}
           </span>
-          {imagePreviewUrls.length > 0 ? (
-            <div className="mt-2 grid w-full max-w-sm grid-cols-3 gap-2">
-              {imagePreviewUrls.map((src, index) => (
-                <div
-                  key={`${src}-${index}`}
-                  className="aspect-[27/32] overflow-hidden rounded-xl border"
-                  style={{ borderColor: 'var(--era-border)', background: 'var(--era-input)' }}
-                >
-                  <img src={src} alt={`待分析 ${index + 1}`} className="h-full w-full object-cover" />
-                </div>
-              ))}
-            </div>
-          ) : null}
+          <span className="text-xs" style={{ color: 'var(--era-muted)' }}>
+            {imageFiles.length > 0
+              ? `已选 ${imageFiles.length} 张，将用于重新提取`
+              : hasPending
+                ? '可直接用上方图片重试，或点此更换'
+                : '点击选择后台数据截图'}
+          </span>
         </button>
       </div>
     )
@@ -641,10 +702,14 @@ export function SocialVideoPostPage({
             type="button"
             className="h-12 w-full rounded-2xl text-sm font-bold transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
             style={{ background: 'var(--era-button)', color: 'var(--era-button-fg)' }}
-            disabled={isCreating || imageFiles.length === 0}
+            disabled={isCreating || !canCreateTask}
             onClick={() => void handleCreateTask()}
           >
-            {isCreating ? '创建中...' : '创建分析任务'}
+            {isCreating
+              ? '创建中...'
+              : imageFiles.length === 0 && extractImages.length > 0
+                ? '用已有图片重新提取'
+                : '创建分析任务'}
           </button>
         </div>
       ) : null}
