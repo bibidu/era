@@ -135,12 +135,21 @@ echo "    build (ERA_BASE=/)"
 ERA_BASE=/ npm run build
 
 echo "    sync dist → ${REMOTE_WEB}"
-mkdir -p "$REMOTE_WEB"
+mkdir -p "$REMOTE_WEB" /opt/apt-web
+# /opt/apt-web 经 compose 挂到 gateway 的 /srv/apt；切勿把 apt 放进 REMOTE_WEB。
+# 若历史残留 REMOTE_WEB/apt，rsync --delete 也必须排除，避免误删或盖住挂载点。
 if command -v rsync >/dev/null 2>&1; then
-  rsync -a --delete dist/ "${REMOTE_WEB}/"
+  rsync -a --delete --exclude apt --exclude apt/ dist/ "${REMOTE_WEB}/"
 else
-  rm -rf "${REMOTE_WEB:?}/"*
-  cp -a dist/. "$REMOTE_WEB/"
+  # 无 rsync 时逐项同步，保留 apt/ 目录
+  shopt -s dotglob nullglob
+  for entry in dist/*; do
+    base="$(basename "$entry")"
+    [[ "$base" == "apt" ]] && continue
+    rm -rf "${REMOTE_WEB:?}/${base}"
+    cp -a "$entry" "$REMOTE_WEB/"
+  done
+  shopt -u dotglob nullglob
 fi
 
 echo "    sync Caddyfile / compose → /opt/era-db"

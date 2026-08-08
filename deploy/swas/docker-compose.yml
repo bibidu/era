@@ -63,6 +63,8 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - /opt/era-web:/srv:ro
+      # 独立站静态资源，勿放进 /opt/era-web（发版 rsync --delete 会清掉）
+      - /opt/apt-web:/srv/apt:ro
       - era-caddy-data:/data
       - era-caddy-config:/config
     networks: [era-net]
