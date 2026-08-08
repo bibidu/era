@@ -107,6 +107,7 @@ for (let i = 0; i < pageCount; i++) {
       headingFontFamily: '"Noto Serif SC", serif',
       headingFontSize: 22,
       titleLineHeight: 1.1,
+      titleSecondaryFontSize: 56,
       titlePrimaryColor: '#C41E3A',
     },
   })
