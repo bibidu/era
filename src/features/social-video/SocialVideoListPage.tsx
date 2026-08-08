@@ -1,4 +1,4 @@
-import { RefreshCw } from 'lucide-react'
+import { Plus, RefreshCw } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   SOCIAL_VIDEO_WORK_TYPES,
@@ -19,6 +19,8 @@ interface SocialVideoListPageProps {
   onWorkTypeFilterChange: (value: SocialListWorkTypeFilter) => void
   reloadToken?: number
   onOpenPost: (record: SocialVideoAnalysisRecord) => void
+  /** 手动新增帖子 */
+  onCreate: () => void
 }
 
 const WORK_TYPE_FILTERS: { value: SocialListWorkTypeFilter; label: string }[] = [
@@ -203,6 +205,7 @@ export function SocialVideoListPage({
   onWorkTypeFilterChange,
   reloadToken = 0,
   onOpenPost,
+  onCreate,
 }: SocialVideoListPageProps) {
   const [records, setRecords] = useState<SocialVideoAnalysisRecord[]>([])
   const [loading, setLoading] = useState(true)
@@ -333,6 +336,17 @@ export function SocialVideoListPage({
             />
           </button>
         </div>
+        <button
+          type="button"
+          className="inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition hover:opacity-90"
+          style={{ background: 'var(--era-button)', color: 'var(--era-button-fg)' }}
+          aria-label="新增帖子"
+          title="新增帖子"
+          onClick={onCreate}
+        >
+          <Plus size={14} strokeWidth={2.5} />
+          新增
+        </button>
       </div>
 
       <div
@@ -376,8 +390,21 @@ export function SocialVideoListPage({
           >
             <p className="text-base font-semibold">暂无分析作品</p>
             <p className="mt-2 text-sm leading-6" style={{ color: 'var(--era-muted)' }}>
-              {workTypeFilter ? `当前类型「${workTypeFilter}」下没有作品。` : '暂无作品。'}
+              {workTypeFilter
+                ? `当前类型「${workTypeFilter}」下没有作品。`
+                : '点击右上角「新增」可手动创建帖子。'}
             </p>
+            {!workTypeFilter ? (
+              <button
+                type="button"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition hover:opacity-90"
+                style={{ background: 'var(--era-button)', color: 'var(--era-button-fg)' }}
+                onClick={onCreate}
+              >
+                <Plus size={16} strokeWidth={2.5} />
+                新增帖子
+              </button>
+            ) : null}
           </div>
         ) : (
           <div className="flex items-start gap-2">
