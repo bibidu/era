@@ -46,6 +46,14 @@ export const TEXT_FONT_OPTIONS: FontOption[] = [
     source: 'cdn',
     cdnUrl: `${import.meta.env.BASE_URL}fonts/alimama-shuheiti.css`,
   },
+  {
+    id: 'huiwen',
+    label: '汇文明朝体',
+    fontFamily: '"Huiwen-mincho", "汇文明朝体", serif',
+    sample: '汇文明朝',
+    source: 'cdn',
+    cdnUrl: `${import.meta.env.BASE_URL}fonts/huiwen-mincho.css`,
+  },
 ]
 
 /** 代码块可选等宽字体 */
