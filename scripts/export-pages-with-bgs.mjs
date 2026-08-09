@@ -13,6 +13,7 @@
 import { spawnSync } from 'node:child_process'
 import { readFileSync, readdirSync, mkdirSync, writeFileSync, copyFileSync, existsSync } from 'node:fs'
 import { join, resolve, basename } from 'node:path'
+import { ERA_AUTH_HEADER, knownAuthHashes } from './era-auth-core.mjs'
 
 const AGENT = process.env.ERA_AGENT_URL || 'http://127.0.0.1:3847'
 
@@ -22,10 +23,14 @@ function arg(name, fallback = null) {
   return process.argv[i + 1] ?? fallback
 }
 
+function authToken() {
+  return process.env.ERA_AUTH_HASH?.trim() || [...knownAuthHashes()][0]
+}
+
 async function api(method, path, body) {
   const res = await fetch(`${AGENT}${path}`, {
     method,
-    headers: body ? { 'content-type': 'application/json' } : undefined,
+    headers: { 'content-type': 'application/json', [ERA_AUTH_HEADER]: authToken() },
     body: body ? JSON.stringify(body) : undefined,
   })
   const text = await res.text()
@@ -66,6 +71,8 @@ if (planPath && existsSync(planPath)) {
     const candidates = [
       join(bgDir, `caishen-bg-${p.slug}.jpg`),
       join(bgDir, `caishen-bg-${p.slug}.png`),
+      join(bgDir, `bg-${p.slug}.jpg`),
+      join(bgDir, `bg-${p.slug}.png`),
       join(bgDir, `${p.slug}.jpg`),
       join(bgDir, `${p.slug}.png`),
       join('/opt/cursor/artifacts/assets', `caishen-bg-${p.slug}.png`),
@@ -75,10 +82,11 @@ if (planPath && existsSync(planPath)) {
     return hit
   })
 } else {
-  bgFiles = readdirSync(bgDir)
-    .filter((f) => /^caishen-bg-.*\.(png|jpe?g)$/i.test(f))
+  const allImages = readdirSync(bgDir)
+    .filter((f) => /\.(png|jpe?g)$/i.test(f))
     .sort()
-    .map((f) => join(bgDir, f))
+  const caishenPrefixed = allImages.filter((f) => /^caishen-bg-/i.test(f))
+  bgFiles = (caishenPrefixed.length ? caishenPrefixed : allImages).map((f) => join(bgDir, f))
 }
 
 const preview = await api('POST', `/v1/projects/${projectId}/preview-layout`, {})
