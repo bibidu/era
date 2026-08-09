@@ -41,13 +41,14 @@ export function isFengAnalyzable(record) {
 }
 
 /**
- * 发布时段分桶：与蛇大师一致。早间推荐池更肥；凌晨（<7 点）单独成桶，
+ * 发布时段分桶：与蛇大师一致。早间推荐池更肥；凌晨单独成桶，
  * 否则会把「早」这个最强变量的中位数拉花（风水号供错财神三篇都发在凌晨 2 点，播放 738→528→171）。
+ * 分界在 06 点：图文号 06 点发的两篇拿到 4310 / 293，与早档同量级，不该和 02 点混在一起。
  */
 export function slotOf(hour) {
   if (hour == null) return '未知'
-  if (hour < 7) return '凌晨 0-6'
-  if (hour < 11) return '早 7-10'
+  if (hour < 6) return '凌晨 0-5'
+  if (hour < 11) return '早 6-10'
   if (hour < 15) return '午 11-14'
   return '下午 15+'
 }
