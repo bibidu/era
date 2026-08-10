@@ -40,7 +40,7 @@ export function AssetCard({
     >
       <button
         type="button"
-        className="absolute inset-y-0 right-0 flex w-[88px] items-center justify-center bg-rose-500 text-sm font-semibold text-white"
+        className="absolute inset-y-0 right-0 z-0 flex w-[88px] items-center justify-center bg-rose-500 text-sm font-semibold text-white"
         aria-label={`删除 ${asset.name}`}
         data-testid={`kuifou-delete-${asset.id}`}
         onClick={onDelete}
@@ -49,11 +49,12 @@ export function AssetCard({
       </button>
 
       <article
-        className="relative flex gap-3 rounded-2xl bg-white p-3 shadow-sm"
+        className="relative z-10 flex gap-3 rounded-2xl bg-white p-3 shadow-sm"
         style={{
           transform: `translateX(${offset}px)`,
           transition: draggingSwipe.current ? 'none' : 'transform 180ms ease',
           touchAction: 'pan-y',
+          pointerEvents: offset < -DELETE_WIDTH / 2 ? 'none' : 'auto',
         }}
         onPointerDown={(e) => {
           startX.current = e.clientX
