@@ -35,12 +35,13 @@ function arg(name, fallback = null) {
 
 /**
  * 抖音早间推荐池明显更肥；见 SKILL.md §时段结论。
- * 凌晨单独成桶：07 点前发的作品拿不到早高峰的推荐流，混进「早」会把这个最强变量的中位数拉花。
+ * 分界在 06 点而不是 07 点：08-04 两篇 06 点发的作品拿到 4310 / 293，中位 2301，
+ * 和早档同量级；同桶里的 02 点那篇只有 151。把 06 点算进凌晨会同时拉花两个桶。
  */
 function slotOf(hour) {
   if (hour == null) return '未知'
-  if (hour < 7) return '凌晨 0-6'
-  if (hour < 11) return '早 7-10'
+  if (hour < 6) return '凌晨 0-5'
+  if (hour < 11) return '早 6-10'
   if (hour < 15) return '午 11-14'
   return '下午 15+'
 }
