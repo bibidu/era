@@ -139,7 +139,15 @@ node scripts/generate-cover.mjs --input <cover.json>
 node scripts/shedashi-publish.mjs --input output/shedashi/ep<N>/publish.json
 ```
 
+`publish.json` 里可选字段 `highlights` **必须是字符串数组**（如 `["档期：…", "选题：…"]`），不要写成一整段字符串——否则飞书就绪卡组装会踩坑（`notify` 已做容错，但仍应按数组写）。
+
 脚本会把期号写进 `outline` 前缀（`第16期 | …`），下次 `shedashi-analyze.mjs` 据此自动续期，**不要手写期号到别处**。
+
+若上传与入库已成功、只卡在飞书通知：不要整条 `shedashi-publish.mjs` 重跑（会重复入库），改用：
+
+```bash
+node scripts/shedashi-notify.mjs --issue N --title "…" --planned-for "…" --pages N --record-id <id>
+```
 
 ### 8. 收尾
 

@@ -15,7 +15,7 @@
  *   "plannedFor": "2026-08-12 07:40",
  *   "cover": "output/.../pages/page-01.png",   // 首页/封面
  *   "pages": ["output/.../pages/page-02.png", "..."],
- *   "highlights": ["本期依据…"],
+ *   "highlights": ["本期依据…"],  // 必须是 string[]；整段字符串也能被 notify 容错拆开
  *   "cadence": { "maxGapDays": 2 }
  * }
  */

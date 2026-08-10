@@ -14,6 +14,27 @@ const WEBHOOK =
 /** 交付链必须 HTTPS：Safari「保存到相册」依赖 Web Share，仅安全上下文可用 */
 const PREVIEW_URL = 'https://39.106.179.17.sslip.io/?tab=data'
 
+/**
+ * publish.json 里 highlights 应为 string[]，但 Agent 偶发写成一整段字符串。
+ * 默认参数 `= []` 挡不住「已传入但类型不对」；这里统一收成可 map 的数组。
+ */
+export function normalizeHighlights(highlights) {
+  if (highlights == null || highlights === '') return []
+  // 已是数组：原样收成非空字符串，不再按分号二次拆开
+  if (Array.isArray(highlights)) {
+    return highlights.map((item) => String(item ?? '').trim()).filter(Boolean)
+  }
+  // Agent 偶发写成一整段：按换行 / 中英文分号拆成多条
+  if (typeof highlights === 'string') {
+    const parts = highlights
+      .split(/\r?\n|[；;]/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+    return parts.length ? parts : [highlights.trim()]
+  }
+  return [String(highlights)]
+}
+
 export async function notifyFeishu({
   issue,
   title,
@@ -24,6 +45,7 @@ export async function notifyFeishu({
   highlights = [],
   cadence,
 }) {
+  const highlightLines = normalizeHighlights(highlights)
   const lines = [
     `**第 ${issue} 期已就绪**`,
     '',
@@ -36,7 +58,9 @@ export async function notifyFeishu({
     cadence?.overdue ? '**注意**：距上次发布已超过 2 天，已进入断更区间，尽快发' : null,
     pageCount ? `**图片**：${pageCount} 张（第 1 张为封面）` : null,
     topics ? `**话题**：${topics}` : null,
-    ...(highlights.length ? ['', '**本期依据**：', ...highlights.map((h) => `- ${h}`)] : []),
+    ...(highlightLines.length
+      ? ['', '**本期依据**：', ...highlightLines.map((h) => `- ${h}`)]
+      : []),
     '',
     `到社媒 Tab 自取图片与文案：${PREVIEW_URL}`,
     recordId ? `记录 ID：${recordId}` : null,

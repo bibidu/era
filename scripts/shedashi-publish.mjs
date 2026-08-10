@@ -15,7 +15,8 @@
  *   "topics": "#cursor #agent",
  *   "plannedFor": "2026-08-05 07:40",
  *   "cover": "output/.../cover.png",
- *   "pages": ["output/.../graphic-page-01.png", "..."]
+ *   "pages": ["output/.../graphic-page-01.png", "..."],
+ *   "highlights": ["本期依据一条", "另一条"]  // 必须是 string[]；整段字符串也能被 notify 容错拆开
  * }
  */
 import { execFileSync } from 'node:child_process'
