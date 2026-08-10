@@ -14,6 +14,20 @@ const WEBHOOK =
 /** 交付链必须 HTTPS：Safari「保存到相册」依赖 Web Share，仅安全上下文可用 */
 const PREVIEW_URL = 'https://39.106.179.17.sslip.io/?tab=data'
 
+/**
+ * 「本期依据」允许写成一行字符串（publish.json 里手写时最顺手），这里统一收成数组。
+ * 类型不对就整篇推不出去，而这一步是全流程最后一环——图已经上传、记录已经入库，
+ * 只因为少了个数组把就绪卡吞掉，代价太大。
+ */
+function toLines(value) {
+  if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean)
+  if (value == null) return []
+  return String(value)
+    .split(/[\n；;]+/)
+    .map((v) => v.trim())
+    .filter(Boolean)
+}
+
 export async function notifyFeishu({
   issue,
   title,
@@ -24,6 +38,7 @@ export async function notifyFeishu({
   highlights = [],
   cadence,
 }) {
+  const basis = toLines(highlights)
   const lines = [
     `**第 ${issue} 期已就绪**`,
     '',
@@ -36,7 +51,7 @@ export async function notifyFeishu({
     cadence?.overdue ? '**注意**：距上次发布已超过 2 天，已进入断更区间，尽快发' : null,
     pageCount ? `**图片**：${pageCount} 张（第 1 张为封面）` : null,
     topics ? `**话题**：${topics}` : null,
-    ...(highlights.length ? ['', '**本期依据**：', ...highlights.map((h) => `- ${h}`)] : []),
+    ...(basis.length ? ['', '**本期依据**：', ...basis.map((h) => `- ${h}`)] : []),
     '',
     `到社媒 Tab 自取图片与文案：${PREVIEW_URL}`,
     recordId ? `记录 ID：${recordId}` : null,
@@ -146,6 +161,9 @@ if (isDirectRun) {
       topics: arg('--topics'),
       pageCount: Number(arg('--pages', 0)) || undefined,
       recordId: arg('--record-id'),
+      highlights: arg('--highlights'),
+      // 入库脚本失败后需要手动补推就绪卡时，红线也得能从命令行带上
+      cadence: arg('--deadline') ? { nextDeadline: arg('--deadline') } : undefined,
     })
   }
   console.log(JSON.stringify({ ok: true }))
