@@ -67,7 +67,10 @@ export function normalizeAsset(row: Record<string, unknown>): KuifouAsset {
     usage_count: Number(row.usage_count) || 0,
     sort_order: Number(row.sort_order) || 0,
     billing_mode: normalizeBilling(row.billing_mode),
-    residual_rate: Number(row.residual_rate) || 0.35,
+    residual_rate: (() => {
+      const rate = Number(row.residual_rate)
+      return Number.isFinite(rate) ? rate : 0.35
+    })(),
     notes: String(row.notes ?? ''),
     is_demo: Boolean(row.is_demo),
     source_list: String(row.source_list ?? 'user'),

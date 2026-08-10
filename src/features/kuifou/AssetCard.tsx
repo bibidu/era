@@ -121,8 +121,14 @@ export function AssetCard({
           data-testid={`kuifou-usage-${asset.id}`}
           title="点击记次数"
         >
-          <span className="text-[11px] text-slate-400">日均成本</span>
-          <span className="text-sm font-semibold text-slate-900">{formatDaily(cost)}</span>
+          <span className="text-[11px] text-slate-400">
+            {asset.billing_mode === '按次' ? '单次成本' : '日均成本'}
+          </span>
+          <span className="text-sm font-semibold text-slate-900">
+            {asset.billing_mode === '按次'
+              ? `${formatYuan(cost)}/次`
+              : formatDaily(cost)}
+          </span>
           {asset.usage_count > 0 ? (
             <span className="mt-0.5 text-[10px] text-blue-500">已用 {asset.usage_count} 次</span>
           ) : null}
