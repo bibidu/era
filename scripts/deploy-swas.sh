@@ -117,7 +117,8 @@ for migration in \
   supabase/migrations/20260804120000_era_social_video_extract_status.sql \
   supabase/migrations/20260804140000_era_social_video_extract_data.sql \
   supabase/migrations/20260804222000_era_social_video_temp_govern_status.sql \
-  supabase/migrations/20260807180000_era_app_login_users.sql
+  supabase/migrations/20260807180000_era_app_login_users.sql \
+  supabase/migrations/20260810140000_kuifou_assets.sql
 do
   if [[ -f "$migration" ]]; then
     echo "    apply $(basename "$migration")"
