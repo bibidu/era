@@ -170,6 +170,9 @@ if (isDirectRun) {
       topics: arg('--topics'),
       pageCount: Number(arg('--pages', 0)) || undefined,
       recordId: arg('--record-id'),
+      highlights: arg('--highlights'),
+      // 入库成功但通知失败时需要手动补推就绪卡，红线也得能从命令行带上
+      cadence: arg('--deadline') ? { nextDeadline: arg('--deadline') } : undefined,
     })
   }
   console.log(JSON.stringify({ ok: true }))
