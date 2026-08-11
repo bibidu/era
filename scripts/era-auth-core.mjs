@@ -151,3 +151,26 @@ export async function loginWithCredentials(username, password, _restBaseUnused, 
   }
   return localLogin(username, password)
 }
+
+/** Node fetch 会自动解压 gzip/br；这些头不能原样回传，否则客户端按压缩长度截断 JSON */
+export const PROXY_STRIP_RES_HEADERS = new Set([
+  'connection',
+  'keep-alive',
+  'proxy-authenticate',
+  'proxy-authorization',
+  'transfer-encoding',
+  'content-encoding',
+  'content-length',
+  // 上游 Set-Cookie（如 supabase.co Domain）不可泄露给浏览器
+  'set-cookie',
+])
+
+export function sanitizeProxyResponseHeaders(upstreamHeaders, bodyByteLength) {
+  const out = {}
+  for (const [k, v] of upstreamHeaders.entries()) {
+    if (PROXY_STRIP_RES_HEADERS.has(k.toLowerCase())) continue
+    out[k] = v
+  }
+  out['content-length'] = String(bodyByteLength)
+  return out
+}

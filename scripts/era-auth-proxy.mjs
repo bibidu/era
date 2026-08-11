@@ -11,6 +11,7 @@ import {
   readAuthTokenFromRequest,
   resolvePostgrestBases,
   restProxyBase,
+  sanitizeProxyResponseHeaders,
 } from './era-auth-core.mjs'
 
 const PORT = Number(process.env.ERA_AUTH_PROXY_PORT || 8793)
@@ -43,6 +44,21 @@ function sendJson(res, status, data) {
   res.end(body)
 }
 
+/** 转发请求时剥掉的 hop-by-hop / 帧头；accept-encoding 交由 fetch 协商 */
+const HOP_BY_HOP_REQ = new Set([
+  'connection',
+  'keep-alive',
+  'proxy-authenticate',
+  'proxy-authorization',
+  'proxy-connection',
+  'te',
+  'trailer',
+  'transfer-encoding',
+  'upgrade',
+  'content-length',
+  'accept-encoding',
+])
+
 async function proxyRequest(req, res, upstreamBase, stripPrefix, opts = {}) {
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
   let path = url.pathname
@@ -52,7 +68,9 @@ async function proxyRequest(req, res, upstreamBase, stripPrefix, opts = {}) {
   const target = new URL(path + url.search, upstreamBase.replace(/\/$/, '') + '/')
 
   const headers = { ...req.headers, host: opts.host || target.host }
-  delete headers.connection
+  for (const k of Object.keys(headers)) {
+    if (HOP_BY_HOP_REQ.has(k.toLowerCase())) delete headers[k]
+  }
 
   const token = readAuthTokenFromRequest(req)
   if (token) headers[ERA_AUTH_HEADER.toLowerCase()] = token
@@ -63,9 +81,9 @@ async function proxyRequest(req, res, upstreamBase, stripPrefix, opts = {}) {
   }
 
   const upstream = await fetch(target, init)
-  const outHeaders = Object.fromEntries(upstream.headers.entries())
-  res.writeHead(upstream.status, outHeaders)
   const buf = Buffer.from(await upstream.arrayBuffer())
+  const outHeaders = sanitizeProxyResponseHeaders(upstream.headers, buf.length)
+  res.writeHead(upstream.status, outHeaders)
   res.end(buf)
 }
 
