@@ -26,10 +26,7 @@
     "oss:upload": "bash scripts/oss-upload.sh",
     "oss:cleanup": "bash scripts/oss-cleanup-expired.sh",
     "oss:rewrite-html": "node scripts/oss-rewrite-html.mjs",
-    "migrate:base64-covers": "node scripts/migrate-base64-covers-to-oss.mjs",
-    "kuifou:seed": "tsx scripts/kuifou-seed.mjs",
-    "kuifou:smoke": "tsx scripts/kuifou-calc-smoke.mjs",
-    "kuifou:browser": "node scripts/kuifou-browser-test.mjs"
+    "migrate:base64-covers": "node scripts/migrate-base64-covers-to-oss.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

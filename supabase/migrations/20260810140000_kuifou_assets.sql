@@ -1,4 +1,6 @@
 -- 亏否：个人资产 / 使用成本清单
+-- 应用已拆到独立仓库 bibidu/kuifou（线上 https://39.106.179.17.sslip.io/kuifou/），
+-- 本迁移仍保留以便历史/新环境可复现表结构；共享 PostgREST，切勿 drop 此表。
 CREATE TABLE IF NOT EXISTS public.kuifou_assets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at timestamptz NOT NULL DEFAULT now(),

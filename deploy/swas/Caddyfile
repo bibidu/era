@@ -94,6 +94,35 @@
 	}
 }
 
+# 独立站 /apt/*：宿主机 /opt/apt-web → /srv/apt（勿被 Era SPA 吞掉）
+(apt_routes) {
+	handle /apt {
+		redir * /apt/ 308
+	}
+	handle /apt/* {
+		root * /srv
+		encode gzip
+		file_server
+	}
+}
+
+# 独立站 /kuifou/*：宿主机 /opt/kuifou-web → /srv/kuifou（应用已拆到 bibidu/kuifou；Era 发版须保留本段）
+(kuifou_routes) {
+	handle /kuifou {
+		redir * /kuifou/ 308
+	}
+	handle /kuifou/* {
+		root * /srv
+		header {
+			Cache-Control "no-store, no-cache, must-revalidate"
+			Pragma "no-cache"
+		}
+		encode gzip
+		try_files {path} /kuifou/index.html
+		file_server
+	}
+}
+
 (spa_routes) {
 	# /apt/* 来自独立目录 /opt/apt-web（compose 挂到 /srv/apt），禁止回落到 Era SPA
 	handle /apt/* {
@@ -117,6 +146,8 @@
 :80 {
 	import cors_once
 	import api_routes
+	import apt_routes
+	import kuifou_routes
 	import spa_routes
 }
 
@@ -124,17 +155,23 @@
 :3000 {
 	import cors_once
 	import api_routes
+	import apt_routes
+	import kuifou_routes
 	import spa_routes
 }
 
 http://39.106.179.17.sslip.io {
 	import cors_once
 	import api_routes
+	import apt_routes
+	import kuifou_routes
 	import spa_routes
 }
 
 https://39.106.179.17.sslip.io {
 	import cors_once
 	import api_routes
+	import apt_routes
+	import kuifou_routes
 	import spa_routes
 }

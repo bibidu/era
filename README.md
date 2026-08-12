@@ -10,6 +10,8 @@
 - 图文：`?tab=graphic`（路由二级页，可边缘右滑返回）
 - 帖子详情：`?tab=data&post=<id>`（二级页）
 
+「亏否」已拆为独立应用：[https://39.106.179.17.sslip.io/kuifou/](https://39.106.179.17.sslip.io/kuifou/)（仓库 [bibidu/kuifou](https://github.com/bibidu/kuifou)），不再作为 Era 内 Tab。
+
 ## 功能
 
 - 社媒：分析列表与帖子详情（详情 / 数据 Tab）

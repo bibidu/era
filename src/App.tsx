@@ -42,11 +42,6 @@ const AccountBalancePage = lazy(() =>
     default: m.AccountBalancePage,
   })),
 )
-const KuifouApp = lazy(() =>
-  import('./features/kuifou/KuifouApp').then((m) => ({
-    default: m.KuifouApp,
-  })),
-)
 
 function TabLoadingFallback() {
   return (
@@ -155,18 +150,15 @@ function App() {
   )
 
   // 帖子详情不藏顶栏：否则手势返回时顶栏突然出现会改变列表高度，造成抖动
-  // 亏否为独立全屏 H5，隐藏 Era 顶栏
-  const hideTopTabs = balanceOpen || mode === 'graphic' || mode === 'kuifou'
+  const hideTopTabs = balanceOpen || mode === 'graphic'
   const wideLayout = mode === 'data' && !hideTopTabs
-  const shellBg = mode === 'kuifou' ? '#EEF2F7' : 'var(--era-bg)'
-  const shellFg = mode === 'kuifou' ? '#0f172a' : 'var(--era-fg)'
 
   return (
     <div
       className={`era-app-shell relative mx-auto flex h-dvh w-full flex-col overflow-hidden ${
         wideLayout ? 'max-w-5xl' : 'max-w-lg'
       }`}
-      style={{ background: shellBg, color: shellFg }}
+      style={{ background: 'var(--era-bg)', color: 'var(--era-fg)' }}
     >
       <div
         id="era-safari-tint"
@@ -174,8 +166,7 @@ function App() {
         className="pointer-events-none fixed inset-x-0 top-0 z-[10000]"
         style={{
           height: 'max(8px, env(safe-area-inset-top, 0px))',
-          backgroundColor:
-            mode === 'kuifou' ? '#EEF2F7' : 'var(--era-shell-bg, var(--era-header))',
+          backgroundColor: 'var(--era-shell-bg, var(--era-header))',
         }}
       />
       {!hideTopTabs ? (
@@ -202,8 +193,6 @@ function App() {
           <AccountBalancePage onBack={() => setBalanceOpen(false)} />
         ) : mode === 'graphic' ? (
           <GraphicSecondaryPage onBack={closeGraphic} />
-        ) : mode === 'kuifou' ? (
-          <KuifouApp />
         ) : (
           <DataAnalysisWorkspace />
         )}

@@ -2,6 +2,7 @@
 
 - **前端**：Caddy 托管 `/opt/era-web`（`npm run deploy:swas`：服务器 `git pull` + 构建）
 - **独立站 `/apt/*`**：宿主机 `/opt/apt-web` → 容器 `/srv/apt`（与 Era 发版目录分离；`rsync --delete` 不会清掉）
+- **独立站 `/kuifou/*`**：宿主机 `/opt/kuifou-web` → 容器 `/srv/kuifou`（应用在 [bibidu/kuifou](https://github.com/bibidu/kuifou)；Era 发版须保留 Caddy `kuifou_routes` 与 compose 挂载）
 - **源码目录**：`/opt/era`
 - **业务 REST**：PostgREST，路径 `/rest/v1/*`
 - **Postgres**：仅监听 `127.0.0.1:5432`

@@ -93,3 +93,5 @@
 | 帖子详情（二级页） | `?tab=data&post=<id>` |
 
 顶栏仅「图文 / 社媒」；点「图文」进入路由二级页（可边缘右滑返回）。高亮 / 标题 / 拼图 Tab 与复盘页已移除。
+
+「亏否」已拆出 Era：独立站 [https://39.106.179.17.sslip.io/kuifou/](https://39.106.179.17.sslip.io/kuifou/)（仓库 `bibidu/kuifou`）。Era 发版须保留 Caddy `kuifou_routes` 与 `/opt/kuifou-web` 挂载，且勿 drop `kuifou_assets` 表。
