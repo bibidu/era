@@ -44,7 +44,7 @@
 
 执行「图文skill / 小红书·抖音出图 / 生成封面 / 封面skill」时遵循该 skill；先 `scripts/ensure-era-ready.sh`（仅封面单张时可只跑 `generate-cover.mjs`）。被蛇大师调用时走**全自动**模式（跳过所有确认步）；用户单篇讨论时走**半自动**模式。
 
-默认：一级标题（封面大标题）与二级标题均数黑体（封面 `bigTitleFont: shuheiti`；`headingFontId`: `shuheiti`）；**默认导出抖音 9:16**；**默认不做高亮**；**每个 `##` 独占一页**；**封面 + 4 页封顶**；**期数 `每天一个提效实操·第N期` 与下期预告写在末页正文结尾两行**（`seriesLabel` 留空，每页顶栏都是「点赞关注不迷路～」）——第 2 页顶栏放期数已被后台数据证否（平均浏览图片数 2.7→1.9、吸粉率 0.32%→0.15%，见 shedashi playbook §版面）。封面步骤已内联（`scripts/generate-cover.mjs`），不再使用独立 fengmian 目录。
+默认：一级标题（封面大标题）与二级标题均数黑体（封面 `bigTitleFont: shuheiti`；`headingFontId`: `shuheiti`）；**默认导出抖音 9:16**；**默认不做高亮**；**每个 `##` 独占一页**；**封面 + 4 页封顶**；**期数 `每天一个提效实操·第N期` 写在末页正文结尾**（与关注理由、提问组成末页三件套；**不要写下期预告**；`seriesLabel` 留空，每页顶栏都是「点赞关注不迷路～」）——第 2 页顶栏放期数已被后台数据证否（平均浏览图片数 2.7→1.9、吸粉率 0.32%→0.15%，见 shedashi playbook §版面）。选题重心为 **AI 实践与技巧**，不以裸 git/CLI 教程为主体。封面步骤已内联（`scripts/generate-cover.mjs`），不再使用独立 fengmian 目录。
 
 仅用户明确要求高亮时：`era_create_highlight_setup_share` → `highlightSetupPagesUrl(shareId)`；禁止对整段 query 再 `encodeURIComponent`。
 
