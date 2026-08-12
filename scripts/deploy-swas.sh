@@ -98,7 +98,8 @@ cd "$REMOTE_REPO"
 echo "    fetch/reset origin/${GIT_BRANCH}"
 git remote set-url origin "$GIT_URL"
 git fetch --depth 50 origin "$GIT_BRANCH"
-git checkout -B "$GIT_BRANCH" "origin/${GIT_BRANCH}"
+# -f：丢弃服务器上 apt/kuifou 网关脚本留下的本地 Caddy/compose 改动（已回写进仓库）
+git checkout -f -B "$GIT_BRANCH" "origin/${GIT_BRANCH}"
 git reset --hard "origin/${GIT_BRANCH}"
 git clean -fd
 echo "    HEAD=$(git rev-parse --short HEAD) $(git log -1 --pretty=%s)"
