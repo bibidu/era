@@ -139,25 +139,25 @@ description: >-
 | `bigTitleColor` | | 默认 `#111111` |
 | `bigTitleLineColors` | | 按行颜色；或 `bigTitle: [{text, color}]` |
 | `bigTitleFont` | | 默认 `shuheiti`（一级标题数黑体）；仅英文全大写海报可改 `anton` |
-| `blobCorner` | | 主题色大圆：`top-right` / `bottom-right`；用户指定则固定，否则随机 |
+| `blobCorner` | | 装饰大色块/半圆：**强制 `bottom-right`（右下）**；勿再传 `top-right` |
 | `smallTitle` | 建议 | 中文小标题 |
 | `description` | 建议 | 一行短描述 |
 | `tags` | 建议 | 数组或逗号分隔 |
 | `secondaryTitles` | 建议 | 页脚二级标题，2–4 个；**每项 ≤4 字、禁止换行**（见下方检测） |
-| `themeColor` | | hex；未提供则随机 |
+| `themeColor` | | 默认锁定 **`#E85C04`（焦橙，rgb 232,92,4）**；与 ep10「AGENTS.md 居然是个负担」封面同色；**禁止**绿/蓝/紫轮换 |
 | `badge` | | 左上角徽章，默认 `skill` |
 
-主题色未指定时脚本随机（焦橙/明黄/翠绿等）；回复里告知色名与 hex。示例见 `references/cover-example.json`。
+主题色默认 `#E85C04`，脚本不再随机抽色。示例见 `references/cover-example.json`。
 
 ### 视觉规范
 
 1. 画布 `1080×1920`（9:16），背景 `#F6F4EF`
 2. 内容落在上下居中、左右各留 60px 的 **3:4** 核心区（`960×1280`）；网格铺满 9:16。可用 `node scripts/generate-cover-layout-review.mjs <cover.png>` 对照
-3. 主题色用于徽章、短横线、细边框/十字、大色块、页脚图标
+3. 主题色用于徽章、短横线、细边框/十字、大色块、页脚图标；**一律 `#E85C04`**
 4. 大标题：**一级标题默认阿里妈妈数黑体**（`bigTitleFont: shuheiti`）；仅纯英文全大写海报可用 Anton / Impact 系
 5. 信息区：短横线 → 小标题 → 描述 → 标签条
 6. 页脚：二级标题 + 线稿图标；**每项单行展示，禁止换行**；文案宜短（**≤4 字/项**），过长先缩字再出图
-7. 装饰：点阵、主题色大圆出血（右上或右下；用户指定则固定）、细圆弧；禁止插画风/霓虹/默认 AI 紫白风
+7. 装饰：点阵、主题色大圆出血（**仅右下**）、细圆弧；禁止插画风/霓虹/默认 AI 紫白风；**禁止右上大色块**
 
 ### 页脚二级标题检测（强制）
 
@@ -179,7 +179,7 @@ node scripts/generate-cover.mjs \
   --description "不是堆词，是导演工作流" \
   --tags "分镜叙事,镜头控制" \
   --secondaryTitles "导演模式,镜头语言,成片导出" \
-  --themeColor "#6D28D9" \
+  --themeColor "#E85C04" \
   --out output/cover.png
 ```
 

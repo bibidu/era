@@ -134,6 +134,11 @@ bash scripts/ensure-era-ready.sh          # 云端会用 Playwright headless 建
 node scripts/generate-cover.mjs --input <cover.json>
 ```
 
+封面视觉硬规则（与图文 skill / `generate-cover.mjs` 一致，不可破）：
+
+1. **装饰大色块/半圆只许右下**（`blobCorner: bottom-right`）；禁止右上
+2. **强调色锁定 `#E85C04`（rgb 232,92,4）**——沿用 ep10「AGENTS.md 居然是个负担」封面焦橙；禁止绿/蓝/紫轮换
+
 内容页走 Era REST（`http://127.0.0.1:3847/v1/...`）或 MCP `era_*`，配置与校验直接沿用 [图文 skill](../tuwen/SKILL.md) §内容图构建要点 与 §校验与导出，**但跳过其中所有「询问 / 确认」步骤**。默认不做高亮。
 
 ### 7. 入库 + 飞书通知
@@ -210,8 +215,9 @@ Webhook 固定在 `scripts/shedashi-notify.mjs`（可用 `SHEDASHI_FEISHU_WEBHOO
 8. 末页＝期数 + 关注理由 + 提问（无下期预告）；第 2 页顶栏是「点赞关注不迷路～」而非期数；选题落在 AI 实践与技巧，不是裸 git/CLI 教程
 9. 入库正文不含 `era:page-break`
 10. `image_previews[0]` ＝封面且同步 `cover_url`；全部 `__cover_keep__`
-11. 飞书**已收到一张卡**：成功推就绪卡，失败推告警卡，不允许两张都没有
-12. 对话未直发 OSS 图链
+11. 封面大色块/半圆在**右下**；强调色为 `#E85C04`（无绿/蓝/紫轮换）
+12. 飞书**已收到一张卡**：成功推就绪卡，失败推告警卡，不允许两张都没有
+13. 对话未直发 OSS 图链
 
 ## 工具速查
 

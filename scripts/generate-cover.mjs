@@ -29,17 +29,10 @@ const CORE_HEIGHT = Math.round((CORE_WIDTH * 4) / 3)
 const CORE_TOP = Math.round((HEIGHT - CORE_HEIGHT) / 2)
 const CORE_LEFT = CORE_INSET_X
 
-/** 适合社媒的主题色池（未指定时随机） */
-const THEME_COLORS = [
-  { name: '焦橙', hex: '#E85D04' },
-  { name: '明黄', hex: '#F4A261' },
-  { name: '翠绿', hex: '#2D6A4F' },
-  { name: '宝蓝', hex: '#1D4ED8' },
-  { name: '紫靛', hex: '#6D28D9' },
-  { name: '玫红', hex: '#BE123C' },
-  { name: '青绿', hex: '#0F766E' },
-  { name: '珊瑚', hex: '#E11D48' },
-]
+/** 封面强调色：锁定 ep10「AGENTS.md 居然是个负担」焦橙，禁止绿/蓝/紫轮换 */
+const ACCENT_HEX = '#E85C04'
+const ACCENT_NAME = '焦橙'
+const THEME_COLORS = [{ name: ACCENT_NAME, hex: ACCENT_HEX }]
 
 const DEFAULTS = {
   bigTitle: 'COVER SKILL',
@@ -47,12 +40,13 @@ const DEFAULTS = {
   bigTitleLineColors: null,
   /** 大标题字体：默认 shuheiti（一级标题数黑体）；`anton` 仅英文全大写海报 */
   bigTitleFont: 'shuheiti',
-  blobCorner: null,
+  /** 装饰大色块/半圆：强制右下 */
+  blobCorner: 'bottom-right',
   smallTitle: '',
   description: '',
   tags: [],
   secondaryTitles: [],
-  themeColor: null,
+  themeColor: ACCENT_HEX,
   badge: 'skill',
   out: path.join(ROOT, 'output', 'cover.png'),
 }
@@ -166,8 +160,12 @@ function parseArgs(argv) {
 }
 
 function pickTheme(themeColor) {
+  // 强调色锁定 ACCENT_HEX；显式传入其它 hex 仍可用（兼容旧封面 JSON），默认永不随机
   if (themeColor && /^#?[0-9a-fA-F]{6}$/.test(themeColor.trim())) {
     const hex = themeColor.startsWith('#') ? themeColor : `#${themeColor}`
+    if (hex.toLowerCase() === ACCENT_HEX.toLowerCase()) {
+      return { name: ACCENT_NAME, hex: ACCENT_HEX }
+    }
     return { name: '自定义', hex }
   }
   if (themeColor) {
@@ -176,7 +174,7 @@ function pickTheme(themeColor) {
     )
     if (hit) return hit
   }
-  return THEME_COLORS[Math.floor(Math.random() * THEME_COLORS.length)]
+  return { name: ACCENT_NAME, hex: ACCENT_HEX }
 }
 
 function escapeHtml(s) {
@@ -336,27 +334,14 @@ function buildHtml(cfg, theme) {
     letter-spacing: -0.04em;
     text-transform: none;`
 
-  // 装饰圆：再略收；右上 / 右下随机
-  const blobCorner =
-    cfg.blobCorner === 'top-right' || cfg.blobCorner === 'bottom-right'
-      ? cfg.blobCorner
-      : Math.random() < 0.5
-        ? 'top-right'
-        : 'bottom-right'
+  // 装饰圆：强制右下（大色块/半圆不得放右上）
+  const blobCorner = 'bottom-right'
   const blobSize = 680
   const blobOut = Math.round(blobSize * 0.32)
-  const blobPos =
-    blobCorner === 'top-right'
-      ? `top:-${blobOut}px;right:-${blobOut}px;bottom:auto;left:auto;`
-      : `bottom:-${Math.round(blobSize * 0.25)}px;right:-${blobOut}px;top:auto;left:auto;`
-  const arcPos =
-    blobCorner === 'top-right'
-      ? 'top:48px;right:28px;bottom:auto;'
-      : 'bottom:300px;right:28px;top:auto;'
-  const dotsTrExtra =
-    blobCorner === 'top-right' ? 'top:auto;bottom:56px;right:56px;' : ''
-  const dotsBlExtra =
-    blobCorner === 'bottom-right' ? 'bottom:auto;top:56px;left:56px;' : ''
+  const blobPos = `bottom:-${Math.round(blobSize * 0.25)}px;right:-${blobOut}px;top:auto;left:auto;`
+  const arcPos = 'bottom:300px;right:28px;top:auto;'
+  const dotsTrExtra = ''
+  const dotsBlExtra = 'bottom:auto;top:56px;left:56px;'
 
   const tagsHtml =
     cfg.tags.length > 0
@@ -738,7 +723,7 @@ Usage:
     --description "先建世界，再写几十章" \\
     --tags "世界观,地域,力量体系,长期记忆" \\
     --secondaryTitles "写作合约,审查闸门,章节提交" \\
-    --themeColor "#E85D04" \\
+    --themeColor "#E85C04" \\
     --out output/cover.png
 
 字段:
@@ -749,7 +734,8 @@ Usage:
   description       描述
   tags              多个标签
   secondaryTitles   页脚二级标题（2–4 个；每项 ≤4 字、禁止换行）
-  themeColor        主题色 hex；省略则随机
+  themeColor        主题色 hex；默认锁定 #E85C04（焦橙），省略不随机
+  blobCorner        装饰大色块角位；强制 bottom-right（右下），其它值忽略
   badge             左上角徽章文案，默认 skill
 `)
     process.exit(0)
