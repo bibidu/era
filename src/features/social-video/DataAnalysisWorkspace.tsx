@@ -212,6 +212,7 @@ export function DataAnalysisWorkspace() {
               key={postRecord.id}
               record={postRecord}
               onBack={closePost}
+              onDeleted={bumpListReload}
               onUpdated={(next) => {
                 if (next) setPostRecord(next)
                 bumpListReload()
