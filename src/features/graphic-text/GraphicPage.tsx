@@ -1,10 +1,25 @@
 import { type CSSProperties, type ReactNode } from 'react'
 import {
-  CODE_BORDER_COLOR,
-  CODE_HORIZONTAL_PADDING_SCALE,
+  CODE_BACKGROUND,
+  CODE_AFTER_GAP,
+  CODE_BODY_PAD,
+  CODE_CHROME_BG,
+  CODE_CHROME_GAP,
+  CODE_CHROME_HEIGHT,
+  CODE_CHROME_PAD_X,
+  CODE_CHROME_TITLE_COLOR,
+  CODE_CHROME_TITLE_SIZE,
+  CODE_DOT_OPACITY,
+  CODE_DOT_SIZE,
+  CODE_DOTS,
+  CODE_FONT_FAMILY,
+  CODE_RADIUS,
+  CODE_REF_WIDTH,
   CODE_TEXT_COLOR,
-  CODE_VERTICAL_PADDING_SCALE,
+  codeBlockShadowCss,
+  resolveCodeBlockTitle,
 } from './codeBlock'
+import { CODE_TOKEN_COLORS, CODE_TOKEN_FONTS, prefixChineseCodeLine, tokenizeJavaScript } from './codeHighlight'
 import {
   GRAPHIC_EMPTY_HINT_COLOR,
   GRAPHIC_LIST_BULLET_COLOR,
@@ -116,7 +131,7 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
     return `calc(${headingUnit} * ${config.headingMarginBottom + 0.18} + ${gap})`
   }
   if (styleType === 'code') {
-    return `calc(${codeUnit} * 0.26 + ${gap})`
+    return `${(CODE_AFTER_GAP / CODE_REF_WIDTH) * 100}cqw`
   }
   if (styleType === 'image') {
     return `calc(${bodyUnit} * 0.26 + ${gap})`
@@ -710,6 +725,7 @@ export function GraphicPage({
                 const firstBlock = unit.blocks[0]
                 const lastBlock = unit.blocks[unit.blocks.length - 1]
                 const codeSize = `${(config.codeFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
+                const cqw = (px: number) => `${(px / CODE_REF_WIDTH) * 100}cqw`
                 return (
                   <div
                     key={firstBlock.id}
@@ -720,15 +736,51 @@ export function GraphicPage({
                     <div
                       className="graphic-code-block"
                       style={{
-                        backgroundColor: config.codeBackgroundColor,
-                        borderColor: CODE_BORDER_COLOR,
-                        padding: `calc(${codeSize} * ${CODE_VERTICAL_PADDING_SCALE}) calc(${codeSize} * ${CODE_HORIZONTAL_PADDING_SCALE})`,
-                        fontFamily: config.codeFontFamily,
-                        fontSize: codeSize,
-                        lineHeight: config.codeLineHeight,
+                        backgroundColor: config.codeBackgroundColor || CODE_BACKGROUND,
+                        borderRadius: cqw(CODE_RADIUS),
+                        overflow: 'hidden',
+                        boxShadow: codeBlockShadowCss(cqw),
+                        fontFamily: config.codeFontFamily || CODE_FONT_FAMILY,
                         color: CODE_TEXT_COLOR,
                       }}
                     >
+                      <div
+                        style={{
+                          position: 'relative',
+                          display: 'flex',
+                          alignItems: 'center',
+                          height: cqw(CODE_CHROME_HEIGHT),
+                          backgroundColor: CODE_CHROME_BG,
+                          paddingLeft: cqw(CODE_CHROME_PAD_X),
+                          paddingRight: cqw(CODE_CHROME_PAD_X),
+                          gap: cqw(CODE_CHROME_GAP),
+                          borderBottom: `${cqw(1)} solid rgba(255,255,255,0.06)`,
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: cqw(CODE_CHROME_GAP) }}>
+                          {CODE_DOTS.map((color) => (
+                            <span
+                              key={color}
+                              style={{
+                                width: cqw(CODE_DOT_SIZE),
+                                height: cqw(CODE_DOT_SIZE),
+                                borderRadius: '50%',
+                                backgroundColor: color,
+                                opacity: CODE_DOT_OPACITY,
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          padding: cqw(CODE_BODY_PAD),
+                          fontFamily: config.codeFontFamily || CODE_FONT_FAMILY,
+                          fontSize: codeSize,
+                          lineHeight: config.codeLineHeight,
+                          color: CODE_TEXT_COLOR,
+                        }}
+                      >
                       {unit.blocks.map((block) => (
                         <div key={block.id} className="whitespace-pre">
                           {highlightInteraction ? (
@@ -743,19 +795,21 @@ export function GraphicPage({
                               interaction={highlightInteraction}
                             />
                           ) : (
-                            <StyledHighlightedText
-                              text={block.text}
-                              block={block}
-                              brushColors={brushColors}
-                              underlineColors={underlineColors}
-                              handUnderlineColors={handUnderlineColors}
-                              circleColors={circleColors}
-                              textColors={textColors}
-                              enableHighlight
-                            />
+                            tokenizeJavaScript(prefixChineseCodeLine(block.text)).map((token, tokenIndex) => (
+                              <span
+                                key={`${block.id}-tok-${tokenIndex}`}
+                                style={{
+                                  color: CODE_TOKEN_COLORS[token.kind],
+                                  fontFamily: CODE_TOKEN_FONTS[token.kind],
+                                }}
+                              >
+                                {token.text}
+                              </span>
+                            ))
                           )}
                         </div>
                       ))}
+                      </div>
                     </div>
                   </div>
                 )

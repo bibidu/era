@@ -15,7 +15,7 @@ import { useEraTheme } from './theme/useEraTheme'
 /** 切换到图文前预取默认字体 CSS，缩短正文空白窗口 */
 function preloadGraphicFonts() {
   const base = import.meta.env.BASE_URL || '/'
-  const hrefs = [`${base}fonts/noto-serif-sc.css`, `${base}fonts/alimama-shuheiti.css`]
+  const hrefs = [`${base}fonts/noto-serif-sc.css`, `${base}fonts/alimama-shuheiti.css`, `${base}fonts/liberation-mono.css`]
   for (const href of hrefs) {
     if (document.querySelector(`link[data-era-font-preload="${href}"]`)) continue
     const link = document.createElement('link')

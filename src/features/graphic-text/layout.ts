@@ -10,10 +10,15 @@ import { getFontConfigForStyleType } from './graphicTextFonts'
 import { measureImageLayoutSize } from './imageAsset'
 import { stripHighlightMarkers } from './inlineHighlight'
 import {
-  CODE_HORIZONTAL_PADDING_SCALE,
+  CODE_AFTER_GAP,
+  CODE_BODY_PAD,
+  CODE_CHROME_HEIGHT,
+  codeBodyPadPx,
+  codePx,
   estimateCodeLineWidth,
   wrapCodeTextLines,
 } from './codeBlock'
+import { prefixChineseCodeText } from './codeHighlight'
 import { wrapPlainTextLinesByWidth } from './textWrap'
 import { ERA_PAGE_BREAK_MARKER, isPageBreakMarker } from './pageBreak'
 import { isSeriesLabelPage, SERIES_LABEL_GAP_LINES } from './topBar'
@@ -66,6 +71,7 @@ interface LayoutLine {
   imageWidth?: number
   imageHeight?: number
   pageBreakBefore?: boolean
+  codeFenceInfo?: string
 }
 
 /** 按句末标点切开标题，使第二句可换行并用次级字号。
@@ -148,8 +154,13 @@ export function getGraphicLayout(
   }
 }
 
-function createBlock(type: MarkdownBlockType, text: string, index: number): MarkdownBlock {
-  return { id: `${index}-${type}`, type, text, isBlockEnd: true }
+function createBlock(
+  type: MarkdownBlockType,
+  text: string,
+  index: number,
+  extra?: Partial<MarkdownBlock>,
+): MarkdownBlock {
+  return { id: `${index}-${type}`, type, text, isBlockEnd: true, ...extra }
 }
 
 /** 匹配整行图片： ![alt](url) ，url 后可带可选尺寸提示 " =宽x高"（原始像素） */
@@ -185,6 +196,7 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
   let paragraph: string[] = []
   let codeLines: string[] = []
   let inCodeBlock = false
+  let codeFenceInfo = ''
   let pendingPageBreak = false
 
   const flushParagraph = () => {
@@ -203,8 +215,13 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
 
   const flushCodeBlock = () => {
     if (!codeLines.length) return
-    pushBlock(createBlock('code', codeLines.join('\n'), blocks.length))
+    pushBlock(
+      createBlock('code', codeLines.join('\n'), blocks.length, {
+        codeFenceInfo: codeFenceInfo || undefined,
+      }),
+    )
     codeLines = []
+    codeFenceInfo = ''
   }
 
   for (const rawLine of lines) {
@@ -223,6 +240,7 @@ export function parseMarkdown(markdown: string): MarkdownBlock[] {
     if (line.startsWith('```')) {
       flushParagraph()
       inCodeBlock = true
+      codeFenceInfo = line.slice(3).trim()
       continue
     }
 
@@ -463,39 +481,40 @@ function blockToLayoutLines(
   }
 
   const size = blockFontSize(block, config, layout.exportScale)
+  const isCode = block.type === 'code' || styleType === 'code'
   const inset =
     block.type === 'list'
       ? size * 1.35
       : block.type === 'quote' || styleType === 'quote'
         ? size * 0.55
-        : block.type === 'code' || styleType === 'code'
-          ? size * CODE_HORIZONTAL_PADDING_SCALE * 2
+        : isCode
+          ? codeBodyPadPx(layout.pageWidth) * 2
           : 0
   const availableWidth = layout.pageWidth - layout.safeX * 2 - inset
-  const wrappedLines =
-    block.type === 'code' || styleType === 'code'
-      ? wrapCodeTextLines(
-          plainText,
-          estimateCodeLineWidth(size, availableWidth),
-          size,
-          fontFamily,
-        )
-      : wrapPlainTextLinesByWidth(
-          plainText,
-          fontFamily,
-          size,
-          fontWeight,
-          availableWidth,
-        )
+  const codePlain = isCode ? prefixChineseCodeText(plainText) : plainText
+  const wrappedLines = isCode
+    ? wrapCodeTextLines(
+        codePlain,
+        estimateCodeLineWidth(size, availableWidth),
+        size,
+        fontFamily,
+      )
+    : wrapPlainTextLinesByWidth(
+        plainText,
+        fontFamily,
+        size,
+        fontWeight,
+        availableWidth,
+      )
   const lineHeight = blockLineHeight(block, config, layout.exportScale)
 
   let charOffset = 0
-  return wrappedLines.map((lineText, index) => {
+  const lines = wrappedLines.map((lineText, index) => {
     const line: LayoutLine = {
       id: `${block.id}-l${index}`,
       type: index === 0 ? block.type : 'paragraph',
       styleType,
-      text: wrappedLines.length === 1 ? block.text : lineText,
+      text: isCode || wrappedLines.length > 1 ? lineText : block.text,
       lineHeight,
       spacingBefore: blockSpacingBefore(block, config, layout.exportScale, index === 0),
       spacingAfter: blockSpacingAfter(
@@ -508,10 +527,20 @@ function blockToLayoutLines(
       sourceBlockId: block.id,
       charOffset,
       pageBreakBefore: index === 0 ? block.pageBreakBefore : undefined,
+      codeFenceInfo: block.codeFenceInfo,
     }
     charOffset += [...lineText].length
     return line
   })
+
+  if ((block.type === 'code' || styleType === 'code') && lines.length) {
+    const chromeH = codePx(layout.pageWidth, CODE_CHROME_HEIGHT)
+    const bodyPad = codePx(layout.pageWidth, CODE_BODY_PAD)
+    lines[0].spacingBefore += chromeH + bodyPad
+    lines[lines.length - 1].spacingAfter += bodyPad + codePx(layout.pageWidth, CODE_AFTER_GAP)
+  }
+
+  return lines
 }
 
 function layoutLinesToBlocks(lines: LayoutLine[]): MarkdownBlock[] {
@@ -527,6 +556,7 @@ function layoutLinesToBlocks(lines: LayoutLine[]): MarkdownBlock[] {
     imageUrl: line.imageUrl,
     imageWidth: line.imageWidth,
     imageHeight: line.imageHeight,
+    codeFenceInfo: line.codeFenceInfo,
   }))
 }
 
@@ -632,6 +662,10 @@ export function paginateDocument(document: GraphicDocument, config: GraphicTextC
   const pageCapacity = () =>
     pages.length === 0 ? availableHeightFirst : availableHeightDefault
 
+  const isCodeLine = (line: LayoutLine) => line.styleType === 'code' || line.type === 'code'
+  const codeWindowExtra = () =>
+    codePx(baseLayout.pageWidth, CODE_CHROME_HEIGHT) + 2 * codePx(baseLayout.pageWidth, CODE_BODY_PAD)
+
   for (const line of allLines) {
     const lineTotal = line.spacingBefore + line.lineHeight + line.spacingAfter
 
@@ -647,8 +681,12 @@ export function paginateDocument(document: GraphicDocument, config: GraphicTextC
       usedHeight = 0
     }
 
+    // continuation page: source-first line already has chrome in spacingBefore
+    const continuationChrome =
+      currentLines.length === 0 && isCodeLine(line) && line.type !== 'code' ? codeWindowExtra() : 0
+
     currentLines.push(line)
-    usedHeight += lineTotal
+    usedHeight += lineTotal + continuationChrome
   }
 
   if (currentLines.length) {

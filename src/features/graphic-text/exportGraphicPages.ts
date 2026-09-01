@@ -1,9 +1,22 @@
 import {
-  CODE_BORDER_COLOR,
-  CODE_HORIZONTAL_PADDING_SCALE,
-  CODE_TEXT_COLOR,
-  CODE_VERTICAL_PADDING_SCALE,
+  CODE_BACKGROUND,
+  CODE_AFTER_GAP,
+  CODE_BODY_PAD,
+  CODE_CHROME_BG,
+  CODE_CHROME_HEIGHT,
+  CODE_CHROME_TITLE_COLOR,
+  CODE_CHROME_TITLE_SIZE,
+  CODE_DOT_OPACITY,
+  CODE_DOT_SIZE,
+  CODE_DOTS,
+  CODE_CHROME_GAP,
+  CODE_CHROME_PAD_X,
+  CODE_RADIUS,
+  codeBodyPadPx,
+  codePx,
+  resolveCodeBlockTitle,
 } from './codeBlock'
+import { CODE_TOKEN_COLORS, CODE_TOKEN_FONTS, GITHUB_CODE_FONT, prefixChineseCodeLine, tokenizeJavaScript } from './codeHighlight'
 import {
   GRAPHIC_LIST_BULLET_COLOR,
   GRAPHIC_PAGE_TEXT_COLOR,
@@ -12,7 +25,8 @@ import {
 } from './graphicContentColors'
 import { buildCircleHighlightColorRuns, drawHandDrawnCircleAroundTextBounds, HAND_DRAWN_CIRCLE_STROKE_WIDTH } from './circleHighlight'
 import { drawHandDrawnUnderline, buildHandUnderlineColorRuns, HAND_DRAWN_UNDERLINE_TILE_WIDTH } from './handDrawnUnderlinePath'
-import { collectGraphicFontIds, getFontConfigForStyleType } from './graphicTextFonts'
+import { collectGraphicFontIds, getFontConfigForStyleType, resolveLatinFamily } from './graphicTextFonts'
+import { fillMixedText, measureMixedText } from './mixedScript'
 import { getGraphicLayout, resolveTitleFontSize } from './layout'
 import type { GraphicTextConfig, GraphicTextPage, MarkdownBlock } from './types'
 import { getFontById } from '../../data/fonts'
@@ -93,10 +107,14 @@ function drawStyledLine(
   textColor: string,
   circleLineWidth: number,
   textColorSegments: LineSegment[] = [],
+  fontWeight: number | string = 400,
+  fontFamily = 'sans-serif',
 ) {
   const paddingX = 4
   const plainText = stripHighlightMarkers(text)
   ctx.textBaseline = 'alphabetic'
+  const measure = (value: string) => measureMixedText(ctx, value, fontWeight, fontSize, fontFamily)
+  ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`
   const textMetrics = ctx.measureText(plainText || '文')
   const ascent = textMetrics.actualBoundingBoxAscent ?? fontSize * 0.88
   const descent = textMetrics.actualBoundingBoxDescent ?? fontSize * 0.12
@@ -107,12 +125,12 @@ function drawStyledLine(
     let bgX = x
     for (const segment of brushSegments) {
       if (!segment.text) continue
-      const metrics = ctx.measureText(segment.text)
+      const width = measure(segment.text)
       if (segment.color) {
         ctx.fillStyle = themeAlpha(segment.color, 0.28)
-        ctx.fillRect(bgX - paddingX, yTop, metrics.width + paddingX * 2, ascent + descent + 4)
+        ctx.fillRect(bgX - paddingX, yTop, width + paddingX * 2, ascent + descent + 4)
       }
-      bgX += metrics.width
+      bgX += width
     }
   }
 
@@ -121,20 +139,19 @@ function drawStyledLine(
     for (const segment of textColorSegments) {
       if (!segment.text) continue
       ctx.fillStyle = segment.color || textColor
-      ctx.fillText(segment.text, drawX, baselineY)
-      drawX += ctx.measureText(segment.text).width
+      drawX += fillMixedText(ctx, segment.text, drawX, baselineY, fontWeight, fontSize, fontFamily)
     }
   } else {
     ctx.fillStyle = textColor
-    ctx.fillText(plainText, x, baselineY)
+    fillMixedText(ctx, plainText, x, baselineY, fontWeight, fontSize, fontFamily)
   }
 
   if (enableHighlight) {
     const circleRuns = buildCircleHighlightColorRuns(plainText, blockId, charOffset, circleColors)
     for (const run of circleRuns) {
       const prefix = plainText.slice(0, run.start)
-      const runX = x + ctx.measureText(prefix).width
-      const runWidth = ctx.measureText(run.text).width
+      const runX = x + measure(prefix)
+      const runWidth = measure(run.text)
       drawHandDrawnCircleAroundTextBounds(
         ctx,
         runX,
@@ -151,24 +168,24 @@ function drawStyledLine(
     let underlineX = x
     for (const segment of underlineSegments) {
       if (!segment.text) continue
-      const metrics = ctx.measureText(segment.text)
+      const width = measure(segment.text)
       if (segment.color) {
         ctx.strokeStyle = segment.color
         ctx.lineWidth = Math.max(4, fontSize * 0.12)
         ctx.lineCap = 'round'
         ctx.beginPath()
         ctx.moveTo(underlineX, underlineY)
-        ctx.lineTo(underlineX + metrics.width, underlineY)
+        ctx.lineTo(underlineX + width, underlineY)
         ctx.stroke()
       }
-      underlineX += metrics.width
+      underlineX += width
     }
 
     const handRuns = buildHandUnderlineColorRuns(plainText, blockId, charOffset, handUnderlineColors)
     for (const run of handRuns) {
       const prefix = plainText.slice(0, run.start)
-      const runX = x + ctx.measureText(prefix).width
-      const runWidth = ctx.measureText(run.text).width
+      const runX = x + measure(prefix)
+      const runWidth = measure(run.text)
       drawHandDrawnUnderline(
         ctx,
         runX,
@@ -240,11 +257,98 @@ function blockSpec(block: MarkdownBlock, config: GraphicTextConfig, exportScale:
   }
 }
 
+async function ensureLatinFontReady(config: GraphicTextConfig) {
+  if (typeof document === 'undefined' || !document.fonts) return
+  const name = resolveLatinFamily(config).split(',')[0].replace(/"/g, '').trim()
+  const sample = 'Agent AGENTS.md skill'
+  await Promise.all([
+    document.fonts.load(`400 24px "${name}"`, sample),
+    document.fonts.load(`700 24px "${name}"`, sample),
+  ])
+  await document.fonts.ready
+}
+
+const NOTO_CJK_FAMILY = 'Noto Sans CJK JP'
+const NOTO_CJK_TTC = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
+let notoCjkFaceRegistered = false
+
+function measureHanWidth(family: string) {
+  const ctx = document.createElement('canvas').getContext('2d')
+  if (!ctx) return 0
+  ctx.font = `400 64px ${family}`
+  return ctx.measureText('汉').width
+}
+
+async function registerSystemNotoCjkFace() {
+  if (typeof FontFace === 'undefined' || typeof document === 'undefined') return false
+  if (notoCjkFaceRegistered) return true
+
+  const sources = [
+    `local("${NOTO_CJK_FAMILY}")`,
+    `local("Noto Sans CJK SC")`,
+    `url("${import.meta.env.BASE_URL}fonts/NotoSansCJK-Regular.ttc")`,
+    `url("file://${NOTO_CJK_TTC}")`,
+  ]
+
+  for (const source of sources) {
+    try {
+      const face = new FontFace(NOTO_CJK_FAMILY, source, { weight: '400', style: 'normal' })
+      const loaded = await face.load()
+      document.fonts.add(loaded)
+      notoCjkFaceRegistered = true
+      return true
+    } catch {
+      // try next source
+    }
+  }
+  return false
+}
+
+async function ensureLiberationMonoStylesheet() {
+  if (typeof document === 'undefined') return
+  const href = `${import.meta.env.BASE_URL}fonts/liberation-mono.css`
+  if (document.querySelector(`link[data-font-id="liberation-mono"], link[href="${href}"]`)) return
+  await new Promise<void>((resolve) => {
+    const link = document.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = href
+    link.dataset.fontId = 'liberation-mono'
+    link.onload = () => resolve()
+    link.onerror = () => resolve()
+    document.head.appendChild(link)
+  })
+}
+
+async function ensureCodeExportFonts() {
+  if (typeof document === 'undefined' || !document.fonts) return
+
+  await ensureLiberationMonoStylesheet()
+  await document.fonts.load('400 24px "Liberation Mono"', '0123456789ABCDefgh //')
+  await document.fonts.load(`400 24px ${GITHUB_CODE_FONT}`, '0123456789ABCDefgh //汉字复述')
+  await document.fonts.load(`400 24px "${NOTO_CJK_FAMILY}"`, '汉字复述').catch(() => undefined)
+
+  const stackHan = measureHanWidth(GITHUB_CODE_FONT)
+  const liberationHan = measureHanWidth('"Liberation Mono"')
+  const tofu = stackHan > 0 && liberationHan > 0 && Math.abs(stackHan - liberationHan) < 0.5
+  if (tofu) {
+    await registerSystemNotoCjkFace()
+    await document.fonts.load(`400 24px "${NOTO_CJK_FAMILY}"`, '汉字复述').catch(() => undefined)
+  }
+  await document.fonts.ready
+}
+
+function codeTokenFontFamily(kind: keyof typeof CODE_TOKEN_FONTS) {
+  const family = CODE_TOKEN_FONTS[kind]
+  return notoCjkFaceRegistered ? `${family}, "${NOTO_CJK_FAMILY}"` : family
+}
+
 async function drawPage(
   page: GraphicTextPage,
   config: GraphicTextConfig,
   markdown: string,
 ): Promise<Blob> {
+  await ensureLatinFontReady(config)
+  await ensureCodeExportFonts()
   const layout = getGraphicLayout(config, { pageIndex: page.index })
   const {
     pageWidth: width,
@@ -381,27 +485,69 @@ async function drawPage(
   let y = safeTop
   const listInset = (size: number) => size * 1.35
   const quoteInset = (size: number) => size * 0.55
-  const codeInset = (size: number) => size * CODE_HORIZONTAL_PADDING_SCALE
+  const codeInset = () => codeBodyPadPx(width)
   const blockGap = width * 0.011
   let codeBlockSourceId: string | null = null
-  let codeBlockFrame: { x: number; y: number; w: number; h: number } | null = null
-  let codeBlockFilledTo = 0
 
   const circleLineWidth = Math.max(
     HAND_DRAWN_CIRCLE_STROKE_WIDTH,
     HAND_DRAWN_CIRCLE_STROKE_WIDTH * exportScale,
   )
 
+  const drawCodeWindow = (x: number, frameY: number, w: number, h: number, title: string) => {
+    const radius = codePx(width, CODE_RADIUS)
+    const chromeH = codePx(width, CODE_CHROME_HEIGHT)
+    const dotSize = codePx(width, CODE_DOT_SIZE)
+    const titleSize = codePx(width, CODE_CHROME_TITLE_SIZE)
+
+    ctx.save()
+    ctx.shadowColor = 'rgba(0,0,0,0.6)'
+    ctx.shadowBlur = codePx(width, 80)
+    ctx.shadowOffsetY = codePx(width, 30)
+    ctx.beginPath()
+    ctx.roundRect(x, frameY, w, h, radius)
+    ctx.fillStyle = CODE_BACKGROUND
+    ctx.fill()
+    ctx.restore()
+
+    ctx.save()
+    ctx.beginPath()
+    ctx.roundRect(x, frameY, w, h, radius)
+    ctx.clip()
+    ctx.fillStyle = config.codeBackgroundColor || CODE_BACKGROUND
+    ctx.fillRect(x, frameY, w, h)
+    ctx.fillStyle = CODE_CHROME_BG
+    ctx.fillRect(x, frameY, w, chromeH)
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'
+    ctx.lineWidth = Math.max(1, codePx(width, 1))
+    ctx.beginPath()
+    ctx.moveTo(x, frameY + chromeH)
+    ctx.lineTo(x + w, frameY + chromeH)
+    ctx.stroke()
+
+    const dotY = frameY + chromeH / 2
+    const dotR = dotSize / 2
+    const dotGap = codePx(width, CODE_CHROME_GAP)
+    const dotStart = x + codePx(width, CODE_CHROME_PAD_X) + dotR
+    ctx.globalAlpha = CODE_DOT_OPACITY
+    CODE_DOTS.forEach((color, i) => {
+      ctx.fillStyle = color
+      ctx.beginPath()
+      ctx.arc(dotStart + i * (dotSize + dotGap), dotY, dotR, 0, Math.PI * 2)
+      ctx.fill()
+    })
+    ctx.globalAlpha = 1
+
+    ctx.restore()
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'
+    ctx.lineWidth = Math.max(1, codePx(width, 1))
+    ctx.beginPath()
+    ctx.roundRect(x, frameY, w, h, radius)
+    ctx.stroke()
+  }
+
   const flushCodeBlockFrame = () => {
-    if (!codeBlockFrame) return
-
-    const borderWidth = Math.max(1, Math.round(exportScale))
-    const { x, y: frameY, w, h } = codeBlockFrame
-
-    ctx.strokeStyle = CODE_BORDER_COLOR
-    ctx.lineWidth = borderWidth
-    ctx.strokeRect(x + borderWidth / 2, frameY + borderWidth / 2, w - borderWidth, h - borderWidth)
-    codeBlockFrame = null
   }
 
   for (const block of page.blocks) {
@@ -430,7 +576,8 @@ async function drawPage(
       y += spec.size * spec.marginBefore
     }
 
-    ctx.font = `${spec.weight} ${spec.size}px ${spec.fontFamily}`
+    const measureFamily = styleType === 'code' ? GITHUB_CODE_FONT : spec.fontFamily
+    ctx.font = `${spec.weight} ${spec.size}px ${measureFamily}`
     const plainText = stripHighlightMarkers(block.text)
     const blockId = block.sourceBlockId ?? block.id
     const charOffset = block.charOffset ?? 0
@@ -441,7 +588,7 @@ async function drawPage(
       block.type === 'list'
         ? listInset(spec.size) + quoteBarInset
         : block.type === 'code' || styleType === 'code'
-          ? codeInset(spec.size)
+          ? codeInset()
           : quoteBarInset
     const enableHighlight = true
     const brushSegments = enableHighlight
@@ -458,28 +605,27 @@ async function drawPage(
     const ascent = textMetrics.actualBoundingBoxAscent ?? spec.size * 0.88
 
     if (styleType === 'code') {
-      const padY = spec.size * CODE_VERTICAL_PADDING_SCALE
       const bgX = safeX
       const bgW = width - safeX * 2
-      const lineTop = y - padY * 0.35
-      const lineBottom = y + lineHeight + padY * 0.65
+      const chromeH = codePx(width, CODE_CHROME_HEIGHT)
+      const bodyPad = codePx(width, CODE_BODY_PAD)
 
       if (codeBlockSourceId !== blockId) {
         flushCodeBlockFrame()
         codeBlockSourceId = blockId
-        codeBlockFrame = { x: bgX, y: lineTop, w: bgW, h: lineBottom - lineTop }
-        codeBlockFilledTo = lineTop
-      } else if (codeBlockFrame) {
-        codeBlockFrame.h = lineBottom - codeBlockFrame.y
+        let lineCount = 0
+        const startIndex = page.blocks.indexOf(block)
+        for (let i = startIndex; i < page.blocks.length; i += 1) {
+          const next = page.blocks[i]
+          const nextStyle = resolveStyleType(next)
+          const nextId = next.sourceBlockId ?? next.id
+          if (nextStyle === 'code' && nextId === blockId) lineCount += 1
+          else break
+        }
+        const frameH = chromeH + bodyPad + lineCount * lineHeight + bodyPad
+        drawCodeWindow(bgX, y, bgW, frameH, resolveCodeBlockTitle(block.codeFenceInfo))
+        y += chromeH + bodyPad
       }
-
-      // 只补画本行新增的一条带：整块重填会盖掉上一行刚绘制的文字，多行代码块只剩最后一行
-      const fillTop = Math.max(lineTop, codeBlockFilledTo)
-      if (lineBottom > fillTop) {
-        ctx.fillStyle = config.codeBackgroundColor
-        ctx.fillRect(bgX, fillTop, bgW, lineBottom - fillTop)
-      }
-      codeBlockFilledTo = lineBottom
     } else {
       flushCodeBlockFrame()
       codeBlockSourceId = null
@@ -505,27 +651,44 @@ async function drawPage(
       styleType === 'title' && config.titlePrimaryColor?.trim()
         ? config.titlePrimaryColor
         : null
-    drawStyledLine(
-      ctx,
-      block.text,
-      blockId,
-      charOffset,
-      brushSegments,
-      underlineSegments,
-      handUnderlineColors,
-      HAND_DRAWN_UNDERLINE_TILE_WIDTH * exportScale,
-      circleColors,
-      safeX + inset,
-      y,
-      spec.size,
-      enableHighlight,
-      styleType === 'code' ? CODE_TEXT_COLOR : titlePrimary || GRAPHIC_PAGE_TEXT_COLOR,
-      circleLineWidth,
-      textColorSegments,
-    )
+    if (styleType === 'code') {
+      const tokens = tokenizeJavaScript(prefixChineseCodeLine(plainText))
+      ctx.textBaseline = 'alphabetic'
+      const baselineY = y + ascent
+      let drawX = safeX + inset
+      for (const token of tokens) {
+        const family = codeTokenFontFamily(token.kind)
+        ctx.font = `${spec.weight} ${spec.size}px ${family}`
+        ctx.fillStyle = CODE_TOKEN_COLORS[token.kind]
+        ctx.fillText(token.text, drawX, baselineY)
+        drawX += ctx.measureText(token.text).width
+      }
+    } else {
+      drawStyledLine(
+        ctx,
+        block.text,
+        blockId,
+        charOffset,
+        brushSegments,
+        underlineSegments,
+        handUnderlineColors,
+        HAND_DRAWN_UNDERLINE_TILE_WIDTH * exportScale,
+        circleColors,
+        safeX + inset,
+        y,
+        spec.size,
+        enableHighlight,
+        titlePrimary || GRAPHIC_PAGE_TEXT_COLOR,
+        circleLineWidth,
+        textColorSegments,
+        spec.weight,
+        spec.fontFamily,
+      )
+    }
     y += lineHeight
 
     if (styleType === 'code' && block.isBlockEnd) {
+      y += codePx(width, CODE_BODY_PAD) + codePx(width, CODE_AFTER_GAP)
       flushCodeBlockFrame()
       codeBlockSourceId = null
     }

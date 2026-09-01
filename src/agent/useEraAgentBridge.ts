@@ -72,8 +72,10 @@ async function handleBridgeCommand(
       return { id: command.id, ok: true, data: { synced: true } }
     }
 
-    const document = controller.getDocument()
-    const config = controller.getConfig()
+    const document = snapshot ? documentFromSnapshot(snapshot) : controller.getDocument()
+    const config = snapshot
+      ? configFromSnapshot(snapshot, controller.getConfig())
+      : controller.getConfig()
 
     if (command.type === 'preview_layout') {
       const inspection = inspectGraphicLayout(document, config)

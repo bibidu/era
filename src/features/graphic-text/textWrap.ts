@@ -42,7 +42,7 @@ function createMeasureContext(fontFamily: string, fontSize: number, fontWeight: 
   const ctx = document.createElement('canvas').getContext('2d')
   if (!ctx) return null
 
-  ctx.font = `${fontWeight} ${fontSize}px ${resolvePrimaryFontFamily(fontFamily)}`
+  ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`
   return ctx
 }
 

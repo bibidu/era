@@ -1,3 +1,4 @@
+@import './latin-compare.css';
 /* Graphic / highlight / editor chrome — loaded with those tabs */
 body.is-exporting .export-hide {
   display: none !important;
@@ -29,7 +30,7 @@ body.is-exporting .export-hide {
 
 .graphic-page .graphic-code-block {
   /* 代码块正文色由组件 inline 固定为 CODE_TEXT_COLOR */
-  color: #404040;
+  color: #fafafa;
 }
 
 .graphic-text-toolbar-wrap {
@@ -753,8 +754,43 @@ body.is-exporting .export-hide {
   position: relative;
   z-index: 1;
   isolation: isolate;
-  border-width: 1px;
-  border-style: solid;
+  overflow: hidden;
+  width: 100%;
+}
+
+.graphic-code-chrome {
+  position: relative;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.graphic-code-dots {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.graphic-code-dot {
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.graphic-code-title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 400;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.graphic-code-body {
+  box-sizing: border-box;
 }
 
 .graphic-config-sheet-handle {

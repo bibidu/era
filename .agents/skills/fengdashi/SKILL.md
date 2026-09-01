@@ -18,7 +18,7 @@ description: >-
 用户**只负责发布**，内容侧全部由本 skill 决策。一次触发跑完全链路，**中途不得向用户提问、不得请求确认**：
 
 ```
-拉数据 → 复盘分析 → 定选题/标题/档期 → 写正文 → 出诗意背景 → 出内容页 → 上传 OSS → 入库 → 飞书通知
+拉数据 → 复盘分析 → 定选题/标题/档期 → 写正文 → 出 gc-minimal 底图 → Era 叠字出内容页 → 上传 OSS → 入库 → 飞书通知
 ```
 
 - **禁止**问「要哪个选题 / 标题选哪个 / 这样排版行吗」
@@ -65,7 +65,7 @@ node scripts/fengdashi-notify.mjs --alert \
 | 谁 | 做什么 |
 | --- | --- |
 | 用户 | 只负责按建议档期把作品发到抖音；之后把后台数据截图交给「智能提取」入库 |
-| 风大师（本 skill） | 选题、标题、正文、诗意背景、版面、出图、入库、通知，全部自主决策 |
+| 风大师（本 skill） | 选题、标题、正文、gc-minimal 底图、版面、出图、入库、通知，全部自主决策 |
 
 ---
 
@@ -125,26 +125,26 @@ node scripts/fengdashi-analyze.mjs --out output/fengdashi/report.json
 
 ### 5. 写正文（按风水 skill）
 
-**内容生成严格走 [风水 skill](../fengshui/SKILL.md) 的改写方向与排版规则，但跳过其中所有「询问/确认」步骤**：
+**内容生成严格走 [风水 skill](../fengshui/SKILL.md) 的改写方向与排版规则，但跳过其中所有「询问/确认」步骤**。底图走 gc-minimal-zine-poster（只出没字的图），各页复用封面底，字和顶栏由 Era 叠：
 
 - 活学活用改写：核心知识点/方位/口诀/禁忌（骨）不删改；用「你回家怎么看、怎么做」的当面教人口吻（皮肉）。
 - 单篇 **4–6 页**（含首页）；每个 `##` 独占页；工程 Markdown 在每个 `##` 前插 `<!-- era:page-break -->`，入库正文必须去掉。
-- 一级标题全文朱红 `#C41E3A`；二级标题宋体、`headingFontSize: 22`。
+- **一级标题必须宋体**（`titleFontId: song` / `titleFontFamily: "Noto Serif SC"`（不要加 `, serif`）），全文朱红 `#C41E3A`；禁止 `heiti` / `shuheiti`。二级 / 正文同样宋体，`headingFontSize: 22`。
 - 页数 > 6 就**分篇**（上/中/下篇各 4–6 页）；非末篇篇末用**单独一段**预告下一篇，并对该段打**黄色刷子** `#FACC15`；末篇改收束句。
 - 有一页是**能直接抄走**的清单（自查步骤/口诀/对照表）——风水号收藏常 ≥ 点赞。
 
-### 6. 出图（Era + 诗意背景，全自动）
+### 6. 出图（Era + gc-minimal 底图，全自动）
 
 ```bash
 bash scripts/ensure-era-ready.sh                      # 云端 headless Bridge，须 ERA_READY=1
 ```
 
 内容页走 Era REST（`http://127.0.0.1:${ERA_AGENT_PORT:-3847}/v1/...`，需带鉴权头 `X-Era-Auth`）或 MCP `era_*`，
-配置沿用风水 skill §1 固定 config（`pageOverlay: fengshui`、`9:16`、朱红标题、宋体 22）。
+配置沿用风水 skill §1 固定 config（`pageOverlay: fengshui`、`9:16`、朱红标题、**标题/二级/正文全部 `titleFontId: song`**、二级 22）。
 
 - **多行一级标题写在同一个 `#` 里，用 U+2028 分行**（如 `# 床摆错了\u2028越睡越虚`），**禁止**连续两个 `#`（会叠双倍块间距，封面空太多）。配置必须带 `titleSecondaryFontSize: 56`（与主字号同大）。**不要调 `era_set_title`**。社媒/入库 `title`（各行连写）由 `fengdashi-publish.mjs` 写。详见风水 skill §2 C。
 - 首页＝一级标题 + 导语，导语控制在**约 1 行**（两行大标题几乎占满首页高度，导语过长会溢出到第 2 页产生孤行）。
-- 诗意页背景：**同篇全部背景图同色调**（同一泥纸底/墨色冷暖/淡矿物辅色，见风水 skill §2 H），零文字、意象只占左下或右下一角；按页导出用 `node scripts/export-pages-with-bgs.mjs`（云端脚本请求需带 `X-Era-Auth`）。
+- 底图：按 gc-minimal-zine-poster **只出一张没字的封面底**，各页复用（见风水 skill §2 H / §4）；按页导出用 `node scripts/export-pages-with-bgs.mjs`（云端脚本请求需带 `X-Era-Auth`）。
 - 出图前 `era_preview_layout` 修告警（单行溢出、孤行等）。默认不加用户高亮，仅分篇预告段打黄刷。
 
 ### 7. 入库 + 飞书通知
@@ -202,8 +202,8 @@ node scripts/fengdashi-publish.mjs --input output/fengdashi/<slug>/publish.json
 3. 复盘只用了「风水 + 提取成功」的记录；断更间隔算了全部已发布风水记录
 4. 有未收尾连载就先接住；篇末预告已兑现
 5. 标题过了禁用词自查；具体物件 + 反预期后果 + 可搜词；封面动词白话（勿用行话当钩子）；分篇标题带 `（上篇）` 等
-6. 页数 4–6；每个 `##` 独占页；一级标题为**单个 `#`**（多行用 U+2028，禁止连续多个 `#`）、全文朱红、`titleSecondaryFontSize=56`、二级宋体 22；首页导语约 1 行不溢出
-7. 有一页能直接抄走；同篇诗意背景同色调、零文字、意象在一角
+6. 页数 4–6；每个 `##` 独占页；一级标题为**单个 `#`**（多行用 U+2028，禁止连续多个 `#`）、**必须宋体**（`titleFontId===song`，禁止黑体/数黑体）、全文朱红、`titleSecondaryFontSize=56`、二级宋体 22；首页导语约 1 行不溢出
+7. 有一页能直接抄走；各页共用封面同一张 zine 底图、底图零文字
 8. 未调 `era_set_title`；`title` 由入库脚本写；封面两行标题间距不空（目测约 `titleLineHeight`，不是一整行字高）
 9. 入库正文不含 `era:page-break`；`image_previews[0]` ＝封面且同步 `cover_url`；`work_type=风水`
 10. 飞书**已收到一张卡**：成功推就绪卡，失败推告警卡，不允许两张都没有

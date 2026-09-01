@@ -53,8 +53,10 @@ function markdownFromParsedBlock(block: MarkdownBlock): string {
       return `# ${block.text}`
     case 'heading':
       return `## ${block.text}`
-    case 'code':
-      return `\`\`\`\n${block.text}\n\`\`\``
+    case 'code': {
+      const info = block.codeFenceInfo?.trim() ?? ''
+      return `\`\`\`${info}\n${block.text}\n\`\`\``
+    }
     case 'list':
       return `- ${block.text}`
     case 'image': {

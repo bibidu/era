@@ -74,7 +74,21 @@ export const CODE_FONT_OPTIONS: FontOption[] = [
     source: 'google',
     googleFamily: 'IBM+Plex+Mono:wght@400;700',
   },
-  { id: 'menlo', label: 'Menlo', fontFamily: 'Menlo, monospace', sample: 'const code = 1', source: 'system' },
+  {
+    id: 'menlo',
+    label: 'Menlo',
+    fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace',
+    sample: 'const code = 1',
+    source: 'system',
+  },
+  {
+    id: 'liberation-mono',
+    label: 'Liberation Mono',
+    fontFamily: '"Liberation Mono", Menlo, Consolas, ui-monospace, monospace',
+    sample: 'const code = 1',
+    source: 'cdn',
+    cdnUrl: `${import.meta.env.BASE_URL}fonts/liberation-mono.css`,
+  },
   {
     id: 'ubuntu-mono',
     label: 'Ubuntu Mono',

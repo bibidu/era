@@ -25,6 +25,8 @@ export interface GraphicTextConfig {
   bodyFontFamily: string
   codeFontId: string
   codeFontFamily: string
+  /** 正文/标题里的英文等宽字体 */
+  latinFontFamily: string
   titleFontSize: number
   /** 一级标题第二句及以后的字号（句读换行后的续句） */
   titleSecondaryFontSize: number
@@ -84,6 +86,8 @@ export interface MarkdownBlock {
   imageHeight?: number
   /** 为 true 时该块首行从新页开始（由 <!-- era:page-break --> 触发） */
   pageBreakBefore?: boolean
+  /** markdown 围栏 info string，如 ```js 中的 js；空则预览标题为 prompt */
+  codeFenceInfo?: string
 }
 
 export interface GraphicTextPage {
@@ -96,7 +100,8 @@ const DEFAULT_SONG_FONT_FAMILY = '"Noto Serif SC", serif'
 const DEFAULT_SHUHEITI_FONT_ID = 'shuheiti'
 const DEFAULT_SHUHEITI_FONT_FAMILY = '"Alimama ShuHeiTi", sans-serif'
 const DEFAULT_CODE_FONT_ID = 'menlo'
-const DEFAULT_CODE_FONT_FAMILY = 'Menlo, monospace'
+const DEFAULT_CODE_FONT_FAMILY = 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace'
+const DEFAULT_LATIN_FONT_FAMILY = '"IBM Plex Mono", Menlo, Monaco, "Courier New", ui-monospace, monospace'
 
 /** 非风水：二级标题默认数黑体；一级标题与正文仍用宋体 */
 export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
@@ -108,21 +113,22 @@ export const DEFAULT_GRAPHIC_TEXT_CONFIG: GraphicTextConfig = {
   bodyFontFamily: DEFAULT_SONG_FONT_FAMILY,
   codeFontId: DEFAULT_CODE_FONT_ID,
   codeFontFamily: DEFAULT_CODE_FONT_FAMILY,
+  latinFontFamily: DEFAULT_LATIN_FONT_FAMILY,
   titleFontSize: 56,
   titleSecondaryFontSize: 40,
   titlePrimaryColor: '',
   headingFontSize: 20,
   bodyFontSize: 13,
-  codeFontSize: 12,
+  codeFontSize: 8,
   titleLineHeight: 1.18,
   bodyLineHeight: 1.64,
   headingLineHeight: 1.18,
-  codeLineHeight: 1.5,
+  codeLineHeight: 1.6,
   titleMarginTop: 1.2,
   titleMarginBottom: 0.32,
   headingMarginTop: 0.88,
   headingMarginBottom: 0.32,
-  codeBackgroundColor: '#F2F2F2',
+  codeBackgroundColor: '#0a0a0a',
   paperColor: '#FBF7ED',
   aspectRatio: '9:16',
   backgroundType: 'solid',

@@ -1,4 +1,5 @@
 import { getGraphicLayout, paginateDocument, resolveTitleFontSize } from '../features/graphic-text/layout'
+import { codeBodyPadPx } from '../features/graphic-text/codeBlock'
 import { stripHighlightMarkers } from '../features/graphic-text/inlineHighlight'
 import { getFontConfigForStyleType } from '../features/graphic-text/graphicTextFonts'
 import type { GraphicDocument } from '../features/graphic-text/document'
@@ -384,7 +385,7 @@ export function inspectGraphicLayout(
           : styleType === 'quote'
             ? fontSize * 0.55
             : styleType === 'code'
-              ? fontSize * 0.72
+              ? codeBodyPadPx(layout.pageWidth)
               : 0
       const available = contentWidth - inset
       const width = measureLineWidth(plain, fontFamily, fontSize, fontWeight)

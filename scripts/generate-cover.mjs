@@ -12,6 +12,7 @@
  */
 
 import { chromium } from 'playwright'
+import { readFileSync } from 'node:fs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -177,6 +178,28 @@ function pickTheme(themeColor) {
   return { name: ACCENT_NAME, hex: ACCENT_HEX }
 }
 
+
+function ibmPlexFontFaceCss() {
+  const ttf = path.join(ROOT, 'public', 'fonts', 'latin-compare', 'IBMPlexMono-Bold.ttf')
+  const b64 = readFileSync(ttf).toString('base64')
+  return `@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('data:font/truetype;base64,${b64}') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}`
+}
+
+function wrapLatinHtml(s) {
+  const text = String(s ?? '')
+  if (!text) return ''
+  return text.replace(/[\x00-\x7F]+/g, (run) => {
+    if (!/[A-Za-z]/.test(run)) return escapeHtml(run)
+    return `<span class="latin">${escapeHtml(run)}</span>`
+  })
+}
+
 function escapeHtml(s) {
   return String(s)
     .replaceAll('&', '&amp;')
@@ -324,6 +347,7 @@ function buildHtml(cfg, theme) {
   const bigTitleFontWeight = useShuhei ? '700' : '400'
   const bigTitleTextTransform = useShuhei ? 'none' : 'uppercase'
   const shuheitiFace = useShuhei ? shuheitiFontFaceCss() : ''
+  const latinFace = ibmPlexFontFaceCss()
   const cjkTitleOverride = useShuhei
     ? `font-family: ${bigTitleFontFamily};
     font-weight: ${bigTitleFontWeight};
@@ -345,7 +369,7 @@ function buildHtml(cfg, theme) {
 
   const tagsHtml =
     cfg.tags.length > 0
-      ? `<div class="tags">${cfg.tags.map((t) => escapeHtml(t)).join('<span class="dot">·</span>')}</div>`
+      ? `<div class="tags">${cfg.tags.map((t) => wrapLatinHtml(t)).join('<span class="dot">·</span>')}</div>`
       : ''
 
   const secondary = cfg.secondaryTitles.slice(0, 4)
@@ -354,16 +378,16 @@ function buildHtml(cfg, theme) {
       ? `<footer class="footer">${secondary
           .map(
             (t, i) =>
-              `<div class="foot-item">${footerIcon(i)}<span>${escapeHtml(t)}</span></div>`,
+              `<div class="foot-item">${footerIcon(i)}<span>${wrapLatinHtml(t)}</span></div>`,
           )
           .join('<div class="vdiv"></div>')}</footer>`
       : ''
 
   const smallTitleHtml = cfg.smallTitle
-    ? `<h2 class="small-title">${escapeHtml(cfg.smallTitle)}</h2>`
+    ? `<h2 class="small-title">${wrapLatinHtml(cfg.smallTitle)}</h2>`
     : ''
   const descHtml = cfg.description
-    ? `<p class="desc">${escapeHtml(cfg.description)}</p>`
+    ? `<p class="desc">${wrapLatinHtml(cfg.description)}</p>`
     : ''
 
   const titleHtml = lines
@@ -394,6 +418,7 @@ function buildHtml(cfg, theme) {
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet" />
 <style>
 ${shuheitiFace}
+${latinFace}
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     width: ${WIDTH}px;
@@ -569,6 +594,20 @@ ${shuheitiFace}
     margin-bottom: 28px;
     border-radius: 2px;
   }
+
+  .latin {
+    font-family: "IBM Plex Mono", Menlo, Monaco, "Courier New", ui-monospace, monospace;
+    font-weight: 700;
+    font-synthesis: none;
+    letter-spacing: 0;
+  }
+  .badge .latin,
+  .small-title .latin,
+  .tags .latin,
+  .desc .latin,
+  .foot-item .latin {
+    font-weight: 700;
+  }
   .small-title {
     font-size: ${smallTitleSize}px;
     font-weight: 900;
@@ -660,7 +699,7 @@ ${shuheitiFace}
       <div class="blob"></div>
       <div class="arc-lines"></div>
       <div class="content">
-        <div class="badge">${escapeHtml(cfg.badge || 'skill')}</div>
+        <div class="badge">${wrapLatinHtml(cfg.badge || 'skill')}</div>
         <h1 class="big-title">${titleHtml}</h1>
         <div class="info">
           <div class="accent-line"></div>
@@ -778,8 +817,9 @@ Usage:
     // 等字体（Google Fonts / 本地数黑体）
     await page.evaluate(async (needShuhei) => {
       if (document.fonts?.ready) await document.fonts.ready
-      if (needShuhei && document.fonts?.load) {
-        await document.fonts.load('700 168px "Alimama ShuHeiTi"')
+      if (document.fonts?.load) {
+        await document.fonts.load('700 56px "IBM Plex Mono"', 'Agent skill AGENTS')
+        if (needShuhei) await document.fonts.load('700 168px "Alimama ShuHeiTi"')
       }
     }, cfg.bigTitleFont === 'shuheiti')
     // 逐行缩小字号以适配内容区（扣除 padding），避免第二行溢出裁切
@@ -920,6 +960,14 @@ Usage:
       }
       process.exit(1)
     }
+    const latinFonts = await page.evaluate(() => {
+      return [...document.querySelectorAll('.latin')].map((el) => ({
+        text: el.textContent,
+        family: getComputedStyle(el).fontFamily,
+        loaded: document.fonts.check('700 24px "IBM Plex Mono"'),
+      }))
+    })
+    console.log('latinFonts', JSON.stringify(latinFonts))
     await page.waitForTimeout(300)
     await page.locator('#cover').screenshot({ path: outPath, type: 'png' })
     Object.assign(meta, { titleFit: fitMeta })

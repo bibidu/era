@@ -47,7 +47,7 @@ export function resolveTopBarParts(
     return { custom: config.seriesLabel.trim(), countText: '' }
   }
   if (config.pageOverlay !== 'fengshui') {
-    return { custom: NON_FENGSHUI_TOP_BAR_TEXT, countText: '' }
+    return { custom: config.topText.trim() || NON_FENGSHUI_TOP_BAR_TEXT, countText: '' }
   }
   const custom = config.topText.trim()
   const showCount = config.showWordCount !== false

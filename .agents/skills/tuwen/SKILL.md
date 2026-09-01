@@ -33,27 +33,27 @@ description: >-
 
 **模板**：默认 **像素模板**（`pageOverlay: 'pixel'`），除非用户指定其它纹理。
 
-**字体**：一级标题（封面大标题 / H1）与二级标题（`##`）均默认阿里妈妈数黑体（封面 `bigTitleFont: shuheiti`；内容 `headingFontId`: `shuheiti`，`headingFontFamily`: `"Alimama ShuHeiTi", sans-serif`；若正文含 H1 则 `titleFontId`: `shuheiti`）。正文保持宋体，除非用户另指定。
+**字体**：一级标题（封面大标题 / H1）与二级标题（`##`）均默认阿里妈妈数黑体（封面 `bigTitleFont: shuheiti`；内容 `headingFontId`: `shuheiti`，`headingFontFamily`: `"Alimama ShuHeiTi", sans-serif`；若正文含 H1 则 `titleFontId`: `shuheiti`）。正文保持宋体，除非用户另指定。封面除大标题外的英文、以及正文和二级标题里的英文，用 IBM Plex Mono（`latinFontFamily: '"IBM Plex Mono", Menlo, Monaco, "Courier New", ui-monospace, monospace'`）；代码块字体对齐 GitHub 网页端栈；数字 token 用 Liberation Mono，中文注释同一栈回落 Noto Sans CJK。代码块里中文行必须以 `// ` 开头（渲染会自动补）；按 JavaScript 高亮，注释/数字/关键字/字符串/标识符不同色。
 
-**顶部文案**：内容页默认 `点赞关注不迷路～`；`showWordCount: false`。
+**顶部文案**：全部内容页 `topText: '每天一个提效实操·第 N 期'`；`seriesLabel` 留空（无朱红、无额外空行）；`showWordCount: false`。引擎非风水页会读 `topText`，空则回落 `点赞关注不迷路～`。
 
 **分页**：每个二级标题（`##`）**必须独占一页**。工程 Markdown 在每个 `##`（首个除外）前加 `<!-- era:page-break -->`；**入库与发给用户的正文禁止出现该标记**。
 
 **页数**：默认 **封面 + 4 个 `##`＝5 页封顶**。后台「平均浏览图片数」常年只有 1.8–2.7，多做的页没人看；内容超量就砍，不要靠加页装。
 
-**系列期数放末页（硬性）**：`每天一个提效实操·第 N 期` 写在**最后一页正文结尾**，`seriesLabel` 配置留空（这样每页顶栏都是 `点赞关注不迷路～`）。**禁止**再写「下期：…」预告。
+**系列期数只落顶栏（硬性）**：全部内容页 `topText: '每天一个提效实操·第 N 期'`，`seriesLabel` **留空**（不要朱红下划线、不要 `SERIES_LABEL_GAP_LINES` 额外空行；顶栏位置与原先「点赞关注不迷路～」相同、全宽灰线）。**不要**再把同一句写进末页正文。**禁止**再写「下期：…」预告。
 
-**禁止**把期数放在整套第 2 页的顶栏。依据是两篇播放量几乎相同（633 vs 662）的对照：期数在末页那篇平均浏览图片数 **2.7**、吸粉率 **0.32%**；期数占了第 2 页顶栏那篇只有 1.9 与 0.15%。第 2 页是全篇最贵的位置，必须直接进痛点。明细见 [蛇大师 playbook](../shedashi/references/playbook.md) §版面。
-
-**末页三件套**：期数/系列标识（`每天一个提效实操·第 N 期`）+ 关注理由（一句身份认同）+ 一个提问。吸粉率的天花板在这一页。不要用连载承诺 / 下期预告凑三件套。
+**末页两件套**：关注理由（一句身份认同）+ 一个提问。期数只在顶栏，末页正文不要再写 `每天一个提效实操·第 N 期`。吸粉率的天花板在这一页。不要用连载承诺 / 下期预告凑件数。
 
 **翻页钩子**：每页结尾留一句悬念或提问，否则读者停在第 2 页。
 
 **选题重心（被蛇大师调用时）**：正文围绕 **AI 实践与技巧**（Agent 协作、工作流、判断力、prompt/规则），不要做成裸 git / CLI 命令教程；git/CLI 仅可作服务实践点的小辅助。
 
-**可抄页**：每篇至少一页是能直接抄走的东西（规则原文 / prompt / 判断清单；命令仅当服务 AI 实践点时附带）。本账号爆款的收藏量常大于点赞量。判断标准是**只截这一页就能用起来**；「我的目录长这样」这类结构示意不算——第 16 期这么做，浏览图片数达标但吸粉率与收藏率都是同播放量级最低（见 [playbook](../shedashi/references/playbook.md) §版面）。
+**可抄页**：每篇至少一页是能直接抄走的东西（规则原文 / prompt / 判断清单；命令仅当服务 AI 实践点时附带）。可抄页落地句写成「可自行封装 skill，或写进 AGENTS.md。」不要「按仓库来」，不要「交给子 Agent」，不要「复制粘贴一下 / 直接粘给 Agent」。本账号爆款的收藏量常大于点赞量。判断标准是**只截这一页就能用起来**；「我的目录长这样」这类结构示意不算——第 16 期这么做，浏览图片数达标但吸粉率与收藏率都是同播放量级最低（见 [playbook](../shedashi/references/playbook.md) §版面）。
 
-`seriesLabel` 配置项仍然可用（会在内容首页渲染期数顶栏 + 朱红下划线，见 `SERIES_LABEL_GAP_LINES`），但**默认不用**；仅当用户明确要求把期数做成第 2 页顶栏时才写。
+**Agent 量词**：正文用「个」不用「只」（写代码那个 / 换一个 / 第二个 / 开两个）。**「只审」保留**（=只负责审，不是量词）。
+
+`seriesLabel` **默认留空**。期数走 `topText: '每天一个提效实操·第 N 期'`（全部内容页同一顶栏，无朱红、无额外空行）。末页正文不要再写同一句。
 
 **高亮**：默认**不做高亮**。封面确认后直接布局校验 → 导出 → 入库；不要发高亮设置页，不要 `era_apply_highlights`。仅当用户明确要求「加高亮 / 打开高亮设置页」时才走 §高亮。
 
@@ -113,9 +113,9 @@ description: >-
 - Markdown **不要写 `#`**，从 `##` / 正文开始。
 - **每个 `##` 独占页**：除首个 `##` 外，前插 `<!-- era:page-break -->`（入库与用户可见文案须去掉）。
 - 页数默认 **封面 + 4 个 `##`＝5 页封顶**。
-- 建工程：`pageOverlay: 'pixel'`、`9:16`（或用户指定 `3:4`）、`headingFontId: shuheiti`、`topText: '点赞关注不迷路～'`、`showWordCount: false`、`seriesLabel: ''`（留空——期数改放末页正文，见上方硬性规则）。
-- **末页正文结尾**：关注理由 + 一个提问 + `每天一个提效实操·第 N 期`；**不要**再跟 `下期：…` 行。
-- 导出前自查：每页顶栏都是 `点赞关注不迷路～`；每页以一个 `##` 起头；每页末尾有翻页钩子；至少一页可直接抄走；末页有三件套（期数 + 关注理由 + 提问，无下期预告）。
+- 建工程：`pageOverlay: 'pixel'`、`9:16`（或用户指定 `3:4`）、`headingFontId: shuheiti`、`topText: '每天一个提效实操·第 N 期'`、`showWordCount: false`、`seriesLabel: ''`（全部内容页同一顶栏，无朱红；末页正文不要再写同一句）。
+- **末页正文结尾**：关注理由 + 一个提问；**不要**再写 `每天一个提效实操·第 N 期`（顶栏已有）；**不要**再跟 `下期：…` 行。
+- 导出前自查：全部内容页顶栏是 `每天一个提效实操·第 N 期`（`topText`，`seriesLabel` 空，无朱红）；每页以一个 `##` 起头；每页末尾有翻页钩子；至少一页可抄（落地句「可自行封装 skill，或写进 AGENTS.md。」不要「按仓库来」，不要「交给子 Agent」，不要「复制粘贴一下 / 直接粘给 Agent」）；Agent 量词用「个」；末页有两件套（关注理由 + 提问，无期数、无下期预告）。
 - 内容图无 H1，标题类校验（`title_missing_circle` 等）不适用；其余布局告警须修。
 
 ---
@@ -260,7 +260,7 @@ bash scripts/oss-upload.sh --cover <本地png>
 | 动作 | 工具 |
 | --- | --- |
 | 建工程 / 正文 | `era_create_project` · `era_set_markdown`（内容去掉 H1） |
-| 配置 | `era_update_config`（`9:16` + `pixel` + `shuheiti` + topText；`seriesLabel` 留空） |
+| 配置 | `era_update_config`（`9:16` + `pixel` + `shuheiti` + `topText: '每天一个提效实操·第 N 期'`；`seriesLabel` 留空） |
 | 高亮（可选） | `era_apply_highlights` · `era_create_highlight_setup_share`（仅用户点名时） |
 | 标题页（仅半自动） | `?tab=title&text=<标题>` |
 | 校验 / 导出 | `era_preview_layout` · `era_export_images` |
