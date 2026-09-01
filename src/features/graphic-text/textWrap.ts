@@ -32,10 +32,6 @@ function unitWidthCost(unit: string): number {
   return [...unit].length
 }
 
-function resolvePrimaryFontFamily(fontFamily: string) {
-  return fontFamily.replace(/"/g, '').split(',')[0].trim()
-}
-
 function createMeasureContext(fontFamily: string, fontSize: number, fontWeight: number) {
   if (typeof document === 'undefined') return null
 

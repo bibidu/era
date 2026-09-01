@@ -7,8 +7,6 @@ import {
   CODE_CHROME_GAP,
   CODE_CHROME_HEIGHT,
   CODE_CHROME_PAD_X,
-  CODE_CHROME_TITLE_COLOR,
-  CODE_CHROME_TITLE_SIZE,
   CODE_DOT_OPACITY,
   CODE_DOT_SIZE,
   CODE_DOTS,
@@ -17,7 +15,6 @@ import {
   CODE_REF_WIDTH,
   CODE_TEXT_COLOR,
   codeBlockShadowCss,
-  resolveCodeBlockTitle,
 } from './codeBlock'
 import { CODE_TOKEN_COLORS, CODE_TOKEN_FONTS, prefixChineseCodeLine, tokenizeJavaScript } from './codeHighlight'
 import {
@@ -118,7 +115,6 @@ function blockEndMargin(block: MarkdownBlock, config: GraphicTextConfig): string
 
   const styleType = resolveStyleType(block)
   const bodyUnit = `${(config.bodyFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
-  const codeUnit = `${(config.codeFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const titleFontPx = resolveTitleFontSize(block, config)
   const titleUnit = `${(titleFontPx / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`
   const headingUnit = `${(config.headingFontSize / GRAPHIC_DISPLAY_BASE_WIDTH) * 100}cqw`

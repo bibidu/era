@@ -4,8 +4,6 @@ import {
   CODE_BODY_PAD,
   CODE_CHROME_BG,
   CODE_CHROME_HEIGHT,
-  CODE_CHROME_TITLE_COLOR,
-  CODE_CHROME_TITLE_SIZE,
   CODE_DOT_OPACITY,
   CODE_DOT_SIZE,
   CODE_DOTS,
@@ -14,7 +12,6 @@ import {
   CODE_RADIUS,
   codeBodyPadPx,
   codePx,
-  resolveCodeBlockTitle,
 } from './codeBlock'
 import { CODE_TOKEN_COLORS, CODE_TOKEN_FONTS, GITHUB_CODE_FONT, prefixChineseCodeLine, tokenizeJavaScript } from './codeHighlight'
 import {
@@ -494,11 +491,10 @@ async function drawPage(
     HAND_DRAWN_CIRCLE_STROKE_WIDTH * exportScale,
   )
 
-  const drawCodeWindow = (x: number, frameY: number, w: number, h: number, title: string) => {
+  const drawCodeWindow = (x: number, frameY: number, w: number, h: number) => {
     const radius = codePx(width, CODE_RADIUS)
     const chromeH = codePx(width, CODE_CHROME_HEIGHT)
     const dotSize = codePx(width, CODE_DOT_SIZE)
-    const titleSize = codePx(width, CODE_CHROME_TITLE_SIZE)
 
     ctx.save()
     ctx.shadowColor = 'rgba(0,0,0,0.6)'
@@ -623,7 +619,7 @@ async function drawPage(
           else break
         }
         const frameH = chromeH + bodyPad + lineCount * lineHeight + bodyPad
-        drawCodeWindow(bgX, y, bgW, frameH, resolveCodeBlockTitle(block.codeFenceInfo))
+        drawCodeWindow(bgX, y, bgW, frameH)
         y += chromeH + bodyPad
       }
     } else {
