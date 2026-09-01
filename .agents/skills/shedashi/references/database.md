@@ -69,5 +69,4 @@ anon key 是公开的 RLS key，已内联在 `scripts/shedashi-lib.mjs`，可用
 
 - 历史上有几条记录的 `markdown` 被智能提取结果**误覆盖**成了 JSON（07-30、07-23、07-16 等），
   复盘时若 `markdown` 以 `{"话题"` 开头，说明正文已丢，只当数据看。
-- 写入新作品统一用 `scripts/shedashi-publish.mjs`，它会保证 `image_previews[0] === cover_url`
-  并把期号写进 `outline`。
+- **现行蛇大师不再入库发图**。历史脚本 `scripts/shedashi-publish.mjs`（`image_previews[0] === cover_url`、期号写入 `outline`）仅作旧数据兼容，主流程不要再跑它出图。

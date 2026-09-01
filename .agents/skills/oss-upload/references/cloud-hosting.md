@@ -1,6 +1,6 @@
 # 云托管与发图回链（OSS 私有读签名 + 自建站）
 
-本仓库所有 skill（图文 `tuwen` / 风水 `fengshui`）以及**任何**需要把图片发给用户的场景，统一走下列托管。
+本仓库上传与预览统一走下列托管。图文 `tuwen` **已废弃**；风水现行为竖版成片 `fengshui`。对用户预览见 `.cursor/rules/image-preview-delivery.mdc`。
 
 ## 图片 → 阿里云 OSS（私有读 + 12 小时签名 URL）
 

@@ -1,14 +1,16 @@
 # 云发布配置（示例，勿提交真实密钥）
 
-## 全局约定：凡发图必走 OSS
+## 全局约定：对象上传走 OSS，预览走 HTTPS
 
-本仓库**任何**交付给用户的图片（图文页、封面、拼图、截图、生成图等）：
+本仓库**任何**需要落对象的图片/成片：
 
-1. 必须经 `bash scripts/oss-upload.sh` 上传到 **阿里云 OSS 私有桶**
-2. 必须在**对话框直接发送**返回的 URL（普通图为 **12 小时签名 URL**；封面为带 `__cover_keep__` 的**永久公共 URL**）
-3. 禁止本地路径、用 HTML 嵌入代替对话框发图
+1. 必须经 `bash scripts/oss-upload.sh` 上传到 **阿里云 OSS**
+2. 对用户预览：**只发**实验室 / **HTTPS** 预览链接（见 `.cursor/rules/image-preview-delivery.mdc`）；**禁止**把 OSS 裸链当唯一交付；成片**不要**聊天塞附件
+3. 禁止本地路径、`file://` 代替预览
 
-Cursor 全局规则：`.cursor/rules/oss-image-delivery.mdc`（`alwaysApply`）。
+Cursor 全局规则：`.cursor/rules/oss-image-delivery.mdc`、`.cursor/rules/image-preview-delivery.mdc`（`alwaysApply`）。
+
+图文 / tuwen 多页出图已废弃；风水现行能力见 `.agents/skills/fengshui/SKILL.md`（竖版口播成片）。
 
 ## 阿里云 OSS（图片：私有读 + 12h 签名）
 
@@ -21,7 +23,7 @@ Cursor 全局规则：`.cursor/rules/oss-image-delivery.mdc`（`alwaysApply`）�
 
 ### 封面图永久保留（`__cover_keep__`）
 
-风水 / 图文 / 社媒等**所有封面图**上传时，对象 key 文件名须带标记 **`__cover_keep__`**（脚本会对 `cover.png` / `cover-*.png` 等自动插入，也可用 `bash scripts/oss-upload.sh --cover <file>` 强制）：
+存量社媒封面图上传时，对象 key 文件名须带标记 **`__cover_keep__`**（脚本会对 `cover.png` / `cover-*.png` 等自动插入，也可用 `bash scripts/oss-upload.sh --cover <file>` 强制）：
 
 - 清理脚本**永不删除**含该标记的对象
 - ACL 设为 **public-read**，stdout 返回**无过期**的公共 URL（写入 Supabase `cover_url` / `image_previews` 首图时必须用此 URL）

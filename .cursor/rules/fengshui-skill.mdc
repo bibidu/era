@@ -1,15 +1,24 @@
 ---
-description: 当用户要做风水/阳宅图文或出风水图时，必须启用风水 skill
+description: 当用户要做风水/阳宅口播成片或丢来抖音链接做视频时，必须启用风水竖版成片 skill
 alwaysApply: true
 ---
 
-# 风水 Skill 强制路由
+# 风水竖版成片 · 强制路由
 
 只要用户提到以下任一意图，**必须**读取并严格执行 `.agents/skills/fengshui/SKILL.md`（也可用 `/fengshui` 或 `.cursor/skills/fengshui`）：
 
-- 风水skill / 风水 / 风水风格 / 风水质感 / 阳宅
-- 风水主题社媒图文、gc-minimal-zine-poster 底图出风水图
+- 风水skill / 风水竖版成片 / 风水 / 风水风格 / 阳宅
+- 口播成片 / 抖音链接做视频 / 给链接出竖版成片
+- （旧说法）出风水图、风水主题社媒图文 —— **改为成片**，不要再走 Era 叠字
 
-不要与图文 skill（`tuwen`，非风水多页 + 封面）混淆。须按风水 skill：固定 fengshui 模板、**一级标题必须宋体**（`titleFontId: song`，禁止 heiti/shuheiti）、一级标题全文朱红 `#C41E3A`、**多行一级标题写在同一个 `#` 里用 U+2028 分行（禁止连续两个 `#`，否则封面两行空太多）**、`titleSecondaryFontSize: 56`、二级标题独占页、gc-minimal 底图（技能只出没字的图，Era 叠字；各页共用封面底）、4–6 页分篇（**多篇文案一次齐发**确认连贯后再出图入库；篇名写在标题上如 `……（上篇）`；非末篇篇末预告下一篇，且预告段固定黄色刷子 `#FACC15`）、**同篇各页共用一张封面底图**、一级标题宋体、改写方向为活学活用（知识点为骨、教导传授为皮肉）。**不发高亮设置页**；除下一篇预告黄刷外不加其它高亮。
+## 现行能力（视频）
 
-交付遵守 `.cursor/rules/image-preview-delivery.mdc`：禁止对话框直发 OSS 图链；默认入库后只发 **HTTPS** `https://39.106.179.17.sslip.io/?tab=data`（勿发 HTTP 裸 IP，否则 Safari 无法保存到相册）。
+抽中文口播（改词 &lt; 5%）→ 云机 VoxCPM 0.5 克隆「老者」配音（禁 MiniMax）→ cinematic 9:16 山水静图 → 片头 2 秒毛笔标题+锦垣印 → 宋体 100 字幕 → 拼 1080×1920 成片。交付只发实验室 / HTTPS 预览链接。
+
+## 已废弃（禁止再执行）
+
+- Era `pageOverlay: fengshui` + gc-minimal-zine-poster 底图叠字
+- 4–6 页分篇出图、`image_previews` 多页入库发图
+- 图文 skill（`tuwen`）及任何「再出一套阳宅长图」请求
+
+不要与已废弃的 tuwen 混淆；提图文时按 `era-skill.mdc` 告知已废弃。

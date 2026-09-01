@@ -1,53 +1,44 @@
 ---
-description: 图片预览交付：禁止直发 OSS 图链；图文/风水默认入库自建站，HTML 仅强烈要求时
+description: 预览交付：禁止直发 OSS 裸链当唯一交付；风水成片发实验室/HTTPS 链接；勿聊天塞视频附件
 alwaysApply: true
 ---
 
-# 图片预览交付（全局强制）
+# 预览交付（全局强制）
 
-凡需要让用户**预览图片**的场景，**绝对禁止**在对话框直接发送 OSS 图片链接（含签名 URL、`__cover_keep__` 永久图链、裸对象 URL）。
+凡需要让用户**预览图片或成片**的场景，**绝对禁止**在对话框把 OSS 裸链（含签名 URL、`__cover_keep__`、裸对象 URL）当作**唯一**交付。
 
-## 默认：入库 + 社媒前端
+## 风水竖版成片（现行主路径）
 
-**图文 skill / 风水 skill / 社媒多页长图**（含确认与最终交付）：
+1. 成片按 `.agents/skills/fengshui/SKILL.md` 产出后，对话框**只发**实验室 / **HTTPS** 预览链接（默认 `https://39.106.179.17.sslip.io/`，可带业务深链）
+2. 链接**单独一行**给人；**不要**往聊天塞视频附件
+3. **不要**只丢 OSS 裸链交差
 
-1. 图片上传后**按序写入** `era_social_video_analyses.image_previews`（[0]=封面/首页 `__cover_keep__`，同步 `cover_url`）
-2. 对话框**只发**自建站 **HTTPS** 预览：`https://39.106.179.17.sslip.io/`（建议 `?tab=data`），让用户在社媒里查看并可「保存到相册」
-3. 不要逐张发图，不要为确认来回贴 OSS 图链
-4. **禁止**用 OSS 临时 HTML 代替入库，除非用户**强烈要求**「不要入库 / 只要临时 HTML」
+## 历史社媒多页图（已停产，仅存量）
+
+若处理库内旧图帖预览：
+
+1. 图片在 `era_social_video_analyses.image_previews`（[0]=封面 `__cover_keep__`）
+2. 对话框只发 `https://39.106.179.17.sslip.io/?tab=data`
+3. **禁止**新开 Era 叠字 / tuwen / gc-minimal 生产链路（已废弃）
 
 ### 为何必须发 HTTPS（硬性）
 
-- Safari「保存到相册」依赖 Web Share，**仅在 HTTPS 安全上下文**可用
-- 裸 IP `http://39.106.179.17/` 是 HTTP，即使用 iPhone Safari 打开也无法调起系统分享
-- Caddy 已为 `39.106.179.17.sslip.io` 签发证书；**默认交付链用** `https://39.106.179.17.sslip.io/?tab=data`
-- 禁止再把 HTTP 裸 IP 当作社媒默认预览链发给用户（除非用户只要浏览、明确不要存相册）
+- Safari「保存到相册」等能力依赖安全上下文
+- 裸 IP `http://39.106.179.17/` 是 HTTP；**默认交付链用** `https://39.106.179.17.sslip.io/`
 
 ## 例外：OSS 临时 HTML
 
-仅适用于：
-
-- 用户**强烈要求**临时 HTML；或
-- 明确非社媒、且无法/不宜写入 `era_social_video_analyses` 的生成图（如纯工具试稿）
-
-流程：
-
-1. 图片仍须先上传 OSS（嵌入用；可 `--public` 或 `--cover`）
-2. 用 `node scripts/make-oss-preview-html.mjs --title … --image …` 生成 HTML
-3. 对话框**只发 HTML 预览 URL**
-4. **必须询问**：用完后是否删除该预览文件（及同批图）？确认后：  
-   `node scripts/make-oss-preview-html.mjs --delete-manifest <manifest.json>`
+仅用户**强烈要求**临时 HTML，或明确非社媒试稿时：`make-oss-preview-html.mjs`；只发 HTML URL；用完询问是否删除。
 
 ## 禁止
 
-- 对话框直发任意图片 OSS URL
+- 对话框直发任意图片/视频 OSS URL 当唯一交付
 - 用本地路径 / `file://` 代替预览
-- 图文 / 风水默认任务用 HTML 页代替入库 + 自建站
-- 只口头描述「已上传」却不给自建站或（例外下的）HTML URL
+- 聊天塞视频附件代替预览链接
+- 代理再走出图文多页导出冒充成片
 
 ## 相关
 
-- 上传：`scripts/oss-upload.sh`（`--public` / `--cover`）
-- HTML 预览：`scripts/make-oss-preview-html.mjs`
-- 社媒最终交付：`.cursor/rules/preview-link-only.mdc`
-- 图文：`.agents/skills/tuwen/SKILL.md`；风水：`.agents/skills/fengshui/SKILL.md`
+- 上传：`scripts/oss-upload.sh`
+- 风水成片：`.agents/skills/fengshui/SKILL.md`
+- 图文（DEPRECATED）：`.agents/skills/tuwen/SKILL.md`

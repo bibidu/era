@@ -1,4 +1,4 @@
 interface:
-  display_name: "风水skill"
-  short_description: "阳宅风水图文：诗意泥纸背景、二级标题独占页、4–6 页分篇出图"
-  default_prompt: "使用 $fengshui，按风水模板与诗意页背景，根据大纲生成社媒图文。"
+  display_name: "风水竖版成片"
+  short_description: "抖音链接 → 抽口播、VoxCPM 老者配音、山水静图、毛笔标题+锦垣印、宋体字幕、9:16 成片"
+  default_prompt: "使用 $fengshui，根据我给的抖音链接全自动生成竖版口播成片。"

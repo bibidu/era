@@ -53,5 +53,6 @@
 
 ## 写入
 
-新作品统一用 `scripts/fengdashi-publish.mjs`（读 `publish.json`）：上传 OSS（`--cover` 永久公共读）→ 写库
-（`work_type: 风水`、`image_previews[0] === cover_url`）→ 推飞书。**不要**手拼 restPost 绕过它。
+**现行成片**走风水竖版成片 skill（`.agents/skills/fengshui/SKILL.md`），交付 HTTPS/实验室预览链接；**不要**再为叠字多页图跑入库发图主路径。
+
+历史脚本 `scripts/fengdashi-publish.mjs`（读 `publish.json`：上传 OSS → 写 `work_type: 风水` / `image_previews` → 推飞书）仍可能存在于仓内，**仅作旧数据兼容**，风大师主流程不要再调用它出图。复盘读写仍用 `fengdashi-lib.mjs` / `fengdashi-analyze.mjs`。
