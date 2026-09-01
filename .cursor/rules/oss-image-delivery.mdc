@@ -1,37 +1,36 @@
 ---
-description: 图片须上传阿里云 OSS；对用户预览禁止直发图链，走社媒入库或 HTML 预览页
+description: 图片/成片资源须上传阿里云 OSS；对用户预览禁止只丢 OSS 裸链，走实验室/HTTPS 预览
 alwaysApply: true
 ---
 
-# 图片交付：阿里云 OSS（全局强制）
+# 对象存储：阿里云 OSS（全局强制）
 
-本仓库需要存图的场景，一律先上传阿里云 OSS。对用户**如何展示**见 `.cursor/rules/image-preview-delivery.mdc`（禁止对话框直发 OSS 图链）。
+本仓库需要存图/成片对象的场景，一律先上传阿里云 OSS。对用户**如何展示**见 `.cursor/rules/image-preview-delivery.mdc`。
 
 ## 必须
 
-1. 用 `bash scripts/oss-upload.sh <本地图片>` 上传到阿里云 OSS
+1. 用 `bash scripts/oss-upload.sh <本地文件>` 上传到阿里云 OSS
 2. **对用户预览**：
-   - **图文 / 风水 / 社媒帖子（默认）**：写入 `image_previews` 后只发 **HTTPS** `https://39.106.179.17.sslip.io/?tab=data`（见 preview-link-only / 图文或风水 skill；勿发 HTTP 裸 IP）
-   - **OSS 临时 HTML**：仅用户强烈要求或非社媒例外时用 `make-oss-preview-html.mjs`；只发 HTML URL；用完后询问是否删除
-3. 上传脚本会在存图前自动清理 Bucket 内超过 **14 小时**的旧对象（省存储费）；**含 `__cover_keep__` 的封面永不删**；不要绕过 `oss-upload.sh` 直接 `ossutil cp`
+   - **风水竖版成片（现行）**：上传后只发实验室 / **HTTPS** 预览链（`https://39.106.179.17.sslip.io/`）；勿聊天塞附件；勿只丢 OSS 裸链
+   - **存量社媒图帖**：可指引 `?tab=data`；勿发 HTTP 裸 IP
+   - **OSS 临时 HTML**：仅用户强烈要求或非社媒例外时用 `make-oss-preview-html.mjs`
+3. 上传脚本会在存图前自动清理 Bucket 内超过 **14 小时**的旧对象；**含 `__cover_keep__` 的封面永不删**；不要绕过 `oss-upload.sh` 直接 `ossutil cp`
 
 ### 上传形态
 
-- 普通私有图：默认私有 + 可签 12h URL（仅供 HTML 内嵌或入库，**不要**贴进对话框）
-- **封面 / 社媒首图**：`--cover` 或文件名识别 → `__cover_keep__`、公共读、查看无过期
-- **预览 HTML / 临时公开图**：`--public` → 公共读、无签名 URL（可被 14h 清理或用户确认后删除）
+- 普通私有对象：默认私有 + 可签 12h URL（**不要**贴进对话框当唯一交付）
+- **封面 / 社媒首图（历史）**：`--cover` → `__cover_keep__`、公共读
+- **预览 HTML / 临时公开**：`--public`
 
 ## 禁止
 
-- 在对话框直接发送 OSS 图片链接（签名 / 永久 / 裸链均禁止）
+- 在对话框把 OSS 链接当作唯一交付
 - 只发本地路径、`file://`
-- 把**非封面且非预览交付所需**的对象随意改成公共读；社媒长期首图用 `__cover_keep__`，临时预览用 `--public`
-- 社媒最终交付时在对话里堆各页独立图 URL
+- 代理再走已废弃的 tuwen / Era 多页图文生产
 
 ## 文档与实现
 
-- 预览分支：`.cursor/rules/image-preview-delivery.mdc`
-- 说明：`docs/cloud-hosting.md`、各 skill 的 `references/cloud-hosting.md`、`AGENTS.md`
-- 上传：`scripts/oss-upload.sh`（内部会调用 `scripts/oss-cleanup-expired.sh`）
-- HTML 预览：`scripts/make-oss-preview-html.mjs`
-- 仅清理：`bash scripts/oss-cleanup-expired.sh` 或 `npm run oss:cleanup`
+- 预览：`.cursor/rules/image-preview-delivery.mdc`
+- 说明：`docs/cloud-hosting.md`、`AGENTS.md`
+- 上传：`scripts/oss-upload.sh`
+- 风水成片：`.agents/skills/fengshui/SKILL.md`

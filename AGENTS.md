@@ -4,83 +4,64 @@
 
 完成功能改动并创建 PR 后，**直接合入 `main`**，不要询问用户是否合并。合入后执行 `npm run deploy:swas`（SSH 到服务器 `git pull` + 构建，见 skill **swas-deploy**），并把**固定站点 URL**发给用户：优先 **HTTPS** `https://39.106.179.17.sslip.io/`（可带 `?tab=`）。仅当用户明确要求先别合并 / 保持 draft 审阅时例外。约定见 `.cursor/rules/auto-merge-pr.mdc`。
 
-## 蛇大师 skill（抖音账号负责人 · 全自动）
+## 蛇大师 skill（抖音账号负责人 · 复盘与文案）
 
 抖音账号「AI提效实验室」的社媒负责人角色，由 skill **蛇大师**（目录 `shedashi`）定义：
 
 - `.agents/skills/shedashi/SKILL.md`
 - `.cursor/skills/shedashi`（符号链接）
 
-用户说「使用蛇大师，开启今天的任务」「今天发什么」「下一期」时走本 skill。**全自动、零确认**：拉后台数据复盘 → 定选题/标题/档期 → 写正文 → 出封面与内容页 → 上传 OSS → 入库 → 飞书机器人推「第 N 期已就绪」。禁止向用户确认选题/标题/正文/封面/版面。数据结论见 `references/playbook.md`，账号档案见 `references/account.md`（名称/背景/简介/定位永不改动）。
+用户说「使用蛇大师，开启今天的任务」「今天发什么」「下一期」时走本 skill。**全自动、零确认**：拉后台数据复盘 → 定选题/标题/档期 → 写正文（若需要）→ 飞书通知。**不再**出 Era 封面/内容页、不再走 `tuwen`。数据结论见 `references/playbook.md`，账号档案见 `references/account.md`（名称/背景/简介/定位永不改动）。
 
 三条硬规则：
 
-- **异常也必须推飞书**：自己修不好 / 需用户拍板时，除对话说明外必须推红色告警卡 `node scripts/shedashi-notify.mjs --alert --stage … --detail … --action …`。这一轮没推出「已就绪」卡，就一定要推一张告警卡。
+- **异常也必须推飞书**：自己修不好 / 需用户拍板时，除对话说明外必须推红色告警卡 `node scripts/shedashi-notify.mjs --alert --stage … --detail … --action …`。
 - **档期用脚本的 `nextSlot`，禁止自己拍**：抖音断更惩罚要求相邻两篇间隔 **≤ 2 天**（账号级，风水/健身也占位）；在此之上走固定周节律 **周一/二/三/四/六 早 07:40–08:00**。
 - **可回收分析的必要条件**：`work_type === '图文'` **且** `extract_status === '提取成功'`，缺一不可；判定用 `isAnalyzable()`。断更间隔另用 `isPublishedRecord()` 取全部已发布作品。
 
 ## 风大师 skill（抖音风水号负责人 · 全自动）
 
-抖音**风水号（阳宅篇）**的社媒负责人角色，由 skill **风大师**（目录 `fengdashi`）定义，是蛇大师的风水号版本——**两个账号、两套数据、两套结论，推同一个飞书群**：
+抖音**风水号（阳宅篇）**的社媒负责人角色，由 skill **风大师**（目录 `fengdashi`）定义——**两个账号、两套数据、两套结论，推同一个飞书群**：
 
 - `.agents/skills/fengdashi/SKILL.md`
 - `.cursor/skills/fengdashi`（符号链接）
 
-用户说「使用风大师，开启今天的任务」「风水号今天发什么」「风水下一篇」时走本 skill。**全自动、零确认**：`node scripts/fengdashi-analyze.mjs` 拉风水数据复盘 → 定选题/标题/档期 → 按**风水 skill**（`fengshui`）改写方向与排版写正文 → 出同色调诗意背景与内容页 → 上传 OSS → 入库（`work_type: 风水`）→ `fengdashi-publish.mjs` 推飞书「风水号下一篇已就绪」。数据结论见 `references/playbook.md`，档案见 `references/account.md`（名称/头像/背景/简介/定位永不改动）。
+用户说「使用风大师，开启今天的任务」「风水号今天发什么」「风水下一篇」时走本 skill。**全自动、零确认**：`node scripts/fengdashi-analyze.mjs` 拉风水数据复盘 → 定选题/标题/档期 → **有抖音/视频链接则**走 **风水竖版成片**（`fengshui`）→ 飞书「风水号下一篇已就绪」。**禁止**再走 Era 叠字 / gc-minimal 多页出图。
 
 三条硬规则：
 
-- **异常也必须推飞书**：自己修不好 / 需用户拍板时，除对话说明外必须推红色告警卡 `node scripts/fengdashi-notify.mjs --alert --stage … --detail … --action …`。这一轮没推出「已就绪」卡，就一定要推一张告警卡。
-- **档期用脚本的 `nextSlot`，禁止自己拍**：断更间隔 **≤ 2 天**（风水号只发风水，只按风水已发布记录算）；只投早 07:40–08:00；周节律暂沿用图文号假设，待样本补齐重算。
-- **可回收分析的必要条件**：`work_type === '风水'` **且** `extract_status === '提取成功'`，缺一不可；判定用 `isFengAnalyzable()`（`scripts/fengdashi-lib.mjs`）。
-- 内容侧走**风水 skill** 技术要点但跳过所有确认步；**多行一级标题写在同一个 `#` 里用 U+2028 分行，禁止连续两个 `#`**（会叠双倍块间距、封面空太多），`titleSecondaryFontSize: 56`，禁调 `era_set_title`，`title` 由入库脚本写。
+- **异常也必须推飞书**：`node scripts/fengdashi-notify.mjs --alert --stage … --detail … --action …`。这一轮没推出「已就绪」卡，就一定要推一张告警卡。
+- **档期用脚本的 `nextSlot`，禁止自己拍**：断更间隔 **≤ 2 天**（只按风水已发布记录）；只投早 07:40–08:00。
+- **可回收分析的必要条件**：`work_type === '风水'` **且** `extract_status === '提取成功'`，缺一不可；判定用 `isFengAnalyzable()`。
 
-## 图文 skill（多页长图 + 内联封面）
+## 图文 skill（已废弃）
 
-非风水社媒图文由 skill **图文skill**（目录 `tuwen`）定义：
+`.agents/skills/tuwen/SKILL.md` 仅为 **DEPRECATED** 说明。提「图文 / tuwen / 出风水图 / gc-minimal 叠字」时告知已废弃：**风水走 fengshui 视频 skill**；其他内容不要再出 Era 多页图。`graphic-text` 运行时代码可留仓，skill/rules 已切断入口。路由见 `.cursor/rules/era-skill.mdc`。
 
-- `.agents/skills/tuwen/SKILL.md`
-- `.cursor/skills/tuwen`（符号链接）
-
-执行「图文skill / 小红书·抖音出图 / 生成封面 / 封面skill」时遵循该 skill；先 `scripts/ensure-era-ready.sh`（仅封面单张时可只跑 `generate-cover.mjs`）。被蛇大师调用时走**全自动**模式（跳过所有确认步）；用户单篇讨论时走**半自动**模式。
-
-默认：一级标题（封面大标题）与二级标题均数黑体（封面 `bigTitleFont: shuheiti`；`headingFontId`: `shuheiti`）；**默认导出抖音 9:16**；**默认不做高亮**；**每个 `##` 独占一页**；**封面 + 4 页封顶**；**期数 `每天一个提效实操·第N期` 写在末页正文结尾**（与关注理由、提问组成末页三件套；**不要写下期预告**；`seriesLabel` 留空，每页顶栏都是「点赞关注不迷路～」）——第 2 页顶栏放期数已被后台数据证否（平均浏览图片数 2.7→1.9、吸粉率 0.32%→0.15%，见 shedashi playbook §版面）。选题重心为 **AI 实践与技巧**，不以裸 git/CLI 教程为主体。封面步骤已内联（`scripts/generate-cover.mjs`），不再使用独立 fengmian 目录。
-
-仅用户明确要求高亮时：`era_create_highlight_setup_share` → `highlightSetupPagesUrl(shareId)`；禁止对整段 query 再 `encodeURIComponent`。
-
-出图：上传并写入 `image_previews`（[0]=封面永久链）；对话框只发 **HTTPS** `https://39.106.179.17.sslip.io/`（可带 `?tab=data`；勿发 HTTP 裸 IP）。
-
-**风水 / 阳宅主题改走「风水 skill」，不要用本 skill。**
-
-## 风水 skill（阳宅图文 + 诗意页背景）
+## 风水 skill（竖版口播成片）
 
 - `.agents/skills/fengshui/SKILL.md`
 - `.cursor/skills/fengshui`（符号链接）
 
-固定 `pageOverlay: fengshui`、抖音 9:16、固定顶栏文案、`headingFontSize: 22`、一级标题全文朱红 `titlePrimaryColor: #C41E3A`；每 `##` 独占页；诗意泥纸背景（意象左下/右下随机）；单篇 4–6 页，超出分篇（**多篇文案一次齐发**；标题带 `（上篇）` 等；非末篇篇末预告下篇并用黄色刷子 `#FACC15`）；**同篇全部诗意背景图同色调**；改写方向为活学活用（知识点为骨、教导为皮肉）；用户可见文案不得含 `<!-- era:page-break -->`。按页背景导出：`scripts/export-pages-with-bgs.mjs`。
+**一个抖音/视频链接全自动**：抽中文口播（改词 &lt; 5%）→ 云机 VoxCPM 0.5 克隆「老者」配音（禁 MiniMax）→ cinematic 9:16 山水静图 → 片头 2 秒毛笔标题+锦垣印 → 宋体 100 字幕 → 拼 1080×1920 成片。交付只发实验室 / HTTPS 预览链接。读音见 `references/voice-reading.md`（Qwen＝千问，Codex＝/ˈkoʊ.dɛks/）。
 
-## 发图硬性规则（全局）
+**禁止**再走阳宅图文、gc-minimal、4–6 页分篇叠字出图。
 
-对话框**绝对禁止**直接发送 OSS 图片链接。见 `.cursor/rules/image-preview-delivery.mdc`。
+## 发图 / 成片交付（全局）
 
-- **图文 / 风水 / 社媒帖子（默认）**：写入 `image_previews` + 只发自建站 **HTTPS** `https://39.106.179.17.sslip.io/`（建议 `?tab=data`），确认阶段也走入库
-- **为何 HTTPS**：Safari「保存到相册」依赖 Web Share，仅安全上下文可用；裸 IP `http://39.106.179.17/` 为 HTTP，无法调起系统分享
-- **OSS 临时 HTML**：仅用户**强烈要求**时用 `make-oss-preview-html.mjs`；只发 HTML URL；用完后询问是否删除
+对话框**绝对禁止**只丢 OSS 裸链当唯一交付；成片**不要**往聊天塞视频附件。见 `.cursor/rules/image-preview-delivery.mdc`。
+
+- **风水竖版成片**：上传后发实验室 / **HTTPS** 预览链（默认 `https://39.106.179.17.sslip.io/`），链接单独一行
+- **历史社媒图帖**：仍可通过 `?tab=data` 查看；勿发 HTTP 裸 IP
+- **OSS 临时 HTML**：仅用户**强烈要求**时用 `make-oss-preview-html.mjs`
 
 ## 云托管（强制）
 
-- **图片存储**：阿里云 OSS（`scripts/oss-upload.sh`）。预览规则见 `image-preview-delivery.mdc` / `oss-image-delivery.mdc`。
-- **封面永久**：key 含 `__cover_keep__`（或 `--cover`）；清理跳过；公共读。写入社媒 `cover_url` / 预览首图必须用此 URL。
-- **预览 HTML**：`--public`；`scripts/make-oss-preview-html.mjs`。
+- **对象存储**：阿里云 OSS（`scripts/oss-upload.sh`）。预览规则见 `image-preview-delivery.mdc` / `oss-image-delivery.mdc`。
+- **封面永久**（历史图帖）：key 含 `__cover_keep__`；清理跳过。
 - **过期清理**：存图前清理 `era/assets/` 下超过 **14 小时**旧对象；跳过 `__cover_keep__`。
-- **Cloud Agent 上传**：美西→北京约 2–3 分钟/3MB；见 skill **oss-upload**。
 - **前端 + 业务 REST**：`39.106.179.17`；**用户交付默认 HTTPS** `https://39.106.179.17.sslip.io/`；发布 `npm run deploy:swas`（skill **swas-deploy**）。
-- **Edge Functions** 仍在旧 Supabase。
 - 说明：`docs/cloud-hosting.md`、skill `references/cloud-hosting.md`。
-
-## 标题排版设置页
-
-精细控制标题时主动发 `https://39.106.179.17.sslip.io/?tab=title&text=当前帖子标题`。**禁止**只发裸 `?tab=title`。可用 `titleComposerPagesUrl(标题)`。复制配置后用 `generate-title-composer.mjs` 出图，按 image-preview-delivery 交付。见 `.cursor/rules/title-composer.mdc`。
 
 ## 前端 Tab（URL 可深链）
 
@@ -89,9 +70,9 @@
 | 页面 | URL |
 | --- | --- |
 | 社媒（默认） | `?tab=data` |
-| 图文（二级页） | `?tab=graphic` |
+| 图文编辑器（二级页，运行时保留） | `?tab=graphic` |
 | 帖子详情（二级页） | `?tab=data&post=<id>` |
 
-顶栏仅「图文 / 社媒」；点「图文」进入路由二级页（可边缘右滑返回）。高亮 / 标题 / 拼图 Tab 与复盘页已移除。
+顶栏仅「图文 / 社媒」。Agent **生产流程**不再用图文 Tab 出新帖；风水成片走视频 skill。
 
 「亏否」已拆出 Era：独立站 [https://39.106.179.17.sslip.io/kuifou/](https://39.106.179.17.sslip.io/kuifou/)（仓库 `bibidu/kuifou`）。Era 发版须保留 Caddy `kuifou_routes` 与 `/opt/kuifou-web` 挂载，且勿 drop `kuifou_assets` 表。

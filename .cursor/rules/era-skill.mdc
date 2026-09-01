@@ -1,23 +1,24 @@
 ---
-description: 当用户要用 Era / 图文 / 封面做小红书/抖音出图时，必须启用图文 skill（tuwen）
+description: 图文 skill（tuwen）已废弃；提图文/出风水图时告知改走风水竖版成片或不做
 alwaysApply: true
 ---
 
-# 图文 Skill 强制路由
+# 图文 Skill 已废弃
 
-只要用户提到以下任一意图，**必须**读取并严格执行项目 skill `.agents/skills/tuwen/SKILL.md`（也可用 `/tuwen` 或 `.cursor/skills/tuwen`）：
+Era 多页图文（`tuwen`）**已彻底停用**。
 
-- 用 era / 图文skill 生成图文
-- 根据标题/大纲出小红书或抖音图
+只要用户提到以下任一意图，**不要**再执行旧图文 / 封面叠字流程：
+
+- 图文skill / tuwen / 用 Era 生成图文
+- 根据标题/大纲出小红书或抖音**图**
 - 图文高亮、分页导出、发图
-- 封面skill / 生成封面 / 社媒封面 / cover skill（封面已内联进图文 skill）
+- 封面skill / 生成封面 / 社媒封面 / cover skill（旧瑞士风封面）
+- 出风水图 / gc-minimal 封面叠字
 
-**风水 / 阳宅 / 风水风格** → 改走 `.agents/skills/fengshui/SKILL.md`（见 `fengshui-skill.mdc`），不要用本路由。
+## 怎么做
 
-不要跳过确认步骤；不要在未启动 Era 服务时假装已出图。
+1. **风水 / 阳宅 / 口播成片 / 抖音链接做视频** → 读取并执行 `.agents/skills/fengshui/SKILL.md`（风水竖版成片）
+2. **其他「再出多页图文」** → 明确告知：图文已废弃，本仓不再出 Era 多页图
+3. 若仍读到 `.agents/skills/tuwen/SKILL.md`，以其中 **DEPRECATED** 说明为准，禁止继续旧主流程
 
-默认流程：拿到大纲 → 生成内容 → 定标题＋封面字段 → 内联封面步骤出封面 → **跳过高亮**直接布局校验导出 → 封面＋内容页拼合入库。内容图**不含一级标题**；默认导出**抖音 9:16**；**每个 `##` 独占一页**；**封面 + 4 页封顶**；期数「每天一个提效实操·第N期」只写入全部内容页 `topText`（`seriesLabel` 留空，无朱红下划线）；末页正文只要关注理由 + 提问，**不要**再写一遍期数，**不要写下期预告**。可抄页给判断清单 / 规则原文，落地句写成「可自行封装 skill，或写进 AGENTS.md。」不要「按仓库来」，不要「交给子 Agent」，不要「复制粘贴一下 / 直接粘给 Agent」。Agent 量词用「个」不用「只」（「只审」除外）。选题重心为 **AI 实践与技巧**，不以裸 git/CLI 教程为主体。正文/二级标题英文用 IBM Plex Mono，中文仍用宋体和数黑体，代码块字体对齐 GitHub 网页端栈；数字 token 用 Liberation Mono，中文注释同一栈回落 Noto Sans CJK；中文行自动加 // 并按 JavaScript 高亮。
-
-被 **蛇大师 skill**（`shedashi`）调用时走**全自动**模式：跳过所有确认步，不问选题/标题/正文/版面，一路跑到入库 + 飞书通知。用户就单篇来回讨论时才走半自动。
-
-**默认不做高亮**（不发高亮设置页、不 `era_apply_highlights`）；仅用户明确要求高亮时才走设置页。确认与最终交付均默认入库后只发 **HTTPS** 预览链接 `https://39.106.179.17.sslip.io/?tab=data`（勿发 HTTP 裸 IP）；禁止对话框直发 OSS 图链；OSS 临时 HTML 仅用户强烈要求时。见 `preview-link-only.mdc`、`image-preview-delivery.mdc`。
+蛇大师（`shedashi`）**不得**再调用 tuwen 出大学生图文。

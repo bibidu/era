@@ -1,10 +1,9 @@
 # Era Agent / MCP 技术方案
 
-> 状态：已按用户确认落地（分支 `cursor/mcp-local-agent-be32`）  
-> 范围：仅图文模式（graphic-text），不含海报  
-> 交互流程：见项目 skill `.agents/skills/tuwen/SKILL.md`（**图文skill** / `/tuwen`；封面已内联）  
-> 风水 / 阳宅：见 `.agents/skills/fengshui/SKILL.md`（**风水skill** / `/fengshui`）  
-> 单张社媒封面：图文 skill §封面，渲染脚本 `scripts/generate-cover.mjs`（不走 Era Bridge）
+> 状态：图文 MCP 生产流程 **已废弃**（`tuwen` DEPRECATED；风水改走竖版成片 skill）  
+> 本文保留供理解本地 Agent Bridge / graphic-text 运行时；**代理不得再按本文出新帖多页图**。  
+> 现行风水成片：`.agents/skills/fengshui/SKILL.md`  
+> 交互（废弃）：`.agents/skills/tuwen/SKILL.md`（仅 DEPRECATED 说明）  
 
 ## 背景知识
 
@@ -22,7 +21,7 @@
 ```
 用户（IM / Cursor 对话）
    ↕
-Agent（严格执行图文 skill / tuwen）
+Agent（**勿再**按已废弃图文 skill 出新帖；风水成片见 fengshui）
    ├─ LLM：正文 / 标题 / 高亮建议（Agent 内生成）
    ├─ 人机确认：逐步「是否继续」
    └─ 出图：Era MCP / REST
@@ -118,11 +117,13 @@ Gallery 图文库已下线。出图后：
 ## 目录
 
 ```
-.cursor/skills/tuwen/      # 图文skill（云端/本机 Agent 自动发现）
-.agents/skills/tuwen/      # 兼容副本
-docs/agent-mcp-design.md   # 本文件
-server/                    # Agent HTTP + WS + MCP
-src/agent/                 # 浏览器控制通道
+.cursor/skills/fengshui/   # 风水竖版成片（现行）
+.cursor/skills/tuwen/      # DEPRECATED 说明
+.agents/skills/fengshui/
+.agents/skills/tuwen/
+docs/agent-mcp-design.md   # 本文件（图文 Bridge 历史）
+server/                    # Agent HTTP + WS + MCP（前端编辑器用）
+src/agent/
 scripts/ensure-era-ready.sh
 scripts/start-local-agent.sh
 ```

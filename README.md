@@ -36,35 +36,22 @@ npm run deploy:swas
 
 图片资源统一上传 **阿里云 OSS 私有桶**（bucket `agent-17718139319`），交付 **12 小时签名 URL**（防盗刷）；存图前会自动清理超过 14 小时的旧对象。见 [docs/cloud-hosting.md](./docs/cloud-hosting.md)。
 
-## 图文 Skill（非风水多页 + 内联封面）
+## 图文 Skill（已废弃）
 
-云端 / 本机 Agent 生成非风水图文时，走 skill **图文skill**（`.agents/skills/tuwen/SKILL.md`）：
+Era 多页图文（`.agents/skills/tuwen/SKILL.md`）**已彻底停用**。提「图文skill / tuwen / 封面skill」时告知已废弃，不要再走叠字出图。前端 `?tab=graphic` 编辑器可仍打开，但 Agent 生产流程不再入口。
 
-- 对话里说 **「图文skill」** 或 **「封面skill」** 即可触发（封面已内联）
-- 也可输入 `/tuwen`，或提到「用标题生成图文 / 小红书·抖音出图」
-- 流程：问大纲 → 确认内容 → 确认标题＋封面字段 → `generate-cover.mjs` 出封面 → 高亮 → 拼合确认 → 入库只发自建站预览（内容图不含一级标题）
+技术方案（历史）：[docs/agent-mcp-design.md](./docs/agent-mcp-design.md)
 
-技术方案：[docs/agent-mcp-design.md](./docs/agent-mcp-design.md)
+## 风水 Skill（竖版口播成片）
 
-## 风水 Skill（阳宅图文 + 诗意页背景）
+风水 / 阳宅 / 口播成片 / 抖音链接做视频 → skill **风水竖版成片**（`.agents/skills/fengshui/SKILL.md`）：
 
-风水 / 阳宅主题走 skill **风水skill**（`.agents/skills/fengshui/SKILL.md`）：
+- 对话里说 **「风水skill」** / 「风水竖版成片」/ 阳宅 / 丢来抖音链接即可触发（也可用 `/fengshui`）
+- 流程：抽中文口播（改词 &lt; 5%）→ 云机 VoxCPM 0.5「老者」配音（禁 MiniMax）→ cinematic 9:16 山水静图 → 片头 2 秒毛笔标题+锦垣印 → 宋体 100 字幕 → 1080×1920 成片
+- 交付：实验室 / HTTPS 预览链接（单独一行）；不要聊天塞视频附件、不要只丢 OSS 裸链
+- **已废弃**：阳宅图文、gc-minimal 底图、4–6 页分篇叠字出图
 
-- 对话里说 **「风水skill」** / 风水风格 / 阳宅即可触发（也可用 `/fengshui`）
-- 固定风水模板 + 诗意泥纸页背景（左下/右下角意象）+ 每二级标题独占页 + 4–6 页分篇
-
-封面单张仍可用：
-
-```bash
-node scripts/generate-cover.mjs \
-  --bigTitle "SEEDANCE" \
-  --smallTitle "AI 视频导演流" \
-  --description "不是堆词，是导演工作流" \
-  --tags "分镜叙事,镜头控制" \
-  --secondaryTitles "导演模式,镜头语言,成片导出" \
-  --themeColor "#6D28D9" \
-  --out output/cover.png
-```
+历史封面脚本 `scripts/generate-cover.mjs` 仍可能留在仓内，**不要**当作风水成片或图文生产主路径。
 
 ## 本地 Agent / MCP（可选，不影响普通使用）
 
@@ -79,7 +66,9 @@ npm run start:local-agent
 bash scripts/ensure-era-ready.sh
 ```
 
-会拉起 Agent（`:3847`）与前端（`http://127.0.0.1:5173/era/`）。看到右上角 **Agent** 后即可对话出图。
+会拉起 Agent（`:3847`）与前端（`http://127.0.0.1:5173/era/`）。看到右上角 **Agent** 后可操作**前端图文编辑器**（生产 skill 已废弃出图）。
+
+风水竖版成片不依赖本 Bridge，见 `.agents/skills/fengshui/SKILL.md`。
 
 WorkBuddy / Cursor MCP 配置示例见 [docs/mcp.example.json](./docs/mcp.example.json)。
 

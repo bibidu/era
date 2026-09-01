@@ -8,7 +8,8 @@ description: >-
 
 # OSS 上传 Skill（Cloud Agent 必读）
 
-本仓库图片一律经 `bash scripts/oss-upload.sh` 上传。图文 / 风水社媒对用户只发自建站 **HTTPS** 预览链（`https://39.106.179.17.sslip.io/?tab=data`；勿发 HTTP 裸 IP，Safari 才能保存到相册），须先写入 `image_previews`；OSS 临时 HTML 仅用户强烈要求时。约定见 `docs/cloud-hosting.md`、`.cursor/rules/image-preview-delivery.mdc`。
+本仓库图片/成片对象一律经 `bash scripts/oss-upload.sh` 上传。风水竖版成片对用户只发实验室 / **HTTPS** 预览链（`https://39.106.179.17.sslip.io/`；勿发 HTTP 裸 IP），**不要**只丢 OSS 裸链、**不要**聊天塞视频附件。约定见 `docs/cloud-hosting.md`、`.cursor/rules/image-preview-delivery.mdc`。图文 / tuwen 出图已废弃。
+
 
 ## 0. 基本用法
 
@@ -30,7 +31,8 @@ node scripts/make-oss-preview-html.mjs --title "预览" --image a.png --image b.
 OSS_SKIP_CLEANUP=1 bash scripts/oss-upload.sh --cover <file>
 ```
 
-对用户预览：**禁止**直发 OSS 图链；图文 / 风水默认入库 + 自建站；HTML 预览页仅强烈要求或非社媒例外（见 `.cursor/rules/image-preview-delivery.mdc`）。
+对用户预览：**禁止**只丢 OSS 裸链；风水成片发实验室/HTTPS；HTML 预览页仅强烈要求或非社媒例外（见 `.cursor/rules/image-preview-delivery.mdc`）。
+
 
 禁止绕过脚本直接 `ossutil cp`（会漏清理、封面标记、超时/stat 兜底）。
 
