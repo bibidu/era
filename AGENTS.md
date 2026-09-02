@@ -43,7 +43,7 @@
 - `.agents/skills/fengshui/SKILL.md`
 - `.cursor/skills/fengshui`（符号链接）
 
-**一个抖音/视频链接全自动**：抽中文口播（改词 &lt; 5%）→ 云机 VoxCPM 0.5 克隆「老者」配音（禁 MiniMax）→ cinematic 9:16 山水静图 → 片头 2 秒毛笔标题+锦垣印 → 宋体 100 字幕 → 拼 1080×1920 成片。交付只发实验室 / HTTPS 预览链接。读音见 `references/voice-reading.md`（Qwen＝千问，Codex＝/ˈkoʊ.dɛks/）。
+**一个抖音/视频链接全自动**：抽中文口播（改词 &lt; 5%）→ **本机既有** VoxCPM 0.5 克隆「老者」配音（禁 MiniMax；无并行重负载时才启动）→ cinematic 9:16 山水静图 → 片头 2 秒毛笔标题+锦垣印 → 宋体 100 字幕 → 拼 1080×1920 成片。交付只发实验室 / HTTPS 预览链接。读音见 `references/voice-reading.md`，资源预检见 `references/local-runtime.md`。
 
 **禁止**再走阳宅图文、gc-minimal、4–6 页分篇叠字出图。
 
