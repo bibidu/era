@@ -1,6 +1,6 @@
 # 口播读音（voice-reading）
 
-上游亦可参见 GitHub `bibidu/bbd5213` 的 `docs/voice-reading.md`（若该路径有更新以那边为准；本文件为仓内副本，供风水竖版成片注入口播）。
+本文件只定义口播读音；本机「老者」克隆的参考音、精确参考文本与资源门槛见 [local-runtime.md](./local-runtime.md)。
 
 | 写法 | 读法 |
 | --- | --- |

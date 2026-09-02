@@ -13,7 +13,7 @@ alwaysApply: true
 
 ## 现行能力（视频）
 
-抽中文口播（改词 &lt; 5%）→ 云机 VoxCPM 0.5 克隆「老者」配音（禁 MiniMax）→ cinematic 9:16 山水静图 → 片头 2 秒毛笔标题+锦垣印 → 宋体 100 字幕 → 拼 1080×1920 成片。交付只发实验室 / HTTPS 预览链接。
+抽中文口播（改词 &lt; 5%）→ **本机既有** VoxCPM 0.5 克隆「老者」配音（禁 MiniMax；无并行重负载时才启动）→ cinematic 9:16 山水静图 → 片头 2 秒毛笔标题+锦垣印 → 宋体 100 字幕 → 拼 1080×1920 成片。交付只发实验室 / HTTPS 预览链接。预检见 `.agents/skills/fengshui/references/local-runtime.md`。
 
 ## 已废弃（禁止再执行）
 
