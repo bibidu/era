@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "sourceDate": "2026-09-04",
+  "pairs": [
+    {
+      "id": "death-coffin-seven-stars",
+      "cover": "cover-death-coffin-seven-stars.jpg",
+      "titleCrop": "title-death-coffin-seven-stars.jpg",
+      "rightColumn": "亡人入棺",
+      "leftColumn": "摆七星法"
+    },
+    {
+      "id": "house-eight-fears",
+      "cover": "cover-house-eight-fears.jpg",
+      "titleCrop": "title-house-eight-fears.jpg",
+      "rightColumn": "房屋八怕",
+      "leftColumn": "老人言"
+    },
+    {
+      "id": "morning-cloud-evening-travel",
+      "cover": "cover-morning-cloud-evening-travel.jpg",
+      "titleCrop": "title-morning-cloud-evening-travel.jpg",
+      "rightColumn": "朝霞不出",
+      "leftColumn": "晚行千里"
+    }
+  ],
+  "normalizedLayout": {
+    "titleInkBounds": {
+      "left": [0.225, 0.251],
+      "top": [0.173, 0.175],
+      "right": [0.743, 0.756],
+      "bottom": [0.559, 0.591]
+    },
+    "columnCenterX": {
+      "left": [0.31, 0.34],
+      "right": [0.64, 0.66]
+    },
+    "sealBounds": {
+      "left": [0.311, 0.315],
+      "top": [0.571, 0.603],
+      "right": [0.409, 0.415],
+      "bottom": [0.66, 0.692]
+    }
+  }
+}
