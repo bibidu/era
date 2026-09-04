@@ -70,11 +70,14 @@ description: >-
 标题：
 
 - **AI 毛笔**（白飞白行楷），**右起左行两列竖排**
+- 先读取固定字形参考 [`public/fengshui-assets/brush-calligraphy-reference.png`](../../../public/fengshui-assets/brush-calligraphy-reference.png)：它取自 `150.MP4` 的透明白色毛笔标题，用于约束飞白、笔锋、字重和双列节奏
+- 每篇标题仍须依该参考**重新生成对应文字**；禁止裁用示例中的字、复用示例文案，或用代码/UI 字体替代
 - 禁止马善政、系统黑体、数黑体等代码/UI 字体冒充毛笔
 
 印：
 
-- 固定资产 **锦垣印**：朱砂竖椭圆，文「锦垣」
+- 固定资产 [`public/fengshui-assets/jinyuan-seal.png`](../../../public/fengshui-assets/jinyuan-seal.png)：原片复刻的朱文竖椭圆「锦垣」印
+- 该 PNG 是 **RGBA**：仅红色印迹保留，印心和印外均透明；合成时必须保留 alpha，禁止铺红色实底、扁平化或重绘成其他印章
 - 旋转 **2–6°**，宽约 **112px**
 - 落在**最左列文字正下方**，不压字
 - 标题+印相对上部空白再**下移 30px**（整组略沉，勿贴顶）
@@ -120,7 +123,7 @@ ffmpeg -y \
 1. 口播来自链接；改词 < 5%；Qwen/Codex 读音已注入
 2. 配音＝本机既有 VoxCPM 0.5 + 老者参考音/精确参考文本；无 MiniMax；无并行重负载
 3. 静图 9:16 cinematic shanshui+anime；1–2 小行者；上 1/3 留白；横图只竖裁不拼接
-4. 片头 2s：白飞白行楷两列竖排 + 锦垣印（2–6°、~112px、最左列下、整组下移 30px）；之后无标题无印
+4. 片头 2s：已读取 `brush-calligraphy-reference.png` 生成的白飞白行楷两列竖排 + `jinyuan-seal.png` 原样 alpha 合成（2–6°、~112px、最左列下、整组下移 30px）；之后无标题无印
 5. 字幕：宋体 Bold 100px、距底约 1/5、纯中文、无书名号
 6. 成片 1080×1920；静图静止；`bframes=0:keyint=30:min-keyint=30:scenecut=0`
 7. 对话只有 HTTPS/实验室预览链接；无附件、无「仅 OSS 裸链」
