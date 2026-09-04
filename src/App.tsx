@@ -9,6 +9,11 @@ import {
   readSocialPostIdFromSearch,
   replaceAppTabInUrl,
 } from './app/tabRouting'
+import { FengshuiVideoPreviewPage } from './features/fengshui/FengshuiVideoPreviewPage'
+import {
+  isFengshuiPreviewTab,
+  readFengshuiVideoPreviewFromSearch,
+} from './features/fengshui/fengshuiVideoPreview'
 import { useEdgeSwipeBack } from './hooks/useEdgeSwipeBack'
 import { useEraTheme } from './theme/useEraTheme'
 
@@ -106,6 +111,14 @@ function App() {
   }, [])
 
   useEffect(() => {
+    if (isFengshuiPreviewTab()) {
+      window.addEventListener('popstate', syncFromUrl)
+      window.addEventListener(ERA_URL_CHANGE_EVENT, syncFromUrl)
+      return () => {
+        window.removeEventListener('popstate', syncFromUrl)
+        window.removeEventListener(ERA_URL_CHANGE_EVENT, syncFromUrl)
+      }
+    }
     const initial = readAppTabFromSearch()
     replaceAppTabInUrl(initial, {
       keepSocialPost: Boolean(readSocialPostIdFromSearch()) && initial === 'data',
@@ -149,8 +162,12 @@ function App() {
     [mode],
   )
 
+  const fengshuiPreview = isFengshuiPreviewTab()
+    ? readFengshuiVideoPreviewFromSearch()
+    : undefined
+  const showFengshuiPreview = fengshuiPreview !== undefined
   // 帖子详情不藏顶栏：否则手势返回时顶栏突然出现会改变列表高度，造成抖动
-  const hideTopTabs = balanceOpen || mode === 'graphic'
+  const hideTopTabs = balanceOpen || mode === 'graphic' || showFengshuiPreview
   const wideLayout = mode === 'data' && !hideTopTabs
 
   return (
@@ -191,6 +208,8 @@ function App() {
       <Suspense fallback={<TabLoadingFallback />}>
         {balanceOpen ? (
           <AccountBalancePage onBack={() => setBalanceOpen(false)} />
+        ) : showFengshuiPreview ? (
+          <FengshuiVideoPreviewPage preview={fengshuiPreview} />
         ) : mode === 'graphic' ? (
           <GraphicSecondaryPage onBack={closeGraphic} />
         ) : (

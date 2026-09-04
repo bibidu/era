@@ -139,25 +139,26 @@ ERA_BASE=/ npm run build
 echo "    sync dist → ${REMOTE_WEB}"
 # /opt/apt-web、/opt/kuifou-web 经 compose 挂到 gateway 的 /srv/apt、/srv/kuifou；切勿把内容放进 REMOTE_WEB。
 # 只读挂载 REMOTE_WEB→/srv 时，宿主机必须先有 apt/、kuifou/ 空目录作挂载点，否则嵌套挂载失败。
-mkdir -p "$REMOTE_WEB" /opt/apt-web /opt/kuifou-web "${REMOTE_WEB}/apt" "${REMOTE_WEB}/kuifou"
-# rsync --delete 必须排除 apt/、kuifou/，避免清掉挂载点或误删内容。
+mkdir -p "$REMOTE_WEB" /opt/apt-web /opt/kuifou-web /opt/era-previews "${REMOTE_WEB}/apt" "${REMOTE_WEB}/kuifou" "${REMOTE_WEB}/previews"
+# rsync --delete 必须排除 apt/、kuifou/、previews/，避免清掉挂载点或误删内容。
 if command -v rsync >/dev/null 2>&1; then
   rsync -a --delete \
     --exclude apt --exclude apt/ \
     --exclude kuifou --exclude kuifou/ \
+    --exclude previews --exclude previews/ \
     dist/ "${REMOTE_WEB}/"
-  mkdir -p "${REMOTE_WEB}/apt" "${REMOTE_WEB}/kuifou"
+  mkdir -p "${REMOTE_WEB}/apt" "${REMOTE_WEB}/kuifou" "${REMOTE_WEB}/previews"
 else
-  # 无 rsync 时逐项同步，保留 apt/、kuifou/ 目录
+  # 无 rsync 时逐项同步，保留 apt/、kuifou/、previews/ 目录
   shopt -s dotglob nullglob
   for entry in dist/*; do
     base="$(basename "$entry")"
-    [[ "$base" == "apt" || "$base" == "kuifou" ]] && continue
+    [[ "$base" == "apt" || "$base" == "kuifou" || "$base" == "previews" ]] && continue
     rm -rf "${REMOTE_WEB:?}/${base}"
     cp -a "$entry" "$REMOTE_WEB/"
   done
   shopt -u dotglob nullglob
-  mkdir -p "${REMOTE_WEB}/apt" "${REMOTE_WEB}/kuifou"
+  mkdir -p "${REMOTE_WEB}/apt" "${REMOTE_WEB}/kuifou" "${REMOTE_WEB}/previews"
 fi
 
 echo "    sync Caddyfile / compose → /opt/era-db"
@@ -176,7 +177,7 @@ fi
 
 # compose 插件若坏掉，兜底保证 gateway 仍挂着独立站目录
 ensure_standalone_mounts() {
-  mkdir -p /opt/apt-web /opt/kuifou-web /opt/era-web/apt /opt/era-web/kuifou
+  mkdir -p /opt/apt-web /opt/kuifou-web /opt/era-previews /opt/era-web/apt /opt/era-web/kuifou /opt/era-web/previews
   local need_recreate=0
   if docker inspect era-gateway >/dev/null 2>&1; then
     local mounts
@@ -191,13 +192,18 @@ ensure_standalone_mounts() {
     else
       need_recreate=1
     fi
+    if echo "$mounts" | grep -qx '/opt/era-previews'; then
+      echo "    previews mount ok"
+    else
+      need_recreate=1
+    fi
     if [[ "$need_recreate" -eq 0 ]]; then
       return 0
     fi
-    echo "    recreate era-gateway with apt + kuifou mounts"
+    echo "    recreate era-gateway with apt + kuifou + previews mounts"
     docker rm -f era-gateway >/dev/null 2>&1 || true
   else
-    echo "    start era-gateway with apt + kuifou mounts"
+    echo "    start era-gateway with apt + kuifou + previews mounts"
   fi
   docker run -d \
     --name era-gateway \
@@ -210,6 +216,7 @@ ensure_standalone_mounts() {
     -v /opt/era-web:/srv:ro \
     -v /opt/apt-web:/srv/apt:ro \
     -v /opt/kuifou-web:/srv/kuifou:ro \
+    -v /opt/era-previews:/srv/previews:ro \
     -v era-caddy-data:/data \
     -v era-caddy-config:/config \
     caddy:2-alpine >/dev/null

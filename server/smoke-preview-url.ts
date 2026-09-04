@@ -11,6 +11,13 @@ import {
   titleComposerPagesUrl,
 } from '../src/agent/supabaseHighlightSetup.ts'
 import { readAppTabFromSearch, readSocialPostIdFromSearch } from '../src/app/tabRouting.ts'
+import {
+  fengshuiVideoObjectUrl,
+  fengshuiVideoPreviewPagesUrl,
+  isFengshuiPreviewTab,
+  parseFengshuiVideoKey,
+  readFengshuiVideoPreviewFromSearch,
+} from '../src/features/fengshui/fengshuiVideoPreview.ts'
 
 const selfBase = 'http://39.106.179.17/'
 
@@ -53,6 +60,22 @@ assert.equal(readAppTabFromSearch('?tab=stitch'), 'data')
 assert.equal(readAppTabFromSearch('?tab=graphic'), 'graphic')
 // 亏否已拆出独立站 /kuifou/，未知 tab 回落社媒
 assert.equal(readAppTabFromSearch('?tab=kuifou'), 'data')
+assert.equal(readAppTabFromSearch('?tab=fengshui&v=20260904-024720/fengshui-good-omens-elder.mp4'), 'data')
+assert.equal(isFengshuiPreviewTab('?tab=fengshui&v=20260904-024720/fengshui-good-omens-elder.mp4'), true)
+assert.equal(parseFengshuiVideoKey('20260904-024720/fengshui-good-omens-elder.mp4'), '20260904-024720/fengshui-good-omens-elder.mp4')
+assert.equal(parseFengshuiVideoKey('https://evil.example/x.mp4'), null)
+const fengshuiUrl = new URL(
+  fengshuiVideoPreviewPagesUrl('20260904-024720/fengshui-good-omens-elder.mp4', '贵人来欠款还', selfBase),
+)
+assert.equal(fengshuiUrl.searchParams.get('tab'), 'fengshui')
+assert.equal(fengshuiUrl.searchParams.get('v'), '20260904-024720/fengshui-good-omens-elder.mp4')
+assert.equal(fengshuiUrl.searchParams.get('title'), '贵人来欠款还')
+const preview = readFengshuiVideoPreviewFromSearch(fengshuiUrl.search)
+assert.ok(preview)
+assert.equal(preview.key, '20260904-024720/fengshui-good-omens-elder.mp4')
+assert.equal(preview.src, fengshuiVideoObjectUrl(preview.key))
+assert.equal(preview.title, '贵人来欠款还')
+assert.equal(readFengshuiVideoPreviewFromSearch('?tab=fengshui'), null)
 const recoveredParams = parsePreviewSearchParams(mangledSearch)
 assert.equal(recoveredParams.get('tab'), 'data')
 assert.equal(recoveredParams.get('post'), '1dac7255-16f2-413f-a84d-df3c2cadb87d')
