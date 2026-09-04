@@ -26,7 +26,7 @@
 - `.agents/skills/fengdashi/SKILL.md`
 - `.cursor/skills/fengdashi`（符号链接）
 
-用户说「使用风大师，开启今天的任务」「风水号今天发什么」「风水下一篇」时走本 skill。**全自动、零确认**：`node scripts/fengdashi-analyze.mjs` 拉风水数据复盘 → 定选题/标题/档期 → **有抖音/视频链接则**走 **风水竖版成片**（`fengshui`）→ 飞书「风水号下一篇已就绪」。**禁止**再走 Era 叠字 / gc-minimal 多页出图。
+用户说「使用风大师，开启今天的任务」「风水号今天发什么」「风水下一篇」时走本 skill。选题/标题/档期全自动；**有抖音/视频链接则**走 **风水竖版成片**（`fengshui`），先让用户确认通过门禁的 10 秒真实克隆音频与最终首帧，确认后成片 → 飞书「风水号下一篇已就绪」。**禁止**再走 Era 叠字 / gc-minimal 多页出图。
 
 三条硬规则：
 
@@ -43,7 +43,7 @@
 - `.agents/skills/fengshui/SKILL.md`
 - `.cursor/skills/fengshui`（符号链接）
 
-**一个抖音/视频链接全自动**：抽中文口播（改词 &lt; 5%）→ **本机既有** VoxCPM 0.5 克隆「老者」配音（禁 MiniMax；无并行重负载时才启动）→ cinematic 9:16 山水静图 → 片头 2 秒毛笔标题+锦垣印 → 宋体 100 字幕 → 拼 1080×1920 成片。交付只发实验室 / HTTPS 预览链接。读音见 `references/voice-reading.md`，资源预检见 `references/local-runtime.md`。
+**一个抖音/视频链接启动**：抽中文口播（改词 &lt; 5%）→ 按 **CosyVoice > VoxCPM2 > VoxCPM 0.5** 选择/安装机器可运行的最高优先级引擎 → 克隆「老者」→ 逐字与音质门禁 → 用户确认 10 秒真实克隆音频 + 最终首帧 → cinematic 9:16 山水静图 → 片头 2 秒毛笔标题+锦垣印 → 宋体 100 字幕 → 拼 1080×1920 成片。确认门不能被“全自动”跳过；禁 MiniMax。交付只发绑定本次 MP4 的实验室 HTTPS 专属预览链接。读音见 `references/voice-reading.md`，资源预检见 `references/local-runtime.md`。
 
 **禁止**再走阳宅图文、gc-minimal、4–6 页分篇叠字出图。
 
