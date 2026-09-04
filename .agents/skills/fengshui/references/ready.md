@@ -10,6 +10,6 @@
 4. 生图能力可用（cinematic 9:16 shanshui + anime）
 5. 可读取 `public/fengshui-assets/jinyuan-seal.png`：原片复刻的朱文竖椭圆「锦垣」印，须为 RGBA（仅红色印迹保留、印心和印外透明）
 6. 可读取 `public/fengshui-assets/brush-calligraphy-reference.png`：透明白飞白毛笔标题参考；逐篇标题据其重生成，不复用示例文字
-7. 交付用实验室 / HTTPS 预览（默认 `https://39.106.179.17.sslip.io/`），勿只丢 OSS 裸链
+7. 交付必须有绑定本次 MP4 的实验室 HTTPS 专属深链，并已在无登录会话中核对对象、起播和时长；裸根路径 / 通用 `?tab=data` 不算成片预览
 
 字体：字幕用 Noto Serif CJK SC Bold（或等价 `Noto Serif SC` Bold）；标题用 AI 毛笔（白飞白行楷），禁止马善政等代码字体。
