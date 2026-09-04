@@ -44,7 +44,7 @@ description: >-
 ### 2. 配音（本机 VoxCPM · 老者）
 
 - 使用用户 Mac 上**既有的** **VoxCPM 0.5** 运行环境；不下载模型或依赖，不改系统设置。
-- **克隆「老者」**：使用 `bibidu/bbd5213` 的 `docs/voice/laozhe/laozhe-ref.wav` 及配套精确 `laozhe-ref.transcript.txt` 作为 prompt 音频与 `--ref-text`。原 fengshui-B / MiniMax B 轨只是一份已转换来源，**不要**回落到 MiniMax。
+- **克隆「老者」**：使用仓内固定参考音 `public/audio/150-20s.wav`，并将 [本机运行](./references/local-runtime.md) 中的精确参考文本作为 `--ref-text`。该 20 秒音频就是正式老者克隆参考音；音频与文本必须成对使用。原 fengshui-B / MiniMax B 轨只是一份已转换来源，**不要**回落到 MiniMax。
 - **禁止 MiniMax**。
 - 先按 [本机运行](./references/local-runtime.md) 做预检；通过后先合成一口试听（用户明确要求全自动时可跳过试听）。
 - 同一时刻只允许一个本机重负载阶段：合成、ASR、OCR、嵌入、FFmpeg/Remotion 或 Blender 不得并行。预检不通过时不要暂停其他任务，只报告等待条件。

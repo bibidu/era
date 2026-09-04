@@ -4,7 +4,7 @@
 
 成片前确认本机侧可用：
 
-1. 既有 **VoxCPM 0.5** 运行环境能读取「老者」参考音与精确参考文本；**禁止 MiniMax**、禁止临时下载模型/依赖
+1. 既有 **VoxCPM 0.5** 运行环境能读取仓内「老者」参考音 `public/audio/150-20s.wav`，并与 `references/local-runtime.md` 的精确参考文本成对使用；**禁止 MiniMax**、禁止临时下载模型/依赖
 2. 没有正在运行的本机重负载阶段，且 `memory_pressure` 未显示 throttled pages；详情见 [local-runtime.md](./local-runtime.md)
 3. **ffmpeg** 可用，且编码能带 `bframes=0:keyint=30:min-keyint=30:scenecut=0`；只在配音完成后单独运行
 4. 生图能力可用（cinematic 9:16 shanshui + anime）
