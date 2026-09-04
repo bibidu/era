@@ -4,12 +4,14 @@
 
 ## 老者参考资产
 
-- prompt 音频：`https://github.com/bibidu/bbd5213/blob/main/docs/voice/laozhe/laozhe-ref.wav`
+- prompt 音频：仓内 `public/audio/150-20s.wav`
+- 规格：PCM 16-bit、16 kHz、双声道、20 秒
 - 精确参考文本：
 
   > 内心深处对他人的真实评价，尤其是一些不好的评价，一定要烂在肚子里。哪怕对方再不好，咱也别说对吧。因为你一旦说出口了，有可能会引起没有必要的矛盾和纷争，没必要去为自己树敌。
 
 参考音与这段文本必须成对传给现有 runner；不得用其他声线或自行改写参考文本替代。
+`public/audio/150-20s.wav` 就是正式的老者克隆参考音，不再从外部仓库查找或下载 `laozhe-ref.wav`。
 
 ## 启动门槛
 
