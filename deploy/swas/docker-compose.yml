@@ -67,6 +67,8 @@ services:
       - /opt/apt-web:/srv/apt:ro
       # 独立站：宿主机 /opt/kuifou-web → /srv/kuifou（bibidu/kuifou；Era 发版勿删挂载）。
       - /opt/kuifou-web:/srv/kuifou:ro
+      # 风水成片静态预览：宿主机 /opt/era-previews → /srv/previews（勿被 rsync --delete 清掉）。
+      - /opt/era-previews:/srv/previews:ro
       - era-caddy-data:/data
       - era-caddy-config:/config
     networks: [era-net]
