@@ -11,7 +11,8 @@
 5. **ffmpeg** 可用，且编码能带 `bframes=0:keyint=30:min-keyint=30:scenecut=0`；只在配音完成后单独运行
 6. 生图能力可用（cinematic 9:16 shanshui + anime）
 7. 可读取 `public/fengshui-assets/jinyuan-seal.png`：原片复刻的朱文竖椭圆「锦垣」印，须为 RGBA（仅红色印迹保留、印心和印外透明）
-8. 可读取 `public/fengshui-assets/brush-calligraphy-reference.png`：透明白飞白毛笔标题参考；优先补充同系列 3–5 张不同汉字参考；逐篇标题据参考重生成，不复用示例文字
-9. 交付必须是 `?tab=fengshui&v=<本次 mp4>` 专属深链，并已在无登录会话中核对对象、起播和时长；裸根路径 / 通用 `?tab=data` / SPA 回落的 `/previews/` 目录链都不算成片预览
+8. 可读取 `public/fengshui-assets/calligraphy-references/manifest.json` 及其三组「完整首帧 + 对应毛笔字局部」：同一次生成同时用完整图约束归一化布局、用局部约束笔锋飞白；逐篇标题据三组共同风格重生成，不复用示例文字
+9. 首帧标题已核对：简体中文逐字正确；1080×1920 可见墨迹约在 `x=243–816`、`y=332–1135`；短列相对最长列垂直居中；锦垣印在左列下方略向列间偏移并随最长列底部定位
+10. 交付必须是 `?tab=fengshui&v=<本次 mp4>` 专属深链，并已在无登录会话中核对对象、起播和时长；裸根路径 / 通用 `?tab=data` / SPA 回落的 `/previews/` 目录链都不算成片预览
 
 字体：字幕用 Noto Serif CJK SC Bold（或等价 `Noto Serif SC` Bold）；标题用 AI 毛笔（白飞白行楷），禁止马善政等代码字体。
